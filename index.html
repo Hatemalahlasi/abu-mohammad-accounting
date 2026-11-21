@@ -51,13 +51,13 @@
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 22px;
-            padding: 16px;
+            padding: 14px 16px 20px;
             box-shadow: 0 20px 45px -15px rgba(15, 76, 129, 0.12);
             min-height: calc(100vh - 20px);
         }
 
         @media (min-width: 768px) {
-            .app-shell { padding: 26px 30px; }
+            .app-shell { padding: 24px 30px; }
         }
 
         .login-wrapper {
@@ -70,44 +70,79 @@
         }
 
         .brand-logo {
-            width: 78px;
-            height: 78px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: #fff;
+            width: 84px;
+            height: 84px;
+            border-radius: 16px;
+            background: #ffffff;
+            border: 1.5px solid var(--border);
+            color: var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 30px;
             margin: 0 auto 14px;
+            padding: 6px;
             overflow: hidden;
         }
 
-        .brand-logo img, .header-logo img {
+        .brand-logo img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             display: block;
+        }
+
+        /* شريط علوي مرتب مع زر خروج مرتفع ومعزول */
+        .top-utility-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding-bottom: 14px;
+            border-bottom: 1.5px solid var(--border);
+            margin-bottom: 14px;
         }
 
         .header-brand {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            min-width: 0;
+            flex: 1;
         }
 
-        .header-logo {
-            width: 44px;
-            height: 44px;
+        /* مربع الشعار الملاصق للشاشة */
+        .header-logo-square {
+            width: 48px;
+            height: 48px;
             border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: #fff;
+            background: #ffffff;
+            border: 1.5px solid var(--border);
+            color: var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 18px;
+            padding: 4px;
             overflow: hidden;
             flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(15, 76, 129, 0.08);
+        }
+
+        .header-logo-square img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
         }
 
         .login-wrapper h1 {
@@ -206,17 +241,6 @@
         .btn-danger { background: var(--danger-bg); color: var(--danger); }
         .btn-outline { background: #fff; color: var(--text-main); border: 1.5px solid var(--border); }
         .btn-sm { padding: 7px 11px; font-size: 12px; border-radius: 9px; }
-
-        .header-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding-bottom: 14px;
-            border-bottom: 1.5px solid var(--border);
-            margin-bottom: 14px;
-        }
 
         .db-status {
             display: inline-flex;
@@ -528,29 +552,32 @@
 
     <!-- واجهة النظام -->
     <div id="mainAppView" class="hidden">
+
+        <!-- صف علوي مرتفع: حالة الاتصال + زر الخروج بعيداً عن أزرار العمل -->
+        <div class="top-utility-row">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span id="connectionStatusBadge" class="db-status"><i class="fa-solid fa-bolt"></i> متصل مباشر</span>
+                <span id="currentUserRoleBadge" class="badge badge-role">مدير</span>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm" onclick="confirmLogout()">
+                <i class="fa-solid fa-right-from-bracket"></i> خروج
+            </button>
+        </div>
+
         <div class="header-bar">
             <div class="header-brand">
-                <div class="header-logo">
+                <div class="header-logo-square">
                     <img src="logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
                     <i class="fa-solid fa-industry" style="display:none;"></i>
                 </div>
-                <div>
-                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                        <span id="connectionStatusBadge" class="db-status"><i class="fa-solid fa-bolt"></i> متصل مباشر</span>
-                        <span id="currentUserRoleBadge" class="badge badge-role">مدير</span>
-                    </div>
-                    <h2 id="headerWelcome" style="font-size:17px; font-weight:800; margin-top:4px;">معمل أبو محمد</h2>
+                <div style="min-width:0;">
+                    <h2 id="headerWelcome" style="font-size:16.5px; font-weight:800; line-height:1.35;">معمل أبو محمد</h2>
                 </div>
             </div>
 
-            <div style="display:flex; gap:6px;">
-                <button id="refreshDataBtn" class="btn btn-outline btn-sm" onclick="reloadAllData(true)">
-                    <i class="fa-solid fa-rotate"></i> تحديث
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="handleLogout()">
-                    <i class="fa-solid fa-right-from-bracket"></i> خروج
-                </button>
-            </div>
+            <button id="refreshDataBtn" type="button" class="btn btn-outline btn-sm" onclick="reloadAllData(true)">
+                <i class="fa-solid fa-rotate"></i> تحديث
+            </button>
         </div>
 
         <!-- القائمة الرئيسية -->
@@ -1167,7 +1194,7 @@
                 const updatedMe = state.employees.find(e => e.id === currentUser.id);
                 if (updatedMe) {
                     currentUser = updatedMe;
-                    document.getElementById('headerWelcome').textContent = `معمل أبو محمد — ${currentUser.fullName}`;
+                    document.getElementById('headerWelcome').textContent = `${currentUser.fullName}`;
                     const roleBadge = document.getElementById('currentUserRoleBadge');
                     roleBadge.textContent = roleLabel(currentUser.role);
                     roleBadge.className = `badge ${roleBadgeClass(currentUser.role)}`;
@@ -1266,9 +1293,16 @@
         return Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    function getCashboxOpening(cb) {
+        if (cb.openingBalance !== undefined && cb.openingBalance !== null) {
+            return Number(cb.openingBalance || 0);
+        }
+        return Number(cb.balance || 0);
+    }
+
     // حساب نظامي لرصيد الصندوق: رصيد افتتاحي + مبيعات نقدية عليه + سندات قبض عليه - سندات صرف عليه
     function computeSystemCashboxBalance(cb) {
-        const opening = Number(cb.openingBalance !== undefined ? cb.openingBalance : (cb.balance || 0));
+        const opening = getCashboxOpening(cb);
         const cashSales = state.invoices
             .filter(i => i.paymentType === 'cash' && i.cashboxId === cb.id)
             .reduce((s, i) => s + Number(i.netTotal || 0), 0);
@@ -1391,7 +1425,7 @@
             }
 
             currentUser = found;
-            document.getElementById('headerWelcome').textContent = `معمل أبو محمد — ${currentUser.fullName}`;
+            document.getElementById('headerWelcome').textContent = `${currentUser.fullName}`;
             const roleBadge = document.getElementById('currentUserRoleBadge');
             roleBadge.textContent = roleLabel(currentUser.role);
             roleBadge.className = `badge ${roleBadgeClass(currentUser.role)}`;
@@ -1413,6 +1447,11 @@
             btn.disabled = false;
             btnText.textContent = 'دخول';
         }
+    }
+
+    function confirmLogout() {
+        if (!confirm('هل تريد تسجيل الخروج من النظام؟')) return;
+        handleLogout();
     }
 
     function handleLogout() {
@@ -2018,11 +2057,39 @@
         }
     }
 
+    async function editCashboxOpening(cbId) {
+        if (isBusy) return;
+        if (!canEditRecord()) {
+            showToast('ليس لديك صلاحية التعديل');
+            return;
+        }
+        const cb = state.cashboxes.find(x => x.id === cbId);
+        if (!cb) return;
+        const currentOpen = getCashboxOpening(cb);
+        const nextVal = prompt(`الرصيد الافتتاحي لـ (${cb.name}):`, currentOpen);
+        if (nextVal === null) return;
+        const parsed = Number(nextVal);
+        if (isNaN(parsed) || parsed < 0) {
+            showToast('أدخل رقماً صحيحاً');
+            return;
+        }
+        isBusy = true;
+        try {
+            await db.collection('cashboxes').doc(cbId).update({
+                openingBalance: parsed,
+                balance: parsed
+            });
+            showToast('تم تحديث الرصيد الافتتاحي');
+        } finally {
+            isBusy = false;
+        }
+    }
+
     function renderCashboxesList() {
         const el = document.getElementById('dashboardCashboxesList');
         el.innerHTML = state.cashboxes.length
             ? state.cashboxes.map(c => {
-                const opening = Number(c.openingBalance !== undefined ? c.openingBalance : (c.balance || 0));
+                const opening = getCashboxOpening(c);
                 const sysBal = computeSystemCashboxBalance(c);
                 return `
                     <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
@@ -2030,7 +2097,10 @@
                             <strong>${c.name}</strong>
                             <div style="font-size:11px; color:var(--text-muted);">رصيد افتتاحي: <span class="mono">${formatMoney(opening)}</span></div>
                         </div>
-                        <span class="mono" style="color:var(--success); font-size:15px;">${formatMoney(sysBal)}</span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="mono" style="color:var(--success); font-size:15px;">${formatMoney(sysBal)}</span>
+                            ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editCashboxOpening('${c.id}')" title="تعديل الرصيد الافتتاحي"><i class="fa-solid fa-pen"></i></button>` : ''}
+                        </div>
                     </div>
                 `;
             }).join('')
