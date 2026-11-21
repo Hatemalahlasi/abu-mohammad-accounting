@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام معمل أبو محمد المحاسبي | مبيعات وصناديق وعملاء</title>
+    <title>معمل أبو محمد | نظام المحاسبة والمبيعات</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -15,22 +15,23 @@
 
     <style>
         :root {
-            --bg-page: #0f172a;
+            --bg-page: #eef2f6;
             --bg-surface: #f8fafc;
             --bg-card: #ffffff;
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --primary-soft: #eff6ff;
-            --border: #cbd5e1;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --success: #16a34a;
+            --primary: #0f4c81;
+            --primary-hover: #0a355c;
+            --primary-soft: #e8f1f8;
+            --accent: #0d9488;
+            --border: #dbe3ec;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --success: #15803d;
             --success-bg: #dcfce7;
-            --warning: #d97706;
+            --warning: #b45309;
             --warning-bg: #fef3c7;
-            --danger: #dc2626;
+            --danger: #b91c1c;
             --danger-bg: #fee2e2;
-            --purple: #7c3aed;
+            --purple: #5b21b6;
             --purple-bg: #ede9fe;
         }
 
@@ -38,51 +39,57 @@
 
         body {
             font-family: 'Cairo', sans-serif;
-            background-color: var(--bg-page);
+            background: linear-gradient(160deg, #e6ecf5 0%, #f4f7fb 100%);
             color: var(--text-main);
             min-height: 100vh;
-            padding: 12px;
+            padding: 14px;
         }
 
         .app-shell {
-            max-width: 1180px;
+            max-width: 1200px;
             margin: 0 auto;
             background: var(--bg-card);
-            border-radius: 24px;
-            padding: 18px;
-            box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.35);
-            min-height: calc(100vh - 24px);
+            border: 1px solid var(--border);
+            border-radius: 26px;
+            padding: 20px;
+            box-shadow: 0 20px 45px -15px rgba(15, 76, 129, 0.12);
+            min-height: calc(100vh - 28px);
         }
 
         @media (min-width: 768px) {
-            .app-shell { padding: 28px 34px; }
+            .app-shell { padding: 30px 36px; }
         }
 
-        /* شاشة الدخول */
+        /* شاشة الدخول الجديدة */
         .login-wrapper {
-            max-width: 420px;
-            margin: 40px auto;
-            padding: 24px 16px;
+            max-width: 410px;
+            margin: 48px auto;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 30px 24px;
+            box-shadow: 0 14px 30px -10px rgba(15, 76, 129, 0.08);
         }
 
         .brand-logo {
-            width: 74px;
-            height: 74px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, #2563eb, #1e40af);
+            width: 76px;
+            height: 76px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 32px;
-            margin: 0 auto 18px;
-            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.3);
+            margin: 0 auto 16px;
+            box-shadow: 0 10px 22px rgba(15, 76, 129, 0.22);
         }
 
         .login-wrapper h1 {
             text-align: center;
-            font-size: 22px;
+            font-size: 23px;
             font-weight: 800;
+            color: var(--primary);
             margin-bottom: 6px;
         }
 
@@ -93,7 +100,7 @@
             margin-bottom: 24px;
         }
 
-        .form-group { margin-bottom: 14px; }
+        .form-group { margin-bottom: 15px; }
         .form-group label {
             display: block;
             font-size: 13px;
@@ -104,12 +111,12 @@
 
         .form-control {
             width: 100%;
-            padding: 11px 14px;
+            padding: 12px 14px;
             border: 1.5px solid var(--border);
-            border-radius: 12px;
-            background: var(--bg-surface);
+            border-radius: 13px;
+            background: #ffffff;
             font-family: 'Cairo', sans-serif;
-            font-size: 14px;
+            font-size: 14.5px;
             color: var(--text-main);
             transition: all 0.2s ease;
         }
@@ -117,13 +124,18 @@
         .form-control:focus {
             outline: none;
             border-color: var(--primary);
-            background: #ffffff;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+            box-shadow: 0 0 0 4px rgba(15, 76, 129, 0.12);
+        }
+
+        .num-input {
+            font-family: 'JetBrains Mono', 'Cairo', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
         .btn {
             padding: 10px 16px;
-            border-radius: 11px;
+            border-radius: 12px;
             border: none;
             font-family: 'Cairo', sans-serif;
             font-weight: 700;
@@ -139,7 +151,7 @@
 
         .btn:active { transform: scale(0.98); }
         .btn-full { width: 100%; padding: 13px; font-size: 15px; }
-        .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); }
+        .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 6px 16px rgba(15, 76, 129, 0.2); }
         .btn-primary:hover { background: var(--primary-hover); }
         .btn-success { background: var(--success-bg); color: var(--success); }
         .btn-success:hover { background: var(--success); color: #fff; }
@@ -147,9 +159,9 @@
         .btn-warning:hover { background: var(--warning); color: #fff; }
         .btn-danger { background: var(--danger-bg); color: var(--danger); }
         .btn-danger:hover { background: var(--danger); color: #fff; }
-        .btn-outline { background: var(--bg-surface); color: var(--text-main); border: 1.5px solid var(--border); }
+        .btn-outline { background: #ffffff; color: var(--text-main); border: 1.5px solid var(--border); }
         .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 9px; }
 
         /* الشريط العلوي والتبويبات */
         .header-bar {
@@ -158,9 +170,9 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 14px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid #f1f5f9;
-            margin-bottom: 20px;
+            padding-bottom: 18px;
+            border-bottom: 1.5px solid var(--border);
+            margin-bottom: 22px;
         }
 
         .db-status {
@@ -184,14 +196,14 @@
             display: flex;
             gap: 8px;
             overflow-x: auto;
-            padding-bottom: 6px;
-            margin-bottom: 22px;
-            border-bottom: 1.5px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1.5px solid var(--border);
         }
 
         .nav-tab {
             padding: 10px 16px;
-            border-radius: 12px;
+            border-radius: 13px;
             border: 1.5px solid transparent;
             background: var(--bg-surface);
             color: var(--text-muted);
@@ -211,7 +223,7 @@
         .nav-tab.active {
             background: var(--primary);
             color: #ffffff;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            box-shadow: 0 5px 14px rgba(15, 76, 129, 0.22);
         }
 
         /* بطاقات الإحصائيات */
@@ -232,7 +244,7 @@
 
         .kpi-card {
             background: var(--bg-surface);
-            border: 1.5px solid #e2e8f0;
+            border: 1.5px solid var(--border);
             border-radius: 18px;
             padding: 18px;
             display: flex;
@@ -251,7 +263,7 @@
         .kpi-icon {
             width: 38px;
             height: 38px;
-            border-radius: 11px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -270,16 +282,16 @@
         /* الأقسام والجداول */
         .card-box {
             background: var(--bg-surface);
-            border: 1.5px solid #e2e8f0;
+            border: 1.5px solid var(--border);
             border-radius: 18px;
-            padding: 18px;
+            padding: 20px;
             margin-bottom: 20px;
         }
 
         .card-title {
             font-size: 15.5px;
             font-weight: 800;
-            color: var(--text-main);
+            color: var(--primary);
             margin-bottom: 14px;
             display: flex;
             align-items: center;
@@ -301,7 +313,7 @@
             overflow-x: auto;
             background: #ffffff;
             border-radius: 14px;
-            border: 1.5px solid #e2e8f0;
+            border: 1.5px solid var(--border);
         }
 
         table {
@@ -313,7 +325,7 @@
         th, td {
             padding: 12px 14px;
             text-align: right;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid #eef2f6;
         }
 
         th {
@@ -363,7 +375,7 @@
                 background: #fff;
                 padding: 10px;
                 border-radius: 12px;
-                border: 1px solid #e2e8f0;
+                border: 1px solid var(--border);
             }
         }
 
@@ -384,7 +396,7 @@
         .modal-backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.65);
+            background: rgba(17, 24, 39, 0.55);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -400,7 +412,7 @@
             max-height: 88vh;
             overflow-y: auto;
             padding: 22px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
         }
 
         .toast {
@@ -408,7 +420,7 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%) translateY(20px);
-            background: #0f172a;
+            background: var(--primary);
             color: #fff;
             padding: 11px 18px;
             border-radius: 12px;
@@ -421,7 +433,7 @@
             pointer-events: none;
             transition: all 0.22s ease;
             z-index: 1000;
-            box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+            box-shadow: 0 12px 24px rgba(15, 76, 129, 0.25);
         }
 
         .toast.show {
@@ -438,26 +450,22 @@
 
     <!-- 1. شاشة تسجيل الدخول -->
     <div id="loginView" class="login-wrapper">
-        <div class="brand-logo"><i class="fa-solid fa-calculator"></i></div>
+        <div class="brand-logo"><i class="fa-solid fa-industry"></i></div>
         <h1>معمل أبو محمد</h1>
-        <p>نظام المحاسبة والمبيعات — إدارة الفواتير، الصناديق، والعملاء</p>
+        <p>نظام المحاسبة والمبيعات والصناديق والعملاء</p>
 
         <div class="form-group">
             <label>اسم المستخدم</label>
-            <input type="text" id="loginUser" class="form-control" placeholder="أدخل اسم المستخدم (تجريبي: admin)" value="admin">
+            <input type="text" id="loginUser" class="form-control num-input" inputmode="numeric" autocomplete="off">
         </div>
         <div class="form-group">
             <label>كلمة المرور</label>
-            <input type="password" id="loginPass" class="form-control" placeholder="••••••••" value="12345">
+            <input type="password" id="loginPass" class="form-control num-input" inputmode="numeric" autocomplete="new-password">
         </div>
 
         <button class="btn btn-primary btn-full" onclick="handleLogin()" style="margin-top: 8px;">
-            <i class="fa-solid fa-right-to-bracket"></i> دخول نظام معمل أبو محمد
+            <i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول
         </button>
-
-        <div style="margin-top: 16px; text-align: center; font-size: 12px; color: var(--text-muted);">
-            حساب المدير الافتراضي: <strong>admin</strong> / كلمة المرور: <strong>12345</strong>
-        </div>
     </div>
 
     <!-- 2. واجهة النظام الرئيسية -->
@@ -506,7 +514,7 @@
                 <div class="kpi-card">
                     <div class="kpi-top">
                         <span class="kpi-label">إجمالي المبيعات</span>
-                        <span class="kpi-icon" style="background: #eff6ff; color: #2563eb;"><i class="fa-solid fa-cart-shopping"></i></span>
+                        <span class="kpi-icon" style="background: #e8f1f8; color: #0f4c81;"><i class="fa-solid fa-cart-shopping"></i></span>
                     </div>
                     <div class="kpi-value mono" id="kpiTotalSales">0.00</div>
                     <div class="kpi-sub" id="kpiSalesBreakdown">نقدي: 0 | آجل: 0</div>
@@ -515,7 +523,7 @@
                 <div class="kpi-card">
                     <div class="kpi-top">
                         <span class="kpi-label">رصيد الصناديق الفعلي</span>
-                        <span class="kpi-icon" style="background: #dcfce7; color: #16a34a;"><i class="fa-solid fa-vault"></i></span>
+                        <span class="kpi-icon" style="background: #dcfce7; color: #15803d;"><i class="fa-solid fa-vault"></i></span>
                     </div>
                     <div class="kpi-value mono" id="kpiTotalCash">0.00</div>
                     <div class="kpi-sub" id="kpiCashboxesCount">0 صناديق نشطة</div>
@@ -524,7 +532,7 @@
                 <div class="kpi-card">
                     <div class="kpi-top">
                         <span class="kpi-label">ديون العملاء (الآجل)</span>
-                        <span class="kpi-icon" style="background: #fef3c7; color: #d97706;"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+                        <span class="kpi-icon" style="background: #fef3c7; color: #b45309;"><i class="fa-solid fa-hand-holding-dollar"></i></span>
                     </div>
                     <div class="kpi-value mono" id="kpiTotalReceivables">0.00</div>
                     <div class="kpi-sub" id="kpiCustomersCount">0 عملاء مسجلون</div>
@@ -533,7 +541,7 @@
                 <div class="kpi-card">
                     <div class="kpi-top">
                         <span class="kpi-label">المصروفات وسندات الصرف</span>
-                        <span class="kpi-icon" style="background: #fee2e2; color: #dc2626;"><i class="fa-solid fa-money-bill-transfer"></i></span>
+                        <span class="kpi-icon" style="background: #fee2e2; color: #b91c1c;"><i class="fa-solid fa-money-bill-transfer"></i></span>
                     </div>
                     <div class="kpi-value mono" id="kpiTotalExpenses">0.00</div>
                     <div class="kpi-sub">إجمالي الصرف الخارجي</div>
@@ -543,14 +551,14 @@
             <div class="grid-2">
                 <div class="card-box">
                     <div class="card-title">
-                        <span><i class="fa-solid fa-vault" style="color: var(--primary);"></i> أرصدة الصناديق الحالية</span>
+                        <span><i class="fa-solid fa-vault"></i> أرصدة الصناديق الحالية</span>
                     </div>
                     <div id="dashboardCashboxesList"></div>
                 </div>
 
                 <div class="card-box">
                     <div class="card-title">
-                        <span><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> آخر العمليات المالية</span>
+                        <span><i class="fa-solid fa-clock-rotate-left"></i> آخر العمليات المالية</span>
                     </div>
                     <div id="dashboardRecentActivity"></div>
                 </div>
@@ -561,7 +569,7 @@
         <div id="salesTab" class="tab-content hidden">
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-file-circle-plus" style="color: var(--primary);"></i> إنشاء فاتورة مبيعات جديدة</span>
+                    <span><i class="fa-solid fa-file-circle-plus"></i> إنشاء فاتورة مبيعات جديدة</span>
                 </div>
 
                 <div class="grid-3">
@@ -596,7 +604,7 @@
                 <div class="grid-2" style="margin-top: 12px;">
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>قيمة الخصم</label>
-                        <input type="number" id="invDiscount" class="form-control" value="0" min="0" oninput="recalculateInvoiceTotal()">
+                        <input type="number" id="invDiscount" class="form-control num-input" value="0" min="0" oninput="recalculateInvoiceTotal()">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>ملاحظات الفاتورة</label>
@@ -617,7 +625,7 @@
 
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-receipt" style="color: var(--primary);"></i> سجل فواتير المبيعات</span>
+                    <span><i class="fa-solid fa-receipt"></i> سجل فواتير المبيعات</span>
                     <input type="text" id="invoiceSearchInput" class="form-control" style="max-width: 260px; padding: 7px 12px;" placeholder="بحث برقم الفاتورة أو العميل..." oninput="renderInvoicesTable()">
                 </div>
                 <div class="table-responsive">
@@ -642,10 +650,9 @@
         <!-- تبويب 3: الصناديق والسندات -->
         <div id="cashboxesTab" class="tab-content hidden">
             <div class="grid-2">
-                <!-- إنشاء صندوق جديد -->
                 <div class="card-box">
                     <div class="card-title">
-                        <span><i class="fa-solid fa-box-open" style="color: var(--primary);"></i> إضافة صندوق مالي</span>
+                        <span><i class="fa-solid fa-box-open"></i> إضافة صندوق مالي</span>
                     </div>
                     <div class="form-group">
                         <label>اسم الصندوق</label>
@@ -653,17 +660,16 @@
                     </div>
                     <div class="form-group">
                         <label>الرصيد الافتتاحي</label>
-                        <input type="number" id="newCashboxOpening" class="form-control" value="0" min="0">
+                        <input type="number" id="newCashboxOpening" class="form-control num-input" value="0" min="0">
                     </div>
                     <button class="btn btn-primary btn-full" onclick="createCashbox()">
                         <i class="fa-solid fa-plus-circle"></i> فتح الصندوق
                     </button>
                 </div>
 
-                <!-- سند قبض / سند صرف -->
                 <div class="card-box">
                     <div class="card-title">
-                        <span><i class="fa-solid fa-money-check-dollar" style="color: var(--primary);"></i> إصدار سند قبض / صرف</span>
+                        <span><i class="fa-solid fa-money-check-dollar"></i> إصدار سند قبض / صرف</span>
                     </div>
                     <div class="grid-2">
                         <div class="form-group">
@@ -686,7 +692,7 @@
                         </div>
                         <div class="form-group">
                             <label>المبلغ</label>
-                            <input type="number" id="voucherAmount" class="form-control" min="0" placeholder="0.00">
+                            <input type="number" id="voucherAmount" class="form-control num-input" min="0" placeholder="0.00">
                         </div>
                     </div>
 
@@ -703,7 +709,7 @@
 
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> سجل السندات وحركة الصناديق</span>
+                    <span><i class="fa-solid fa-list-check"></i> سجل السندات وحركة الصناديق</span>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -728,7 +734,7 @@
         <div id="customersTab" class="tab-content hidden">
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-user-plus" style="color: var(--primary);"></i> إضافة عميل جديد</span>
+                    <span><i class="fa-solid fa-user-plus"></i> إضافة عميل جديد</span>
                 </div>
                 <div class="grid-3">
                     <div class="form-group" style="margin-bottom: 0;">
@@ -737,11 +743,11 @@
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>رقم الهاتف</label>
-                        <input type="text" id="newCustomerPhone" class="form-control" placeholder="77xxxxxxx">
+                        <input type="text" id="newCustomerPhone" class="form-control num-input" inputmode="numeric" placeholder="77xxxxxxx">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>حد الائتمان (سقف الآجل)</label>
-                        <input type="number" id="newCustomerLimit" class="form-control" value="100000" min="0">
+                        <input type="number" id="newCustomerLimit" class="form-control num-input" value="100000" min="0">
                     </div>
                 </div>
                 <button class="btn btn-primary" onclick="createCustomer()" style="margin-top: 14px;">
@@ -751,7 +757,7 @@
 
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-address-book" style="color: var(--primary);"></i> دليل العملاء والأرصدة</span>
+                    <span><i class="fa-solid fa-address-book"></i> دليل العملاء والأرصدة</span>
                     <input type="text" id="customerSearchInput" class="form-control" style="max-width: 260px; padding: 7px 12px;" placeholder="بحث باسم العميل أو الهاتف..." oninput="renderCustomersTable()">
                 </div>
                 <div class="table-responsive">
@@ -775,7 +781,7 @@
         <div id="employeesTab" class="tab-content hidden">
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-user-shield" style="color: var(--primary);"></i> إضافة موظف جديد للنظام</span>
+                    <span><i class="fa-solid fa-user-shield"></i> إضافة موظف جديد للنظام</span>
                 </div>
                 <div class="grid-3">
                     <div class="form-group" style="margin-bottom: 0;">
@@ -784,11 +790,11 @@
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>اسم الدخول</label>
-                        <input type="text" id="newEmpUsername" class="form-control" placeholder="مثال: ahmed">
+                        <input type="text" id="newEmpUsername" class="form-control num-input" placeholder="مثال: 12007">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>كلمة المرور</label>
-                        <input type="text" id="newEmpPassword" class="form-control" placeholder="2026">
+                        <input type="text" id="newEmpPassword" class="form-control num-input" placeholder="كلمة المرور">
                     </div>
                 </div>
                 <div class="grid-2" style="margin-top: 12px;">
@@ -809,7 +815,7 @@
 
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-users-gear" style="color: var(--primary);"></i> قائمة الموظفين وصلاحياتهم</span>
+                    <span><i class="fa-solid fa-users-gear"></i> قائمة الموظفين وصلاحياتهم</span>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -834,7 +840,7 @@
 <!-- نافذة كشف حساب العميل -->
 <div id="statementModal" class="modal-backdrop hidden" onclick="closeStatementModal(event)">
     <div class="modal-card" onclick="event.stopPropagation()">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
             <div>
                 <h3 id="statementCustomerTitle" style="font-size: 18px; font-weight: 800;">كشف حساب العميل</h3>
                 <p id="statementCustomerSummary" style="font-size: 13px; color: var(--text-muted); margin-top: 2px;"></p>
@@ -863,11 +869,14 @@
 
 <!-- إشعار عائم -->
 <div id="toast" class="toast">
-    <i class="fa-solid fa-circle-check" style="color: #4ade80;"></i>
+    <i class="fa-solid fa-circle-check" style="color: #99f6e4;"></i>
     <span id="toastText">تم بنجاح</span>
 </div>
 
 <script>
+    const ADMIN_USER = "12006";
+    const ADMIN_PASS = "5028611";
+
     const firebaseConfig = {
         apiKey: "AIzaSyDDm0KDSEHzwPJXAKPyhqQc3EtmN7zDVIY",
         authDomain: "abu-mohammad-accounting-223c8.firebaseapp.com",
@@ -937,8 +946,7 @@
                 }
             ],
             employees: [
-                { id: 'emp_admin', fullName: 'المدير العام — معمل أبو محمد', username: 'admin', password: '12345', role: 'admin', active: true },
-                { id: 'emp_1', fullName: 'كاشير المبيعات', username: 'cashier', password: '123', role: 'cashier', active: true }
+                { id: 'emp_admin', fullName: 'المدير العام — معمل أبو محمد', username: ADMIN_USER, password: ADMIN_PASS, role: 'admin', active: true }
             ]
         };
         persistDemoStorage();
@@ -997,12 +1005,12 @@
 
         let found = state.employees.find(e => e.username === u && e.password === p);
 
-        if (!found && u === 'admin' && p === '12345') {
+        if (!found && u === ADMIN_USER && p === ADMIN_PASS) {
             found = {
                 id: 'emp_admin',
                 fullName: 'المدير العام — معمل أبو محمد',
-                username: 'admin',
-                password: '12345',
+                username: ADMIN_USER,
+                password: ADMIN_PASS,
                 role: 'admin',
                 active: true
             };
@@ -1016,7 +1024,7 @@
         }
 
         if (!found) {
-            showToast('بيانات الدخول غير صحيحة أو قاعدة البيانات غير مفعّلة');
+            showToast('بيانات الدخول غير صحيحة');
             return;
         }
 
@@ -1060,6 +1068,8 @@
 
     function handleLogout() {
         currentUser = null;
+        document.getElementById('loginUser').value = '';
+        document.getElementById('loginPass').value = '';
         document.getElementById('mainAppView').classList.add('hidden');
         document.getElementById('loginView').classList.remove('hidden');
     }
@@ -1122,10 +1132,8 @@
         const cbContainer = document.getElementById('dashboardCashboxesList');
         cbContainer.innerHTML = state.cashboxes.length
             ? state.cashboxes.map(cb => `
-                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <div>
-                        <strong style="font-size:14px;">${cb.name}</strong>
-                    </div>
+                <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div><strong style="font-size:14px;">${cb.name}</strong></div>
                     <span class="mono" style="color:var(--success); font-size:15px;">${formatMoney(cb.balance)}</span>
                 </div>
             `).join('')
@@ -1149,7 +1157,7 @@
         const recentEl = document.getElementById('dashboardRecentActivity');
         recentEl.innerHTML = recent.length
             ? recent.map(r => `
-                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
                     <div>
                         <div style="font-size:13px; font-weight:700;">${r.title}</div>
                         <div style="font-size:11.5px; color:var(--text-muted);">${r.date} ${r.badge}</div>
@@ -1173,8 +1181,8 @@
         row.className = 'invoice-item-row';
         row.innerHTML = `
             <input type="text" class="form-control item-name" placeholder="اسم الصنف أو الخدمة">
-            <input type="number" class="form-control item-qty" placeholder="الكمية" value="1" min="1" oninput="recalculateInvoiceTotal()">
-            <input type="number" class="form-control item-price" placeholder="السعر" value="0" min="0" oninput="recalculateInvoiceTotal()">
+            <input type="number" class="form-control item-qty num-input" placeholder="الكمية" value="1" min="1" oninput="recalculateInvoiceTotal()">
+            <input type="number" class="form-control item-price num-input" placeholder="السعر" value="0" min="0" oninput="recalculateInvoiceTotal()">
             <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove(); recalculateInvoiceTotal();">
                 <i class="fa-solid fa-trash"></i>
             </button>
