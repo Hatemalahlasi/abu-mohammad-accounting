@@ -790,7 +790,7 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span>الصناديق والأرصدة</span></div>
+                <div class="card-title"><span>الصناديق والأرصدة النظامية</span></div>
                 <div id="dashboardCashboxesList" style="margin-bottom:14px;"></div>
                 <div class="grid-2">
                     <div class="form-group" style="margin-bottom:0;">
@@ -923,10 +923,10 @@
             </div>
         </section>
 
-        <!-- 5. صفحة العملاء ومراقبة الأرصدة -->
+        <!-- 5. صفحة العملاء الكاملة -->
         <section id="customersTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-users"></i> العملاء ومراقبة الأرصدة</div>
+                <div class="fullpage-title"><i class="fa-solid fa-users"></i> العملاء</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
@@ -954,19 +954,14 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title">
-                    <span><i class="fa-solid fa-scale-balanced"></i> مراقبة العملاء والأرصدة</span>
-                    <button id="reconcileCustomersBtn" type="button" class="btn btn-accent btn-sm" onclick="reconcileAllCustomerBalances(true)">
-                        <i class="fa-solid fa-arrows-rotate"></i> مطابقة وتصفير المديونيات المحذوفة
-                    </button>
-                </div>
+                <div class="card-title"><span><i class="fa-solid fa-address-book"></i> قائمة العملاء وأرصدتهم النظامية</span></div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
                                 <th>الاسم</th>
                                 <th>الهاتف</th>
-                                <th>الرصيد المستحق (مراقب)</th>
+                                <th>الرصيد المستحق</th>
                                 <th>إجراءات</th>
                             </tr>
                         </thead>
@@ -1271,49 +1266,41 @@
         return Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    // مراقب رصيد عميل واحد بناءً على الفواتير الآجلة وسندات القبض المسجلة
-    function computeExpectedCustomerBalance(customer) {
-        const creditInvoicesTotal = state.invoices
-            .filter(i => i.paymentType === 'credit' && (
-                (customer.id && i.customerId === customer.id) ||
-                (!i.customerId && i.customerName && customer.name && i.customerName.trim() === customer.name.trim())
-            ))
-            .reduce((sum, i) => sum + Number(i.netTotal || 0), 0);
+    // حساب نظامي لرصيد الصندوق: رصيد افتتاحي + مبيعات نقدية عليه + سندات قبض عليه - سندات صرف عليه
+    function computeSystemCashboxBalance(cb) {
+        const opening = Number(cb.openingBalance !== undefined ? cb.openingBalance : (cb.balance || 0));
+        const cashSales = state.invoices
+            .filter(i => i.paymentType === 'cash' && i.cashboxId === cb.id)
+            .reduce((s, i) => s + Number(i.netTotal || 0), 0);
 
-        const customerReceiptsTotal = state.vouchers
-            .filter(v => v.type === 'receipt' && (
-                (customer.id && v.customerId === customer.id) ||
-                (!v.customerId && v.customerName && customer.name && v.customerName.trim() === customer.name.trim())
-            ))
-            .reduce((sum, v) => sum + Number(v.amount || 0), 0);
+        const receipts = state.vouchers
+            .filter(v => v.type === 'receipt' && v.cashboxId === cb.id)
+            .reduce((s, v) => s + Number(v.amount || 0), 0);
 
-        return Math.max(0, creditInvoicesTotal - customerReceiptsTotal);
+        const payments = state.vouchers
+            .filter(v => v.type === 'payment' && v.cashboxId === cb.id)
+            .reduce((s, v) => s + Number(v.amount || 0), 0);
+
+        return opening + cashSales + receipts - payments;
     }
 
-    // مطابقة أرصدة جميع العملاء في Firestore وتصفير المديونيات غير المرتبطة بفواتير
-    async function reconcileAllCustomerBalances(showMsg = false) {
-        if (isBusy) return;
-        isBusy = true;
-        try {
-            let changedCount = 0;
-            for (const cust of state.customers) {
-                const expected = computeExpectedCustomerBalance(cust);
-                const currentBal = Number(cust.balance || 0);
-                if (Math.abs(currentBal - expected) > 0.001) {
-                    await db.collection('customers').doc(cust.id).update({ balance: expected });
-                    changedCount++;
-                }
-            }
-            if (showMsg) {
-                showToast(changedCount > 0
-                    ? `تمت مطابقة وتحديث ${changedCount} من أرصدة العملاء`
-                    : 'جميع أرصدة العملاء متطابقة ومضبوطة');
-            }
-        } catch (e) {
-            if (showMsg) showToast('تعذر مطابقة أرصدة العملاء');
-        } finally {
-            isBusy = false;
-        }
+    // حساب نظامي لمديونية العميل: فواتير آجلة باسم العميل - سندات قبض باسم العميل
+    function computeSystemCustomerBalance(cust) {
+        const creditInvoices = state.invoices
+            .filter(i => i.paymentType === 'credit' && (
+                (cust.id && i.customerId === cust.id) ||
+                (!i.customerId && i.customerName && cust.name && i.customerName.trim() === cust.name.trim())
+            ))
+            .reduce((s, i) => s + Number(i.netTotal || 0), 0);
+
+        const receipts = state.vouchers
+            .filter(v => v.type === 'receipt' && (
+                (cust.id && v.customerId === cust.id) ||
+                (!v.customerId && v.customerName && cust.name && v.customerName.trim() === cust.name.trim())
+            ))
+            .reduce((s, v) => s + Number(v.amount || 0), 0);
+
+        return Math.max(0, creditInvoices - receipts);
     }
 
     async function loadCollection(name) {
@@ -1488,7 +1475,7 @@
         const prevCbVch = cbSelVch.value;
 
         const cbOpts = state.cashboxes.length
-            ? state.cashboxes.map(c => `<option value="${c.id}">${c.name} (${formatMoney(c.balance)})</option>`).join('')
+            ? state.cashboxes.map(c => `<option value="${c.id}">${c.name} (${formatMoney(computeSystemCashboxBalance(c))})</option>`).join('')
             : '<option value="">أضف صندوقاً أولاً</option>';
         cbSelInv.innerHTML = cbOpts;
         cbSelVch.innerHTML = cbOpts;
@@ -1501,7 +1488,7 @@
         const prevCustVch = custSelVch.value;
 
         const custOpts = state.customers.length
-            ? state.customers.map(c => `<option value="${c.id}">${c.name} (${formatMoney(c.balance)})</option>`).join('')
+            ? state.customers.map(c => `<option value="${c.id}">${c.name} (${formatMoney(computeSystemCustomerBalance(c))})</option>`).join('')
             : '<option value="">لا يوجد عملاء</option>';
         custSelInv.innerHTML = custOpts;
         custSelVch.innerHTML = '<option value="">بدون عميل</option>' + custOpts;
@@ -1637,8 +1624,8 @@
 
     function renderStats() {
         const sales = state.invoices.reduce((s, i) => s + Number(i.netTotal || 0), 0);
-        const cash = state.cashboxes.reduce((s, c) => s + Number(c.balance || 0), 0);
-        const debts = state.customers.reduce((s, c) => s + Number(c.balance || 0), 0);
+        const cash = state.cashboxes.reduce((s, c) => s + computeSystemCashboxBalance(c), 0);
+        const debts = state.customers.reduce((s, c) => s + computeSystemCustomerBalance(c), 0);
         const totalStockQty = state.warehouse.reduce((s, w) => s + Number(w.qty || 0), 0);
         const totalStockVal = state.warehouse.reduce((s, w) => s + (Number(w.qty || 0) * Number(w.price || 0)), 0);
 
@@ -1816,16 +1803,6 @@
 
             await db.collection('invoices').doc(invId).set(invoiceDoc);
 
-            if (paymentType === 'cash' && cashbox) {
-                await db.collection('cashboxes').doc(cashbox.id).update({
-                    balance: Number(cashbox.balance || 0) + netTotal
-                });
-            } else {
-                await db.collection('customers').doc(customer.id).update({
-                    balance: Number(customer.balance || 0) + netTotal
-                });
-            }
-
             document.getElementById('invoiceItemsContainer').innerHTML = '';
             addInvoiceItemRow();
             document.getElementById('invDiscount').value = '0';
@@ -1853,7 +1830,6 @@
         showToast('تم تعديل الفاتورة');
     }
 
-    // حذف الفاتورة مع عكس أثرها على رصيد العميل أو الصندوق فوراً
     async function deleteInvoiceRecord(invId) {
         if (isBusy) return;
         if (!canDeleteRecord()) {
@@ -1862,31 +1838,12 @@
         }
         const inv = state.invoices.find(i => i.id === invId);
         if (!inv) return;
-        if (!confirm(`تأكيد حذف الفاتورة (${inv.id}) وتصفير/تعديل أثرها المالي؟`)) return;
+        if (!confirm(`تأكيد حذف الفاتورة (${inv.id})؟`)) return;
 
         isBusy = true;
         try {
-            const amount = Number(inv.netTotal || 0);
-
-            if (inv.paymentType === 'credit') {
-                const cust = state.customers.find(
-                    c => (inv.customerId && c.id === inv.customerId) ||
-                         (c.name && inv.customerName && c.name.trim() === inv.customerName.trim())
-                );
-                if (cust) {
-                    const nextBal = Math.max(0, Number(cust.balance || 0) - amount);
-                    await db.collection('customers').doc(cust.id).update({ balance: nextBal });
-                }
-            } else if (inv.paymentType === 'cash' && inv.cashboxId) {
-                const cb = state.cashboxes.find(c => c.id === inv.cashboxId);
-                if (cb) {
-                    const nextCbBal = Math.max(0, Number(cb.balance || 0) - amount);
-                    await db.collection('cashboxes').doc(cb.id).update({ balance: nextCbBal });
-                }
-            }
-
             await db.collection('invoices').doc(invId).delete();
-            showToast('تم حذف الفاتورة وتحديث الرصيد');
+            showToast('تم حذف الفاتورة وتحديث الأرصدة');
         } catch (e) {
             showToast('تعذر حذف الفاتورة');
         } finally {
@@ -1944,7 +1901,8 @@
             showToast('اختر الصندوق وأدخل مبلغاً صحيحاً');
             return;
         }
-        if (type === 'payment' && Number(cashbox.balance || 0) < amount) {
+        const currentCbBal = computeSystemCashboxBalance(cashbox);
+        if (type === 'payment' && currentCbBal < amount) {
             showToast('رصيد الصندوق غير كافٍ');
             return;
         }
@@ -1967,15 +1925,6 @@
                 note: note || (type === 'receipt' ? 'سند قبض' : 'سند صرف'),
                 employee: currentUser.fullName
             });
-
-            const nextBal = type === 'receipt' ? Number(cashbox.balance || 0) + amount : Number(cashbox.balance || 0) - amount;
-            await db.collection('cashboxes').doc(cashbox.id).update({ balance: nextBal });
-
-            if (customer && type === 'receipt') {
-                await db.collection('customers').doc(customer.id).update({
-                    balance: Math.max(0, Number(customer.balance || 0) - amount)
-                });
-            }
 
             document.getElementById('voucherAmount').value = '';
             document.getElementById('voucherNote').value = '';
@@ -2013,27 +1962,6 @@
 
         isBusy = true;
         try {
-            const amt = Number(v.amount || 0);
-            if (v.cashboxId) {
-                const cb = state.cashboxes.find(c => c.id === v.cashboxId);
-                if (cb) {
-                    const revBal = v.type === 'receipt'
-                        ? Math.max(0, Number(cb.balance || 0) - amt)
-                        : Number(cb.balance || 0) + amt;
-                    await db.collection('cashboxes').doc(cb.id).update({ balance: revBal });
-                }
-            }
-            if (v.type === 'receipt' && (v.customerId || v.customerName)) {
-                const cust = state.customers.find(
-                    c => (v.customerId && c.id === v.customerId) ||
-                         (c.name && v.customerName && c.name.trim() === v.customerName.trim())
-                );
-                if (cust) {
-                    await db.collection('customers').doc(cust.id).update({
-                        balance: Number(cust.balance || 0) + amt
-                    });
-                }
-            }
             await db.collection('vouchers').doc(vchId).delete();
             showToast('تم حذف السند');
         } finally {
@@ -2075,7 +2003,12 @@
         btn.disabled = true;
         try {
             const id = `cb_${Date.now()}`;
-            await db.collection('cashboxes').doc(id).set({ id, name, balance: opening });
+            await db.collection('cashboxes').doc(id).set({
+                id,
+                name,
+                openingBalance: opening,
+                balance: opening
+            });
             document.getElementById('newCashboxName').value = '';
             document.getElementById('newCashboxOpening').value = '0';
             showToast('تمت إضافة الصندوق');
@@ -2088,12 +2021,19 @@
     function renderCashboxesList() {
         const el = document.getElementById('dashboardCashboxesList');
         el.innerHTML = state.cashboxes.length
-            ? state.cashboxes.map(c => `
-                <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; margin-bottom:8px;">
-                    <strong>${c.name}</strong>
-                    <span class="mono" style="color:var(--success);">${formatMoney(c.balance)}</span>
-                </div>
-            `).join('')
+            ? state.cashboxes.map(c => {
+                const opening = Number(c.openingBalance !== undefined ? c.openingBalance : (c.balance || 0));
+                const sysBal = computeSystemCashboxBalance(c);
+                return `
+                    <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                        <div>
+                            <strong>${c.name}</strong>
+                            <div style="font-size:11px; color:var(--text-muted);">رصيد افتتاحي: <span class="mono">${formatMoney(opening)}</span></div>
+                        </div>
+                        <span class="mono" style="color:var(--success); font-size:15px;">${formatMoney(sysBal)}</span>
+                    </div>
+                `;
+            }).join('')
             : '<p style="color:var(--text-muted); font-size:13px;">لا توجد صناديق</p>';
     }
 
@@ -2245,24 +2185,6 @@
         }
     }
 
-    async function zeroCustomerBalance(custId) {
-        if (isBusy) return;
-        if (!canEditRecord()) {
-            showToast('ليس لديك صلاحية تعديل الرصيد');
-            return;
-        }
-        const c = state.customers.find(x => x.id === custId);
-        if (!c) return;
-        if (!confirm(`تصفير مديونية العميل (${c.name}) إلى 0.00؟`)) return;
-        isBusy = true;
-        try {
-            await db.collection('customers').doc(custId).update({ balance: 0 });
-            showToast('تم تصفير مديونية العميل');
-        } finally {
-            isBusy = false;
-        }
-    }
-
     async function editCustomerItem(custId) {
         if (!canEditRecord()) {
             showToast('ليس لديك صلاحية التعديل');
@@ -2295,19 +2217,13 @@
         const tbody = document.getElementById('customersTableBody');
         tbody.innerHTML = state.customers.length
             ? state.customers.map(c => {
-                const bal = Number(c.balance || 0);
-                const expectedBal = computeExpectedCustomerBalance(c);
-                const hasMismatch = Math.abs(bal - expectedBal) > 0.001;
+                const sysBal = computeSystemCustomerBalance(c);
                 return `
                     <tr>
                         <td><strong>${c.name}</strong></td>
                         <td>${c.phone || '-'}</td>
-                        <td>
-                            <span class="mono" style="color:${bal > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(bal)}</span>
-                            ${hasMismatch ? `<span class="badge badge-expense" style="margin-right:4px;">متبقي الفواتير: ${formatMoney(expectedBal)}</span>` : ''}
-                        </td>
+                        <td><span class="mono" style="color:${sysBal > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(sysBal)}</span></td>
                         <td style="white-space:nowrap;">
-                            ${bal > 0 && canEditRecord() ? `<button class="btn btn-warning btn-sm" onclick="zeroCustomerBalance('${c.id}')" title="تصفير المديونية">تصفير</button>` : ''}
                             ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editCustomerItem('${c.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
                             ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteCustomerItem('${c.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
                         </td>
