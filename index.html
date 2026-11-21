@@ -92,7 +92,6 @@
             display: block;
         }
 
-        /* شريط علوي مرتب مع زر خروج مرتفع ومعزول */
         .top-utility-row {
             display: flex;
             justify-content: space-between;
@@ -120,7 +119,6 @@
             flex: 1;
         }
 
-        /* مربع الشعار الملاصق للشاشة */
         .header-logo-square {
             width: 48px;
             height: 48px;
@@ -187,6 +185,35 @@
 
         .num-input {
             font-family: 'JetBrains Mono', 'Cairo', sans-serif;
+            font-weight: 700;
+        }
+
+        .statement-builder {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+
+        .statement-prefix {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .statement-num-box {
+            width: 130px;
+            padding: 8px 10px;
+        }
+
+        .statement-preview {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
             font-weight: 700;
         }
 
@@ -440,6 +467,36 @@
             flex-wrap: wrap;
             gap: 10px;
             margin-top: 12px;
+        }
+
+        .statement-summary-box {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .statement-summary-box { grid-template-columns: 1fr; }
+        }
+
+        .statement-kpi {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 9px 11px;
+        }
+
+        .statement-kpi span {
+            display: block;
+            font-size: 11.5px;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .statement-kpi strong {
+            font-size: 15px;
+            font-weight: 800;
         }
 
         .modal-backdrop {
@@ -758,7 +815,7 @@
                 <div class="grid-2">
                     <div class="form-group">
                         <label>نوع السند</label>
-                        <select id="voucherType" class="form-control" onchange="toggleVoucherCustomerField()">
+                        <select id="voucherType" class="form-control" onchange="toggleVoucherCustomerField(); updateVoucherStatementPreview();">
                             <option value="receipt">سند قبض</option>
                             <option value="payment">سند صرف</option>
                         </select>
@@ -779,8 +836,12 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>البيان</label>
-                    <input type="text" id="voucherNote" class="form-control" placeholder="سبب السند...">
+                    <label>البيان ورقم سند التحصيل</label>
+                    <div class="statement-builder">
+                        <span id="voucherStatementPrefix" class="statement-prefix">سداد دفعه من الحساب بموجب سند تحصيل رقم</span>
+                        <input type="text" id="voucherReceiptNumber" class="form-control num-input statement-num-box" inputmode="numeric" placeholder="رقم السند" oninput="updateVoucherStatementPreview()">
+                    </div>
+                    <div id="voucherStatementPreview" class="statement-preview">النص النهائي: سداد دفعه من الحساب بموجب سند تحصيل رقم —</div>
                 </div>
                 <button id="saveVoucherBtn" class="btn btn-primary btn-full" onclick="createVoucher()">
                     <i class="fa-solid fa-check"></i> حفظ السند
@@ -796,6 +857,7 @@
                                 <th>النوع</th>
                                 <th>الصندوق</th>
                                 <th>الجهة / العميل</th>
+                                <th>البيان</th>
                                 <th>المبلغ</th>
                                 <th>الموظف</th>
                                 <th>إجراءات</th>
@@ -950,10 +1012,10 @@
             </div>
         </section>
 
-        <!-- 5. صفحة العملاء الكاملة -->
+        <!-- 5. صفحة العملاء وكشف الحساب الكاملة -->
         <section id="customersTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-users"></i> العملاء</div>
+                <div class="fullpage-title"><i class="fa-solid fa-users"></i> العملاء وكشوف الحساب</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
@@ -993,6 +1055,48 @@
                             </tr>
                         </thead>
                         <tbody id="customersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- كشف حساب عميل أو جميع العملاء -->
+            <div class="card-box" style="border-color: var(--primary);">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-file-lines"></i> كشف حساب (عميل محدد أو جميع العملاء)</span>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="printStatementModal()">
+                        <i class="fa-solid fa-print"></i> طباعة الكشف
+                    </button>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>نطاق كشف الحساب</label>
+                        <select id="statementScopeSelect" class="form-control" onchange="toggleStatementCustomerPicker(); renderCustomerStatement();">
+                            <option value="single">عميل محدد</option>
+                            <option value="all">جميع العملاء</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="statementCustomerGroup" style="margin-bottom:0;">
+                        <label>اختر العميل</label>
+                        <select id="statementCustomerSelect" class="form-control" onchange="renderCustomerStatement()"></select>
+                    </div>
+                </div>
+
+                <div id="statementSummaryBox" class="statement-summary-box" style="margin-top:12px;"></div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr id="statementTableHeadRow">
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>المرجع / البيان</th>
+                                <th>مدين (عليه)</th>
+                                <th>دائن (له)</th>
+                                <th>الرصيد</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statementTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -1074,22 +1178,22 @@
     </div>
 </div>
 
-<!-- نافذة طباعة الفاتورة النظامية -->
+<!-- نافذة طباعة الفاتورة أو كشف الحساب النظامي -->
 <div id="printInvoiceModal" class="modal-backdrop hidden">
     <div class="modal-card">
         <div class="print-header">
             <div>
                 <h2 style="font-size:19px; font-weight:800; color:var(--primary);">معمل أبو محمد</h2>
-                <p style="font-size:12px; color:var(--text-muted);">فاتورة مبيعات نظامية</p>
+                <p id="prDocSubtitle" style="font-size:12px; color:var(--text-muted);">فاتورة مبيعات نظامية</p>
             </div>
             <div style="text-align:left; font-size:12px;">
-                <div>رقم الفاتورة: <span class="mono" id="prInvId">-</span></div>
+                <div>الرقم: <span class="mono" id="prInvId">-</span></div>
                 <div>التاريخ: <span class="mono" id="prInvDate">-</span></div>
                 <div>الفرع: <strong id="prInvBranch">-</strong></div>
             </div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:13px; margin-bottom:12px; background:#f8fafc; padding:10px; border-radius:10px;">
+        <div id="prInvMetaBox" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:13px; margin-bottom:12px; background:#f8fafc; padding:10px; border-radius:10px;">
             <div>العميل: <strong id="prInvCustomer">-</strong></div>
             <div>النوع: <strong id="prInvType">-</strong></div>
             <div>الموظف: <strong id="prInvEmp">-</strong></div>
@@ -1098,7 +1202,7 @@
         <div class="table-responsive" style="margin-bottom:12px;">
             <table>
                 <thead>
-                    <tr>
+                    <tr id="prTableHeadRow">
                         <th>الصنف</th>
                         <th>الوحدة</th>
                         <th>الكمية</th>
@@ -1110,7 +1214,7 @@
             </table>
         </div>
 
-        <div style="background:#f8fafc; padding:12px; border-radius:12px; font-size:13px;">
+        <div id="prInvTotalsBox" style="background:#f8fafc; padding:12px; border-radius:12px; font-size:13px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                 <span>الخصم:</span>
                 <span class="mono" id="prInvDiscount">0.00</span>
@@ -1124,7 +1228,7 @@
 
         <div class="no-print" style="display:flex; gap:10px; margin-top:16px;">
             <button type="button" class="btn btn-primary btn-full" onclick="window.print()">
-                <i class="fa-solid fa-print"></i> طباعة الفاتورة
+                <i class="fa-solid fa-print"></i> طباعة
             </button>
             <button type="button" class="btn btn-outline" onclick="closePrintModal()">
                 إغلاق
@@ -1177,6 +1281,11 @@
         document.getElementById(tabId).classList.remove('hidden');
         if (tabId === 'salesTab') renderWarehouseCatalogDropdown();
         if (tabId === 'warehouseTab') populateTransferItems();
+        if (tabId === 'vouchersTab') updateVoucherStatementPreview();
+        if (tabId === 'customersTab') {
+            toggleStatementCustomerPicker();
+            renderCustomerStatement();
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -1300,7 +1409,6 @@
         return Number(cb.balance || 0);
     }
 
-    // حساب نظامي لرصيد الصندوق: رصيد افتتاحي + مبيعات نقدية عليه + سندات قبض عليه - سندات صرف عليه
     function computeSystemCashboxBalance(cb) {
         const opening = getCashboxOpening(cb);
         const cashSales = state.invoices
@@ -1318,23 +1426,48 @@
         return opening + cashSales + receipts - payments;
     }
 
-    // حساب نظامي لمديونية العميل: فواتير آجلة باسم العميل - سندات قبض باسم العميل
+    function matchesCustomer(record, cust) {
+        if (!record || !cust) return false;
+        if (cust.id && record.customerId === cust.id) return true;
+        if (!record.customerId && record.customerName && cust.name) {
+            return record.customerName.trim() === cust.name.trim();
+        }
+        return false;
+    }
+
     function computeSystemCustomerBalance(cust) {
         const creditInvoices = state.invoices
-            .filter(i => i.paymentType === 'credit' && (
-                (cust.id && i.customerId === cust.id) ||
-                (!i.customerId && i.customerName && cust.name && i.customerName.trim() === cust.name.trim())
-            ))
+            .filter(i => i.paymentType === 'credit' && matchesCustomer(i, cust))
             .reduce((s, i) => s + Number(i.netTotal || 0), 0);
 
         const receipts = state.vouchers
-            .filter(v => v.type === 'receipt' && (
-                (cust.id && v.customerId === cust.id) ||
-                (!v.customerId && v.customerName && cust.name && v.customerName.trim() === cust.name.trim())
-            ))
+            .filter(v => v.type === 'receipt' && matchesCustomer(v, cust))
             .reduce((s, v) => s + Number(v.amount || 0), 0);
 
         return Math.max(0, creditInvoices - receipts);
+    }
+
+    function buildVoucherStatement(type, receiptNumRaw) {
+        const num = String(receiptNumRaw || '').trim();
+        const base = type === 'payment'
+            ? 'صرف دفعه من الحساب بموجب سند تحصيل رقم'
+            : 'سداد دفعه من الحساب بموجب سند تحصيل رقم';
+        return num ? `${base} ${num}` : `${base} —`;
+    }
+
+    function updateVoucherStatementPreview() {
+        const typeEl = document.getElementById('voucherType');
+        const prefixEl = document.getElementById('voucherStatementPrefix');
+        const numEl = document.getElementById('voucherReceiptNumber');
+        const prevEl = document.getElementById('voucherStatementPreview');
+        if (!typeEl || !prefixEl || !numEl || !prevEl) return;
+
+        const type = typeEl.value;
+        const base = type === 'payment'
+            ? 'صرف دفعه من الحساب بموجب سند تحصيل رقم'
+            : 'سداد دفعه من الحساب بموجب سند تحصيل رقم';
+        prefixEl.textContent = base;
+        prevEl.textContent = `النص النهائي: ${buildVoucherStatement(type, numEl.value)}`;
     }
 
     async function loadCollection(name) {
@@ -1471,6 +1604,7 @@
         renderCashboxesList();
         renderWarehouseTable();
         renderCustomersTable();
+        renderCustomerStatement();
         renderEmployeesTable();
     }
 
@@ -1523,16 +1657,21 @@
 
         const custSelInv = document.getElementById('invCustomerSelect');
         const custSelVch = document.getElementById('voucherCustomerSelect');
+        const stmtCustSel = document.getElementById('statementCustomerSelect');
         const prevCustInv = custSelInv.value;
         const prevCustVch = custSelVch.value;
+        const prevStmtCust = stmtCustSel.value;
 
         const custOpts = state.customers.length
             ? state.customers.map(c => `<option value="${c.id}">${c.name} (${formatMoney(computeSystemCustomerBalance(c))})</option>`).join('')
             : '<option value="">لا يوجد عملاء</option>';
         custSelInv.innerHTML = custOpts;
         custSelVch.innerHTML = '<option value="">بدون عميل</option>' + custOpts;
+        stmtCustSel.innerHTML = custOpts;
+
         if (prevCustInv && state.customers.some(c => c.id === prevCustInv)) custSelInv.value = prevCustInv;
         if (prevCustVch) custSelVch.value = prevCustVch;
+        if (prevStmtCust && state.customers.some(c => c.id === prevStmtCust)) stmtCustSel.value = prevStmtCust;
     }
 
     function renderWarehouseCatalogDropdown() {
@@ -1728,12 +1867,24 @@
 
     function openPrintModal(inv) {
         if (!inv) return;
+        document.getElementById('prDocSubtitle').textContent = 'فاتورة مبيعات نظامية';
+        document.getElementById('prInvMetaBox').classList.remove('hidden');
+        document.getElementById('prInvTotalsBox').classList.remove('hidden');
+
         document.getElementById('prInvId').textContent = inv.id || '-';
         document.getElementById('prInvDate').textContent = inv.date || '-';
         document.getElementById('prInvBranch').textContent = inv.branchName || 'الفرع الرئيسي';
         document.getElementById('prInvCustomer').textContent = inv.customerName || '-';
         document.getElementById('prInvType').textContent = inv.paymentType === 'cash' ? `نقدي (${inv.cashboxName || 'الصندوق'})` : 'آجل';
         document.getElementById('prInvEmp').textContent = inv.employee || '-';
+
+        document.getElementById('prTableHeadRow').innerHTML = `
+            <th>الصنف</th>
+            <th>الوحدة</th>
+            <th>الكمية</th>
+            <th>السعر</th>
+            <th>الإجمالي</th>
+        `;
 
         const items = Array.isArray(inv.items) ? inv.items : [];
         document.getElementById('prInvItemsBody').innerHTML = items.length
@@ -1761,6 +1912,45 @@
         } else {
             notesRow.textContent = '';
             notesRow.classList.add('hidden');
+        }
+
+        document.getElementById('printInvoiceModal').classList.remove('hidden');
+    }
+
+    function printStatementModal() {
+        const scope = document.getElementById('statementScopeSelect').value;
+        const custId = document.getElementById('statementCustomerSelect').value;
+        const cust = state.customers.find(c => c.id === custId);
+
+        document.getElementById('prDocSubtitle').textContent = scope === 'all'
+            ? 'كشف حساب شامل لجميع العملاء'
+            : `كشف حساب نظامي — ${cust ? cust.name : 'عميل'}`;
+        document.getElementById('prInvMetaBox').classList.add('hidden');
+        document.getElementById('prInvTotalsBox').classList.add('hidden');
+
+        document.getElementById('prInvId').textContent = scope === 'all' ? 'ALL-CUST' : (cust ? cust.id : '-');
+        document.getElementById('prInvDate').textContent = new Date().toISOString().split('T')[0];
+        document.getElementById('prInvBranch').textContent = 'جميع الفروع';
+
+        if (scope === 'all') {
+            document.getElementById('prTableHeadRow').innerHTML = `
+                <th>العميل</th>
+                <th>الهاتف</th>
+                <th>فواتير آجلة</th>
+                <th>سندات قبض</th>
+                <th>الرصيد المستحق</th>
+            `;
+            document.getElementById('prInvItemsBody').innerHTML = document.getElementById('statementTableBody').innerHTML;
+        } else {
+            document.getElementById('prTableHeadRow').innerHTML = `
+                <th>التاريخ</th>
+                <th>النوع</th>
+                <th>المرجع / البيان</th>
+                <th>مدين (عليه)</th>
+                <th>دائن (له)</th>
+                <th>الرصيد</th>
+            `;
+            document.getElementById('prInvItemsBody').innerHTML = document.getElementById('statementTableBody').innerHTML;
         }
 
         document.getElementById('printInvoiceModal').classList.remove('hidden');
@@ -1933,7 +2123,7 @@
         const cashboxId = document.getElementById('voucherCashboxSelect').value;
         const customerId = type === 'receipt' ? document.getElementById('voucherCustomerSelect').value : '';
         const amount = Number(document.getElementById('voucherAmount').value || 0);
-        const note = document.getElementById('voucherNote').value.trim();
+        const receiptNumber = document.getElementById('voucherReceiptNumber').value.trim();
 
         const cashbox = state.cashboxes.find(c => c.id === cashboxId);
         if (!cashbox || amount <= 0) {
@@ -1952,6 +2142,8 @@
         try {
             const customer = customerId ? state.customers.find(c => c.id === customerId) : null;
             const vchId = `VCH-${Date.now()}`;
+            const fullNote = buildVoucherStatement(type, receiptNumber);
+
             await db.collection('vouchers').doc(vchId).set({
                 id: vchId,
                 type,
@@ -1960,13 +2152,15 @@
                 cashboxName: cashbox.name,
                 customerId: customer ? customer.id : '',
                 customerName: customer ? customer.name : 'عام',
+                receiptNumber,
                 amount,
-                note: note || (type === 'receipt' ? 'سند قبض' : 'سند صرف'),
+                note: fullNote,
                 employee: currentUser.fullName
             });
 
             document.getElementById('voucherAmount').value = '';
-            document.getElementById('voucherNote').value = '';
+            document.getElementById('voucherReceiptNumber').value = '';
+            updateVoucherStatementPreview();
             showToast('تم حفظ السند');
         } catch (e) {
             showToast('تعذر حفظ السند');
@@ -1983,9 +2177,13 @@
         }
         const v = state.vouchers.find(x => x.id === vchId);
         if (!v) return;
-        const nextNote = prompt('تعديل البيان:', v.note || '');
-        if (nextNote === null) return;
-        await db.collection('vouchers').doc(vchId).update({ note: nextNote.trim() });
+        const nextNum = prompt('تعديل رقم سند التحصيل:', v.receiptNumber || '');
+        if (nextNum === null) return;
+        const cleanNum = nextNum.trim();
+        await db.collection('vouchers').doc(vchId).update({
+            receiptNumber: cleanNum,
+            note: buildVoucherStatement(v.type, cleanNum)
+        });
         showToast('تم تعديل السند');
     }
 
@@ -2016,6 +2214,7 @@
                     <td>${v.type === 'receipt' ? '<span class="badge badge-cash">قبض</span>' : '<span class="badge badge-expense">صرف</span>'}</td>
                     <td>${v.cashboxName || '-'}</td>
                     <td>${v.customerName || '-'}</td>
+                    <td>${v.note || buildVoucherStatement(v.type, v.receiptNumber)}</td>
                     <td><span class="mono">${formatMoney(v.amount)}</span></td>
                     <td>${v.employee || '-'}</td>
                     <td>
@@ -2025,7 +2224,7 @@
                     </td>
                 </tr>
             `).join('')
-            : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد أسناد</td></tr>';
+            : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا توجد أسناد</td></tr>';
     }
 
     async function createCashbox() {
@@ -2255,6 +2454,14 @@
         }
     }
 
+    function selectCustomerForStatement(custId) {
+        document.getElementById('statementScopeSelect').value = 'single';
+        toggleStatementCustomerPicker();
+        document.getElementById('statementCustomerSelect').value = custId;
+        renderCustomerStatement();
+        document.getElementById('statementSummaryBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     async function editCustomerItem(custId) {
         if (!canEditRecord()) {
             showToast('ليس لديك صلاحية التعديل');
@@ -2294,6 +2501,7 @@
                         <td>${c.phone || '-'}</td>
                         <td><span class="mono" style="color:${sysBal > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(sysBal)}</span></td>
                         <td style="white-space:nowrap;">
+                            <button type="button" class="btn btn-outline btn-sm" onclick="selectCustomerForStatement('${c.id}')" title="كشف حساب"><i class="fa-solid fa-file-lines"></i> كشف</button>
                             ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editCustomerItem('${c.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
                             ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteCustomerItem('${c.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
                         </td>
@@ -2301,6 +2509,159 @@
                 `;
             }).join('')
             : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا يوجد عملاء</td></tr>';
+    }
+
+    function toggleStatementCustomerPicker() {
+        const scope = document.getElementById('statementScopeSelect').value;
+        document.getElementById('statementCustomerGroup').classList.toggle('hidden', scope !== 'single');
+    }
+
+    function renderCustomerStatement() {
+        const scopeEl = document.getElementById('statementScopeSelect');
+        const summaryEl = document.getElementById('statementSummaryBox');
+        const headRow = document.getElementById('statementTableHeadRow');
+        const tbody = document.getElementById('statementTableBody');
+        if (!scopeEl || !summaryEl || !headRow || !tbody) return;
+
+        const scope = scopeEl.value;
+
+        if (scope === 'all') {
+            let totalDebits = 0;
+            let totalCredits = 0;
+            let totalNet = 0;
+
+            const rows = state.customers.map(c => {
+                const debit = state.invoices
+                    .filter(i => i.paymentType === 'credit' && matchesCustomer(i, c))
+                    .reduce((s, i) => s + Number(i.netTotal || 0), 0);
+                const credit = state.vouchers
+                    .filter(v => v.type === 'receipt' && matchesCustomer(v, c))
+                    .reduce((s, v) => s + Number(v.amount || 0), 0);
+                const bal = Math.max(0, debit - credit);
+
+                totalDebits += debit;
+                totalCredits += credit;
+                totalNet += bal;
+
+                return `
+                    <tr>
+                        <td><strong>${c.name}</strong></td>
+                        <td>${c.phone || '-'}</td>
+                        <td><span class="mono">${formatMoney(debit)}</span></td>
+                        <td><span class="mono" style="color:var(--success);">${formatMoney(credit)}</span></td>
+                        <td><span class="mono" style="color:${bal > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(bal)}</span></td>
+                    </tr>
+                `;
+            });
+
+            summaryEl.innerHTML = `
+                <div class="statement-kpi"><span>إجمالي فواتير العملاء الآجلة</span><strong class="mono">${formatMoney(totalDebits)}</strong></div>
+                <div class="statement-kpi"><span>إجمالي سندات القبض</span><strong class="mono" style="color:var(--success);">${formatMoney(totalCredits)}</strong></div>
+                <div class="statement-kpi"><span>صافي ديون جميع العملاء</span><strong class="mono" style="color:var(--warning);">${formatMoney(totalNet)}</strong></div>
+            `;
+
+            headRow.innerHTML = `
+                <th>العميل</th>
+                <th>الهاتف</th>
+                <th>فواتير آجلة</th>
+                <th>سندات قبض</th>
+                <th>الرصيد المستحق</th>
+            `;
+
+            tbody.innerHTML = rows.length
+                ? rows.join('')
+                : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا يوجد عملاء</td></tr>';
+            return;
+        }
+
+        const custId = document.getElementById('statementCustomerSelect').value;
+        const cust = state.customers.find(c => c.id === custId);
+        if (!cust) {
+            summaryEl.innerHTML = `
+                <div class="statement-kpi"><span>إجمالي المدين (عليه)</span><strong class="mono">0.00</strong></div>
+                <div class="statement-kpi"><span>إجمالي الدائن (له)</span><strong class="mono">0.00</strong></div>
+                <div class="statement-kpi"><span>الرصيد المستحق</span><strong class="mono">0.00</strong></div>
+            `;
+            headRow.innerHTML = `
+                <th>التاريخ</th>
+                <th>النوع</th>
+                <th>المرجع / البيان</th>
+                <th>مدين (عليه)</th>
+                <th>دائن (له)</th>
+                <th>الرصيد</th>
+            `;
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">اختر عميلاً لعرض كشف حسابه</td></tr>';
+            return;
+        }
+
+        const movements = [];
+        state.invoices
+            .filter(i => i.paymentType === 'credit' && matchesCustomer(i, cust))
+            .forEach(i => {
+                movements.push({
+                    date: i.date || '-',
+                    ts: i.id || '',
+                    kind: '<span class="badge badge-credit">فاتورة آجلة</span>',
+                    ref: `${i.id}${i.notes ? ' — ' + i.notes : ''}`,
+                    debit: Number(i.netTotal || 0),
+                    credit: 0
+                });
+            });
+
+        state.vouchers
+            .filter(v => v.type === 'receipt' && matchesCustomer(v, cust))
+            .forEach(v => {
+                movements.push({
+                    date: v.date || '-',
+                    ts: v.id || '',
+                    kind: '<span class="badge badge-cash">سند قبض</span>',
+                    ref: v.note || buildVoucherStatement('receipt', v.receiptNumber),
+                    debit: 0,
+                    credit: Number(v.amount || 0)
+                });
+            });
+
+        movements.sort((a, b) => {
+            if (a.date !== b.date) return a.date.localeCompare(b.date);
+            return String(a.ts).localeCompare(String(b.ts));
+        });
+
+        let running = 0;
+        let sumDebit = 0;
+        let sumCredit = 0;
+
+        const bodyHtml = movements.map(m => {
+            sumDebit += m.debit;
+            sumCredit += m.credit;
+            running = Math.max(0, running + m.debit - m.credit);
+            return `
+                <tr>
+                    <td><span class="mono">${m.date}</span></td>
+                    <td>${m.kind}</td>
+                    <td>${m.ref}</td>
+                    <td><span class="mono">${m.debit > 0 ? formatMoney(m.debit) : '-'}</span></td>
+                    <td><span class="mono" style="color:var(--success);">${m.credit > 0 ? formatMoney(m.credit) : '-'}</span></td>
+                    <td><span class="mono" style="color:${running > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(running)}</span></td>
+                </tr>
+            `;
+        }).join('');
+
+        summaryEl.innerHTML = `
+            <div class="statement-kpi"><span>إجمالي الفواتير الآجلة</span><strong class="mono">${formatMoney(sumDebit)}</strong></div>
+            <div class="statement-kpi"><span>إجمالي سندات القبض</span><strong class="mono" style="color:var(--success);">${formatMoney(sumCredit)}</strong></div>
+            <div class="statement-kpi"><span>الرصيد المستحق على ${cust.name}</span><strong class="mono" style="color:${running > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(running)}</strong></div>
+        `;
+
+        headRow.innerHTML = `
+            <th>التاريخ</th>
+            <th>النوع</th>
+            <th>المرجع / البيان</th>
+            <th>مدين (عليه)</th>
+            <th>دائن (له)</th>
+            <th>الرصيد</th>
+        `;
+
+        tbody.innerHTML = bodyHtml || '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد حركات آجلة أو سندات قبض لهذا العميل</td></tr>';
     }
 
     async function createEmployee() {
