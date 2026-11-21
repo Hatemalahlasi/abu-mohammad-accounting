@@ -995,25 +995,42 @@
 
         await reloadAllData();
 
-        if (u === 'admin' && p === '12345' && state.employees.length === 0) {
-            currentUser = { fullName: 'المدير العام — معمل أبو محمد', username: 'admin', role: 'admin' };
-        } else {
-            const found = state.employees.find(e => e.username === u && e.password === p);
-            if (!found) {
-                showToast('بيانات الدخول غير صحيحة');
-                return;
+        let found = state.employees.find(e => e.username === u && e.password === p);
+
+        if (!found && u === 'admin' && p === '12345') {
+            found = {
+                id: 'emp_admin',
+                fullName: 'المدير العام — معمل أبو محمد',
+                username: 'admin',
+                password: '12345',
+                role: 'admin',
+                active: true
+            };
+            if (!isDemoMode && db) {
+                try {
+                    await db.collection('employees').doc('emp_admin').set(found, { merge: true });
+                } catch (e) {
+                    console.warn('Could not seed admin doc:', e);
+                }
             }
-            if (found.active === false) {
-                showToast('هذا الحساب موقوف حالياً');
-                return;
-            }
-            currentUser = found;
         }
+
+        if (!found) {
+            showToast('بيانات الدخول غير صحيحة أو قاعدة البيانات غير مفعّلة');
+            return;
+        }
+
+        if (found.active === false) {
+            showToast('هذا الحساب موقوف حالياً');
+            return;
+        }
+
+        currentUser = found;
 
         const statusBadge = document.getElementById('connectionStatusBadge');
         if (isDemoMode) {
             statusBadge.className = 'db-status demo';
-            statusBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> تحقق من تفعيل Firestore في Firebase';
+            statusBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> تحقق من إنشاء Firestore في Firebase';
         } else {
             statusBadge.className = 'db-status';
             statusBadge.innerHTML = '<i class="fa-solid fa-cloud-check"></i> متصل بقاعدة بيانات Firebase';
@@ -1090,4 +1107,516 @@
 
         const totalCash = state.cashboxes.reduce((sum, c) => sum + Number(c.balance || 0), 0);
         const totalReceivables = state.customers.reduce((sum, c) => sum + Number(c.balance || 0), 0);
-        const totalExpenses = state.v
+        const totalExpenses = state.vouchers
+            .filter(v => v.type === 'payment')
+            .reduce((sum, v) => sum + Number(v.amount || 0), 0);
+
+        document.getElementById('kpiTotalSales').textContent = formatMoney(cashSales + creditSales);
+        document.getElementById('kpiSalesBreakdown').textContent = `نقدي: ${formatMoney(cashSales)} | آجل: ${formatMoney(creditSales)}`;
+        document.getElementById('kpiTotalCash').textContent = formatMoney(totalCash);
+        document.getElementById('kpiCashboxesCount').textContent = `${state.cashboxes.length} صناديق مسجلة`;
+        document.getElementById('kpiTotalReceivables').textContent = formatMoney(totalReceivables);
+        document.getElementById('kpiCustomersCount').textContent = `${state.customers.length} عملاء مسجلون`;
+        document.getElementById('kpiTotalExpenses').textContent = formatMoney(totalExpenses);
+
+        const cbContainer = document.getElementById('dashboardCashboxesList');
+        cbContainer.innerHTML = state.cashboxes.length
+            ? state.cashboxes.map(cb => `
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div>
+                        <strong style="font-size:14px;">${cb.name}</strong>
+                    </div>
+                    <span class="mono" style="color:var(--success); font-size:15px;">${formatMoney(cb.balance)}</span>
+                </div>
+            `).join('')
+            : '<p style="color:var(--text-muted); font-size:13px;">لا توجد صناديق مضافة بعد.</p>';
+
+        const recent = [
+            ...state.invoices.map(i => ({
+                date: i.date,
+                title: `فاتورة ${i.id} - ${i.customerName}`,
+                amount: i.netTotal,
+                badge: i.paymentType === 'cash' ? '<span class="badge badge-cash">مبيعات نقدية</span>' : '<span class="badge badge-credit">مبيعات آجلة</span>'
+            })),
+            ...state.vouchers.map(v => ({
+                date: v.date,
+                title: `${v.type === 'receipt' ? 'سند قبض' : 'سند صرف'} - ${v.customerName || v.note}`,
+                amount: v.amount,
+                badge: v.type === 'receipt' ? '<span class="badge badge-cash">قبض</span>' : '<span class="badge badge-expense">صرف</span>'
+            }))
+        ].slice(-6).reverse();
+
+        const recentEl = document.getElementById('dashboardRecentActivity');
+        recentEl.innerHTML = recent.length
+            ? recent.map(r => `
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                    <div>
+                        <div style="font-size:13px; font-weight:700;">${r.title}</div>
+                        <div style="font-size:11.5px; color:var(--text-muted);">${r.date} ${r.badge}</div>
+                    </div>
+                    <span class="mono" style="font-size:14px;">${formatMoney(r.amount)}</span>
+                </div>
+            `).join('')
+            : '<p style="color:var(--text-muted); font-size:13px;">لا توجد عمليات مسجلة بعد.</p>';
+    }
+
+    function toggleInvoicePaymentFields() {
+        const type = document.getElementById('invPaymentType').value;
+        const cbGroup = document.getElementById('invCashboxGroup');
+        if (type === 'cash') cbGroup.classList.remove('hidden');
+        else cbGroup.classList.add('hidden');
+    }
+
+    function addInvoiceItemRow() {
+        const container = document.getElementById('invoiceItemsContainer');
+        const row = document.createElement('div');
+        row.className = 'invoice-item-row';
+        row.innerHTML = `
+            <input type="text" class="form-control item-name" placeholder="اسم الصنف أو الخدمة">
+            <input type="number" class="form-control item-qty" placeholder="الكمية" value="1" min="1" oninput="recalculateInvoiceTotal()">
+            <input type="number" class="form-control item-price" placeholder="السعر" value="0" min="0" oninput="recalculateInvoiceTotal()">
+            <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove(); recalculateInvoiceTotal();">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        `;
+        container.appendChild(row);
+        recalculateInvoiceTotal();
+    }
+
+    function recalculateInvoiceTotal() {
+        let subtotal = 0;
+        document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(row => {
+            const qty = Number(row.querySelector('.item-qty').value || 0);
+            const price = Number(row.querySelector('.item-price').value || 0);
+            subtotal += qty * price;
+        });
+        const discount = Number(document.getElementById('invDiscount').value || 0);
+        const net = Math.max(0, subtotal - discount);
+        document.getElementById('invNetTotalDisplay').textContent = formatMoney(net);
+        return net;
+    }
+
+    async function saveSalesInvoice() {
+        const paymentType = document.getElementById('invPaymentType').value;
+        const cashboxId = document.getElementById('invCashboxSelect').value;
+        const customerId = document.getElementById('invCustomerSelect').value;
+        const discount = Number(document.getElementById('invDiscount').value || 0);
+        const notes = document.getElementById('invNotes').value.trim();
+
+        const items = [];
+        document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(row => {
+            const name = row.querySelector('.item-name').value.trim();
+            const qty = Number(row.querySelector('.item-qty').value || 0);
+            const price = Number(row.querySelector('.item-price').value || 0);
+            if (name && qty > 0) {
+                items.push({ name, qty, price });
+            }
+        });
+
+        if (items.length === 0) {
+            showToast('أضف صنفاً واحداً على الأقل للفاتورة');
+            return;
+        }
+
+        const subtotal = items.reduce((s, it) => s + it.qty * it.price, 0);
+        const netTotal = Math.max(0, subtotal - discount);
+
+        const customer = state.customers.find(c => c.id === customerId);
+        if (!customer) {
+            showToast('يرجى اختيار العميل');
+            return;
+        }
+
+        if (paymentType === 'credit') {
+            if (customer.id === 'cust_cash') {
+                showToast('لا يمكن إصدار فاتورة آجلة لعميل نقدي عام');
+                return;
+            }
+            const projectedDebt = Number(customer.balance || 0) + netTotal;
+            if (customer.creditLimit > 0 && projectedDebt > customer.creditLimit) {
+                showToast(`تجاوز سقف الائتمان المسموح للعميل (${formatMoney(customer.creditLimit)})`);
+                return;
+            }
+        }
+
+        let cashbox = null;
+        if (paymentType === 'cash') {
+            cashbox = state.cashboxes.find(c => c.id === cashboxId);
+            if (!cashbox) {
+                showToast('يرجى اختيار الصندوق المستلم');
+                return;
+            }
+        }
+
+        const invNumber = `INV-${1001 + state.invoices.length}`;
+        const newInvoice = {
+            id: invNumber,
+            date: new Date().toISOString().split('T')[0],
+            customerId: customer.id,
+            customerName: customer.name,
+            paymentType,
+            cashboxId: cashbox ? cashbox.id : '',
+            cashboxName: cashbox ? cashbox.name : 'آجل',
+            items,
+            discount,
+            netTotal,
+            employee: currentUser.fullName,
+            notes
+        };
+
+        if (isDemoMode) {
+            state.invoices.push(newInvoice);
+            if (paymentType === 'cash' && cashbox) {
+                cashbox.balance = Number(cashbox.balance || 0) + netTotal;
+            } else {
+                customer.balance = Number(customer.balance || 0) + netTotal;
+            }
+            persistDemoStorage();
+        } else {
+            await db.collection('invoices').doc(invNumber).set(newInvoice);
+            if (paymentType === 'cash' && cashbox) {
+                await db.collection('cashboxes').doc(cashbox.id).update({
+                    balance: Number(cashbox.balance || 0) + netTotal
+                });
+            } else {
+                await db.collection('customers').doc(customer.id).update({
+                    balance: Number(customer.balance || 0) + netTotal
+                });
+            }
+            await reloadAllData();
+        }
+
+        document.getElementById('invoiceItemsContainer').innerHTML = '';
+        addInvoiceItemRow();
+        document.getElementById('invDiscount').value = '0';
+        document.getElementById('invNotes').value = '';
+        recalculateInvoiceTotal();
+        renderAllViews();
+        showToast(`تم ترحيل الفاتورة ${invNumber} بنجاح`);
+    }
+
+    function renderInvoicesTable() {
+        const q = (document.getElementById('invoiceSearchInput').value || '').toLowerCase().trim();
+        const filtered = state.invoices.filter(inv =>
+            inv.id.toLowerCase().includes(q) || inv.customerName.toLowerCase().includes(q)
+        ).reverse();
+
+        const tbody = document.getElementById('invoicesTableBody');
+        tbody.innerHTML = filtered.length
+            ? filtered.map(inv => `
+                <tr>
+                    <td><strong class="mono">${inv.id}</strong></td>
+                    <td>${inv.date}</td>
+                    <td>${inv.customerName}</td>
+                    <td>${inv.paymentType === 'cash' ? '<span class="badge badge-cash">نقدي</span>' : '<span class="badge badge-credit">آجل</span>'}</td>
+                    <td>${inv.cashboxName}</td>
+                    <td><span class="mono">${formatMoney(inv.netTotal)}</span></td>
+                    <td>${inv.employee}</td>
+                </tr>
+            `).join('')
+            : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">لا توجد فواتير مطابقة.</td></tr>';
+    }
+
+    async function createCashbox() {
+        const name = document.getElementById('newCashboxName').value.trim();
+        const opening = Number(document.getElementById('newCashboxOpening').value || 0);
+
+        if (!name) {
+            showToast('أدخل اسم الصندوق');
+            return;
+        }
+
+        const newCb = {
+            id: `cb_${Date.now()}`,
+            name,
+            balance: opening
+        };
+
+        if (isDemoMode) {
+            state.cashboxes.push(newCb);
+            persistDemoStorage();
+        } else {
+            await db.collection('cashboxes').doc(newCb.id).set(newCb);
+            await reloadAllData();
+        }
+
+        document.getElementById('newCashboxName').value = '';
+        document.getElementById('newCashboxOpening').value = '0';
+        renderAllViews();
+        showToast(`تم فتح صندوق (${name})`);
+    }
+
+    function toggleVoucherCustomerField() {
+        const type = document.getElementById('voucherType').value;
+        const custGroup = document.getElementById('voucherCustomerGroup');
+        if (type === 'receipt') custGroup.classList.remove('hidden');
+        else custGroup.classList.add('hidden');
+    }
+
+    async function createVoucher() {
+        const type = document.getElementById('voucherType').value;
+        const cashboxId = document.getElementById('voucherCashboxSelect').value;
+        const customerId = type === 'receipt' ? document.getElementById('voucherCustomerSelect').value : '';
+        const amount = Number(document.getElementById('voucherAmount').value || 0);
+        const note = document.getElementById('voucherNote').value.trim();
+
+        const cashbox = state.cashboxes.find(c => c.id === cashboxId);
+        if (!cashbox) {
+            showToast('اختر الصندوق أولاً');
+            return;
+        }
+        if (amount <= 0) {
+            showToast('أدخل مبلغاً صحيحاً أكبر من صفر');
+            return;
+        }
+        if (type === 'payment' && Number(cashbox.balance || 0) < amount) {
+            showToast('رصيد الصندوق لا يكفي لإتمام سند الصرف');
+            return;
+        }
+
+        const customer = customerId ? state.customers.find(c => c.id === customerId) : null;
+        const vchNumber = `VCH-${101 + state.vouchers.length}`;
+
+        const newVoucher = {
+            id: vchNumber,
+            type,
+            date: new Date().toISOString().split('T')[0],
+            cashboxId: cashbox.id,
+            cashboxName: cashbox.name,
+            customerId: customer ? customer.id : '',
+            customerName: customer ? customer.name : 'حركة عامة',
+            amount,
+            note: note || (type === 'receipt' ? 'سند قبض نقدي' : 'سند صرف نقدي'),
+            employee: currentUser.fullName
+        };
+
+        const nextCashBalance = type === 'receipt'
+            ? Number(cashbox.balance || 0) + amount
+            : Number(cashbox.balance || 0) - amount;
+
+        if (isDemoMode) {
+            state.vouchers.push(newVoucher);
+            cashbox.balance = nextCashBalance;
+            if (customer && type === 'receipt') {
+                customer.balance = Math.max(0, Number(customer.balance || 0) - amount);
+            }
+            persistDemoStorage();
+        } else {
+            await db.collection('vouchers').doc(vchNumber).set(newVoucher);
+            await db.collection('cashboxes').doc(cashbox.id).update({ balance: nextCashBalance });
+            if (customer && type === 'receipt') {
+                await db.collection('customers').doc(customer.id).update({
+                    balance: Math.max(0, Number(customer.balance || 0) - amount)
+                });
+            }
+            await reloadAllData();
+        }
+
+        document.getElementById('voucherAmount').value = '';
+        document.getElementById('voucherNote').value = '';
+        renderAllViews();
+        showToast(`تم حفظ ${type === 'receipt' ? 'سند القبض' : 'سند الصرف'} بنجاح`);
+    }
+
+    function renderVouchersTable() {
+        const tbody = document.getElementById('vouchersTableBody');
+        const list = [...state.vouchers].reverse();
+        tbody.innerHTML = list.length
+            ? list.map(v => `
+                <tr>
+                    <td>${v.type === 'receipt' ? '<span class="badge badge-cash">سند قبض</span>' : '<span class="badge badge-expense">سند صرف</span>'}</td>
+                    <td>${v.date}</td>
+                    <td>${v.cashboxName}</td>
+                    <td>${v.customerName}</td>
+                    <td><span class="mono">${formatMoney(v.amount)}</span></td>
+                    <td>${v.note}</td>
+                    <td>${v.employee}</td>
+                </tr>
+            `).join('')
+            : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">لا توجد سندات مسجلة.</td></tr>';
+    }
+
+    async function createCustomer() {
+        const name = document.getElementById('newCustomerName').value.trim();
+        const phone = document.getElementById('newCustomerPhone').value.trim();
+        const creditLimit = Number(document.getElementById('newCustomerLimit').value || 0);
+
+        if (!name) {
+            showToast('أدخل اسم العميل');
+            return;
+        }
+
+        const newCust = {
+            id: `cust_${Date.now()}`,
+            name,
+            phone: phone || '-',
+            creditLimit,
+            balance: 0
+        };
+
+        if (isDemoMode) {
+            state.customers.push(newCust);
+            persistDemoStorage();
+        } else {
+            await db.collection('customers').doc(newCust.id).set(newCust);
+            await reloadAllData();
+        }
+
+        document.getElementById('newCustomerName').value = '';
+        document.getElementById('newCustomerPhone').value = '';
+        renderAllViews();
+        showToast(`تم إضافة العميل (${name})`);
+    }
+
+    function renderCustomersTable() {
+        const q = (document.getElementById('customerSearchInput').value || '').toLowerCase().trim();
+        const filtered = state.customers.filter(c =>
+            c.name.toLowerCase().includes(q) || (c.phone || '').includes(q)
+        );
+
+        const tbody = document.getElementById('customersTableBody');
+        tbody.innerHTML = filtered.length
+            ? filtered.map(c => `
+                <tr>
+                    <td><strong>${c.name}</strong></td>
+                    <td>${c.phone}</td>
+                    <td><span class="mono">${formatMoney(c.creditLimit)}</span></td>
+                    <td><span class="mono" style="color:${c.balance > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(c.balance)}</span></td>
+                    <td>
+                        <button class="btn btn-outline btn-sm" onclick="openCustomerStatement('${c.id}')">
+                            <i class="fa-solid fa-file-lines"></i> كشف حساب
+                        </button>
+                    </td>
+                </tr>
+            `).join('')
+            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">لا يوجد عملاء مطابقون.</td></tr>';
+    }
+
+    function openCustomerStatement(customerId) {
+        const cust = state.customers.find(c => c.id === customerId);
+        if (!cust) return;
+
+        document.getElementById('statementCustomerTitle').textContent = `كشف حساب: ${cust.name}`;
+        document.getElementById('statementCustomerSummary').textContent =
+            `الهاتف: ${cust.phone} | الرصيد المستحق الحالي: ${formatMoney(cust.balance)}`;
+
+        const rows = [];
+        state.invoices
+            .filter(i => i.customerId === customerId)
+            .forEach(i => {
+                rows.push({
+                    date: i.date,
+                    type: i.paymentType === 'credit' ? 'فاتورة آجلة' : 'فاتورة نقدية',
+                    note: `${i.id} (${i.items.map(x => x.name).join('، ')})`,
+                    debit: i.paymentType === 'credit' ? i.netTotal : 0,
+                    credit: i.paymentType === 'cash' ? i.netTotal : 0
+                });
+            });
+
+        state.vouchers
+            .filter(v => v.customerId === customerId && v.type === 'receipt')
+            .forEach(v => {
+                rows.push({
+                    date: v.date,
+                    type: 'سند قبض',
+                    note: `${v.id} - ${v.note}`,
+                    debit: 0,
+                    credit: v.amount
+                });
+            });
+
+        const tbody = document.getElementById('statementTableBody');
+        tbody.innerHTML = rows.length
+            ? rows.map(r => `
+                <tr>
+                    <td>${r.date}</td>
+                    <td>${r.type}</td>
+                    <td>${r.note}</td>
+                    <td><span class="mono" style="color:var(--danger);">${r.debit ? formatMoney(r.debit) : '-'}</span></td>
+                    <td><span class="mono" style="color:var(--success);">${r.credit ? formatMoney(r.credit) : '-'}</span></td>
+                </tr>
+            `).join('')
+            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">لا توجد حركات مسجلة لهذا العميل.</td></tr>';
+
+        document.getElementById('statementModal').classList.remove('hidden');
+    }
+
+    function closeStatementModal() {
+        document.getElementById('statementModal').classList.add('hidden');
+    }
+
+    async function createEmployee() {
+        const fullName = document.getElementById('newEmpFullName').value.trim();
+        const username = document.getElementById('newEmpUsername').value.trim();
+        const password = document.getElementById('newEmpPassword').value.trim();
+        const role = document.getElementById('newEmpRole').value;
+
+        if (!fullName || !username || !password) {
+            showToast('يرجى تعبئة جميع بيانات الموظف');
+            return;
+        }
+
+        if (state.employees.some(e => e.username === username)) {
+            showToast('اسم الدخول مستخدم مسبقاً');
+            return;
+        }
+
+        const newEmp = {
+            id: `emp_${Date.now()}`,
+            fullName,
+            username,
+            password,
+            role,
+            active: true
+        };
+
+        if (isDemoMode) {
+            state.employees.push(newEmp);
+            persistDemoStorage();
+        } else {
+            await db.collection('employees').doc(newEmp.id).set(newEmp);
+            await reloadAllData();
+        }
+
+        document.getElementById('newEmpFullName').value = '';
+        document.getElementById('newEmpUsername').value = '';
+        document.getElementById('newEmpPassword').value = '';
+        renderAllViews();
+        showToast(`تمت إضافة الموظف (${fullName})`);
+    }
+
+    async function toggleEmployeeStatus(empId) {
+        const emp = state.employees.find(e => e.id === empId);
+        if (!emp) return;
+        const nextActive = !emp.active;
+
+        if (isDemoMode) {
+            emp.active = nextActive;
+            persistDemoStorage();
+        } else {
+            await db.collection('employees').doc(empId).update({ active: nextActive });
+            await reloadAllData();
+        }
+        renderAllViews();
+        showToast(nextActive ? 'تم تفعيل حساب الموظف' : 'تم إيقاف حساب الموظف');
+    }
+
+    function renderEmployeesTable() {
+        const tbody = document.getElementById('employeesTableBody');
+        tbody.innerHTML = state.employees.map(emp => `
+            <tr>
+                <td><strong>${emp.fullName}</strong></td>
+                <td><span class="mono">${emp.username}</span></td>
+                <td><span class="badge badge-role">${emp.role === 'admin' ? 'مدير نظام' : 'كاشير / مبيعات'}</span></td>
+                <td>${emp.active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
+                <td>
+                    <button class="btn ${emp.active ? 'btn-warning' : 'btn-success'} btn-sm" onclick="toggleEmployeeStatus('${emp.id}')">
+                        ${emp.active ? 'إيقاف' : 'تفعيل'}
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+</script>
+</body>
+</html>
