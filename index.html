@@ -57,7 +57,7 @@
         }
 
         @media (min-width: 768px) {
-            .app-shell { padding: 28px 32px; }
+            .app-shell { padding: 26px 30px; }
         }
 
         .login-wrapper {
@@ -214,7 +214,7 @@
             gap: 10px;
             padding-bottom: 14px;
             border-bottom: 1.5px solid var(--border);
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .db-status {
@@ -234,38 +234,40 @@
             color: var(--warning);
         }
 
+        /* قائمة التنقل بين الصفحات */
         .quick-nav {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 18px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
         }
 
         @media (min-width: 768px) {
             .quick-nav {
                 grid-template-columns: repeat(6, 1fr);
+                gap: 10px;
             }
         }
 
         .nav-tab {
-            padding: 12px 10px;
+            padding: 11px 8px;
             border-radius: 14px;
             border: 1.5px solid var(--border);
             background: var(--bg-surface);
             color: var(--text-main);
             font-family: 'Cairo', sans-serif;
             font-weight: 800;
-            font-size: 13.5px;
+            font-size: 13px;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
             transition: all 0.18s ease;
         }
 
-        .nav-tab i { font-size: 18px; color: var(--primary); }
+        .nav-tab i { font-size: 17px; color: var(--primary); }
         .nav-tab.active {
             background: var(--primary);
             color: #fff;
@@ -273,11 +275,33 @@
         }
         .nav-tab.active i { color: #fff; }
 
+        .page-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: var(--primary-soft);
+            border: 1px solid #c7dcef;
+            border-radius: 14px;
+            padding: 11px 14px;
+            margin-bottom: 14px;
+        }
+
+        .page-banner-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .summary-strip {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         @media (min-width: 768px) {
@@ -288,22 +312,22 @@
             background: var(--bg-surface);
             border: 1.5px solid var(--border);
             border-radius: 14px;
-            padding: 12px;
+            padding: 11px 12px;
         }
 
         .mini-stat-label { font-size: 12px; color: var(--text-muted); font-weight: 700; }
-        .mini-stat-val { font-size: 18px; font-weight: 800; margin-top: 4px; color: var(--primary); }
+        .mini-stat-val { font-size: 17px; font-weight: 800; margin-top: 3px; color: var(--primary); }
 
         .card-box {
             background: var(--bg-surface);
             border: 1.5px solid var(--border);
             border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
+            padding: 15px;
+            margin-bottom: 14px;
         }
 
         .card-title {
-            font-size: 15px;
+            font-size: 14.5px;
             font-weight: 800;
             color: var(--primary);
             margin-bottom: 12px;
@@ -314,10 +338,11 @@
             flex-wrap: wrap;
         }
 
-        .grid-2, .grid-3 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .grid-2, .grid-3, .grid-4 { display: grid; grid-template-columns: 1fr; gap: 12px; }
         @media (min-width: 700px) {
             .grid-2 { grid-template-columns: 1fr 1fr; }
             .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+            .grid-4 { grid-template-columns: repeat(4, 1fr); }
         }
 
         .table-responsive {
@@ -344,7 +369,8 @@
         .badge-credit { background: var(--warning-bg); color: var(--warning); }
         .badge-expense { background: var(--danger-bg); color: var(--danger); }
         .badge-role { background: var(--purple-bg); color: var(--purple); }
-        .badge-sup { background: #e0f2fe; color: #0369a1; }
+        .badge-sup { background: #e0f2fe; color: #0369a1); }
+        .badge-unit { background: #f1f5f9; color: #334155; }
 
         .mono {
             font-family: 'JetBrains Mono', monospace;
@@ -353,21 +379,25 @@
             display: inline-block;
         }
 
+        /* صف الصنف في الفاتورة: اسم، وحدة (حبة/شدة)، كمية، سعر، حذف */
         .invoice-item-row {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr auto;
+            grid-template-columns: 2fr 1fr 0.9fr 1fr auto;
             gap: 8px;
             align-items: center;
             margin-bottom: 8px;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 680px) {
             .invoice-item-row {
                 grid-template-columns: 1fr 1fr;
                 background: #fff;
                 padding: 10px;
                 border-radius: 12px;
                 border: 1px solid var(--border);
+            }
+            .invoice-item-row .item-name {
+                grid-column: span 2;
             }
         }
 
@@ -420,7 +450,7 @@
             <i class="fa-solid fa-industry" style="display:none;"></i>
         </div>
         <h1>معمل أبو محمد</h1>
-        <p>دخول سريع وتحديث تلقائي مباشر</p>
+        <p>دخول سريع وصفحات مستقلة للهاتف</p>
 
         <div class="form-group">
             <label>اسم المستخدم</label>
@@ -463,11 +493,11 @@
             </div>
         </div>
 
-        <!-- أزرار التنقل الرئيسية للهاتف -->
+        <!-- التنقل بين الصفحات المستقلة -->
         <div class="quick-nav">
             <button class="nav-tab active" data-tab="salesTab" onclick="switchTab('salesTab', this)">
                 <i class="fa-solid fa-file-invoice-dollar"></i>
-                <span>الفواتير</span>
+                <span>المبيعات</span>
             </button>
             <button class="nav-tab" data-tab="vouchersTab" onclick="switchTab('vouchersTab', this)">
                 <i class="fa-solid fa-file-signature"></i>
@@ -479,7 +509,7 @@
             </button>
             <button class="nav-tab" data-tab="warehouseTab" onclick="switchTab('warehouseTab', this)">
                 <i class="fa-solid fa-boxes-stacked"></i>
-                <span>المخازن</span>
+                <span>المخازن والفروع</span>
             </button>
             <button class="nav-tab" data-tab="customersTab" onclick="switchTab('customersTab', this)">
                 <i class="fa-solid fa-users"></i>
@@ -491,7 +521,7 @@
             </button>
         </div>
 
-        <!-- شريط ملخص سريع -->
+        <!-- ملخص سريع -->
         <div class="summary-strip">
             <div class="mini-stat">
                 <div class="mini-stat-label">المبيعات</div>
@@ -506,19 +536,26 @@
                 <div class="mini-stat-val mono" id="kpiTotalReceivables" style="color:var(--warning);">0.00</div>
             </div>
             <div class="mini-stat">
-                <div class="mini-stat-label">المخزون (إجمالي الكميات)</div>
+                <div class="mini-stat-label">المخزون (إجمالي الوحدات)</div>
                 <div class="mini-stat-val mono" id="kpiWarehouseStock" style="color:var(--accent);">0</div>
             </div>
         </div>
 
-        <!-- 1. قسم الفواتير -->
-        <div id="salesTab" class="tab-content">
-            <div class="card-box">
-                <div class="card-title">
-                    <span><i class="fa-solid fa-file-circle-plus"></i> فاتورة مبيعات جديدة</span>
-                </div>
+        <!-- 1. صفحة المبيعات والفواتير -->
+        <section id="salesTab" class="tab-content">
+            <div class="page-banner">
+                <div class="page-banner-title"><i class="fa-solid fa-file-invoice-dollar"></i> صفحة المبيعات</div>
+                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">إنشاء فاتورة واستعراض المبيعات</span>
+            </div>
 
-                <div class="grid-3">
+            <div class="card-box">
+                <div class="card-title"><span>إصدار فاتورة مبيعات</span></div>
+
+                <div class="grid-4">
+                    <div class="form-group">
+                        <label>الفرع</label>
+                        <select id="invBranchSelect" class="form-control" onchange="populateWarehouseItemOptions()"></select>
+                    </div>
                     <div class="form-group">
                         <label>نوع الفاتورة</label>
                         <select id="invPaymentType" class="form-control" onchange="toggleInvoicePaymentFields()">
@@ -537,9 +574,9 @@
                 </div>
 
                 <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="font-size:13px;">الأصناف:</strong>
+                    <strong style="font-size:13px;">الأصناف (حبة / شدة):</strong>
                     <button type="button" class="btn btn-outline btn-sm" onclick="addInvoiceItemRow()">
-                        <i class="fa-solid fa-plus"></i> صنف
+                        <i class="fa-solid fa-plus"></i> إضافة صنف
                     </button>
                 </div>
 
@@ -558,7 +595,7 @@
 
                 <div class="summary-bar">
                     <div>
-                        <span style="font-size:12px; color:var(--text-muted); font-weight:700;">الإجمالي:</span>
+                        <span style="font-size:12px; color:var(--text-muted); font-weight:700;">الإجمالي الصافي:</span>
                         <div class="mono" id="invNetTotalDisplay" style="font-size:20px; color:var(--primary);">0.00</div>
                     </div>
                     <button id="saveInvoiceBtn" class="btn btn-primary" onclick="saveSalesInvoice()">
@@ -569,15 +606,17 @@
 
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-receipt"></i> سجل الفواتير</span>
-                    <input type="text" id="invoiceSearchInput" class="form-control" style="max-width:220px; padding:7px 10px;" placeholder="بحث..." oninput="renderInvoicesTable()">
+                    <span><i class="fa-solid fa-receipt"></i> سجل المبيعات</span>
+                    <input type="text" id="invoiceSearchInput" class="form-control" style="max-width:220px; padding:7px 10px;" placeholder="بحث برقم أو عميل..." oninput="renderInvoicesTable()">
                 </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
                                 <th>الرقم</th>
+                                <th>الفرع</th>
                                 <th>العميل</th>
+                                <th>الأصناف</th>
                                 <th>النوع</th>
                                 <th>الصافي</th>
                                 <th>الموظف</th>
@@ -588,14 +627,17 @@
                     </table>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- 2. قسم الأسناد -->
-        <div id="vouchersTab" class="tab-content hidden">
+        <!-- 2. صفحة الأسناد -->
+        <section id="vouchersTab" class="tab-content hidden">
+            <div class="page-banner">
+                <div class="page-banner-title"><i class="fa-solid fa-file-signature"></i> صفحة الأسناد</div>
+                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">سندات القبض والصرف</span>
+            </div>
+
             <div class="card-box">
-                <div class="card-title">
-                    <span><i class="fa-solid fa-file-signature"></i> إصدار سند قبض / صرف</span>
-                </div>
+                <div class="card-title"><span>إصدار سند جديد</span></div>
                 <div class="grid-2">
                     <div class="form-group">
                         <label>نوع السند</label>
@@ -646,12 +688,17 @@
                     </table>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- 3. قسم الصندوق -->
-        <div id="cashboxTab" class="tab-content hidden">
+        <!-- 3. صفحة الصندوق -->
+        <section id="cashboxTab" class="tab-content hidden">
+            <div class="page-banner">
+                <div class="page-banner-title"><i class="fa-solid fa-vault"></i> صفحة الصندوق</div>
+                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">أرصدة الصناديق وإضافة صندوق</span>
+            </div>
+
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-vault"></i> الصناديق والأرصدة</span></div>
+                <div class="card-title"><span>الصناديق الحالية</span></div>
                 <div id="dashboardCashboxesList" style="margin-bottom:14px;"></div>
                 <div class="grid-2">
                     <div class="form-group" style="margin-bottom:0;">
@@ -667,41 +714,76 @@
                     <i class="fa-solid fa-plus"></i> إضافة صندوق
                 </button>
             </div>
-        </div>
+        </section>
 
-        <!-- 4. قسم المخازن والمخزون -->
-        <div id="warehouseTab" class="tab-content hidden">
+        <!-- 4. صفحة المخازن والفروع -->
+        <section id="warehouseTab" class="tab-content hidden">
+            <div class="page-banner">
+                <div class="page-banner-title"><i class="fa-solid fa-boxes-stacked"></i> صفحة المخازن والفروع</div>
+                <span id="warehouseTotalValueBadge" class="badge badge-cash">قيمة المخزون: 0.00</span>
+            </div>
+
+            <!-- إدارة الفروع -->
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-boxes-stacked"></i> إدارة المخزون وإضافة صنف</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-code-branch"></i> الفروع وإضافة فرع</span></div>
                 <div class="grid-3">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>الفرع النشط لعرض المخزون</label>
+                        <select id="activeBranchFilter" class="form-control" onchange="renderWarehouseTable()"></select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>اسم فرع جديد</label>
+                        <input type="text" id="newBranchName" class="form-control" placeholder="مثال: فرع إب">
+                    </div>
+                    <div style="display:flex; align-items:flex-end;">
+                        <button id="saveBranchBtn" class="btn btn-outline btn-full" onclick="createBranch()">
+                            <i class="fa-solid fa-plus"></i> إضافة فرع
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- إضافة / تحديث صنف في مخزن الفرع -->
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-box-open"></i> إضافة / تحديث صنف في مخزن الفرع</span></div>
+                <div class="grid-4">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>الفرع</label>
+                        <select id="whItemBranchSelect" class="form-control"></select>
+                    </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label>اسم الصنف</label>
                         <input type="text" id="newItemName" class="form-control" placeholder="اسم المادة أو المنتج">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
-                        <label>الكمية في المخزون</label>
-                        <input type="number" id="newItemQty" class="form-control num-input" value="1" min="0">
+                        <label>الوحدة</label>
+                        <select id="newItemUnit" class="form-control">
+                            <option value="حبة">حبة</option>
+                            <option value="شدة">شدة</option>
+                        </select>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
-                        <label>سعر الوحدة</label>
-                        <input type="number" id="newItemPrice" class="form-control num-input" value="0" min="0">
+                        <label>الكمية / السعر</label>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                            <input type="number" id="newItemQty" class="form-control num-input" value="1" min="0" title="الكمية">
+                            <input type="number" id="newItemPrice" class="form-control num-input" value="0" min="0" title="السعر">
+                        </div>
                     </div>
                 </div>
                 <button id="saveWarehouseItemBtn" class="btn btn-primary btn-full" onclick="saveWarehouseItem()" style="margin-top:12px;">
-                    <i class="fa-solid fa-box"></i> حفظ في المخزون
+                    <i class="fa-solid fa-box"></i> حفظ في مخزن الفرع
                 </button>
             </div>
 
             <div class="card-box">
-                <div class="card-title">
-                    <span><i class="fa-solid fa-warehouse"></i> المخزون الحالي</span>
-                    <span id="warehouseTotalValueBadge" class="badge badge-cash">قيمة المخزون: 0.00</span>
-                </div>
+                <div class="card-title"><span><i class="fa-solid fa-warehouse"></i> جرد مخازن الفروع</span></div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
+                                <th>الفرع</th>
                                 <th>الصنف</th>
+                                <th>الوحدة</th>
                                 <th>الكمية</th>
                                 <th>السعر</th>
                                 <th>الإجمالي</th>
@@ -712,12 +794,17 @@
                     </table>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- 5. قسم العملاء -->
-        <div id="customersTab" class="tab-content hidden">
+        <!-- 5. صفحة العملاء -->
+        <section id="customersTab" class="tab-content hidden">
+            <div class="page-banner">
+                <div class="page-banner-title"><i class="fa-solid fa-users"></i> صفحة العملاء</div>
+                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">إدارة العملاء والأرصدة</span>
+            </div>
+
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-user-plus"></i> إضافة عميل</span></div>
+                <div class="card-title"><span>إضافة عميل</span></div>
                 <div class="grid-3">
                     <div class="form-group" style="margin-bottom:0;">
                         <label>اسم العميل</label>
@@ -738,7 +825,7 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-address-book"></i> العملاء والأرصدة</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-address-book"></i> قائمة العملاء</span></div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -753,12 +840,17 @@
                     </table>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- 6. قسم الموظفون والصلاحيات -->
-        <div id="employeesTab" class="tab-content hidden">
+        <!-- 6. صفحة الموظفون والصلاحيات -->
+        <section id="employeesTab" class="tab-content hidden">
+            <div class="page-banner">
+                <div class="page-banner-title"><i class="fa-solid fa-user-tie"></i> صفحة الموظفون والصلاحيات</div>
+                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">مشرف عام (كل الصلاحيات) أو موظف (تعديل/حذف)</span>
+            </div>
+
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-user-shield"></i> إضافة مستخدم / مشرف عام</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-user-shield"></i> إضافة حساب جديد</span></div>
                 <div class="grid-3">
                     <div class="form-group" style="margin-bottom:0;">
                         <label>الاسم</label>
@@ -802,7 +894,7 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-users-gear"></i> المستخدمون وصلاحيات التعديل والحذف</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-users-gear"></i> المستخدمون والصلاحيات</span></div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -819,7 +911,7 @@
                     </table>
                 </div>
             </div>
-        </div>
+        </section>
 
     </div>
 </div>
@@ -849,6 +941,7 @@
 
     let currentUser = null;
     let state = {
+        branches: [],
         cashboxes: [],
         customers: [],
         invoices: [],
@@ -877,7 +970,7 @@
 
     function startRealtimeListeners() {
         stopRealtimeListeners();
-        const cols = ['cashboxes', 'customers', 'invoices', 'vouchers', 'employees', 'warehouse'];
+        const cols = ['branches', 'cashboxes', 'customers', 'invoices', 'vouchers', 'employees', 'warehouse'];
         cols.forEach(colName => {
             const unsub = db.collection(colName).onSnapshot(
                 snap => {
@@ -967,7 +1060,8 @@
 
     async function reloadAllData(showMsg = false) {
         try {
-            const [cashboxes, customers, invoices, vouchers, employees, warehouse] = await Promise.all([
+            const [branches, cashboxes, customers, invoices, vouchers, employees, warehouse] = await Promise.all([
+                loadCollection('branches'),
                 loadCollection('cashboxes'),
                 loadCollection('customers'),
                 loadCollection('invoices'),
@@ -975,7 +1069,7 @@
                 loadCollection('employees'),
                 loadCollection('warehouse')
             ]);
-            state = { cashboxes, customers, invoices, vouchers, employees, warehouse };
+            state = { branches, cashboxes, customers, invoices, vouchers, employees, warehouse };
             if (currentUser && currentUser.id) {
                 const updatedMe = state.employees.find(e => e.id === currentUser.id);
                 if (updatedMe) currentUser = updatedMe;
@@ -1086,6 +1180,7 @@
         document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
         document.getElementById(tabId).classList.remove('hidden');
         btnEl.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function renderAllViews() {
@@ -1100,6 +1195,27 @@
     }
 
     function populateDropdowns() {
+        const branchList = state.branches.length
+            ? state.branches
+            : [{ id: 'main_branch', name: 'الفرع الرئيسي' }];
+
+        const invBrSel = document.getElementById('invBranchSelect');
+        const whBrSel = document.getElementById('whItemBranchSelect');
+        const filterBrSel = document.getElementById('activeBranchFilter');
+
+        const prevInvBr = invBrSel.value;
+        const prevWhBr = whBrSel.value;
+        const prevFilterBr = filterBrSel.value;
+
+        const brOpts = branchList.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        invBrSel.innerHTML = brOpts;
+        whBrSel.innerHTML = brOpts;
+        filterBrSel.innerHTML = '<option value="ALL">جميع الفروع</option>' + brOpts;
+
+        if (prevInvBr && branchList.some(b => b.id === prevInvBr)) invBrSel.value = prevInvBr;
+        if (prevWhBr && branchList.some(b => b.id === prevWhBr)) whBrSel.value = prevWhBr;
+        if (prevFilterBr) filterBrSel.value = prevFilterBr;
+
         const cbSelInv = document.getElementById('invCashboxSelect');
         const cbSelVch = document.getElementById('voucherCashboxSelect');
         const prevCbInv = cbSelInv.value;
@@ -1127,6 +1243,10 @@
         if (prevCustVch) custSelVch.value = prevCustVch;
     }
 
+    function populateWarehouseItemOptions() {
+        // متاح للتوسعة المستقبلية عند ربط قوائم الأصناف بالفرع
+    }
+
     function renderStats() {
         const sales = state.invoices.reduce((s, i) => s + Number(i.netTotal || 0), 0);
         const cash = state.cashboxes.reduce((s, c) => s + Number(c.balance || 0), 0);
@@ -1152,8 +1272,12 @@
         row.className = 'invoice-item-row';
         row.innerHTML = `
             <input type="text" class="form-control item-name" placeholder="اسم الصنف">
-            <input type="number" class="form-control item-qty num-input" value="1" min="1" oninput="recalculateInvoiceTotal()">
-            <input type="number" class="form-control item-price num-input" value="0" min="0" oninput="recalculateInvoiceTotal()">
+            <select class="form-control item-unit">
+                <option value="حبة">حبة</option>
+                <option value="شدة">شدة</option>
+            </select>
+            <input type="number" class="form-control item-qty num-input" value="1" min="1" placeholder="الكمية" oninput="recalculateInvoiceTotal()">
+            <input type="number" class="form-control item-price num-input" value="0" min="0" placeholder="السعر" oninput="recalculateInvoiceTotal()">
             <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove(); recalculateInvoiceTotal();">
                 <i class="fa-solid fa-trash"></i>
             </button>
@@ -1176,6 +1300,10 @@
     async function saveSalesInvoice() {
         if (isBusy) return;
         const btn = document.getElementById('saveInvoiceBtn');
+        const branchId = document.getElementById('invBranchSelect').value || 'main_branch';
+        const branchObj = state.branches.find(b => b.id === branchId);
+        const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
+
         const paymentType = document.getElementById('invPaymentType').value;
         const cashboxId = document.getElementById('invCashboxSelect').value;
         const customerId = document.getElementById('invCustomerSelect').value;
@@ -1185,9 +1313,10 @@
         const items = [];
         document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(r => {
             const name = r.querySelector('.item-name').value.trim();
+            const unit = r.querySelector('.item-unit').value || 'حبة';
             const qty = Number(r.querySelector('.item-qty').value || 0);
             const price = Number(r.querySelector('.item-price').value || 0);
-            if (name && qty > 0) items.push({ name, qty, price });
+            if (name && qty > 0) items.push({ name, unit, qty, price });
         });
 
         if (items.length === 0) {
@@ -1218,6 +1347,8 @@
             await db.collection('invoices').doc(invId).set({
                 id: invId,
                 date: new Date().toISOString().split('T')[0],
+                branchId,
+                branchName,
                 customerId: customer.id,
                 customerName: customer.name,
                 paymentType,
@@ -1284,21 +1415,28 @@
             .slice().reverse();
 
         document.getElementById('invoicesTableBody').innerHTML = list.length
-            ? list.map(i => `
-                <tr>
-                    <td><span class="mono">${i.id}</span></td>
-                    <td>${i.customerName || '-'}</td>
-                    <td>${i.paymentType === 'cash' ? '<span class="badge badge-cash">نقدي</span>' : '<span class="badge badge-credit">آجل</span>'}</td>
-                    <td><span class="mono">${formatMoney(i.netTotal)}</span></td>
-                    <td>${i.employee || '-'}</td>
-                    <td>
-                        ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editInvoiceNote('${i.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
-                        ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteInvoiceRecord('${i.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
-                        ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
-                    </td>
-                </tr>
-            `).join('')
-            : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد فواتير</td></tr>';
+            ? list.map(i => {
+                const itemsSummary = Array.isArray(i.items) && i.items.length
+                    ? i.items.map(it => `${it.name} (${it.qty} ${it.unit || 'حبة'})`).join('، ')
+                    : '-';
+                return `
+                    <tr>
+                        <td><span class="mono">${i.id}</span></td>
+                        <td>${i.branchName || 'الفرع الرئيسي'}</td>
+                        <td>${i.customerName || '-'}</td>
+                        <td style="max-width:200px;">${itemsSummary}</td>
+                        <td>${i.paymentType === 'cash' ? '<span class="badge badge-cash">نقدي</span>' : '<span class="badge badge-credit">آجل</span>'}</td>
+                        <td><span class="mono">${formatMoney(i.netTotal)}</span></td>
+                        <td>${i.employee || '-'}</td>
+                        <td>
+                            ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editInvoiceNote('${i.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+                            ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteInvoiceRecord('${i.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+                            ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('')
+            : '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا توجد فواتير</td></tr>';
     }
 
     function toggleVoucherCustomerField() {
@@ -1443,10 +1581,36 @@
             : '<p style="color:var(--text-muted); font-size:13px;">لا توجد صناديق</p>';
     }
 
+    async function createBranch() {
+        if (isBusy) return;
+        const btn = document.getElementById('saveBranchBtn');
+        const name = document.getElementById('newBranchName').value.trim();
+        if (!name) {
+            showToast('أدخل اسم الفرع');
+            return;
+        }
+        isBusy = true;
+        btn.disabled = true;
+        try {
+            const id = `br_${Date.now()}`;
+            await db.collection('branches').doc(id).set({ id, name });
+            document.getElementById('newBranchName').value = '';
+            showToast('تمت إضافة الفرع');
+        } finally {
+            isBusy = false;
+            btn.disabled = false;
+        }
+    }
+
     async function saveWarehouseItem() {
         if (isBusy) return;
         const btn = document.getElementById('saveWarehouseItemBtn');
+        const branchId = document.getElementById('whItemBranchSelect').value || 'main_branch';
+        const branchObj = state.branches.find(b => b.id === branchId);
+        const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
+
         const name = document.getElementById('newItemName').value.trim();
+        const unit = document.getElementById('newItemUnit').value || 'حبة';
         const qty = Number(document.getElementById('newItemQty').value || 0);
         const price = Number(document.getElementById('newItemPrice').value || 0);
         if (!name) {
@@ -1457,21 +1621,25 @@
         isBusy = true;
         btn.disabled = true;
         try {
-            const existing = state.warehouse.find(w => w.name.toLowerCase() === name.toLowerCase());
+            const existing = state.warehouse.find(
+                w => (w.branchId || 'main_branch') === branchId &&
+                     w.name.toLowerCase() === name.toLowerCase() &&
+                     (w.unit || 'حبة') === unit
+            );
             if (existing) {
                 if (!canEditRecord()) {
                     showToast('ليس لديك صلاحية التعديل على المخزون');
                     return;
                 }
-                await db.collection('warehouse').doc(existing.id).update({ qty, price });
+                await db.collection('warehouse').doc(existing.id).update({ qty, price, unit, branchId, branchName });
             } else {
                 const id = `wh_${Date.now()}`;
-                await db.collection('warehouse').doc(id).set({ id, name, qty, price });
+                await db.collection('warehouse').doc(id).set({ id, branchId, branchName, name, unit, qty, price });
             }
             document.getElementById('newItemName').value = '';
             document.getElementById('newItemQty').value = '1';
             document.getElementById('newItemPrice').value = '0';
-            showToast('تم حفظ الصنف');
+            showToast('تم حفظ الصنف في مخزن الفرع');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1485,7 +1653,7 @@
         }
         const item = state.warehouse.find(w => w.id === itemId);
         if (!item) return;
-        const nextQty = prompt(`تعديل كمية (${item.name}):`, item.qty);
+        const nextQty = prompt(`تعديل كمية (${item.name} - ${item.unit || 'حبة'}):`, item.qty);
         if (nextQty === null) return;
         const nextPrice = prompt(`تعديل سعر (${item.name}):`, item.price);
         if (nextPrice === null) return;
@@ -1508,13 +1676,20 @@
 
     function renderWarehouseTable() {
         const tbody = document.getElementById('warehouseTableBody');
-        tbody.innerHTML = state.warehouse.length
-            ? state.warehouse.map(w => {
+        const selectedBranch = document.getElementById('activeBranchFilter').value || 'ALL';
+        const filtered = selectedBranch === 'ALL'
+            ? state.warehouse
+            : state.warehouse.filter(w => (w.branchId || 'main_branch') === selectedBranch);
+
+        tbody.innerHTML = filtered.length
+            ? filtered.map(w => {
                 const q = Number(w.qty || 0);
                 const p = Number(w.price || 0);
                 return `
                     <tr>
+                        <td>${w.branchName || 'الفرع الرئيسي'}</td>
                         <td><strong>${w.name}</strong></td>
+                        <td><span class="badge badge-unit">${w.unit || 'حبة'}</span></td>
                         <td><span class="badge ${q > 0 ? 'badge-cash' : 'badge-expense'} mono">${q}</span></td>
                         <td><span class="mono">${formatMoney(p)}</span></td>
                         <td><span class="mono">${formatMoney(q * p)}</span></td>
@@ -1526,7 +1701,7 @@
                     </tr>
                 `;
             }).join('')
-            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا توجد أصناف في المخزون</td></tr>';
+            : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا توجد أصناف في هذا الفرع</td></tr>';
     }
 
     async function createCustomer() {
