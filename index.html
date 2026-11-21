@@ -322,6 +322,7 @@
 
         .nav-tab i { font-size: 21px; color: var(--primary); }
         .nav-tab.accent-tab i { color: var(--accent); }
+        .nav-tab.profit-tab i { color: var(--success); }
         .nav-tab:hover {
             border-color: var(--primary);
             background: var(--primary-soft);
@@ -562,24 +563,31 @@
 
         .toast {
             position: fixed;
-            bottom: 18px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%) translateY(20px);
+            transform: translate(-50%, -40%);
             background: var(--primary);
             color: #fff;
-            padding: 10px 16px;
-            border-radius: 12px;
+            padding: 9px 16px;
+            border-radius: 11px;
             font-size: 13px;
             font-weight: 700;
+            text-align: center;
+            width: fit-content;
+            max-width: 88vw;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
             opacity: 0;
             pointer-events: none;
-            transition: all 0.2s ease;
+            transition: all 0.18s ease;
             z-index: 1300;
         }
 
         .toast.show {
             opacity: 1;
-            transform: translateX(-50%) translateY(0);
+            transform: translate(-50%, -50%);
         }
 
         .hidden { display: none !important; }
@@ -668,7 +676,7 @@
 
         <!-- القائمة الرئيسية -->
         <div id="homeMenuContainer">
-            <div class="summary-strip">
+            <div id="summaryStatsStrip" class="summary-strip">
                 <div class="mini-stat">
                     <div class="mini-stat-label">المبيعات</div>
                     <div class="mini-stat-val mono" id="kpiTotalSales">0.00</div>
@@ -715,6 +723,10 @@
                 <button class="nav-tab accent-tab" onclick="openTransferModal()">
                     <i class="fa-solid fa-right-left"></i>
                     <span>نقل مخازن</span>
+                </button>
+                <button class="nav-tab profit-tab" onclick="openFullPage('profitsTab')">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>الأرباح</span>
                 </button>
                 <button id="employeesNavBtn" class="nav-tab" onclick="openFullPage('employeesTab')">
                     <i class="fa-solid fa-user-tie"></i>
@@ -982,8 +994,9 @@
                                 <th>الصنف</th>
                                 <th>الوحدة</th>
                                 <th>الكمية</th>
-                                <th>السعر</th>
-                                <th>الإجمالي</th>
+                                <th>التكلفة</th>
+                                <th>سعر البيع</th>
+                                <th>إجمالي البيع</th>
                                 <th>إجراءات</th>
                             </tr>
                         </thead>
@@ -1101,7 +1114,55 @@
             </div>
         </section>
 
-        <!-- 6. صفحة الموظفون والصلاحيات الكاملة -->
+        <!-- 6. صفحة الأرباح -->
+        <section id="profitsTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-chart-line"></i> الأرباح</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+
+            <div class="summary-strip">
+                <div class="mini-stat">
+                    <div class="mini-stat-label">إجمالي المبيعات</div>
+                    <div class="mini-stat-val mono" id="profitTotalSales">0.00</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="mini-stat-label">إجمالي تكلفة المبيعات</div>
+                    <div class="mini-stat-val mono" id="profitTotalCost" style="color:var(--warning);">0.00</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="mini-stat-label">مجمل الربح</div>
+                    <div class="mini-stat-val mono" id="profitGrossVal" style="color:var(--success);">0.00</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="mini-stat-label">صافي الربح (بعد المصروفات)</div>
+                    <div class="mini-stat-val mono" id="profitNetVal" style="color:var(--primary);">0.00</div>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-table"></i> تفصيل أرباح الفواتير</span></div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الفاتورة</th>
+                                <th>التاريخ</th>
+                                <th>العميل</th>
+                                <th>المبيعات</th>
+                                <th>التكلفة</th>
+                                <th>الربح</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profitsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. صفحة الموظفون والصلاحيات الكاملة -->
         <section id="employeesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-user-tie"></i> الموظفون والصلاحيات</div>
@@ -1151,6 +1212,17 @@
                         <input type="checkbox" id="newEmpCanDelete">
                         <span>سماح بالحذف</span>
                     </label>
+                    <label class="perm-check">
+                        <input type="checkbox" id="newEmpCanViewStats" checked>
+                        <span>إظهار مؤشرات الملخص</span>
+                    </label>
+                </div>
+
+                <div id="supervisorStatsPermBox" class="perm-box hidden">
+                    <label class="perm-check">
+                        <input type="checkbox" id="newSupCanViewStats" checked>
+                        <span>إظهار مؤشرات الملخص للمشرف (المبيعات، الصندوق، الديون، المخزون)</span>
+                    </label>
                 </div>
             </div>
 
@@ -1163,7 +1235,7 @@
                                 <th>الاسم</th>
                                 <th>الدخول</th>
                                 <th>الصلاحية</th>
-                                <th>تعديل / حذف</th>
+                                <th>الصلاحيات</th>
                                 <th>الحالة</th>
                                 <th>تحكم</th>
                             </tr>
@@ -1204,14 +1276,18 @@
                 <option value="شدة">شدة</option>
             </select>
         </div>
-        <div class="grid-2">
+        <div class="grid-3">
             <div class="form-group">
                 <label>الكمية</label>
                 <input type="number" id="newItemQty" class="form-control num-input" value="1" min="0">
             </div>
             <div class="form-group">
-                <label>السعر</label>
-                <input type="number" id="newItemPrice" class="form-control num-input" value="0" min="0">
+                <label>سعر التكلفة</label>
+                <input type="number" id="newItemCost" class="form-control num-input" value="0" min="0" placeholder="التكلفة">
+            </div>
+            <div class="form-group">
+                <label>سعر البيع</label>
+                <input type="number" id="newItemPrice" class="form-control num-input" value="0" min="0" placeholder="سعر البيع">
             </div>
         </div>
 
@@ -1400,6 +1476,7 @@
             toggleStatementCustomerPicker();
             renderCustomerStatement();
         }
+        if (tabId === 'profitsTab') renderProfitsView();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -1488,6 +1565,13 @@
         return Boolean(currentUser.canDelete);
     }
 
+    function canViewSummaryStats(user = currentUser) {
+        if (!user) return true;
+        if (user.role === 'admin') return true;
+        if (user.canViewStats === undefined || user.canViewStats === null) return true;
+        return Boolean(user.canViewStats);
+    }
+
     function roleLabel(role) {
         if (role === 'admin') return 'مدير';
         if (role === 'supervisor') return 'مشرف عام';
@@ -1503,6 +1587,7 @@
     function toggleEmployeePermBox() {
         const role = document.getElementById('newEmpRole').value;
         document.getElementById('empPermissionsBox').classList.toggle('hidden', role !== 'cashier');
+        document.getElementById('supervisorStatsPermBox').classList.toggle('hidden', role !== 'supervisor');
     }
 
     function showToast(msg) {
@@ -1559,6 +1644,66 @@
             .reduce((s, v) => s + Number(v.amount || 0), 0);
 
         return Math.max(0, creditInvoices - receipts);
+    }
+
+    function resolveItemUnitCost(it, branchId = 'main_branch') {
+        if (it.cost !== undefined && it.cost !== null && Number(it.cost) > 0) {
+            return Number(it.cost);
+        }
+        const matched = it.warehouseId
+            ? state.warehouse.find(w => w.id === it.warehouseId)
+            : state.warehouse.find(
+                w => (w.branchId || 'main_branch') === branchId &&
+                     (w.name || '').trim().toLowerCase() === (it.name || '').trim().toLowerCase() &&
+                     (w.unit || 'حبة') === (it.unit || 'حبة')
+            ) || state.warehouse.find(
+                w => (w.name || '').trim().toLowerCase() === (it.name || '').trim().toLowerCase()
+            );
+        return matched ? Number(matched.cost || 0) : 0;
+    }
+
+    function computeInvoiceCost(inv) {
+        const items = Array.isArray(inv.items) ? inv.items : [];
+        return items.reduce((s, it) => {
+            const qty = Number(it.qty || 0);
+            const unitCost = resolveItemUnitCost(it, inv.branchId || 'main_branch');
+            return s + (qty * unitCost);
+        }, 0);
+    }
+
+    function renderProfitsView() {
+        const totalSales = state.invoices.reduce((s, i) => s + Number(i.netTotal || 0), 0);
+        const totalCost = state.invoices.reduce((s, i) => s + computeInvoiceCost(i), 0);
+        const grossProfit = totalSales - totalCost;
+        const expenses = state.vouchers
+            .filter(v => v.type === 'payment')
+            .reduce((s, v) => s + Number(v.amount || 0), 0);
+        const netProfit = grossProfit - expenses;
+
+        document.getElementById('profitTotalSales').textContent = formatMoney(totalSales);
+        document.getElementById('profitTotalCost').textContent = formatMoney(totalCost);
+        document.getElementById('profitGrossVal').textContent = formatMoney(grossProfit);
+        document.getElementById('profitNetVal').textContent = formatMoney(netProfit);
+
+        const tbody = document.getElementById('profitsTableBody');
+        const rows = state.invoices.slice().reverse().map(inv => {
+            const sales = Number(inv.netTotal || 0);
+            const cost = computeInvoiceCost(inv);
+            const profit = sales - cost;
+            return `
+                <tr>
+                    <td><span class="mono">${inv.invoiceRefNumber || inv.id}</span></td>
+                    <td><span class="mono">${inv.date || '-'}</span></td>
+                    <td>${inv.customerName || '-'}</td>
+                    <td><span class="mono">${formatMoney(sales)}</span></td>
+                    <td><span class="mono">${formatMoney(cost)}</span></td>
+                    <td><span class="mono" style="color:${profit >= 0 ? 'var(--success)' : 'var(--danger)'};">${formatMoney(profit)}</span></td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = rows.length
+            ? rows.join('')
+            : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد فواتير لحساب الأرباح</td></tr>';
     }
 
     function buildInvoiceStatement(refNumRaw, fallbackId = '') {
@@ -1669,6 +1814,7 @@
                     role: 'admin',
                     canEdit: true,
                     canDelete: true,
+                    canViewStats: true,
                     active: true
                 };
                 if (!isDemoMode && db) {
@@ -1734,6 +1880,7 @@
         renderWarehouseTable();
         renderCustomersTable();
         renderCustomerStatement();
+        renderProfitsView();
         renderEmployeesTable();
     }
 
@@ -1862,7 +2009,8 @@
             name: item.name,
             unit: item.unit || 'حبة',
             qty: 1,
-            price: Number(item.price || 0)
+            price: Number(item.price || 0),
+            cost: Number(item.cost || 0)
         });
         showToast(`تمت إضافة ${item.name}`);
     }
@@ -1914,6 +2062,7 @@
         const toBranchName = toBranchObj ? toBranchObj.name : 'الفرع المستهدف';
         const unit = sourceItem.unit || 'حبة';
         const price = Number(sourceItem.price || 0);
+        const cost = Number(sourceItem.cost || 0);
 
         isBusy = true;
         btn.disabled = true;
@@ -1940,6 +2089,7 @@
                     name: sourceItem.name,
                     unit,
                     qty: qtyToMove,
+                    cost,
                     price
                 });
             }
@@ -1956,6 +2106,10 @@
     }
 
     function renderStats() {
+        const strip = document.getElementById('summaryStatsStrip');
+        const showStats = canViewSummaryStats(currentUser);
+        if (strip) strip.classList.toggle('hidden', !showStats);
+
         const sales = state.invoices.reduce((s, i) => s + Number(i.netTotal || 0), 0);
         const cash = state.cashboxes.reduce((s, c) => s + computeSystemCashboxBalance(c), 0);
         const debts = state.customers.reduce((s, c) => s + computeSystemCustomerBalance(c), 0);
@@ -1980,6 +2134,7 @@
         const unitVal = prefill ? (prefill.unit || 'حبة') : 'حبة';
         const qtyVal = prefill ? (prefill.qty || 1) : 1;
         const priceVal = prefill ? (prefill.price || 0) : 0;
+        const costVal = prefill ? Number(prefill.cost || 0) : 0;
         const whId = prefill && prefill.warehouseId ? prefill.warehouseId : '';
         const maxQty = prefill && prefill.maxQty ? prefill.maxQty : '';
 
@@ -1987,6 +2142,7 @@
         if (prefill && rows.length === 1 && !rows[0].querySelector('.item-name').value.trim()) {
             rows[0].dataset.warehouseId = whId;
             rows[0].dataset.maxQty = maxQty;
+            rows[0].dataset.cost = costVal;
             rows[0].querySelector('.item-name').value = nameVal;
             rows[0].querySelector('.item-unit').value = unitVal;
             rows[0].querySelector('.item-qty').value = qtyVal;
@@ -1999,6 +2155,7 @@
         row.className = 'invoice-item-row';
         row.dataset.warehouseId = whId;
         row.dataset.maxQty = maxQty;
+        row.dataset.cost = costVal;
         row.innerHTML = `
             <input type="text" class="form-control item-name" placeholder="اسم الصنف" value="${nameVal}">
             <select class="form-control item-unit">
@@ -2206,7 +2363,8 @@
                         stockError = `الكمية المطلوبة من (${name}) أكبر من المتاح (${avail})`;
                     }
                 }
-                items.push({ name, unit, qty, price, warehouseId: matchedWh ? matchedWh.id : '' });
+                const cost = matchedWh ? Number(matchedWh.cost || 0) : Number(r.dataset.cost || 0);
+                items.push({ name, unit, qty, price, cost, warehouseId: matchedWh ? matchedWh.id : '' });
             }
         });
 
@@ -2238,6 +2396,7 @@
         try {
             const subtotal = items.reduce((s, x) => s + x.qty * x.price, 0);
             const netTotal = Math.max(0, subtotal - discount);
+            const totalCost = items.reduce((s, x) => s + x.qty * Number(x.cost || 0), 0);
             const invId = `INV-${Date.now()}`;
             const statementText = buildInvoiceStatement(invoiceRefNumber, invId);
 
@@ -2255,6 +2414,7 @@
                 items,
                 discount,
                 netTotal,
+                totalCost,
                 employee: currentUser.fullName,
                 employeeRole: currentUser.role,
                 notes: statementText
@@ -2659,6 +2819,7 @@
         const name = document.getElementById('newItemName').value.trim();
         const unit = document.getElementById('newItemUnit').value || 'حبة';
         const qty = Number(document.getElementById('newItemQty').value || 0);
+        const cost = Number(document.getElementById('newItemCost').value || 0);
         const price = Number(document.getElementById('newItemPrice').value || 0);
         if (!name) {
             showToast('أدخل اسم الصنف');
@@ -2678,13 +2839,14 @@
                     showToast('ليس لديك صلاحية التعديل على المخزون');
                     return;
                 }
-                await db.collection('warehouse').doc(existing.id).update({ qty, price, unit, branchId, branchName });
+                await db.collection('warehouse').doc(existing.id).update({ qty, cost, price, unit, branchId, branchName });
             } else {
                 const id = `wh_${Date.now()}`;
-                await db.collection('warehouse').doc(id).set({ id, branchId, branchName, name, unit, qty, price });
+                await db.collection('warehouse').doc(id).set({ id, branchId, branchName, name, unit, qty, cost, price });
             }
             document.getElementById('newItemName').value = '';
             document.getElementById('newItemQty').value = '1';
+            document.getElementById('newItemCost').value = '0';
             document.getElementById('newItemPrice').value = '0';
             showToast('تم حفظ الصنف في المخزن');
             closeAddItemModal();
@@ -2703,10 +2865,13 @@
         if (!item) return;
         const nextQty = prompt(`تعديل كمية (${item.name} - ${item.unit || 'حبة'}):`, item.qty);
         if (nextQty === null) return;
-        const nextPrice = prompt(`تعديل سعر (${item.name}):`, item.price);
+        const nextCost = prompt(`تعديل سعر التكلفة (${item.name}):`, item.cost || 0);
+        if (nextCost === null) return;
+        const nextPrice = prompt(`تعديل سعر البيع (${item.name}):`, item.price || 0);
         if (nextPrice === null) return;
         await db.collection('warehouse').doc(itemId).update({
             qty: Number(nextQty || 0),
+            cost: Number(nextCost || 0),
             price: Number(nextPrice || 0)
         });
         showToast('تم تعديل الصنف');
@@ -2732,6 +2897,7 @@
         tbody.innerHTML = filtered.length
             ? filtered.map(w => {
                 const q = Number(w.qty || 0);
+                const c = Number(w.cost || 0);
                 const p = Number(w.price || 0);
                 return `
                     <tr>
@@ -2739,6 +2905,7 @@
                         <td><strong>${w.name}</strong></td>
                         <td><span class="badge badge-unit">${w.unit || 'حبة'}</span></td>
                         <td><span class="badge ${q > 0 ? 'badge-cash' : 'badge-expense'} mono">${q}</span></td>
+                        <td><span class="mono">${formatMoney(c)}</span></td>
                         <td><span class="mono">${formatMoney(p)}</span></td>
                         <td><span class="mono">${formatMoney(q * p)}</span></td>
                         <td>
@@ -2749,7 +2916,7 @@
                     </tr>
                 `;
             }).join('')
-            : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا توجد أصناف في هذا الفرع</td></tr>';
+            : '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا توجد أصناف في هذا الفرع</td></tr>';
     }
 
     async function createCustomer() {
@@ -3003,6 +3170,9 @@
         const isFull = role === 'admin' || role === 'supervisor';
         const canEdit = isFull ? true : document.getElementById('newEmpCanEdit').checked;
         const canDelete = isFull ? true : document.getElementById('newEmpCanDelete').checked;
+        const canViewStats = role === 'supervisor'
+            ? document.getElementById('newSupCanViewStats').checked
+            : (role === 'admin' ? true : document.getElementById('newEmpCanViewStats').checked);
 
         if (!fullName || !username || !password) {
             showToast('أدخل جميع بيانات الحساب');
@@ -3026,6 +3196,7 @@
                 role,
                 canEdit,
                 canDelete,
+                canViewStats,
                 active: true
             });
             document.getElementById('newEmpFullName').value = '';
@@ -3033,6 +3204,8 @@
             document.getElementById('newEmpPassword').value = '';
             document.getElementById('newEmpCanEdit').checked = false;
             document.getElementById('newEmpCanDelete').checked = false;
+            document.getElementById('newEmpCanViewStats').checked = true;
+            document.getElementById('newSupCanViewStats').checked = true;
             showToast('تم حفظ الحساب');
         } finally {
             isBusy = false;
@@ -3043,10 +3216,12 @@
     async function toggleEmployeePerm(empId, field) {
         if (isBusy || !canManageUsers()) return;
         const emp = state.employees.find(e => e.id === empId);
-        if (!emp || emp.role === 'admin' || emp.role === 'supervisor') return;
+        if (!emp || emp.role === 'admin') return;
+        if (emp.role === 'supervisor' && field !== 'canViewStats') return;
         isBusy = true;
         try {
-            await db.collection('employees').doc(empId).update({ [field]: !Boolean(emp[field]) });
+            const currentVal = field === 'canViewStats' ? canViewSummaryStats(emp) : Boolean(emp[field]);
+            await db.collection('employees').doc(empId).update({ [field]: !currentVal });
             showToast('تم تحديث الصلاحية');
         } finally {
             isBusy = false;
@@ -3099,18 +3274,35 @@
         const tbody = document.getElementById('employeesTableBody');
         const allowDeleteUsers = canManageUsers();
         tbody.innerHTML = state.employees.map(emp => {
-            const full = emp.role === 'admin' || emp.role === 'supervisor';
+            const isAdmin = emp.role === 'admin';
+            const isSup = emp.role === 'supervisor';
             const isProtectedAdmin = emp.id === 'emp_admin' || emp.username === ADMIN_USER;
-            const permsHtml = full
-                ? '<span class="badge badge-sup">تعديل + حذف (كامل)</span>'
-                : `
+            const statsVisible = canViewSummaryStats(emp);
+
+            let permsHtml = '';
+            if (isAdmin) {
+                permsHtml = '<span class="badge badge-role">صلاحيات كاملة + المؤشرات</span>';
+            } else if (isSup) {
+                permsHtml = `
+                    <span class="badge badge-sup">تعديل + حذف</span>
+                    <button class="btn ${statsVisible ? 'btn-success' : 'btn-outline'} btn-sm" onclick="toggleEmployeePerm('${emp.id}', 'canViewStats')">
+                        ${statsVisible ? 'المؤشرات ظاهرة ✓' : 'المؤشرات مخفية ✕'}
+                    </button>
+                `;
+            } else {
+                permsHtml = `
                     <button class="btn ${emp.canEdit ? 'btn-success' : 'btn-outline'} btn-sm" onclick="toggleEmployeePerm('${emp.id}', 'canEdit')">
                         ${emp.canEdit ? 'تعديل ✓' : 'تعديل ✕'}
                     </button>
                     <button class="btn ${emp.canDelete ? 'btn-danger' : 'btn-outline'} btn-sm" onclick="toggleEmployeePerm('${emp.id}', 'canDelete')">
                         ${emp.canDelete ? 'حذف ✓' : 'حذف ✕'}
                     </button>
-                  `;
+                    <button class="btn ${statsVisible ? 'btn-success' : 'btn-outline'} btn-sm" onclick="toggleEmployeePerm('${emp.id}', 'canViewStats')">
+                        ${statsVisible ? 'المؤشرات ✓' : 'المؤشرات ✕'}
+                    </button>
+                `;
+            }
+
             const deleteBtnHtml = (allowDeleteUsers && !isProtectedAdmin)
                 ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeAccount('${emp.id}')" title="حذف المستخدم"><i class="fa-solid fa-trash"></i></button>`
                 : '';
