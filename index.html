@@ -135,7 +135,7 @@
 
         .form-control {
             width: 100%;
-            padding: 11px 13px;
+            padding: 12px 13px;
             border: 1.5px solid var(--border);
             border-radius: 12px;
             background: #ffffff;
@@ -182,17 +182,17 @@
         }
 
         .btn {
-            padding: 10px 14px;
+            padding: 11px 15px;
             border-radius: 12px;
             border: none;
             font-family: 'Cairo', sans-serif;
             font-weight: 700;
-            font-size: 13.5px;
+            font-size: 14px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 7px;
+            gap: 8px;
             transition: all 0.18s ease;
         }
 
@@ -200,11 +200,12 @@
         .btn-full { width: 100%; padding: 13px; font-size: 15px; }
         .btn-primary { background: var(--primary); color: #fff; }
         .btn-primary:hover { background: var(--primary-hover); }
+        .btn-accent { background: var(--accent); color: #fff; }
         .btn-success { background: var(--success-bg); color: var(--success); }
         .btn-warning { background: var(--warning-bg); color: var(--warning); }
         .btn-danger { background: var(--danger-bg); color: var(--danger); }
         .btn-outline { background: #fff; color: var(--text-main); border: 1.5px solid var(--border); }
-        .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 9px; }
+        .btn-sm { padding: 7px 11px; font-size: 12px; border-radius: 9px; }
 
         .header-bar {
             display: flex;
@@ -234,62 +235,60 @@
             color: var(--warning);
         }
 
-        /* قائمة التنقل بين الصفحات */
+        /* قائمة الأقسام الرئيسية على الشاشة الرئيسية */
         .quick-nav {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
             margin-bottom: 16px;
         }
 
         @media (min-width: 768px) {
             .quick-nav {
-                grid-template-columns: repeat(6, 1fr);
-                gap: 10px;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
             }
         }
 
         .nav-tab {
-            padding: 11px 8px;
-            border-radius: 14px;
+            padding: 16px 12px;
+            border-radius: 16px;
             border: 1.5px solid var(--border);
             background: var(--bg-surface);
             color: var(--text-main);
             font-family: 'Cairo', sans-serif;
             font-weight: 800;
-            font-size: 13px;
+            font-size: 14.5px;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 5px;
+            gap: 8px;
             transition: all 0.18s ease;
         }
 
-        .nav-tab i { font-size: 17px; color: var(--primary); }
-        .nav-tab.active {
-            background: var(--primary);
-            color: #fff;
+        .nav-tab i { font-size: 22px; color: var(--primary); }
+        .nav-tab:hover {
             border-color: var(--primary);
+            background: var(--primary-soft);
         }
-        .nav-tab.active i { color: #fff; }
 
-        .page-banner {
+        /* شريط أعلى الصفحة الكاملة مع زر الرجوع */
+        .fullpage-topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
+            gap: 10px;
             background: var(--primary-soft);
-            border: 1px solid #c7dcef;
-            border-radius: 14px;
-            padding: 11px 14px;
+            border: 1.5px solid #c7dcef;
+            border-radius: 15px;
+            padding: 10px 14px;
             margin-bottom: 14px;
         }
 
-        .page-banner-title {
-            font-size: 16px;
+        .fullpage-title {
+            font-size: 16.5px;
             font-weight: 800;
             color: var(--primary);
             display: flex;
@@ -312,7 +311,7 @@
             background: var(--bg-surface);
             border: 1.5px solid var(--border);
             border-radius: 14px;
-            padding: 11px 12px;
+            padding: 12px;
         }
 
         .mini-stat-label { font-size: 12px; color: var(--text-muted); font-weight: 700; }
@@ -369,7 +368,7 @@
         .badge-credit { background: var(--warning-bg); color: var(--warning); }
         .badge-expense { background: var(--danger-bg); color: var(--danger); }
         .badge-role { background: var(--purple-bg); color: var(--purple); }
-        .badge-sup { background: #e0f2fe; color: #0369a1); }
+        .badge-sup { background: #e0f2fe; color: #0369a1; }
         .badge-unit { background: #f1f5f9; color: #334155; }
 
         .mono {
@@ -379,7 +378,6 @@
             display: inline-block;
         }
 
-        /* صف الصنف في الفاتورة: اسم، وحدة (حبة/شدة)، كمية، سعر، حذف */
         .invoice-item-row {
             display: grid;
             grid-template-columns: 2fr 1fr 0.9fr 1fr auto;
@@ -443,14 +441,14 @@
 
 <div class="app-shell">
 
-    <!-- شاشة الدخول السريعة -->
+    <!-- شاشة الدخول -->
     <div id="loginView" class="login-wrapper">
         <div class="brand-logo">
             <img src="logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
             <i class="fa-solid fa-industry" style="display:none;"></i>
         </div>
         <h1>معمل أبو محمد</h1>
-        <p>دخول سريع وصفحات مستقلة للهاتف</p>
+        <p>دخول سريع وصفحات كاملة للهاتف</p>
 
         <div class="form-group">
             <label>اسم المستخدم</label>
@@ -493,59 +491,62 @@
             </div>
         </div>
 
-        <!-- التنقل بين الصفحات المستقلة -->
-        <div class="quick-nav">
-            <button class="nav-tab active" data-tab="salesTab" onclick="switchTab('salesTab', this)">
-                <i class="fa-solid fa-file-invoice-dollar"></i>
-                <span>المبيعات</span>
-            </button>
-            <button class="nav-tab" data-tab="vouchersTab" onclick="switchTab('vouchersTab', this)">
-                <i class="fa-solid fa-file-signature"></i>
-                <span>الأسناد</span>
-            </button>
-            <button class="nav-tab" data-tab="cashboxTab" onclick="switchTab('cashboxTab', this)">
-                <i class="fa-solid fa-vault"></i>
-                <span>الصندوق</span>
-            </button>
-            <button class="nav-tab" data-tab="warehouseTab" onclick="switchTab('warehouseTab', this)">
-                <i class="fa-solid fa-boxes-stacked"></i>
-                <span>المخازن والفروع</span>
-            </button>
-            <button class="nav-tab" data-tab="customersTab" onclick="switchTab('customersTab', this)">
-                <i class="fa-solid fa-users"></i>
-                <span>العملاء</span>
-            </button>
-            <button id="employeesNavBtn" class="nav-tab" data-tab="employeesTab" onclick="switchTab('employeesTab', this)">
-                <i class="fa-solid fa-user-tie"></i>
-                <span>الموظفون</span>
-            </button>
+        <!-- القائمة الرئيسية (تختفي عند فتح صفحة كاملة وتعود بالرجوع) -->
+        <div id="homeMenuContainer">
+            <div class="summary-strip">
+                <div class="mini-stat">
+                    <div class="mini-stat-label">المبيعات</div>
+                    <div class="mini-stat-val mono" id="kpiTotalSales">0.00</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="mini-stat-label">رصيد الصندوق</div>
+                    <div class="mini-stat-val mono" id="kpiTotalCash" style="color:var(--success);">0.00</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="mini-stat-label">ديون العملاء</div>
+                    <div class="mini-stat-val mono" id="kpiTotalReceivables" style="color:var(--warning);">0.00</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="mini-stat-label">المخزون (إجمالي الوحدات)</div>
+                    <div class="mini-stat-val mono" id="kpiWarehouseStock" style="color:var(--accent);">0</div>
+                </div>
+            </div>
+
+            <div class="quick-nav">
+                <button class="nav-tab" onclick="openFullPage('salesTab')">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>المبيعات</span>
+                </button>
+                <button class="nav-tab" onclick="openFullPage('vouchersTab')">
+                    <i class="fa-solid fa-file-signature"></i>
+                    <span>الأسناد</span>
+                </button>
+                <button class="nav-tab" onclick="openFullPage('cashboxTab')">
+                    <i class="fa-solid fa-vault"></i>
+                    <span>الصندوق</span>
+                </button>
+                <button class="nav-tab" onclick="openFullPage('warehouseTab')">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>المخازن والفروع</span>
+                </button>
+                <button class="nav-tab" onclick="openFullPage('customersTab')">
+                    <i class="fa-solid fa-users"></i>
+                    <span>العملاء</span>
+                </button>
+                <button id="employeesNavBtn" class="nav-tab" onclick="openFullPage('employeesTab')">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span>الموظفون</span>
+                </button>
+            </div>
         </div>
 
-        <!-- ملخص سريع -->
-        <div class="summary-strip">
-            <div class="mini-stat">
-                <div class="mini-stat-label">المبيعات</div>
-                <div class="mini-stat-val mono" id="kpiTotalSales">0.00</div>
-            </div>
-            <div class="mini-stat">
-                <div class="mini-stat-label">رصيد الصندوق</div>
-                <div class="mini-stat-val mono" id="kpiTotalCash" style="color:var(--success);">0.00</div>
-            </div>
-            <div class="mini-stat">
-                <div class="mini-stat-label">ديون العملاء</div>
-                <div class="mini-stat-val mono" id="kpiTotalReceivables" style="color:var(--warning);">0.00</div>
-            </div>
-            <div class="mini-stat">
-                <div class="mini-stat-label">المخزون (إجمالي الوحدات)</div>
-                <div class="mini-stat-val mono" id="kpiWarehouseStock" style="color:var(--accent);">0</div>
-            </div>
-        </div>
-
-        <!-- 1. صفحة المبيعات والفواتير -->
-        <section id="salesTab" class="tab-content">
-            <div class="page-banner">
-                <div class="page-banner-title"><i class="fa-solid fa-file-invoice-dollar"></i> صفحة المبيعات</div>
-                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">إنشاء فاتورة واستعراض المبيعات</span>
+        <!-- 1. صفحة المبيعات الكاملة -->
+        <section id="salesTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-file-invoice-dollar"></i> المبيعات</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
             </div>
 
             <div class="card-box">
@@ -554,7 +555,7 @@
                 <div class="grid-4">
                     <div class="form-group">
                         <label>الفرع</label>
-                        <select id="invBranchSelect" class="form-control" onchange="populateWarehouseItemOptions()"></select>
+                        <select id="invBranchSelect" class="form-control"></select>
                     </div>
                     <div class="form-group">
                         <label>نوع الفاتورة</label>
@@ -629,15 +630,17 @@
             </div>
         </section>
 
-        <!-- 2. صفحة الأسناد -->
+        <!-- 2. صفحة الأسناد الكاملة -->
         <section id="vouchersTab" class="tab-content hidden">
-            <div class="page-banner">
-                <div class="page-banner-title"><i class="fa-solid fa-file-signature"></i> صفحة الأسناد</div>
-                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">سندات القبض والصرف</span>
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-file-signature"></i> الأسناد</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span>إصدار سند جديد</span></div>
+                <div class="card-title"><span>إصدار سند قبض / صرف</span></div>
                 <div class="grid-2">
                     <div class="form-group">
                         <label>نوع السند</label>
@@ -690,15 +693,17 @@
             </div>
         </section>
 
-        <!-- 3. صفحة الصندوق -->
+        <!-- 3. صفحة الصندوق الكاملة -->
         <section id="cashboxTab" class="tab-content hidden">
-            <div class="page-banner">
-                <div class="page-banner-title"><i class="fa-solid fa-vault"></i> صفحة الصندوق</div>
-                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">أرصدة الصناديق وإضافة صندوق</span>
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-vault"></i> الصندوق</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span>الصناديق الحالية</span></div>
+                <div class="card-title"><span>الصناديق والأرصدة</span></div>
                 <div id="dashboardCashboxesList" style="margin-bottom:14px;"></div>
                 <div class="grid-2">
                     <div class="form-group" style="margin-bottom:0;">
@@ -716,36 +721,74 @@
             </div>
         </section>
 
-        <!-- 4. صفحة المخازن والفروع -->
+        <!-- 4. صفحة المخازن والفروع + النقل بين المخازن -->
         <section id="warehouseTab" class="tab-content hidden">
-            <div class="page-banner">
-                <div class="page-banner-title"><i class="fa-solid fa-boxes-stacked"></i> صفحة المخازن والفروع</div>
-                <span id="warehouseTotalValueBadge" class="badge badge-cash">قيمة المخزون: 0.00</span>
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-boxes-stacked"></i> المخازن والفروع</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
             </div>
 
-            <!-- إدارة الفروع -->
+            <!-- إضافة فرع جديد -->
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-code-branch"></i> الفروع وإضافة فرع</span></div>
-                <div class="grid-3">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-code-branch"></i> الفروع وإضافة فرع</span>
+                    <span id="warehouseTotalValueBadge" class="badge badge-cash">قيمة المخزون: 0.00</span>
+                </div>
+                <div class="grid-2">
                     <div class="form-group" style="margin-bottom:0;">
-                        <label>الفرع النشط لعرض المخزون</label>
+                        <label>عرض مخزون فرع</label>
                         <select id="activeBranchFilter" class="form-control" onchange="renderWarehouseTable()"></select>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label>اسم فرع جديد</label>
-                        <input type="text" id="newBranchName" class="form-control" placeholder="مثال: فرع إب">
-                    </div>
-                    <div style="display:flex; align-items:flex-end;">
-                        <button id="saveBranchBtn" class="btn btn-outline btn-full" onclick="createBranch()">
-                            <i class="fa-solid fa-plus"></i> إضافة فرع
-                        </button>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="newBranchName" class="form-control" placeholder="مثال: فرع إب">
+                            <button id="saveBranchBtn" class="btn btn-outline" onclick="createBranch()">
+                                <i class="fa-solid fa-plus"></i> إضافة
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- إضافة / تحديث صنف في مخزن الفرع -->
+            <!-- نقل مخزني من مخزن إلى مخزن (مرتب للهاتف) -->
+            <div class="card-box" style="border-color: var(--accent);">
+                <div class="card-title" style="color: var(--accent);">
+                    <span><i class="fa-solid fa-right-left"></i> نقل من مخزن إلى مخزن</span>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>من مخزن / فرع</label>
+                        <select id="transferFromBranch" class="form-control" onchange="populateTransferItems()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>إلى مخزن / فرع</label>
+                        <select id="transferToBranch" class="form-control"></select>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>الصنف المراد نقله</label>
+                        <select id="transferItemSelect" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>الكمية للنقل</label>
+                        <input type="number" id="transferQty" class="form-control num-input" value="1" min="1">
+                    </div>
+                </div>
+
+                <button id="executeTransferBtn" class="btn btn-accent btn-full" onclick="transferWarehouseStock()">
+                    <i class="fa-solid fa-dolly"></i> تنفيذ النقل بين المخازن
+                </button>
+            </div>
+
+            <!-- إضافة / تحديث صنف في مخزن فرع -->
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-box-open"></i> إضافة / تحديث صنف في مخزن الفرع</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-box-open"></i> إضافة / تحديث صنف في مخزن</span></div>
                 <div class="grid-4">
                     <div class="form-group" style="margin-bottom:0;">
                         <label>الفرع</label>
@@ -771,7 +814,7 @@
                     </div>
                 </div>
                 <button id="saveWarehouseItemBtn" class="btn btn-primary btn-full" onclick="saveWarehouseItem()" style="margin-top:12px;">
-                    <i class="fa-solid fa-box"></i> حفظ في مخزن الفرع
+                    <i class="fa-solid fa-box"></i> حفظ في المخزن
                 </button>
             </div>
 
@@ -796,11 +839,13 @@
             </div>
         </section>
 
-        <!-- 5. صفحة العملاء -->
+        <!-- 5. صفحة العملاء الكاملة -->
         <section id="customersTab" class="tab-content hidden">
-            <div class="page-banner">
-                <div class="page-banner-title"><i class="fa-solid fa-users"></i> صفحة العملاء</div>
-                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">إدارة العملاء والأرصدة</span>
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-users"></i> العملاء</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
             </div>
 
             <div class="card-box">
@@ -842,11 +887,13 @@
             </div>
         </section>
 
-        <!-- 6. صفحة الموظفون والصلاحيات -->
+        <!-- 6. صفحة الموظفون والصلاحيات الكاملة -->
         <section id="employeesTab" class="tab-content hidden">
-            <div class="page-banner">
-                <div class="page-banner-title"><i class="fa-solid fa-user-tie"></i> صفحة الموظفون والصلاحيات</div>
-                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">مشرف عام (كل الصلاحيات) أو موظف (تعديل/حذف)</span>
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-user-tie"></i> الموظفون والصلاحيات</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
             </div>
 
             <div class="card-box">
@@ -949,6 +996,25 @@
         employees: [],
         warehouse: []
     };
+
+    function openFullPage(tabId) {
+        if (tabId === 'employeesTab' && !hasFullAccess(currentUser)) {
+            showToast('هذا القسم للمشرف العام والمدير فقط');
+            return;
+        }
+        document.getElementById('homeMenuContainer').classList.add('hidden');
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById(tabId).classList.remove('hidden');
+        if (tabId === 'warehouseTab') populateTransferItems();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goBackHome() {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById('homeMenuContainer').classList.remove('hidden');
+        renderStats();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     function scheduleRender() {
         if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
@@ -1148,6 +1214,7 @@
 
             document.getElementById('loginView').classList.add('hidden');
             document.getElementById('mainAppView').classList.remove('hidden');
+            goBackHome();
 
             if (document.getElementById('invoiceItemsContainer').children.length === 0) {
                 addInvoiceItemRow();
@@ -1171,18 +1238,6 @@
         document.getElementById('loginView').classList.remove('hidden');
     }
 
-    function switchTab(tabId, btnEl) {
-        if (tabId === 'employeesTab' && !hasFullAccess(currentUser)) {
-            showToast('هذا القسم للمشرف العام والمدير فقط');
-            return;
-        }
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(tabId).classList.remove('hidden');
-        btnEl.classList.add('active');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
     function renderAllViews() {
         populateDropdowns();
         renderStats();
@@ -1202,19 +1257,30 @@
         const invBrSel = document.getElementById('invBranchSelect');
         const whBrSel = document.getElementById('whItemBranchSelect');
         const filterBrSel = document.getElementById('activeBranchFilter');
+        const fromBrSel = document.getElementById('transferFromBranch');
+        const toBrSel = document.getElementById('transferToBranch');
 
         const prevInvBr = invBrSel.value;
         const prevWhBr = whBrSel.value;
         const prevFilterBr = filterBrSel.value;
+        const prevFromBr = fromBrSel.value;
+        const prevToBr = toBrSel.value;
 
         const brOpts = branchList.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
         invBrSel.innerHTML = brOpts;
         whBrSel.innerHTML = brOpts;
         filterBrSel.innerHTML = '<option value="ALL">جميع الفروع</option>' + brOpts;
+        fromBrSel.innerHTML = brOpts;
+        toBrSel.innerHTML = brOpts;
 
         if (prevInvBr && branchList.some(b => b.id === prevInvBr)) invBrSel.value = prevInvBr;
         if (prevWhBr && branchList.some(b => b.id === prevWhBr)) whBrSel.value = prevWhBr;
         if (prevFilterBr) filterBrSel.value = prevFilterBr;
+        if (prevFromBr && branchList.some(b => b.id === prevFromBr)) fromBrSel.value = prevFromBr;
+        if (prevToBr && branchList.some(b => b.id === prevToBr)) toBrSel.value = prevToBr;
+        else if (branchList.length > 1) toBrSel.value = branchList[1].id;
+
+        populateTransferItems();
 
         const cbSelInv = document.getElementById('invCashboxSelect');
         const cbSelVch = document.getElementById('voucherCashboxSelect');
@@ -1243,8 +1309,92 @@
         if (prevCustVch) custSelVch.value = prevCustVch;
     }
 
-    function populateWarehouseItemOptions() {
-        // متاح للتوسعة المستقبلية عند ربط قوائم الأصناف بالفرع
+    function populateTransferItems() {
+        const fromBranchId = document.getElementById('transferFromBranch').value || 'main_branch';
+        const sel = document.getElementById('transferItemSelect');
+        const prevVal = sel.value;
+
+        const availableItems = state.warehouse.filter(
+            w => (w.branchId || 'main_branch') === fromBranchId && Number(w.qty || 0) > 0
+        );
+
+        sel.innerHTML = availableItems.length
+            ? availableItems.map(w => `<option value="${w.id}">${w.name} — متاح: ${w.qty} ${w.unit || 'حبة'}</option>`).join('')
+            : '<option value="">لا توجد أصناف متاحة في هذا المخزن</option>';
+
+        if (prevVal && availableItems.some(w => w.id === prevVal)) {
+            sel.value = prevVal;
+        }
+    }
+
+    async function transferWarehouseStock() {
+        if (isBusy) return;
+        const btn = document.getElementById('executeTransferBtn');
+        const fromBranchId = document.getElementById('transferFromBranch').value || 'main_branch';
+        const toBranchId = document.getElementById('transferToBranch').value || 'main_branch';
+        const itemId = document.getElementById('transferItemSelect').value;
+        const qtyToMove = Number(document.getElementById('transferQty').value || 0);
+
+        if (fromBranchId === toBranchId) {
+            showToast('اختر مخزناً مختلفاً للنقل إليه');
+            return;
+        }
+
+        const sourceItem = state.warehouse.find(w => w.id === itemId);
+        if (!sourceItem) {
+            showToast('اختر الصنف المراد نقله');
+            return;
+        }
+
+        const currentQty = Number(sourceItem.qty || 0);
+        if (qtyToMove <= 0 || qtyToMove > currentQty) {
+            showToast(`الكمية غير صحيحة (المتاح: ${currentQty})`);
+            return;
+        }
+
+        const toBranchObj = state.branches.find(b => b.id === toBranchId);
+        const toBranchName = toBranchObj ? toBranchObj.name : 'الفرع المستهدف';
+        const unit = sourceItem.unit || 'حبة';
+        const price = Number(sourceItem.price || 0);
+
+        isBusy = true;
+        btn.disabled = true;
+
+        try {
+            const remainingQty = currentQty - qtyToMove;
+            await db.collection('warehouse').doc(sourceItem.id).update({ qty: remainingQty });
+
+            const targetItem = state.warehouse.find(
+                w => (w.branchId || 'main_branch') === toBranchId &&
+                     w.name.toLowerCase() === sourceItem.name.toLowerCase() &&
+                     (w.unit || 'حبة') === unit
+            );
+
+            if (targetItem) {
+                await db.collection('warehouse').doc(targetItem.id).update({
+                    qty: Number(targetItem.qty || 0) + qtyToMove
+                });
+            } else {
+                const newId = `wh_${Date.now()}`;
+                await db.collection('warehouse').doc(newId).set({
+                    id: newId,
+                    branchId: toBranchId,
+                    branchName: toBranchName,
+                    name: sourceItem.name,
+                    unit,
+                    qty: qtyToMove,
+                    price
+                });
+            }
+
+            document.getElementById('transferQty').value = '1';
+            showToast(`تم نقل ${qtyToMove} ${unit} إلى ${toBranchName}`);
+        } catch (e) {
+            showToast('تعذر إتمام النقل');
+        } finally {
+            isBusy = false;
+            btn.disabled = false;
+        }
     }
 
     function renderStats() {
@@ -1639,7 +1789,7 @@
             document.getElementById('newItemName').value = '';
             document.getElementById('newItemQty').value = '1';
             document.getElementById('newItemPrice').value = '0';
-            showToast('تم حفظ الصنف في مخزن الفرع');
+            showToast('تم حفظ الصنف في المخزن');
         } finally {
             isBusy = false;
             btn.disabled = false;
