@@ -6,7 +6,7 @@
     <title>معمل أبو محمد | نظام المحاسبة والمبيعات</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- مكتبات Firebase السحابية -->
@@ -33,27 +33,16 @@
             --danger-bg: #fee2e2;
             --purple: #5b21b6;
             --purple-bg: #ede9fe;
-
-            /* ألوان صفحة الدخول (أخضر وأحمر) */
-            --login-green: #15803d;
-            --login-green-dark: #166534;
-            --login-green-soft: #ecfdf5;
-            --login-red: #dc2626;
-            --login-red-soft: #fef2f2;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Cairo', 'Tajawal', sans-serif;
+            font-family: 'Cairo', sans-serif;
             background: linear-gradient(160deg, #e6ecf5 0%, #f4f7fb 100%);
             color: var(--text-main);
             min-height: 100vh;
             padding: 10px;
-        }
-
-        body.login-active {
-            background: linear-gradient(145deg, #dcfce7 0%, #f8fafc 48%, #fee2e2 100%);
         }
 
         .app-shell {
@@ -67,45 +56,30 @@
             min-height: calc(100vh - 20px);
         }
 
-        body.login-active .app-shell {
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
         @media (min-width: 768px) {
             .app-shell { padding: 24px 30px; }
         }
 
-        /* صفحة الدخول بألوان الأحمر والأخضر وخط Tajawal */
         .login-wrapper {
-            width: 100%;
-            max-width: 410px;
-            margin: 16px auto;
-            background: #ffffff;
-            border: 2px solid #bbf7d0;
-            border-top: 5px solid var(--login-green);
-            border-bottom: 5px solid var(--login-red);
-            border-radius: 24px;
-            padding: 28px 22px;
-            box-shadow: 0 20px 40px -15px rgba(21, 128, 61, 0.16), 0 10px 24px -12px rgba(220, 38, 38, 0.12);
-            font-family: 'Tajawal', 'Cairo', sans-serif;
+            max-width: 400px;
+            margin: 36px auto;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 26px 20px;
         }
 
         .brand-logo {
-            width: 88px;
-            height: 88px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, var(--login-green-soft), var(--login-red-soft));
-            border: 2px solid #fecaca;
-            color: var(--login-green);
+            width: 84px;
+            height: 84px;
+            border-radius: 16px;
+            background: #ffffff;
+            border: 1.5px solid var(--border);
+            color: var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
+            font-size: 30px;
             margin: 0 auto 14px;
             padding: 6px;
             overflow: hidden;
@@ -118,38 +92,7 @@
             display: block;
         }
 
-        .login-wrapper h1 {
-            text-align: center;
-            font-family: 'Tajawal', 'Cairo', sans-serif;
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--login-green-dark);
-            margin-bottom: 5px;
-        }
-
-        .login-wrapper p {
-            text-align: center;
-            color: var(--login-red);
-            font-weight: 700;
-            font-size: 13.5px;
-            margin-bottom: 20px;
-        }
-
-        .login-wrapper .form-control:focus {
-            border-color: var(--login-green);
-            box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.16);
-        }
-
-        .btn-login-green {
-            background: linear-gradient(135deg, var(--login-green), var(--login-green-dark));
-            color: #ffffff;
-            border-bottom: 3px solid var(--login-red);
-        }
-
-        .btn-login-green:hover {
-            filter: brightness(1.05);
-        }
-
+        /* شريط علوي مرتب مع زر خروج مرتفع ومعزول */
         .top-utility-row {
             display: flex;
             justify-content: space-between;
@@ -177,6 +120,7 @@
             flex: 1;
         }
 
+        /* مربع الشعار الملاصق للشاشة */
         .header-logo-square {
             width: 48px;
             height: 48px;
@@ -201,6 +145,21 @@
             display: block;
         }
 
+        .login-wrapper h1 {
+            text-align: center;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .login-wrapper p {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
         .form-group { margin-bottom: 12px; }
         .form-group label {
             display: block;
@@ -215,7 +174,7 @@
             border: 1.5px solid var(--border);
             border-radius: 12px;
             background: #ffffff;
-            font-family: 'Cairo', 'Tajawal', sans-serif;
+            font-family: 'Cairo', sans-serif;
             font-size: 14px;
             color: var(--text-main);
         }
@@ -261,7 +220,7 @@
             padding: 11px 15px;
             border-radius: 12px;
             border: none;
-            font-family: 'Cairo', 'Tajawal', sans-serif;
+            font-family: 'Cairo', sans-serif;
             font-weight: 700;
             font-size: 14px;
             cursor: pointer;
@@ -320,7 +279,7 @@
             border: 1.5px solid var(--border);
             background: var(--bg-surface);
             color: var(--text-main);
-            font-family: 'Cairo', 'Tajawal', sans-serif;
+            font-family: 'Cairo', sans-serif;
             font-weight: 800;
             font-size: 14.5px;
             cursor: pointer;
@@ -564,11 +523,11 @@
         }
     </style>
 </head>
-<body class="login-active">
+<body>
 
 <div class="app-shell">
 
-    <!-- شاشة الدخول بالأحمر والأخضر وخط Tajawal -->
+    <!-- شاشة الدخول -->
     <div id="loginView" class="login-wrapper">
         <div class="brand-logo">
             <img src="logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
@@ -586,7 +545,7 @@
             <input type="password" id="loginPass" class="form-control num-input" inputmode="numeric" autocomplete="new-password" onkeydown="if(event.key==='Enter') handleLogin()">
         </div>
 
-        <button id="loginSubmitBtn" class="btn btn-login-green btn-full" onclick="handleLogin()">
+        <button id="loginSubmitBtn" class="btn btn-primary btn-full" onclick="handleLogin()">
             <i class="fa-solid fa-right-to-bracket"></i> <span id="loginBtnText">دخول</span>
         </button>
     </div>
@@ -594,6 +553,7 @@
     <!-- واجهة النظام -->
     <div id="mainAppView" class="hidden">
 
+        <!-- صف علوي مرتفع: حالة الاتصال + زر الخروج بعيداً عن أزرار العمل -->
         <div class="top-utility-row">
             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                 <span id="connectionStatusBadge" class="db-status"><i class="fa-solid fa-bolt"></i> متصل مباشر</span>
@@ -636,8 +596,8 @@
                     <div class="mini-stat-val mono" id="kpiTotalReceivables" style="color:var(--warning);">0.00</div>
                 </div>
                 <div class="mini-stat">
-                    <div class="mini-stat-label">المشتروات والمخاسير</div>
-                    <div class="mini-stat-val mono" id="kpiTotalPurchases" style="color:var(--danger);">0.00</div>
+                    <div class="mini-stat-label">المخزون (إجمالي الوحدات)</div>
+                    <div class="mini-stat-val mono" id="kpiWarehouseStock" style="color:var(--accent);">0</div>
                 </div>
             </div>
 
@@ -645,10 +605,6 @@
                 <button class="nav-tab" onclick="openFullPage('salesTab')">
                     <i class="fa-solid fa-file-invoice-dollar"></i>
                     <span>المبيعات والفواتير</span>
-                </button>
-                <button class="nav-tab" onclick="openFullPage('purchasesTab')">
-                    <i class="fa-solid fa-cart-shopping" style="color:var(--danger);"></i>
-                    <span>المشتروات والمخاسير</span>
                 </button>
                 <button class="nav-tab" onclick="openFullPage('vouchersTab')">
                     <i class="fa-solid fa-file-signature"></i>
@@ -783,91 +739,6 @@
                             </tr>
                         </thead>
                         <tbody id="invoicesTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- صفحة المشتروات والمخاسير للمعمل -->
-        <section id="purchasesTab" class="tab-content hidden">
-            <div class="fullpage-topbar">
-                <div class="fullpage-title" style="color:var(--danger);"><i class="fa-solid fa-cart-shopping"></i> المشتروات والمخاسير للمعمل</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
-                    <i class="fa-solid fa-arrow-right"></i> رجوع
-                </button>
-            </div>
-
-            <div class="card-box">
-                <div class="card-title" style="color:var(--danger);">
-                    <span>تسجيل مشترى أو مخاسير للمعمل</span>
-                    <span class="badge badge-expense">إجمالي المشتروات: <span class="mono" id="purchasesTabTotal" style="margin-right:4px;">0.00</span></span>
-                </div>
-
-                <div class="grid-4">
-                    <div class="form-group">
-                        <label>الفرع / المخزن</label>
-                        <select id="purBranchSelect" class="form-control"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>الصندوق (للدفع النقدي)</label>
-                        <select id="purCashboxSelect" class="form-control"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>البيان / اسم المادة أو المخاسير</label>
-                        <input type="text" id="purTitle" class="form-control" placeholder="مثال: شراء أقمشة / صيانة مكائن">
-                    </div>
-                    <div class="form-group">
-                        <label>المبلغ الإجمالي</label>
-                        <input type="number" id="purAmount" class="form-control num-input" min="0" placeholder="0.00">
-                    </div>
-                </div>
-
-                <div class="grid-3">
-                    <div class="form-group">
-                        <label>المورد (اختياري)</label>
-                        <input type="text" id="purSupplier" class="form-control" placeholder="اسم المورد أو الجهة">
-                    </div>
-                    <div class="form-group">
-                        <label>إضافة كمية للمخزن؟</label>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                            <input type="number" id="purAddQty" class="form-control num-input" value="0" min="0" placeholder="الكمية">
-                            <select id="purUnit" class="form-control">
-                                <option value="حبة">حبة</option>
-                                <option value="شدة">شدة</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>ملاحظات</label>
-                        <input type="text" id="purNotes" class="form-control" placeholder="تفاصيل إضافية...">
-                    </div>
-                </div>
-
-                <button id="savePurchaseBtn" class="btn btn-danger btn-full" onclick="createPurchaseExpense()">
-                    <i class="fa-solid fa-check"></i> حفظ المشترى / المصروف
-                </button>
-            </div>
-
-            <div class="card-box">
-                <div class="card-title">
-                    <span><i class="fa-solid fa-list-check"></i> سجل مشتروات ومخاسير المعمل</span>
-                    <input type="text" id="purchaseSearchInput" class="form-control" style="max-width:220px; padding:7px 10px;" placeholder="بحث في المشتروات..." oninput="renderPurchasesTable()">
-                </div>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>التاريخ</th>
-                                <th>الفرع</th>
-                                <th>البيان / الصنف</th>
-                                <th>المورد</th>
-                                <th>الكمية للمخزن</th>
-                                <th>المبلغ</th>
-                                <th>الموظف</th>
-                                <th>إجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="purchasesTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -1291,7 +1162,6 @@
         cashboxes: [],
         customers: [],
         invoices: [],
-        purchases: [],
         vouchers: [],
         employees: [],
         warehouse: []
@@ -1337,7 +1207,7 @@
 
     function startRealtimeListeners() {
         stopRealtimeListeners();
-        const cols = ['branches', 'cashboxes', 'customers', 'invoices', 'purchases', 'vouchers', 'employees', 'warehouse'];
+        const cols = ['branches', 'cashboxes', 'customers', 'invoices', 'vouchers', 'employees', 'warehouse'];
         cols.forEach(colName => {
             const unsub = db.collection(colName).onSnapshot(
                 snap => {
@@ -1430,7 +1300,7 @@
         return Number(cb.balance || 0);
     }
 
-    // رصيد الصندوق: رصيد افتتاحي + مبيعات نقدية + سندات قبض - سندات صرف - مشتروات نقدية من الصندوق
+    // حساب نظامي لرصيد الصندوق: رصيد افتتاحي + مبيعات نقدية عليه + سندات قبض عليه - سندات صرف عليه
     function computeSystemCashboxBalance(cb) {
         const opening = getCashboxOpening(cb);
         const cashSales = state.invoices
@@ -1445,13 +1315,10 @@
             .filter(v => v.type === 'payment' && v.cashboxId === cb.id)
             .reduce((s, v) => s + Number(v.amount || 0), 0);
 
-        const cashPurchases = state.purchases
-            .filter(p => p.cashboxId === cb.id)
-            .reduce((s, p) => s + Number(p.amount || 0), 0);
-
-        return opening + cashSales + receipts - payments - cashPurchases;
+        return opening + cashSales + receipts - payments;
     }
 
+    // حساب نظامي لمديونية العميل: فواتير آجلة باسم العميل - سندات قبض باسم العميل
     function computeSystemCustomerBalance(cust) {
         const creditInvoices = state.invoices
             .filter(i => i.paymentType === 'credit' && (
@@ -1479,17 +1346,16 @@
 
     async function reloadAllData(showMsg = false) {
         try {
-            const [branches, cashboxes, customers, invoices, purchases, vouchers, employees, warehouse] = await Promise.all([
+            const [branches, cashboxes, customers, invoices, vouchers, employees, warehouse] = await Promise.all([
                 loadCollection('branches'),
                 loadCollection('cashboxes'),
                 loadCollection('customers'),
                 loadCollection('invoices'),
-                loadCollection('purchases'),
                 loadCollection('vouchers'),
                 loadCollection('employees'),
                 loadCollection('warehouse')
             ]);
-            state = { branches, cashboxes, customers, invoices, purchases, vouchers, employees, warehouse };
+            state = { branches, cashboxes, customers, invoices, vouchers, employees, warehouse };
             if (currentUser && currentUser.id) {
                 const updatedMe = state.employees.find(e => e.id === currentUser.id);
                 if (updatedMe) currentUser = updatedMe;
@@ -1559,7 +1425,6 @@
             }
 
             currentUser = found;
-            document.body.classList.remove('login-active');
             document.getElementById('headerWelcome').textContent = `${currentUser.fullName}`;
             const roleBadge = document.getElementById('currentUserRoleBadge');
             roleBadge.textContent = roleLabel(currentUser.role);
@@ -1596,14 +1461,12 @@
         document.getElementById('loginPass').value = '';
         document.getElementById('mainAppView').classList.add('hidden');
         document.getElementById('loginView').classList.remove('hidden');
-        document.body.classList.add('login-active');
     }
 
     function renderAllViews() {
         populateDropdowns();
         renderStats();
         renderInvoicesTable();
-        renderPurchasesTable();
         renderVouchersTable();
         renderCashboxesList();
         renderWarehouseTable();
@@ -1617,14 +1480,12 @@
             : [{ id: 'main_branch', name: 'الفرع الرئيسي' }];
 
         const invBrSel = document.getElementById('invBranchSelect');
-        const purBrSel = document.getElementById('purBranchSelect');
         const whBrSel = document.getElementById('whItemBranchSelect');
         const filterBrSel = document.getElementById('activeBranchFilter');
         const fromBrSel = document.getElementById('transferFromBranch');
         const toBrSel = document.getElementById('transferToBranch');
 
         const prevInvBr = invBrSel.value;
-        const prevPurBr = purBrSel.value;
         const prevWhBr = whBrSel.value;
         const prevFilterBr = filterBrSel.value;
         const prevFromBr = fromBrSel.value;
@@ -1632,14 +1493,12 @@
 
         const brOpts = branchList.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
         invBrSel.innerHTML = brOpts;
-        purBrSel.innerHTML = brOpts;
         whBrSel.innerHTML = brOpts;
         filterBrSel.innerHTML = '<option value="ALL">جميع الفروع</option>' + brOpts;
         fromBrSel.innerHTML = brOpts;
         toBrSel.innerHTML = brOpts;
 
         if (prevInvBr && branchList.some(b => b.id === prevInvBr)) invBrSel.value = prevInvBr;
-        if (prevPurBr && branchList.some(b => b.id === prevPurBr)) purBrSel.value = prevPurBr;
         if (prevWhBr && branchList.some(b => b.id === prevWhBr)) whBrSel.value = prevWhBr;
         if (prevFilterBr) filterBrSel.value = prevFilterBr;
         if (prevFromBr && branchList.some(b => b.id === prevFromBr)) fromBrSel.value = prevFromBr;
@@ -1650,20 +1509,16 @@
         populateTransferItems();
 
         const cbSelInv = document.getElementById('invCashboxSelect');
-        const cbSelPur = document.getElementById('purCashboxSelect');
         const cbSelVch = document.getElementById('voucherCashboxSelect');
         const prevCbInv = cbSelInv.value;
-        const prevCbPur = cbSelPur.value;
         const prevCbVch = cbSelVch.value;
 
         const cbOpts = state.cashboxes.length
             ? state.cashboxes.map(c => `<option value="${c.id}">${c.name} (${formatMoney(computeSystemCashboxBalance(c))})</option>`).join('')
             : '<option value="">أضف صندوقاً أولاً</option>';
         cbSelInv.innerHTML = cbOpts;
-        cbSelPur.innerHTML = cbOpts;
         cbSelVch.innerHTML = cbOpts;
         if (prevCbInv && state.cashboxes.some(c => c.id === prevCbInv)) cbSelInv.value = prevCbInv;
-        if (prevCbPur && state.cashboxes.some(c => c.id === prevCbPur)) cbSelPur.value = prevCbPur;
         if (prevCbVch && state.cashboxes.some(c => c.id === prevCbVch)) cbSelVch.value = prevCbVch;
 
         const custSelInv = document.getElementById('invCustomerSelect');
@@ -1810,154 +1665,14 @@
         const sales = state.invoices.reduce((s, i) => s + Number(i.netTotal || 0), 0);
         const cash = state.cashboxes.reduce((s, c) => s + computeSystemCashboxBalance(c), 0);
         const debts = state.customers.reduce((s, c) => s + computeSystemCustomerBalance(c), 0);
-        const purchasesTotal = state.purchases.reduce((s, p) => s + Number(p.amount || 0), 0);
+        const totalStockQty = state.warehouse.reduce((s, w) => s + Number(w.qty || 0), 0);
         const totalStockVal = state.warehouse.reduce((s, w) => s + (Number(w.qty || 0) * Number(w.price || 0)), 0);
 
         document.getElementById('kpiTotalSales').textContent = formatMoney(sales);
         document.getElementById('kpiTotalCash').textContent = formatMoney(cash);
         document.getElementById('kpiTotalReceivables').textContent = formatMoney(debts);
-        document.getElementById('kpiTotalPurchases').textContent = formatMoney(purchasesTotal);
-        document.getElementById('purchasesTabTotal').textContent = formatMoney(purchasesTotal);
+        document.getElementById('kpiWarehouseStock').textContent = totalStockQty;
         document.getElementById('warehouseTotalValueBadge').textContent = `قيمة المخزون: ${formatMoney(totalStockVal)}`;
-    }
-
-    async function createPurchaseExpense() {
-        if (isBusy) return;
-        const btn = document.getElementById('savePurchaseBtn');
-        const branchId = document.getElementById('purBranchSelect').value || 'main_branch';
-        const branchObj = state.branches.find(b => b.id === branchId);
-        const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
-
-        const cashboxId = document.getElementById('purCashboxSelect').value;
-        const title = document.getElementById('purTitle').value.trim();
-        const amount = Number(document.getElementById('purAmount').value || 0);
-        const supplier = document.getElementById('purSupplier').value.trim();
-        const addQty = Number(document.getElementById('purAddQty').value || 0);
-        const unit = document.getElementById('purUnit').value || 'حبة';
-        const notes = document.getElementById('purNotes').value.trim();
-
-        if (!title || amount <= 0) {
-            showToast('أدخل البيان والمبلغ الصحيح');
-            return;
-        }
-
-        const cashbox = state.cashboxes.find(c => c.id === cashboxId);
-        if (!cashbox) {
-            showToast('اختر الصندوق');
-            return;
-        }
-
-        isBusy = true;
-        btn.disabled = true;
-
-        try {
-            const purId = `PUR-${Date.now()}`;
-            const unitCost = addQty > 0 ? Number((amount / addQty).toFixed(2)) : 0;
-
-            await db.collection('purchases').doc(purId).set({
-                id: purId,
-                date: new Date().toISOString().split('T')[0],
-                branchId,
-                branchName,
-                cashboxId: cashbox.id,
-                cashboxName: cashbox.name,
-                title,
-                amount,
-                supplier: supplier || 'عام',
-                addQty,
-                unit,
-                notes,
-                employee: currentUser.fullName
-            });
-
-            if (addQty > 0) {
-                const existing = state.warehouse.find(
-                    w => (w.branchId || 'main_branch') === branchId &&
-                         w.name.toLowerCase() === title.toLowerCase() &&
-                         (w.unit || 'حبة') === unit
-                );
-                if (existing) {
-                    await db.collection('warehouse').doc(existing.id).update({
-                        qty: Number(existing.qty || 0) + addQty
-                    });
-                } else {
-                    const whId = `wh_${Date.now()}`;
-                    await db.collection('warehouse').doc(whId).set({
-                        id: whId,
-                        branchId,
-                        branchName,
-                        name: title,
-                        unit,
-                        qty: addQty,
-                        price: unitCost
-                    });
-                }
-            }
-
-            document.getElementById('purTitle').value = '';
-            document.getElementById('purAmount').value = '';
-            document.getElementById('purSupplier').value = '';
-            document.getElementById('purAddQty').value = '0';
-            document.getElementById('purNotes').value = '';
-            showToast('تم تسجيل المشترى / المصروف');
-        } catch (e) {
-            showToast('تعذر حفظ المشترى');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
-    }
-
-    async function deletePurchaseRecord(purId) {
-        if (isBusy) return;
-        if (!canDeleteRecord()) {
-            showToast('ليس لديك صلاحية الحذف');
-            return;
-        }
-        const p = state.purchases.find(x => x.id === purId);
-        if (!p) return;
-        if (!confirm(`تأكيد حذف السجل (${p.title})؟`)) return;
-
-        isBusy = true;
-        try {
-            await db.collection('purchases').doc(purId).delete();
-            showToast('تم حذف السجل');
-        } finally {
-            isBusy = false;
-        }
-    }
-
-    function renderPurchasesTable() {
-        const tbody = document.getElementById('purchasesTableBody');
-        if (!tbody) return;
-        const q = (document.getElementById('purchaseSearchInput')?.value || '').toLowerCase().trim();
-        const list = state.purchases
-            .filter(p =>
-                (p.title || '').toLowerCase().includes(q) ||
-                (p.supplier || '').toLowerCase().includes(q) ||
-                (p.branchName || '').toLowerCase().includes(q)
-            )
-            .slice().reverse();
-
-        tbody.innerHTML = list.length
-            ? list.map(p => `
-                <tr>
-                    <td><span class="mono">${p.date || '-'}</span></td>
-                    <td>${p.branchName || 'الفرع الرئيسي'}</td>
-                    <td>
-                        <strong>${p.title}</strong>
-                        ${p.notes ? `<div style="font-size:11px; color:var(--text-muted);">${p.notes}</div>` : ''}
-                    </td>
-                    <td>${p.supplier || 'عام'}</td>
-                    <td>${Number(p.addQty || 0) > 0 ? `<span class="badge badge-cash mono">${p.addQty}</span> ${p.unit || 'حبة'}` : '<span style="color:var(--text-muted);">-</span>'}</td>
-                    <td><span class="mono" style="color:var(--danger);">${formatMoney(p.amount)}</span></td>
-                    <td>${p.employee || '-'}</td>
-                    <td>
-                        ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deletePurchaseRecord('${p.id}')"><i class="fa-solid fa-trash"></i></button>` : '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>'}
-                    </td>
-                </tr>
-            `).join('')
-            : '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا توجد مشتروات أو مصاريف مسجلة</td></tr>';
     }
 
     function toggleInvoicePaymentFields() {
