@@ -420,7 +420,7 @@
             <i class="fa-solid fa-industry" style="display:none;"></i>
         </div>
         <h1>معمل أبو محمد</h1>
-        <p>دخول سريع ومباشر من الهاتف</p>
+        <p>دخول سريع وتحديث تلقائي مباشر</p>
 
         <div class="form-group">
             <label>اسم المستخدم</label>
@@ -446,7 +446,7 @@
                 </div>
                 <div>
                     <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                        <span id="connectionStatusBadge" class="db-status"><i class="fa-solid fa-cloud-check"></i> متصل</span>
+                        <span id="connectionStatusBadge" class="db-status"><i class="fa-solid fa-bolt"></i> متصل مباشر</span>
                         <span id="currentUserRoleBadge" class="badge badge-role">مدير</span>
                     </div>
                     <h2 id="headerWelcome" style="font-size:17px; font-weight:800; margin-top:4px;">معمل أبو محمد</h2>
@@ -844,7 +844,8 @@
     const db = firebase.firestore();
     let isDemoMode = false;
     let isBusy = false;
-    let autoSyncTimer = null;
+    let liveListeners = [];
+    let renderDebounceTimer = null;
 
     let currentUser = null;
     let state = {
@@ -856,15 +857,60 @@
         warehouse: []
     };
 
-    function scheduleAutoSyncAfterAction() {
-        if (autoSyncTimer) {
-            clearTimeout(autoSyncTimer);
-        }
-        autoSyncTimer = setTimeout(() => {
-            if (currentUser && !isBusy) {
-                reloadAllData(false);
+    function scheduleRender() {
+        if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
+        renderDebounceTimer = setTimeout(() => {
+            if (currentUser && currentUser.id) {
+                const updatedMe = state.employees.find(e => e.id === currentUser.id);
+                if (updatedMe) {
+                    currentUser = updatedMe;
+                    document.getElementById('headerWelcome').textContent = `معمل أبو محمد — ${currentUser.fullName}`;
+                    const roleBadge = document.getElementById('currentUserRoleBadge');
+                    roleBadge.textContent = roleLabel(currentUser.role);
+                    roleBadge.className = `badge ${roleBadgeClass(currentUser.role)}`;
+                    document.getElementById('employeesNavBtn').classList.toggle('hidden', !hasFullAccess(currentUser));
+                }
             }
-        }, 3000);
+            renderAllViews();
+        }, 80);
+    }
+
+    function startRealtimeListeners() {
+        stopRealtimeListeners();
+        const cols = ['cashboxes', 'customers', 'invoices', 'vouchers', 'employees', 'warehouse'];
+        cols.forEach(colName => {
+            const unsub = db.collection(colName).onSnapshot(
+                snap => {
+                    const list = [];
+                    snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                    state[colName] = list;
+                    isDemoMode = false;
+                    const badge = document.getElementById('connectionStatusBadge');
+                    if (badge) {
+                        badge.className = 'db-status';
+                        badge.innerHTML = '<i class="fa-solid fa-bolt"></i> متصل مباشر';
+                    }
+                    scheduleRender();
+                },
+                err => {
+                    console.warn(`Listener error on ${colName}:`, err);
+                    isDemoMode = true;
+                    const badge = document.getElementById('connectionStatusBadge');
+                    if (badge) {
+                        badge.className = 'db-status demo';
+                        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> تحقق من القاعدة';
+                    }
+                }
+            );
+            liveListeners.push(unsub);
+        });
+    }
+
+    function stopRealtimeListeners() {
+        liveListeners.forEach(unsub => {
+            try { unsub(); } catch (e) {}
+        });
+        liveListeners = [];
     }
 
     function hasFullAccess(user = currentUser) {
@@ -905,7 +951,7 @@
         const el = document.getElementById('toast');
         document.getElementById('toastText').textContent = msg;
         el.classList.add('show');
-        setTimeout(() => el.classList.remove('show'), 2200);
+        setTimeout(() => el.classList.remove('show'), 2000);
     }
 
     function formatMoney(num) {
@@ -935,7 +981,7 @@
                 if (updatedMe) currentUser = updatedMe;
             }
             isDemoMode = false;
-            if (showMsg) showToast('تم تحديث البيانات');
+            if (showMsg) showToast('تم التحديث');
         } catch (err) {
             console.warn('Firestore error:', err);
             isDemoMode = true;
@@ -1006,10 +1052,6 @@
 
             document.getElementById('employeesNavBtn').classList.toggle('hidden', !hasFullAccess(currentUser));
 
-            const badge = document.getElementById('connectionStatusBadge');
-            badge.className = isDemoMode ? 'db-status demo' : 'db-status';
-            badge.innerHTML = isDemoMode ? '<i class="fa-solid fa-triangle-exclamation"></i> تحقق من القاعدة' : '<i class="fa-solid fa-cloud-check"></i> متصل';
-
             document.getElementById('loginView').classList.add('hidden');
             document.getElementById('mainAppView').classList.remove('hidden');
 
@@ -1017,7 +1059,8 @@
                 addInvoiceItemRow();
             }
 
-            reloadAllData(false);
+            renderAllViews();
+            startRealtimeListeners();
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1026,10 +1069,7 @@
     }
 
     function handleLogout() {
-        if (autoSyncTimer) {
-            clearTimeout(autoSyncTimer);
-            autoSyncTimer = null;
-        }
+        stopRealtimeListeners();
         currentUser = null;
         document.getElementById('loginUser').value = '';
         document.getElementById('loginPass').value = '';
@@ -1060,17 +1100,31 @@
     }
 
     function populateDropdowns() {
+        const cbSelInv = document.getElementById('invCashboxSelect');
+        const cbSelVch = document.getElementById('voucherCashboxSelect');
+        const prevCbInv = cbSelInv.value;
+        const prevCbVch = cbSelVch.value;
+
         const cbOpts = state.cashboxes.length
             ? state.cashboxes.map(c => `<option value="${c.id}">${c.name} (${formatMoney(c.balance)})</option>`).join('')
             : '<option value="">أضف صندوقاً أولاً</option>';
-        document.getElementById('invCashboxSelect').innerHTML = cbOpts;
-        document.getElementById('voucherCashboxSelect').innerHTML = cbOpts;
+        cbSelInv.innerHTML = cbOpts;
+        cbSelVch.innerHTML = cbOpts;
+        if (prevCbInv && state.cashboxes.some(c => c.id === prevCbInv)) cbSelInv.value = prevCbInv;
+        if (prevCbVch && state.cashboxes.some(c => c.id === prevCbVch)) cbSelVch.value = prevCbVch;
+
+        const custSelInv = document.getElementById('invCustomerSelect');
+        const custSelVch = document.getElementById('voucherCustomerSelect');
+        const prevCustInv = custSelInv.value;
+        const prevCustVch = custSelVch.value;
 
         const custOpts = state.customers.length
             ? state.customers.map(c => `<option value="${c.id}">${c.name} (${formatMoney(c.balance)})</option>`).join('')
             : '<option value="">لا يوجد عملاء</option>';
-        document.getElementById('invCustomerSelect').innerHTML = custOpts;
-        document.getElementById('voucherCustomerSelect').innerHTML = '<option value="">بدون عميل</option>' + custOpts;
+        custSelInv.innerHTML = custOpts;
+        custSelVch.innerHTML = '<option value="">بدون عميل</option>' + custOpts;
+        if (prevCustInv && state.customers.some(c => c.id === prevCustInv)) custSelInv.value = prevCustInv;
+        if (prevCustVch) custSelVch.value = prevCustVch;
     }
 
     function renderStats() {
@@ -1191,9 +1245,9 @@
             addInvoiceItemRow();
             document.getElementById('invDiscount').value = '0';
             document.getElementById('invNotes').value = '';
-            renderAllViews();
-            scheduleAutoSyncAfterAction();
-            showToast('تم حفظ الفاتورة وسيتم التحديث خلال 3 ثوانٍ');
+            showToast('تم حفظ الفاتورة');
+        } catch (e) {
+            showToast('تعذر حفظ الفاتورة');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1210,8 +1264,7 @@
         const nextNote = prompt('تعديل ملاحظة الفاتورة:', inv.notes || '');
         if (nextNote === null) return;
         await db.collection('invoices').doc(invId).update({ notes: nextNote.trim() });
-        scheduleAutoSyncAfterAction();
-        showToast('تم تعديل الفاتورة وسيتم التحديث خلال 3 ثوانٍ');
+        showToast('تم تعديل الفاتورة');
     }
 
     async function deleteInvoiceRecord(invId) {
@@ -1221,8 +1274,7 @@
         }
         if (!confirm('تأكيد حذف الفاتورة؟')) return;
         await db.collection('invoices').doc(invId).delete();
-        scheduleAutoSyncAfterAction();
-        showToast('تم حذف الفاتورة وسيتم التحديث خلال 3 ثوانٍ');
+        showToast('تم حذف الفاتورة');
     }
 
     function renderInvoicesTable() {
@@ -1303,8 +1355,9 @@
 
             document.getElementById('voucherAmount').value = '';
             document.getElementById('voucherNote').value = '';
-            scheduleAutoSyncAfterAction();
-            showToast('تم حفظ السند وسيتم التحديث خلال 3 ثوانٍ');
+            showToast('تم حفظ السند');
+        } catch (e) {
+            showToast('تعذر حفظ السند');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1321,8 +1374,7 @@
         const nextNote = prompt('تعديل البيان:', v.note || '');
         if (nextNote === null) return;
         await db.collection('vouchers').doc(vchId).update({ note: nextNote.trim() });
-        scheduleAutoSyncAfterAction();
-        showToast('تم تعديل السند وسيتم التحديث خلال 3 ثوانٍ');
+        showToast('تم تعديل السند');
     }
 
     async function deleteVoucherRecord(vchId) {
@@ -1332,8 +1384,7 @@
         }
         if (!confirm('تأكيد حذف السند؟')) return;
         await db.collection('vouchers').doc(vchId).delete();
-        scheduleAutoSyncAfterAction();
-        showToast('تم حذف السند وسيتم التحديث خلال 3 ثوانٍ');
+        showToast('تم حذف السند');
     }
 
     function renderVouchersTable() {
@@ -1373,8 +1424,7 @@
             await db.collection('cashboxes').doc(id).set({ id, name, balance: opening });
             document.getElementById('newCashboxName').value = '';
             document.getElementById('newCashboxOpening').value = '0';
-            scheduleAutoSyncAfterAction();
-            showToast('تمت إضافة الصندوق وسيتم التحديث خلال 3 ثوانٍ');
+            showToast('تمت إضافة الصندوق');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1421,8 +1471,7 @@
             document.getElementById('newItemName').value = '';
             document.getElementById('newItemQty').value = '1';
             document.getElementById('newItemPrice').value = '0';
-            scheduleAutoSyncAfterAction();
-            showToast('تم حفظ الصنف وسيتم التحديث خلال 3 ثوانٍ');
+            showToast('تم حفظ الصنف');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1444,8 +1493,7 @@
             qty: Number(nextQty || 0),
             price: Number(nextPrice || 0)
         });
-        scheduleAutoSyncAfterAction();
-        showToast('تم تعديل الصنف وسيتم التحديث خلال 3 ثوانٍ');
+        showToast('تم تعديل الصنف');
     }
 
     async function deleteWarehouseItem(itemId) {
@@ -1455,8 +1503,7 @@
         }
         if (!confirm('تأكيد حذف الصنف من المخزون؟')) return;
         await db.collection('warehouse').doc(itemId).delete();
-        scheduleAutoSyncAfterAction();
-        showToast('تم حذف الصنف وسيتم التحديث خلال 3 ثوانٍ');
+        showToast('تم حذف الصنف');
     }
 
     function renderWarehouseTable() {
@@ -1500,8 +1547,7 @@
             await db.collection('customers').doc(id).set({ id, name, phone: phone || '-', creditLimit, balance: 0 });
             document.getElementById('newCustomerName').value = '';
             document.getElementById('newCustomerPhone').value = '';
-            scheduleAutoSyncAfterAction();
-            showToast('تم حفظ العميل وسيتم التحديث خلال 3 ثوانٍ');
+            showToast('تم حفظ العميل');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1523,8 +1569,7 @@
             name: nextName.trim(),
             phone: nextPhone.trim() || '-'
         });
-        scheduleAutoSyncAfterAction();
-        showToast('تم تعديل العميل وسيتم التحديث خلال 3 ثوانٍ');
+        showToast('تم تعديل العميل');
     }
 
     async function deleteCustomerItem(custId) {
@@ -1534,8 +1579,7 @@
         }
         if (!confirm('تأكيد حذف العميل؟')) return;
         await db.collection('customers').doc(custId).delete();
-        scheduleAutoSyncAfterAction();
-        showToast('تم حذف العميل وسيتم التحديث خلال 3 ثوانٍ');
+        showToast('تم حذف العميل');
     }
 
     function renderCustomersTable() {
@@ -1576,7 +1620,6 @@
         btn.disabled = true;
 
         try {
-            await reloadAllData(false);
             if (state.employees.some(e => String(e.username).trim() === username)) {
                 showToast('اسم الدخول موجود مسبقاً');
                 return;
@@ -1597,8 +1640,7 @@
             document.getElementById('newEmpPassword').value = '';
             document.getElementById('newEmpCanEdit').checked = false;
             document.getElementById('newEmpCanDelete').checked = false;
-            scheduleAutoSyncAfterAction();
-            showToast('تم حفظ الحساب وسيتم التحديث خلال 3 ثوانٍ');
+            showToast('تم حفظ الحساب');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1612,8 +1654,7 @@
         isBusy = true;
         try {
             await db.collection('employees').doc(empId).update({ [field]: !Boolean(emp[field]) });
-            scheduleAutoSyncAfterAction();
-            showToast('تم تحديث الصلاحية وسيتم التحديث خلال 3 ثوانٍ');
+            showToast('تم تحديث الصلاحية');
         } finally {
             isBusy = false;
         }
@@ -1626,8 +1667,7 @@
         isBusy = true;
         try {
             await db.collection('employees').doc(empId).update({ active: !emp.active });
-            scheduleAutoSyncAfterAction();
-            showToast('تم تحديث الحالة وسيتم التحديث خلال 3 ثوانٍ');
+            showToast('تم تحديث الحالة');
         } finally {
             isBusy = false;
         }
