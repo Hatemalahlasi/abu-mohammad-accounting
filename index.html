@@ -330,6 +330,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
             gap: 10px;
             background: var(--primary-soft);
             border: 1.5px solid #c7dcef;
@@ -344,6 +345,13 @@
             color: var(--primary);
             display: flex;
             align-items: center;
+            gap: 8px;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
             gap: 8px;
         }
 
@@ -522,7 +530,7 @@
         .modal-card {
             background: #fff;
             border-radius: 18px;
-            max-width: 560px;
+            max-width: 580px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
@@ -910,13 +918,21 @@
             </div>
         </section>
 
-        <!-- 4. صفحة المخازن والفروع + النقل بين المخازن -->
+        <!-- 4. صفحة المخازن والفروع (منظمة بأزرار منفصلة بدون زحمة) -->
         <section id="warehouseTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-boxes-stacked"></i> المخازن والفروع</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
-                    <i class="fa-solid fa-arrow-right"></i> رجوع
-                </button>
+                <div class="topbar-actions">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="openAddItemModal()">
+                        <i class="fa-solid fa-plus"></i> إضافة أصناف
+                    </button>
+                    <button type="button" class="btn btn-accent btn-sm" onclick="openTransferModal()">
+                        <i class="fa-solid fa-right-left"></i> نقل مخازن
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                        <i class="fa-solid fa-arrow-right"></i> رجوع
+                    </button>
+                </div>
             </div>
 
             <div class="card-box">
@@ -939,69 +955,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="card-box" style="border-color: var(--accent);">
-                <div class="card-title" style="color: var(--accent);">
-                    <span><i class="fa-solid fa-right-left"></i> نقل من مخزن إلى مخزن</span>
-                </div>
-
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>من مخزن / فرع</label>
-                        <select id="transferFromBranch" class="form-control" onchange="populateTransferItems()"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>إلى مخزن / فرع</label>
-                        <select id="transferToBranch" class="form-control"></select>
-                    </div>
-                </div>
-
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>الصنف المراد نقله</label>
-                        <select id="transferItemSelect" class="form-control"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>الكمية للنقل</label>
-                        <input type="number" id="transferQty" class="form-control num-input" value="1" min="1">
-                    </div>
-                </div>
-
-                <button id="executeTransferBtn" class="btn btn-accent btn-full" onclick="transferWarehouseStock()">
-                    <i class="fa-solid fa-dolly"></i> تنفيذ النقل بين المخازن
-                </button>
-            </div>
-
-            <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-box-open"></i> إضافة / تحديث صنف في مخزن</span></div>
-                <div class="grid-4">
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>الفرع</label>
-                        <select id="whItemBranchSelect" class="form-control"></select>
-                    </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>اسم الصنف</label>
-                        <input type="text" id="newItemName" class="form-control" placeholder="اسم المادة أو المنتج">
-                    </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>الوحدة</label>
-                        <select id="newItemUnit" class="form-control">
-                            <option value="حبة">حبة</option>
-                            <option value="شدة">شدة</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>الكمية / السعر</label>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                            <input type="number" id="newItemQty" class="form-control num-input" value="1" min="0" title="الكمية">
-                            <input type="number" id="newItemPrice" class="form-control num-input" value="0" min="0" title="السعر">
-                        </div>
-                    </div>
-                </div>
-                <button id="saveWarehouseItemBtn" class="btn btn-primary btn-full" onclick="saveWarehouseItem()" style="margin-top:12px;">
-                    <i class="fa-solid fa-box"></i> حفظ في المخزن
-                </button>
             </div>
 
             <div class="card-box">
@@ -1029,9 +982,17 @@
         <section id="customersTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-users"></i> العملاء وكشوف الحساب</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
-                    <i class="fa-solid fa-arrow-right"></i> رجوع
-                </button>
+                <div class="topbar-actions">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="openAddItemModal()">
+                        <i class="fa-solid fa-plus"></i> إضافة أصناف
+                    </button>
+                    <button type="button" class="btn btn-accent btn-sm" onclick="openTransferModal()">
+                        <i class="fa-solid fa-right-left"></i> نقل مخازن
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                        <i class="fa-solid fa-arrow-right"></i> رجوع
+                    </button>
+                </div>
             </div>
 
             <div class="card-box">
@@ -1209,6 +1170,96 @@
     </div>
 </div>
 
+<!-- نافذة إضافة / تحديث صنف في مخزن -->
+<div id="addWarehouseItemModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+        <div class="print-header">
+            <div>
+                <h2 style="font-size:17px; font-weight:800; color:var(--primary);"><i class="fa-solid fa-box-open"></i> إضافة / تحديث صنف في مخزن</h2>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeAddItemModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="form-group">
+            <label>الفرع</label>
+            <select id="whItemBranchSelect" class="form-control"></select>
+        </div>
+        <div class="form-group">
+            <label>اسم الصنف</label>
+            <input type="text" id="newItemName" class="form-control" placeholder="اسم المادة أو المنتج">
+        </div>
+        <div class="form-group">
+            <label>الوحدة</label>
+            <select id="newItemUnit" class="form-control">
+                <option value="حبة">حبة</option>
+                <option value="شدة">شدة</option>
+            </select>
+        </div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label>الكمية</label>
+                <input type="number" id="newItemQty" class="form-control num-input" value="1" min="0">
+            </div>
+            <div class="form-group">
+                <label>السعر</label>
+                <input type="number" id="newItemPrice" class="form-control num-input" value="0" min="0">
+            </div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:10px;">
+            <button id="saveWarehouseItemBtn" class="btn btn-primary btn-full" onclick="saveWarehouseItem()">
+                <i class="fa-solid fa-box"></i> حفظ في المخزن
+            </button>
+            <button type="button" class="btn btn-outline" onclick="closeAddItemModal()">إغلاق</button>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة نقل مخازن -->
+<div id="transferWarehouseModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+        <div class="print-header">
+            <div>
+                <h2 style="font-size:17px; font-weight:800; color:var(--accent);"><i class="fa-solid fa-right-left"></i> نقل من مخزن إلى مخزن</h2>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeTransferModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label>من مخزن / فرع</label>
+                <select id="transferFromBranch" class="form-control" onchange="populateTransferItems()"></select>
+            </div>
+            <div class="form-group">
+                <label>إلى مخزن / فرع</label>
+                <select id="transferToBranch" class="form-control"></select>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label>الصنف المراد نقله</label>
+                <select id="transferItemSelect" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label>الكمية للنقل</label>
+                <input type="number" id="transferQty" class="form-control num-input" value="1" min="1">
+            </div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:10px;">
+            <button id="executeTransferBtn" class="btn btn-accent btn-full" onclick="transferWarehouseStock()">
+                <i class="fa-solid fa-dolly"></i> تنفيذ النقل بين المخازن
+            </button>
+            <button type="button" class="btn btn-outline" onclick="closeTransferModal()">إغلاق</button>
+        </div>
+    </div>
+</div>
+
 <!-- نافذة طباعة الفاتورة أو كشف الحساب النظامي -->
 <div id="printInvoiceModal" class="modal-backdrop hidden">
     <div class="modal-card">
@@ -1301,6 +1352,25 @@
         employees: [],
         warehouse: []
     };
+
+    function openAddItemModal() {
+        populateDropdowns();
+        document.getElementById('addWarehouseItemModal').classList.remove('hidden');
+    }
+
+    function closeAddItemModal() {
+        document.getElementById('addWarehouseItemModal').classList.add('hidden');
+    }
+
+    function openTransferModal() {
+        populateDropdowns();
+        populateTransferItems();
+        document.getElementById('transferWarehouseModal').classList.remove('hidden');
+    }
+
+    function closeTransferModal() {
+        document.getElementById('transferWarehouseModal').classList.add('hidden');
+    }
 
     function openFullPage(tabId) {
         if (tabId === 'employeesTab' && !hasFullAccess(currentUser)) {
@@ -1865,6 +1935,7 @@
 
             document.getElementById('transferQty').value = '1';
             showToast(`تم نقل ${qtyToMove} ${unit} إلى ${toBranchName}`);
+            closeTransferModal();
         } catch (e) {
             showToast('تعذر إتمام النقل');
         } finally {
@@ -2546,6 +2617,7 @@
             document.getElementById('newItemQty').value = '1';
             document.getElementById('newItemPrice').value = '0';
             showToast('تم حفظ الصنف في المخزن');
+            closeAddItemModal();
         } finally {
             isBusy = false;
             btn.disabled = false;
