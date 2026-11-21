@@ -234,7 +234,6 @@
             color: var(--warning);
         }
 
-        /* أزرار التنقل السريعة للهاتف */
         .quick-nav {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -790,7 +789,6 @@
                     </div>
                 </div>
 
-                <!-- صلاحيات التعديل والحذف للموظف -->
                 <div id="empPermissionsBox" class="perm-box">
                     <label class="perm-check">
                         <input type="checkbox" id="newEmpCanEdit">
@@ -846,6 +844,7 @@
     const db = firebase.firestore();
     let isDemoMode = false;
     let isBusy = false;
+    let autoSyncTimer = null;
 
     let currentUser = null;
     let state = {
@@ -856,6 +855,17 @@
         employees: [],
         warehouse: []
     };
+
+    function scheduleAutoSyncAfterAction() {
+        if (autoSyncTimer) {
+            clearTimeout(autoSyncTimer);
+        }
+        autoSyncTimer = setTimeout(() => {
+            if (currentUser && !isBusy) {
+                reloadAllData(false);
+            }
+        }, 3000);
+    }
 
     function hasFullAccess(user = currentUser) {
         if (!user) return false;
@@ -994,7 +1004,6 @@
             roleBadge.textContent = roleLabel(currentUser.role);
             roleBadge.className = `badge ${roleBadgeClass(currentUser.role)}`;
 
-            // المشرف العام والمدير يظهر لهما قسم الموظفين وكامل الصلاحيات
             document.getElementById('employeesNavBtn').classList.toggle('hidden', !hasFullAccess(currentUser));
 
             const badge = document.getElementById('connectionStatusBadge');
@@ -1017,6 +1026,10 @@
     }
 
     function handleLogout() {
+        if (autoSyncTimer) {
+            clearTimeout(autoSyncTimer);
+            autoSyncTimer = null;
+        }
         currentUser = null;
         document.getElementById('loginUser').value = '';
         document.getElementById('loginPass').value = '';
@@ -1178,8 +1191,9 @@
             addInvoiceItemRow();
             document.getElementById('invDiscount').value = '0';
             document.getElementById('invNotes').value = '';
-            await reloadAllData(false);
-            showToast('تم حفظ الفاتورة');
+            renderAllViews();
+            scheduleAutoSyncAfterAction();
+            showToast('تم حفظ الفاتورة وسيتم التحديث خلال 3 ثوانٍ');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1196,8 +1210,8 @@
         const nextNote = prompt('تعديل ملاحظة الفاتورة:', inv.notes || '');
         if (nextNote === null) return;
         await db.collection('invoices').doc(invId).update({ notes: nextNote.trim() });
-        await reloadAllData(false);
-        showToast('تم تعديل الفاتورة');
+        scheduleAutoSyncAfterAction();
+        showToast('تم تعديل الفاتورة وسيتم التحديث خلال 3 ثوانٍ');
     }
 
     async function deleteInvoiceRecord(invId) {
@@ -1207,8 +1221,8 @@
         }
         if (!confirm('تأكيد حذف الفاتورة؟')) return;
         await db.collection('invoices').doc(invId).delete();
-        await reloadAllData(false);
-        showToast('تم حذف الفاتورة');
+        scheduleAutoSyncAfterAction();
+        showToast('تم حذف الفاتورة وسيتم التحديث خلال 3 ثوانٍ');
     }
 
     function renderInvoicesTable() {
@@ -1289,8 +1303,8 @@
 
             document.getElementById('voucherAmount').value = '';
             document.getElementById('voucherNote').value = '';
-            await reloadAllData(false);
-            showToast('تم حفظ السند');
+            scheduleAutoSyncAfterAction();
+            showToast('تم حفظ السند وسيتم التحديث خلال 3 ثوانٍ');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1307,8 +1321,8 @@
         const nextNote = prompt('تعديل البيان:', v.note || '');
         if (nextNote === null) return;
         await db.collection('vouchers').doc(vchId).update({ note: nextNote.trim() });
-        await reloadAllData(false);
-        showToast('تم تعديل السند');
+        scheduleAutoSyncAfterAction();
+        showToast('تم تعديل السند وسيتم التحديث خلال 3 ثوانٍ');
     }
 
     async function deleteVoucherRecord(vchId) {
@@ -1318,8 +1332,8 @@
         }
         if (!confirm('تأكيد حذف السند؟')) return;
         await db.collection('vouchers').doc(vchId).delete();
-        await reloadAllData(false);
-        showToast('تم حذف السند');
+        scheduleAutoSyncAfterAction();
+        showToast('تم حذف السند وسيتم التحديث خلال 3 ثوانٍ');
     }
 
     function renderVouchersTable() {
@@ -1359,8 +1373,8 @@
             await db.collection('cashboxes').doc(id).set({ id, name, balance: opening });
             document.getElementById('newCashboxName').value = '';
             document.getElementById('newCashboxOpening').value = '0';
-            await reloadAllData(false);
-            showToast('تمت إضافة الصندوق');
+            scheduleAutoSyncAfterAction();
+            showToast('تمت إضافة الصندوق وسيتم التحديث خلال 3 ثوانٍ');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1407,8 +1421,8 @@
             document.getElementById('newItemName').value = '';
             document.getElementById('newItemQty').value = '1';
             document.getElementById('newItemPrice').value = '0';
-            await reloadAllData(false);
-            showToast('تم تحديث المخزون');
+            scheduleAutoSyncAfterAction();
+            showToast('تم حفظ الصنف وسيتم التحديث خلال 3 ثوانٍ');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1430,8 +1444,8 @@
             qty: Number(nextQty || 0),
             price: Number(nextPrice || 0)
         });
-        await reloadAllData(false);
-        showToast('تم تعديل الصنف');
+        scheduleAutoSyncAfterAction();
+        showToast('تم تعديل الصنف وسيتم التحديث خلال 3 ثوانٍ');
     }
 
     async function deleteWarehouseItem(itemId) {
@@ -1441,8 +1455,8 @@
         }
         if (!confirm('تأكيد حذف الصنف من المخزون؟')) return;
         await db.collection('warehouse').doc(itemId).delete();
-        await reloadAllData(false);
-        showToast('تم حذف الصنف');
+        scheduleAutoSyncAfterAction();
+        showToast('تم حذف الصنف وسيتم التحديث خلال 3 ثوانٍ');
     }
 
     function renderWarehouseTable() {
@@ -1486,8 +1500,8 @@
             await db.collection('customers').doc(id).set({ id, name, phone: phone || '-', creditLimit, balance: 0 });
             document.getElementById('newCustomerName').value = '';
             document.getElementById('newCustomerPhone').value = '';
-            await reloadAllData(false);
-            showToast('تم حفظ العميل');
+            scheduleAutoSyncAfterAction();
+            showToast('تم حفظ العميل وسيتم التحديث خلال 3 ثوانٍ');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1509,8 +1523,8 @@
             name: nextName.trim(),
             phone: nextPhone.trim() || '-'
         });
-        await reloadAllData(false);
-        showToast('تم تعديل العميل');
+        scheduleAutoSyncAfterAction();
+        showToast('تم تعديل العميل وسيتم التحديث خلال 3 ثوانٍ');
     }
 
     async function deleteCustomerItem(custId) {
@@ -1520,8 +1534,8 @@
         }
         if (!confirm('تأكيد حذف العميل؟')) return;
         await db.collection('customers').doc(custId).delete();
-        await reloadAllData(false);
-        showToast('تم حذف العميل');
+        scheduleAutoSyncAfterAction();
+        showToast('تم حذف العميل وسيتم التحديث خلال 3 ثوانٍ');
     }
 
     function renderCustomersTable() {
@@ -1583,8 +1597,8 @@
             document.getElementById('newEmpPassword').value = '';
             document.getElementById('newEmpCanEdit').checked = false;
             document.getElementById('newEmpCanDelete').checked = false;
-            await reloadAllData(false);
-            showToast('تم حفظ الحساب');
+            scheduleAutoSyncAfterAction();
+            showToast('تم حفظ الحساب وسيتم التحديث خلال 3 ثوانٍ');
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -1598,8 +1612,8 @@
         isBusy = true;
         try {
             await db.collection('employees').doc(empId).update({ [field]: !Boolean(emp[field]) });
-            await reloadAllData(false);
-            showToast('تم تحديث الصلاحية');
+            scheduleAutoSyncAfterAction();
+            showToast('تم تحديث الصلاحية وسيتم التحديث خلال 3 ثوانٍ');
         } finally {
             isBusy = false;
         }
@@ -1612,8 +1626,8 @@
         isBusy = true;
         try {
             await db.collection('employees').doc(empId).update({ active: !emp.active });
-            await reloadAllData(false);
-            showToast('تم تحديث الحالة');
+            scheduleAutoSyncAfterAction();
+            showToast('تم تحديث الحالة وسيتم التحديث خلال 3 ثوانٍ');
         } finally {
             isBusy = false;
         }
