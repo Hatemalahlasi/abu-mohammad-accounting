@@ -418,7 +418,6 @@
             margin-top: 12px;
         }
 
-        /* نافذة الطباعة النظامية */
         .modal-backdrop {
             position: fixed;
             inset: 0;
@@ -924,10 +923,10 @@
             </div>
         </section>
 
-        <!-- 5. صفحة العملاء الكاملة -->
+        <!-- 5. صفحة العملاء ومراقبة الأرصدة -->
         <section id="customersTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-users"></i> العملاء</div>
+                <div class="fullpage-title"><i class="fa-solid fa-users"></i> العملاء ومراقبة الأرصدة</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
@@ -955,14 +954,19 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-address-book"></i> قائمة العملاء</span></div>
+                <div class="card-title">
+                    <span><i class="fa-solid fa-scale-balanced"></i> مراقبة العملاء والأرصدة</span>
+                    <button id="reconcileCustomersBtn" type="button" class="btn btn-accent btn-sm" onclick="reconcileAllCustomerBalances(true)">
+                        <i class="fa-solid fa-arrows-rotate"></i> مطابقة وتصفير المديونيات المحذوفة
+                    </button>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
                                 <th>الاسم</th>
                                 <th>الهاتف</th>
-                                <th>الرصيد المستحق</th>
+                                <th>الرصيد المستحق (مراقب)</th>
                                 <th>إجراءات</th>
                             </tr>
                         </thead>
@@ -1054,7 +1058,7 @@
         <div class="print-header">
             <div>
                 <h2 style="font-size:19px; font-weight:800; color:var(--primary);">معمل أبو محمد</h2>
-                <p style="font-size:12px; color:var(--text-muted);">فاتورة مبيعات ضريبية / نظامية</p>
+                <p style="font-size:12px; color:var(--text-muted);">فاتورة مبيعات نظامية</p>
             </div>
             <div style="text-align:left; font-size:12px;">
                 <div>رقم الفاتورة: <span class="mono" id="prInvId">-</span></div>
@@ -1260,11 +1264,56 @@
         const el = document.getElementById('toast');
         document.getElementById('toastText').textContent = msg;
         el.classList.add('show');
-        setTimeout(() => el.classList.remove('show'), 2000);
+        setTimeout(() => el.classList.remove('show'), 2200);
     }
 
     function formatMoney(num) {
         return Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // مراقب رصيد عميل واحد بناءً على الفواتير الآجلة وسندات القبض المسجلة
+    function computeExpectedCustomerBalance(customer) {
+        const creditInvoicesTotal = state.invoices
+            .filter(i => i.paymentType === 'credit' && (
+                (customer.id && i.customerId === customer.id) ||
+                (!i.customerId && i.customerName && customer.name && i.customerName.trim() === customer.name.trim())
+            ))
+            .reduce((sum, i) => sum + Number(i.netTotal || 0), 0);
+
+        const customerReceiptsTotal = state.vouchers
+            .filter(v => v.type === 'receipt' && (
+                (customer.id && v.customerId === customer.id) ||
+                (!v.customerId && v.customerName && customer.name && v.customerName.trim() === customer.name.trim())
+            ))
+            .reduce((sum, v) => sum + Number(v.amount || 0), 0);
+
+        return Math.max(0, creditInvoicesTotal - customerReceiptsTotal);
+    }
+
+    // مطابقة أرصدة جميع العملاء في Firestore وتصفير المديونيات غير المرتبطة بفواتير
+    async function reconcileAllCustomerBalances(showMsg = false) {
+        if (isBusy) return;
+        isBusy = true;
+        try {
+            let changedCount = 0;
+            for (const cust of state.customers) {
+                const expected = computeExpectedCustomerBalance(cust);
+                const currentBal = Number(cust.balance || 0);
+                if (Math.abs(currentBal - expected) > 0.001) {
+                    await db.collection('customers').doc(cust.id).update({ balance: expected });
+                    changedCount++;
+                }
+            }
+            if (showMsg) {
+                showToast(changedCount > 0
+                    ? `تمت مطابقة وتحديث ${changedCount} من أرصدة العملاء`
+                    : 'جميع أرصدة العملاء متطابقة ومضبوطة');
+            }
+        } catch (e) {
+            if (showMsg) showToast('تعذر مطابقة أرصدة العملاء');
+        } finally {
+            isBusy = false;
+        }
     }
 
     async function loadCollection(name) {
@@ -1466,7 +1515,6 @@
         const branchId = document.getElementById('invBranchSelect').value || 'main_branch';
         const q = (document.getElementById('warehouseItemSearch').value || '').trim().toLowerCase();
 
-        // يعرض أصناف الفرع المختار أولاً، وإذا لم توجد يعرض كل المخازن
         let items = state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId);
         if (!items.length) items = state.warehouse.slice();
 
@@ -1613,7 +1661,6 @@
         const qtyVal = prefill ? (prefill.qty || 1) : 1;
         const priceVal = prefill ? (prefill.price || 0) : 0;
 
-        // إذا كان أول سطر فارغاً وتمت إضافة صنف من المخازن، نعبئه مباشرة
         const rows = container.querySelectorAll('.invoice-item-row');
         if (prefill && rows.length === 1 && !rows[0].querySelector('.item-name').value.trim()) {
             rows[0].querySelector('.item-name').value = nameVal;
@@ -1806,14 +1853,45 @@
         showToast('تم تعديل الفاتورة');
     }
 
+    // حذف الفاتورة مع عكس أثرها على رصيد العميل أو الصندوق فوراً
     async function deleteInvoiceRecord(invId) {
+        if (isBusy) return;
         if (!canDeleteRecord()) {
             showToast('ليس لديك صلاحية الحذف');
             return;
         }
-        if (!confirm('تأكيد حذف الفاتورة؟')) return;
-        await db.collection('invoices').doc(invId).delete();
-        showToast('تم حذف الفاتورة');
+        const inv = state.invoices.find(i => i.id === invId);
+        if (!inv) return;
+        if (!confirm(`تأكيد حذف الفاتورة (${inv.id}) وتصفير/تعديل أثرها المالي؟`)) return;
+
+        isBusy = true;
+        try {
+            const amount = Number(inv.netTotal || 0);
+
+            if (inv.paymentType === 'credit') {
+                const cust = state.customers.find(
+                    c => (inv.customerId && c.id === inv.customerId) ||
+                         (c.name && inv.customerName && c.name.trim() === inv.customerName.trim())
+                );
+                if (cust) {
+                    const nextBal = Math.max(0, Number(cust.balance || 0) - amount);
+                    await db.collection('customers').doc(cust.id).update({ balance: nextBal });
+                }
+            } else if (inv.paymentType === 'cash' && inv.cashboxId) {
+                const cb = state.cashboxes.find(c => c.id === inv.cashboxId);
+                if (cb) {
+                    const nextCbBal = Math.max(0, Number(cb.balance || 0) - amount);
+                    await db.collection('cashboxes').doc(cb.id).update({ balance: nextCbBal });
+                }
+            }
+
+            await db.collection('invoices').doc(invId).delete();
+            showToast('تم حذف الفاتورة وتحديث الرصيد');
+        } catch (e) {
+            showToast('تعذر حذف الفاتورة');
+        } finally {
+            isBusy = false;
+        }
     }
 
     function renderInvoicesTable() {
@@ -1924,13 +2002,43 @@
     }
 
     async function deleteVoucherRecord(vchId) {
+        if (isBusy) return;
         if (!canDeleteRecord()) {
             showToast('ليس لديك صلاحية الحذف');
             return;
         }
+        const v = state.vouchers.find(x => x.id === vchId);
+        if (!v) return;
         if (!confirm('تأكيد حذف السند؟')) return;
-        await db.collection('vouchers').doc(vchId).delete();
-        showToast('تم حذف السند');
+
+        isBusy = true;
+        try {
+            const amt = Number(v.amount || 0);
+            if (v.cashboxId) {
+                const cb = state.cashboxes.find(c => c.id === v.cashboxId);
+                if (cb) {
+                    const revBal = v.type === 'receipt'
+                        ? Math.max(0, Number(cb.balance || 0) - amt)
+                        : Number(cb.balance || 0) + amt;
+                    await db.collection('cashboxes').doc(cb.id).update({ balance: revBal });
+                }
+            }
+            if (v.type === 'receipt' && (v.customerId || v.customerName)) {
+                const cust = state.customers.find(
+                    c => (v.customerId && c.id === v.customerId) ||
+                         (c.name && v.customerName && c.name.trim() === v.customerName.trim())
+                );
+                if (cust) {
+                    await db.collection('customers').doc(cust.id).update({
+                        balance: Number(cust.balance || 0) + amt
+                    });
+                }
+            }
+            await db.collection('vouchers').doc(vchId).delete();
+            showToast('تم حذف السند');
+        } finally {
+            isBusy = false;
+        }
     }
 
     function renderVouchersTable() {
@@ -2137,6 +2245,24 @@
         }
     }
 
+    async function zeroCustomerBalance(custId) {
+        if (isBusy) return;
+        if (!canEditRecord()) {
+            showToast('ليس لديك صلاحية تعديل الرصيد');
+            return;
+        }
+        const c = state.customers.find(x => x.id === custId);
+        if (!c) return;
+        if (!confirm(`تصفير مديونية العميل (${c.name}) إلى 0.00؟`)) return;
+        isBusy = true;
+        try {
+            await db.collection('customers').doc(custId).update({ balance: 0 });
+            showToast('تم تصفير مديونية العميل');
+        } finally {
+            isBusy = false;
+        }
+    }
+
     async function editCustomerItem(custId) {
         if (!canEditRecord()) {
             showToast('ليس لديك صلاحية التعديل');
@@ -2168,18 +2294,26 @@
     function renderCustomersTable() {
         const tbody = document.getElementById('customersTableBody');
         tbody.innerHTML = state.customers.length
-            ? state.customers.map(c => `
-                <tr>
-                    <td><strong>${c.name}</strong></td>
-                    <td>${c.phone || '-'}</td>
-                    <td><span class="mono">${formatMoney(c.balance)}</span></td>
-                    <td>
-                        ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editCustomerItem('${c.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
-                        ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteCustomerItem('${c.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
-                        ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
-                    </td>
-                </tr>
-            `).join('')
+            ? state.customers.map(c => {
+                const bal = Number(c.balance || 0);
+                const expectedBal = computeExpectedCustomerBalance(c);
+                const hasMismatch = Math.abs(bal - expectedBal) > 0.001;
+                return `
+                    <tr>
+                        <td><strong>${c.name}</strong></td>
+                        <td>${c.phone || '-'}</td>
+                        <td>
+                            <span class="mono" style="color:${bal > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(bal)}</span>
+                            ${hasMismatch ? `<span class="badge badge-expense" style="margin-right:4px;">متبقي الفواتير: ${formatMoney(expectedBal)}</span>` : ''}
+                        </td>
+                        <td style="white-space:nowrap;">
+                            ${bal > 0 && canEditRecord() ? `<button class="btn btn-warning btn-sm" onclick="zeroCustomerBalance('${c.id}')" title="تصفير المديونية">تصفير</button>` : ''}
+                            ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editCustomerItem('${c.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+                            ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteCustomerItem('${c.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('')
             : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا يوجد عملاء</td></tr>';
     }
 
