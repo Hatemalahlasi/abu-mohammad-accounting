@@ -72,8 +72,8 @@
         }
 
         .brand-logo {
-            width: 76px;
-            height: 76px;
+            width: 82px;
+            height: 82px;
             border-radius: 22px;
             background: linear-gradient(135deg, var(--primary), var(--accent));
             color: #fff;
@@ -82,7 +82,42 @@
             justify-content: center;
             font-size: 32px;
             margin: 0 auto 16px;
+            overflow: hidden;
             box-shadow: 0 10px 22px rgba(15, 76, 129, 0.22);
+        }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .header-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         .login-wrapper h1 {
@@ -450,7 +485,10 @@
 
     <!-- 1. شاشة تسجيل الدخول -->
     <div id="loginView" class="login-wrapper">
-        <div class="brand-logo"><i class="fa-solid fa-industry"></i></div>
+        <div class="brand-logo">
+            <img src="logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+            <i class="fa-solid fa-industry" style="display:none;"></i>
+        </div>
         <h1>معمل أبو محمد</h1>
         <p>نظام المحاسبة والمبيعات والصناديق والعملاء</p>
 
@@ -471,12 +509,18 @@
     <!-- 2. واجهة النظام الرئيسية -->
     <div id="mainAppView" class="hidden">
         <div class="header-bar">
-            <div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span id="connectionStatusBadge" class="db-status"><i class="fa-solid fa-cloud-check"></i> متصل بقاعدة البيانات</span>
-                    <span id="currentUserRoleBadge" class="badge badge-role">مدير النظام</span>
+            <div class="header-brand">
+                <div class="header-logo">
+                    <img src="logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                    <i class="fa-solid fa-industry" style="display:none;"></i>
                 </div>
-                <h2 id="headerWelcome" style="font-size: 20px; font-weight: 800; margin-top: 6px;">معمل أبو محمد — لوحة الإدارة المالية</h2>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span id="connectionStatusBadge" class="db-status"><i class="fa-solid fa-cloud-check"></i> متصل بقاعدة البيانات</span>
+                        <span id="currentUserRoleBadge" class="badge badge-role">مدير النظام</span>
+                    </div>
+                    <h2 id="headerWelcome" style="font-size: 20px; font-weight: 800; margin-top: 6px;">معمل أبو محمد — لوحة الإدارة المالية</h2>
+                </div>
             </div>
 
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
