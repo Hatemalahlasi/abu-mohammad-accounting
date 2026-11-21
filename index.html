@@ -135,7 +135,7 @@
 
         .form-control {
             width: 100%;
-            padding: 12px 13px;
+            padding: 11px 13px;
             border: 1.5px solid var(--border);
             border-radius: 12px;
             background: #ffffff;
@@ -235,7 +235,6 @@
             color: var(--warning);
         }
 
-        /* قائمة الأقسام الرئيسية على الشاشة الرئيسية */
         .quick-nav {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -274,7 +273,6 @@
             background: var(--primary-soft);
         }
 
-        /* شريط أعلى الصفحة الكاملة مع زر الرجوع */
         .fullpage-topbar {
             display: flex;
             justify-content: space-between;
@@ -378,6 +376,14 @@
             display: inline-block;
         }
 
+        .stock-picker-box {
+            background: #fff;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
         .invoice-item-row {
             display: grid;
             grid-template-columns: 2fr 1fr 0.9fr 1fr auto;
@@ -412,6 +418,38 @@
             margin-top: 12px;
         }
 
+        /* نافذة الطباعة النظامية */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            z-index: 1200;
+        }
+
+        .modal-card {
+            background: #fff;
+            border-radius: 18px;
+            max-width: 560px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        .print-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+        }
+
         .toast {
             position: fixed;
             bottom: 18px;
@@ -426,7 +464,7 @@
             opacity: 0;
             pointer-events: none;
             transition: all 0.2s ease;
-            z-index: 1000;
+            z-index: 1300;
         }
 
         .toast.show {
@@ -435,6 +473,31 @@
         }
 
         .hidden { display: none !important; }
+
+        @media print {
+            body {
+                background: #fff !important;
+                padding: 0 !important;
+            }
+            .app-shell, .toast, #loginView, #mainAppView {
+                display: none !important;
+            }
+            #printInvoiceModal {
+                display: block !important;
+                position: static !important;
+                background: transparent !important;
+                padding: 0 !important;
+            }
+            .modal-card {
+                box-shadow: none !important;
+                max-height: none !important;
+                max-width: 100% !important;
+                padding: 10px !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -448,7 +511,7 @@
             <i class="fa-solid fa-industry" style="display:none;"></i>
         </div>
         <h1>معمل أبو محمد</h1>
-        <p>دخول سريع وصفحات كاملة للهاتف</p>
+        <p>نظام محاسبة ومبيعات متكامل</p>
 
         <div class="form-group">
             <label>اسم المستخدم</label>
@@ -491,7 +554,7 @@
             </div>
         </div>
 
-        <!-- القائمة الرئيسية (تختفي عند فتح صفحة كاملة وتعود بالرجوع) -->
+        <!-- القائمة الرئيسية -->
         <div id="homeMenuContainer">
             <div class="summary-strip">
                 <div class="mini-stat">
@@ -515,7 +578,7 @@
             <div class="quick-nav">
                 <button class="nav-tab" onclick="openFullPage('salesTab')">
                     <i class="fa-solid fa-file-invoice-dollar"></i>
-                    <span>المبيعات</span>
+                    <span>المبيعات والفواتير</span>
                 </button>
                 <button class="nav-tab" onclick="openFullPage('vouchersTab')">
                     <i class="fa-solid fa-file-signature"></i>
@@ -540,10 +603,10 @@
             </div>
         </div>
 
-        <!-- 1. صفحة المبيعات الكاملة -->
+        <!-- 1. صفحة المبيعات والفواتير الكاملة -->
         <section id="salesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-file-invoice-dollar"></i> المبيعات</div>
+                <div class="fullpage-title"><i class="fa-solid fa-file-invoice-dollar"></i> الفواتير والمبيعات</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
@@ -555,7 +618,7 @@
                 <div class="grid-4">
                     <div class="form-group">
                         <label>الفرع</label>
-                        <select id="invBranchSelect" class="form-control"></select>
+                        <select id="invBranchSelect" class="form-control" onchange="renderWarehouseCatalogDropdown()"></select>
                     </div>
                     <div class="form-group">
                         <label>نوع الفاتورة</label>
@@ -574,10 +637,35 @@
                     </div>
                 </div>
 
+                <!-- بحث واختيار الأصناف من المخازن -->
+                <div class="stock-picker-box">
+                    <div style="font-size:13px; font-weight:800; color:var(--primary); margin-bottom:8px;">
+                        <i class="fa-solid fa-magnifying-glass"></i> بحث واختيار صنف من المخازن
+                    </div>
+                    <div class="grid-2" style="margin-bottom:0;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <div style="display:flex; gap:6px;">
+                                <input type="text" id="warehouseItemSearch" class="form-control" placeholder="اكتب اسم الصنف للبحث..." oninput="renderWarehouseCatalogDropdown()">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('warehouseItemSearch').value=''; renderWarehouseCatalogDropdown();" title="مسح البحث">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <div style="display:flex; gap:6px;">
+                                <select id="warehouseCatalogSelect" class="form-control"></select>
+                                <button type="button" class="btn btn-accent btn-sm" onclick="addSelectedWarehouseItemToInvoice()">
+                                    <i class="fa-solid fa-plus"></i> إضافة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="font-size:13px;">الأصناف (حبة / شدة):</strong>
+                    <strong style="font-size:13px;">أصناف الفاتورة (حبة / شدة):</strong>
                     <button type="button" class="btn btn-outline btn-sm" onclick="addInvoiceItemRow()">
-                        <i class="fa-solid fa-plus"></i> إضافة صنف
+                        <i class="fa-solid fa-plus"></i> سطر صنف يدوي
                     </button>
                 </div>
 
@@ -600,14 +688,14 @@
                         <div class="mono" id="invNetTotalDisplay" style="font-size:20px; color:var(--primary);">0.00</div>
                     </div>
                     <button id="saveInvoiceBtn" class="btn btn-primary" onclick="saveSalesInvoice()">
-                        <i class="fa-solid fa-check"></i> حفظ الفاتورة
+                        <i class="fa-solid fa-print"></i> حفظ وطباعة الفاتورة
                     </button>
                 </div>
             </div>
 
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-receipt"></i> سجل المبيعات</span>
+                    <span><i class="fa-solid fa-receipt"></i> سجل الفواتير</span>
                     <input type="text" id="invoiceSearchInput" class="form-control" style="max-width:220px; padding:7px 10px;" placeholder="بحث برقم أو عميل..." oninput="renderInvoicesTable()">
                 </div>
                 <div class="table-responsive">
@@ -730,7 +818,6 @@
                 </button>
             </div>
 
-            <!-- إضافة فرع جديد -->
             <div class="card-box">
                 <div class="card-title">
                     <span><i class="fa-solid fa-code-branch"></i> الفروع وإضافة فرع</span>
@@ -753,7 +840,6 @@
                 </div>
             </div>
 
-            <!-- نقل مخزني من مخزن إلى مخزن (مرتب للهاتف) -->
             <div class="card-box" style="border-color: var(--accent);">
                 <div class="card-title" style="color: var(--accent);">
                     <span><i class="fa-solid fa-right-left"></i> نقل من مخزن إلى مخزن</span>
@@ -786,7 +872,6 @@
                 </button>
             </div>
 
-            <!-- إضافة / تحديث صنف في مخزن فرع -->
             <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-box-open"></i> إضافة / تحديث صنف في مخزن</span></div>
                 <div class="grid-4">
@@ -917,7 +1002,7 @@
                         <label>الصلاحية</label>
                         <select id="newEmpRole" class="form-control" onchange="toggleEmployeePermBox()">
                             <option value="cashier">موظف (صلاحيات محددة)</option>
-                            <option value="supervisor">مشرف عام (معه كل شيء)</option>
+                            <option value="supervisor">مشرف عام (معه كل شيء + حذف المستخدمين)</option>
                             <option value="admin">مدير</option>
                         </select>
                     </div>
@@ -963,6 +1048,65 @@
     </div>
 </div>
 
+<!-- نافذة طباعة الفاتورة النظامية -->
+<div id="printInvoiceModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+        <div class="print-header">
+            <div>
+                <h2 style="font-size:19px; font-weight:800; color:var(--primary);">معمل أبو محمد</h2>
+                <p style="font-size:12px; color:var(--text-muted);">فاتورة مبيعات ضريبية / نظامية</p>
+            </div>
+            <div style="text-align:left; font-size:12px;">
+                <div>رقم الفاتورة: <span class="mono" id="prInvId">-</span></div>
+                <div>التاريخ: <span class="mono" id="prInvDate">-</span></div>
+                <div>الفرع: <strong id="prInvBranch">-</strong></div>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:13px; margin-bottom:12px; background:#f8fafc; padding:10px; border-radius:10px;">
+            <div>العميل: <strong id="prInvCustomer">-</strong></div>
+            <div>النوع: <strong id="prInvType">-</strong></div>
+            <div>الموظف: <strong id="prInvEmp">-</strong></div>
+        </div>
+
+        <div class="table-responsive" style="margin-bottom:12px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>الصنف</th>
+                        <th>الوحدة</th>
+                        <th>الكمية</th>
+                        <th>السعر</th>
+                        <th>الإجمالي</th>
+                    </tr>
+                </thead>
+                <tbody id="prInvItemsBody"></tbody>
+            </table>
+        </div>
+
+        <div style="background:#f8fafc; padding:12px; border-radius:12px; font-size:13px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span>الخصم:</span>
+                <span class="mono" id="prInvDiscount">0.00</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800; color:var(--primary); border-top:1px solid var(--border); padding-top:6px;">
+                <span>الصافي المطلوب:</span>
+                <span class="mono" id="prInvNet">0.00</span>
+            </div>
+            <div id="prInvNotesRow" style="margin-top:8px; font-size:12px; color:var(--text-muted);"></div>
+        </div>
+
+        <div class="no-print" style="display:flex; gap:10px; margin-top:16px;">
+            <button type="button" class="btn btn-primary btn-full" onclick="window.print()">
+                <i class="fa-solid fa-print"></i> طباعة الفاتورة
+            </button>
+            <button type="button" class="btn btn-outline" onclick="closePrintModal()">
+                إغلاق
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="toast" class="toast"><span id="toastText">تم</span></div>
 
 <script>
@@ -1005,6 +1149,7 @@
         document.getElementById('homeMenuContainer').classList.add('hidden');
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
         document.getElementById(tabId).classList.remove('hidden');
+        if (tabId === 'salesTab') renderWarehouseCatalogDropdown();
         if (tabId === 'warehouseTab') populateTransferItems();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1073,6 +1218,11 @@
     }
 
     function hasFullAccess(user = currentUser) {
+        if (!user) return false;
+        return user.role === 'admin' || user.role === 'supervisor';
+    }
+
+    function canManageUsers(user = currentUser) {
         if (!user) return false;
         return user.role === 'admin' || user.role === 'supervisor';
     }
@@ -1280,6 +1430,7 @@
         if (prevToBr && branchList.some(b => b.id === prevToBr)) toBrSel.value = prevToBr;
         else if (branchList.length > 1) toBrSel.value = branchList[1].id;
 
+        renderWarehouseCatalogDropdown();
         populateTransferItems();
 
         const cbSelInv = document.getElementById('invCashboxSelect');
@@ -1307,6 +1458,46 @@
         custSelVch.innerHTML = '<option value="">بدون عميل</option>' + custOpts;
         if (prevCustInv && state.customers.some(c => c.id === prevCustInv)) custSelInv.value = prevCustInv;
         if (prevCustVch) custSelVch.value = prevCustVch;
+    }
+
+    function renderWarehouseCatalogDropdown() {
+        const sel = document.getElementById('warehouseCatalogSelect');
+        if (!sel) return;
+        const branchId = document.getElementById('invBranchSelect').value || 'main_branch';
+        const q = (document.getElementById('warehouseItemSearch').value || '').trim().toLowerCase();
+
+        // يعرض أصناف الفرع المختار أولاً، وإذا لم توجد يعرض كل المخازن
+        let items = state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId);
+        if (!items.length) items = state.warehouse.slice();
+
+        if (q) {
+            items = items.filter(w => (w.name || '').toLowerCase().includes(q));
+        }
+
+        const prevVal = sel.value;
+        sel.innerHTML = items.length
+            ? items.map(w => `<option value="${w.id}">${w.name} (${w.unit || 'حبة'}) — متاح: ${w.qty || 0} — سعر: ${formatMoney(w.price)}</option>`).join('')
+            : '<option value="">لا توجد أصناف مطابقة في المخازن</option>';
+
+        if (prevVal && items.some(w => w.id === prevVal)) {
+            sel.value = prevVal;
+        }
+    }
+
+    function addSelectedWarehouseItemToInvoice() {
+        const sel = document.getElementById('warehouseCatalogSelect');
+        const item = state.warehouse.find(w => w.id === sel.value);
+        if (!item) {
+            showToast('اختر صنفاً من المخازن أولاً');
+            return;
+        }
+        addInvoiceItemRow({
+            name: item.name,
+            unit: item.unit || 'حبة',
+            qty: 1,
+            price: Number(item.price || 0)
+        });
+        showToast(`تمت إضافة ${item.name}`);
     }
 
     function populateTransferItems() {
@@ -1361,8 +1552,7 @@
         btn.disabled = true;
 
         try {
-            const remainingQty = currentQty - qtyToMove;
-            await db.collection('warehouse').doc(sourceItem.id).update({ qty: remainingQty });
+            await db.collection('warehouse').doc(sourceItem.id).update({ qty: currentQty - qtyToMove });
 
             const targetItem = state.warehouse.find(
                 w => (w.branchId || 'main_branch') === toBranchId &&
@@ -1416,18 +1606,34 @@
         document.getElementById('invCashboxGroup').classList.toggle('hidden', !isCash);
     }
 
-    function addInvoiceItemRow() {
+    function addInvoiceItemRow(prefill = null) {
         const container = document.getElementById('invoiceItemsContainer');
+        const nameVal = prefill ? prefill.name : '';
+        const unitVal = prefill ? (prefill.unit || 'حبة') : 'حبة';
+        const qtyVal = prefill ? (prefill.qty || 1) : 1;
+        const priceVal = prefill ? (prefill.price || 0) : 0;
+
+        // إذا كان أول سطر فارغاً وتمت إضافة صنف من المخازن، نعبئه مباشرة
+        const rows = container.querySelectorAll('.invoice-item-row');
+        if (prefill && rows.length === 1 && !rows[0].querySelector('.item-name').value.trim()) {
+            rows[0].querySelector('.item-name').value = nameVal;
+            rows[0].querySelector('.item-unit').value = unitVal;
+            rows[0].querySelector('.item-qty').value = qtyVal;
+            rows[0].querySelector('.item-price').value = priceVal;
+            recalculateInvoiceTotal();
+            return;
+        }
+
         const row = document.createElement('div');
         row.className = 'invoice-item-row';
         row.innerHTML = `
-            <input type="text" class="form-control item-name" placeholder="اسم الصنف">
+            <input type="text" class="form-control item-name" placeholder="اسم الصنف" value="${nameVal}">
             <select class="form-control item-unit">
-                <option value="حبة">حبة</option>
-                <option value="شدة">شدة</option>
+                <option value="حبة" ${unitVal === 'حبة' ? 'selected' : ''}>حبة</option>
+                <option value="شدة" ${unitVal === 'شدة' ? 'selected' : ''}>شدة</option>
             </select>
-            <input type="number" class="form-control item-qty num-input" value="1" min="1" placeholder="الكمية" oninput="recalculateInvoiceTotal()">
-            <input type="number" class="form-control item-price num-input" value="0" min="0" placeholder="السعر" oninput="recalculateInvoiceTotal()">
+            <input type="number" class="form-control item-qty num-input" value="${qtyVal}" min="1" placeholder="الكمية" oninput="recalculateInvoiceTotal()">
+            <input type="number" class="form-control item-price num-input" value="${priceVal}" min="0" placeholder="السعر" oninput="recalculateInvoiceTotal()">
             <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove(); recalculateInvoiceTotal();">
                 <i class="fa-solid fa-trash"></i>
             </button>
@@ -1445,6 +1651,55 @@
         const net = Math.max(0, subtotal - discount);
         document.getElementById('invNetTotalDisplay').textContent = formatMoney(net);
         return net;
+    }
+
+    function openPrintModal(inv) {
+        if (!inv) return;
+        document.getElementById('prInvId').textContent = inv.id || '-';
+        document.getElementById('prInvDate').textContent = inv.date || '-';
+        document.getElementById('prInvBranch').textContent = inv.branchName || 'الفرع الرئيسي';
+        document.getElementById('prInvCustomer').textContent = inv.customerName || '-';
+        document.getElementById('prInvType').textContent = inv.paymentType === 'cash' ? `نقدي (${inv.cashboxName || 'الصندوق'})` : 'آجل';
+        document.getElementById('prInvEmp').textContent = inv.employee || '-';
+
+        const items = Array.isArray(inv.items) ? inv.items : [];
+        document.getElementById('prInvItemsBody').innerHTML = items.length
+            ? items.map(it => {
+                const rowTotal = Number(it.qty || 0) * Number(it.price || 0);
+                return `
+                    <tr>
+                        <td>${it.name}</td>
+                        <td>${it.unit || 'حبة'}</td>
+                        <td><span class="mono">${it.qty}</span></td>
+                        <td><span class="mono">${formatMoney(it.price)}</span></td>
+                        <td><span class="mono">${formatMoney(rowTotal)}</span></td>
+                    </tr>
+                `;
+            }).join('')
+            : '<tr><td colspan="5" style="text-align:center;">لا توجد أصناف</td></tr>';
+
+        document.getElementById('prInvDiscount').textContent = formatMoney(inv.discount || 0);
+        document.getElementById('prInvNet').textContent = formatMoney(inv.netTotal || 0);
+
+        const notesRow = document.getElementById('prInvNotesRow');
+        if (inv.notes) {
+            notesRow.textContent = `ملاحظة: ${inv.notes}`;
+            notesRow.classList.remove('hidden');
+        } else {
+            notesRow.textContent = '';
+            notesRow.classList.add('hidden');
+        }
+
+        document.getElementById('printInvoiceModal').classList.remove('hidden');
+    }
+
+    function closePrintModal() {
+        document.getElementById('printInvoiceModal').classList.add('hidden');
+    }
+
+    function printInvoiceById(invId) {
+        const inv = state.invoices.find(i => i.id === invId);
+        if (inv) openPrintModal(inv);
     }
 
     async function saveSalesInvoice() {
@@ -1494,7 +1749,7 @@
             const netTotal = Math.max(0, subtotal - discount);
             const invId = `INV-${Date.now()}`;
 
-            await db.collection('invoices').doc(invId).set({
+            const invoiceDoc = {
                 id: invId,
                 date: new Date().toISOString().split('T')[0],
                 branchId,
@@ -1510,7 +1765,9 @@
                 employee: currentUser.fullName,
                 employeeRole: currentUser.role,
                 notes
-            });
+            };
+
+            await db.collection('invoices').doc(invId).set(invoiceDoc);
 
             if (paymentType === 'cash' && cashbox) {
                 await db.collection('cashboxes').doc(cashbox.id).update({
@@ -1527,6 +1784,7 @@
             document.getElementById('invDiscount').value = '0';
             document.getElementById('invNotes').value = '';
             showToast('تم حفظ الفاتورة');
+            openPrintModal(invoiceDoc);
         } catch (e) {
             showToast('تعذر حفظ الفاتورة');
         } finally {
@@ -1578,10 +1836,10 @@
                         <td>${i.paymentType === 'cash' ? '<span class="badge badge-cash">نقدي</span>' : '<span class="badge badge-credit">آجل</span>'}</td>
                         <td><span class="mono">${formatMoney(i.netTotal)}</span></td>
                         <td>${i.employee || '-'}</td>
-                        <td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn btn-outline btn-sm" onclick="printInvoiceById('${i.id}')" title="طباعة"><i class="fa-solid fa-print"></i></button>
                             ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editInvoiceNote('${i.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
                             ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteInvoiceRecord('${i.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
-                            ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
                         </td>
                     </tr>
                 `;
@@ -1973,7 +2231,7 @@
     }
 
     async function toggleEmployeePerm(empId, field) {
-        if (isBusy) return;
+        if (isBusy || !canManageUsers()) return;
         const emp = state.employees.find(e => e.id === empId);
         if (!emp || emp.role === 'admin' || emp.role === 'supervisor') return;
         isBusy = true;
@@ -1986,7 +2244,7 @@
     }
 
     async function toggleEmployeeStatus(empId) {
-        if (isBusy) return;
+        if (isBusy || !canManageUsers()) return;
         const emp = state.employees.find(e => e.id === empId);
         if (!emp) return;
         isBusy = true;
@@ -1998,10 +2256,41 @@
         }
     }
 
+    async function deleteEmployeeAccount(empId) {
+        if (isBusy) return;
+        if (!canManageUsers()) {
+            showToast('صلاحية حذف المستخدمين للمشرف العام والمدير فقط');
+            return;
+        }
+        const emp = state.employees.find(e => e.id === empId);
+        if (!emp) return;
+        if (emp.id === 'emp_admin' || emp.username === ADMIN_USER) {
+            showToast('لا يمكن حذف حساب المدير العام الأساسي');
+            return;
+        }
+        if (currentUser && emp.id === currentUser.id) {
+            showToast('لا يمكنك حذف حسابك الحالي أثناء الدخول');
+            return;
+        }
+        if (!confirm(`هل أنت متأكد من حذف المستخدم (${emp.fullName})؟`)) return;
+
+        isBusy = true;
+        try {
+            await db.collection('employees').doc(empId).delete();
+            showToast('تم حذف المستخدم');
+        } catch (e) {
+            showToast('تعذر حذف المستخدم');
+        } finally {
+            isBusy = false;
+        }
+    }
+
     function renderEmployeesTable() {
         const tbody = document.getElementById('employeesTableBody');
+        const allowDeleteUsers = canManageUsers();
         tbody.innerHTML = state.employees.map(emp => {
             const full = emp.role === 'admin' || emp.role === 'supervisor';
+            const isProtectedAdmin = emp.id === 'emp_admin' || emp.username === ADMIN_USER;
             const permsHtml = full
                 ? '<span class="badge badge-sup">تعديل + حذف (كامل)</span>'
                 : `
@@ -2012,6 +2301,9 @@
                         ${emp.canDelete ? 'حذف ✓' : 'حذف ✕'}
                     </button>
                   `;
+            const deleteBtnHtml = (allowDeleteUsers && !isProtectedAdmin)
+                ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeAccount('${emp.id}')" title="حذف المستخدم"><i class="fa-solid fa-trash"></i></button>`
+                : '';
             return `
                 <tr>
                     <td><strong>${emp.fullName}</strong></td>
@@ -2019,10 +2311,11 @@
                     <td><span class="badge ${roleBadgeClass(emp.role)}">${roleLabel(emp.role)}</span></td>
                     <td>${permsHtml}</td>
                     <td>${emp.active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
-                    <td>
+                    <td style="white-space:nowrap;">
                         <button class="btn ${emp.active ? 'btn-warning' : 'btn-success'} btn-sm" onclick="toggleEmployeeStatus('${emp.id}')">
                             ${emp.active ? 'إيقاف' : 'تفعيل'}
                         </button>
+                        ${deleteBtnHtml}
                     </td>
                 </tr>
             `;
