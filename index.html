@@ -778,27 +778,20 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title" style="margin-bottom:0;">
-                    <span><i class="fa-solid fa-truck"></i> إدارة الموردين</span>
-                    <button type="button" class="btn btn-primary btn-sm" onclick="toggleSupplierForm()">
-                        <i class="fa-solid fa-user-plus"></i> إضافة مورد
-                    </button>
-                </div>
-                <div id="supplierFormContainer" class="hidden" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
-                    <div class="grid-3">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>اسم المورد</label>
-                            <input type="text" id="newSupplierName" class="form-control" placeholder="اسم المورد">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>الهاتف</label>
-                            <input type="text" id="newSupplierPhone" class="form-control num-input" inputmode="numeric" placeholder="77xxxxxxx">
-                        </div>
-                        <div style="display:flex; align-items:flex-end;">
-                            <button id="saveSupplierBtn" class="btn btn-primary btn-full" onclick="createSupplier()">
-                                <i class="fa-solid fa-check"></i> حفظ المورد
-                            </button>
-                        </div>
+                <div class="card-title"><span>إضافة مورد جديد</span></div>
+                <div class="grid-3">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>اسم المورد</label>
+                        <input type="text" id="newSupplierName" class="form-control" placeholder="اسم المورد">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>الهاتف</label>
+                        <input type="text" id="newSupplierPhone" class="form-control num-input" inputmode="numeric" placeholder="77xxxxxxx">
+                    </div>
+                    <div style="display:flex; align-items:flex-end;">
+                        <button id="saveSupplierBtn" class="btn btn-outline btn-full" onclick="createSupplier()">
+                            <i class="fa-solid fa-user-plus"></i> حفظ المورد
+                        </button>
                     </div>
                 </div>
             </div>
@@ -837,7 +830,7 @@
                         <input type="text" id="purTitle" class="form-control" placeholder="اسم المادة أو الصنف">
                     </div>
                     <div class="form-group">
-                        <label>الكمية / الوحدة</label>
+                        <label>إضافة للمخزن (الكمية / الوحدة)</label>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
                             <input type="number" id="purAddQty" class="form-control num-input" value="1" min="0" placeholder="الكمية">
                             <select id="purUnit" class="form-control">
@@ -850,13 +843,6 @@
                         <label>المبلغ الإجمالي</label>
                         <input type="number" id="purAmount" class="form-control num-input" min="0" placeholder="0.00">
                     </div>
-                </div>
-
-                <div class="perm-box" style="margin-top:0; margin-bottom:12px;">
-                    <label class="perm-check">
-                        <input type="checkbox" id="purAddToWarehouseCheck" checked>
-                        <span>إدخال الكمية إلى المخزن (مفعّل دائماً ما لم تُلغِ الصح)</span>
-                    </label>
                 </div>
 
                 <div class="form-group">
@@ -1971,14 +1957,6 @@
     }
 
     // الموردون والمشتروات
-    function toggleSupplierForm() {
-        const box = document.getElementById('supplierFormContainer');
-        box.classList.toggle('hidden');
-        if (!box.classList.contains('hidden')) {
-            document.getElementById('newSupplierName').focus();
-        }
-    }
-
     function togglePurchaseCashboxField() {
         const isCash = document.getElementById('purPaymentType').value === 'cash';
         document.getElementById('purCashboxGroup').classList.toggle('hidden', !isCash);
@@ -2000,7 +1978,6 @@
             await db.collection('suppliers').doc(id).set({ id, name, phone: phone || '-' });
             document.getElementById('newSupplierName').value = '';
             document.getElementById('newSupplierPhone').value = '';
-            document.getElementById('supplierFormContainer').classList.add('hidden');
             showToast('تم حفظ المورد');
         } finally {
             isBusy = false;
@@ -2071,7 +2048,6 @@
         const title = document.getElementById('purTitle').value.trim();
         const addQty = Number(document.getElementById('purAddQty').value || 0);
         const unit = document.getElementById('purUnit').value || 'حبة';
-        const addToWarehouse = document.getElementById('purAddToWarehouseCheck').checked;
         const amount = Number(document.getElementById('purAmount').value || 0);
         const notes = document.getElementById('purNotes').value.trim();
 
@@ -2110,13 +2086,12 @@
                 title,
                 addQty,
                 unit,
-                addedToWarehouse: Boolean(addToWarehouse && addQty > 0),
                 amount,
                 notes,
                 employee: currentUser.fullName
             });
 
-            if (addToWarehouse && addQty > 0) {
+            if (addQty > 0) {
                 const existing = state.warehouse.find(
                     w => (w.branchId || 'main_branch') === branchId &&
                          w.name.toLowerCase() === title.toLowerCase() &&
@@ -2191,7 +2166,7 @@
                     <td>${p.branchName || 'الفرع الرئيسي'}</td>
                     <td><strong>${p.supplierName || '-'}</strong></td>
                     <td>${p.title}</td>
-                    <td>${Number(p.addQty || 0) > 0 ? `<span class="mono">${p.addQty}</span> ${p.unit || 'حبة'} ${p.addedToWarehouse === false ? '<span class="badge badge-unit">بدون مخزن</span>' : ''}` : '-'}</td>
+                    <td>${Number(p.addQty || 0) > 0 ? `<span class="mono">${p.addQty}</span> ${p.unit || 'حبة'}` : '-'}</td>
                     <td>${p.paymentType === 'cash' ? '<span class="badge badge-cash">نقدي</span>' : '<span class="badge badge-credit">دين (آجل)</span>'}</td>
                     <td><span class="mono">${formatMoney(p.amount)}</span></td>
                     <td>
@@ -3063,4 +3038,4 @@
     toggleVoucherPartyFields();
 </script>
 </body>
-</html>
+                                                   </html>
