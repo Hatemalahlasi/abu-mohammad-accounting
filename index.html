@@ -1,0 +1,39 @@
+async function handleLogin() {
+    const u = document.getElementById("loginUser").value.trim();
+    const p = document.getElementById("loginPass").value.trim();
+
+    if (!u || !p) {
+        showToast("يرجى إدخال اسم المستخدم وكلمة المرور");
+        return;
+    }
+
+    await reloadAllData();
+
+    const found = state.employees.find(
+        (e) => e.username === u && e.password === p
+    );
+
+    if (!found && !(u === "admin" && p === "12345" && state.employees.length === 0)) {
+        showToast("بيانات الدخول غير صحيحة");
+        return;
+    }
+
+    currentUser = found || {
+        fullName: "المدير العام",
+        username: "admin",
+        role: "admin"
+    };
+
+    sessionStorage.setItem("erp_active_user", JSON.stringify(currentUser));
+    document.getElementById("loginView").classList.add("hidden");
+    document.getElementById("mainAppView").classList.remove("hidden");
+    renderAllViews();
+    showToast("تم تسجيل الدخول بنجاح");
+}
+
+function handleLogout() {
+    currentUser = null;
+    sessionStorage.removeItem("erp_active_user");
+    document.getElementById("mainAppView").classList.add("hidden");
+    document.getElementById("loginView").classList.remove("hidden");
+}
