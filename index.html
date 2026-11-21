@@ -1,39 +1,1093 @@
-async function handleLogin() {
-    const u = document.getElementById("loginUser").value.trim();
-    const p = document.getElementById("loginPass").value.trim();
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام معمل أبو محمد المحاسبي | مبيعات وصناديق وعملاء</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    if (!u || !p) {
-        showToast("يرجى إدخال اسم المستخدم وكلمة المرور");
-        return;
-    }
+    <!-- مكتبات Firebase السحابية -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    await reloadAllData();
+    <style>
+        :root {
+            --bg-page: #0f172a;
+            --bg-surface: #f8fafc;
+            --bg-card: #ffffff;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-soft: #eff6ff;
+            --border: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --success: #16a34a;
+            --success-bg: #dcfce7;
+            --warning: #d97706;
+            --warning-bg: #fef3c7;
+            --danger: #dc2626;
+            --danger-bg: #fee2e2;
+            --purple: #7c3aed;
+            --purple-bg: #ede9fe;
+        }
 
-    const found = state.employees.find(
-        (e) => e.username === u && e.password === p
-    );
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    if (!found && !(u === "admin" && p === "12345" && state.employees.length === 0)) {
-        showToast("بيانات الدخول غير صحيحة");
-        return;
-    }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 12px;
+        }
 
-    currentUser = found || {
-        fullName: "المدير العام",
-        username: "admin",
-        role: "admin"
+        .app-shell {
+            max-width: 1180px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 18px;
+            box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.35);
+            min-height: calc(100vh - 24px);
+        }
+
+        @media (min-width: 768px) {
+            .app-shell { padding: 28px 34px; }
+        }
+
+        /* شاشة الدخول */
+        .login-wrapper {
+            max-width: 420px;
+            margin: 40px auto;
+            padding: 24px 16px;
+        }
+
+        .brand-logo {
+            width: 74px;
+            height: 74px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 18px;
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.3);
+        }
+
+        .login-wrapper h1 {
+            text-align: center;
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .login-wrapper p {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13.5px;
+            margin-bottom: 24px;
+        }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-surface);
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            color: var(--text-main);
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 11px;
+            border: none;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn:active { transform: scale(0.98); }
+        .btn-full { width: 100%; padding: 13px; font-size: 15px; }
+        .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-success { background: var(--success-bg); color: var(--success); }
+        .btn-success:hover { background: var(--success); color: #fff; }
+        .btn-warning { background: var(--warning-bg); color: var(--warning); }
+        .btn-warning:hover { background: var(--warning); color: #fff; }
+        .btn-danger { background: var(--danger-bg); color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+        .btn-outline { background: var(--bg-surface); color: var(--text-main); border: 1.5px solid var(--border); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+
+        /* الشريط العلوي والتبويبات */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1f5f9;
+            margin-bottom: 20px;
+        }
+
+        .db-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 999px;
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .db-status.demo {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            margin-bottom: 22px;
+            border-bottom: 1.5px solid #e2e8f0;
+        }
+
+        .nav-tab {
+            padding: 10px 16px;
+            border-radius: 12px;
+            border: 1.5px solid transparent;
+            background: var(--bg-surface);
+            color: var(--text-muted);
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .nav-tab:hover { color: var(--primary); background: var(--primary-soft); }
+
+        .nav-tab.active {
+            background: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        /* بطاقات الإحصائيات */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        @media (min-width: 640px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (min-width: 960px) {
+            .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+
+        .kpi-card {
+            background: var(--bg-surface);
+            border: 1.5px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .kpi-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kpi-label { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+
+        .kpi-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .kpi-value {
+            font-family: 'JetBrains Mono', 'Cairo', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .kpi-sub { font-size: 12px; color: var(--text-muted); }
+
+        /* الأقسام والجداول */
+        .card-box {
+            background: var(--bg-surface);
+            border: 1.5px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 15.5px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr; gap: 14px; }
+
+        @media (min-width: 700px) {
+            .grid-2 { grid-template-columns: 1fr 1fr; }
+            .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            background: #ffffff;
+            border-radius: 14px;
+            border: 1.5px solid #e2e8f0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: right;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 800;
+            color: var(--text-muted);
+            font-size: 12.5px;
+            white-space: nowrap;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f8fafc; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11.5px;
+            font-weight: 700;
+        }
+
+        .badge-cash { background: var(--success-bg); color: var(--success); }
+        .badge-credit { background: var(--warning-bg); color: var(--warning); }
+        .badge-expense { background: var(--danger-bg); color: var(--danger); }
+        .badge-role { background: var(--purple-bg); color: var(--purple); }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            direction: ltr;
+            display: inline-block;
+        }
+
+        .invoice-item-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .invoice-item-row {
+                grid-template-columns: 1fr 1fr;
+                background: #fff;
+                padding: 10px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+            }
+        }
+
+        .summary-bar {
+            background: #ffffff;
+            border: 1.5px solid var(--primary);
+            border-radius: 14px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        /* نافذة كشف الحساب */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            z-index: 999;
+        }
+
+        .modal-card {
+            background: #ffffff;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 720px;
+            max-height: 88vh;
+            overflow-y: auto;
+            padding: 22px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #0f172a;
+            color: #fff;
+            padding: 11px 18px;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.22s ease;
+            z-index: 1000;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+    <!-- 1. شاشة تسجيل الدخول -->
+    <div id="loginView" class="login-wrapper">
+        <div class="brand-logo"><i class="fa-solid fa-calculator"></i></div>
+        <h1>معمل أبو محمد</h1>
+        <p>نظام المحاسبة والمبيعات — إدارة الفواتير، الصناديق، والعملاء</p>
+
+        <div class="form-group">
+            <label>اسم المستخدم</label>
+            <input type="text" id="loginUser" class="form-control" placeholder="أدخل اسم المستخدم (تجريبي: admin)" value="admin">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="loginPass" class="form-control" placeholder="••••••••" value="12345">
+        </div>
+
+        <button class="btn btn-primary btn-full" onclick="handleLogin()" style="margin-top: 8px;">
+            <i class="fa-solid fa-right-to-bracket"></i> دخول نظام معمل أبو محمد
+        </button>
+
+        <div style="margin-top: 16px; text-align: center; font-size: 12px; color: var(--text-muted);">
+            حساب المدير الافتراضي: <strong>admin</strong> / كلمة المرور: <strong>12345</strong>
+        </div>
+    </div>
+
+    <!-- 2. واجهة النظام الرئيسية -->
+    <div id="mainAppView" class="hidden">
+        <div class="header-bar">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span id="connectionStatusBadge" class="db-status"><i class="fa-solid fa-cloud-check"></i> متصل بقاعدة البيانات</span>
+                    <span id="currentUserRoleBadge" class="badge badge-role">مدير النظام</span>
+                </div>
+                <h2 id="headerWelcome" style="font-size: 20px; font-weight: 800; margin-top: 6px;">معمل أبو محمد — لوحة الإدارة المالية</h2>
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-outline btn-sm" onclick="reloadAllData()">
+                    <i class="fa-solid fa-rotate"></i> تحديث البيانات
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="handleLogout()">
+                    <i class="fa-solid fa-right-from-bracket"></i> تسجيل خروج
+                </button>
+            </div>
+        </div>
+
+        <!-- شريط التنقل بين الأقسام -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="dashboardTab" onclick="switchTab('dashboardTab', this)">
+                <i class="fa-solid fa-chart-pie"></i> لوحة التحكم
+            </button>
+            <button class="nav-tab" data-tab="salesTab" onclick="switchTab('salesTab', this)">
+                <i class="fa-solid fa-file-invoice-dollar"></i> المبيعات والفواتير
+            </button>
+            <button class="nav-tab" data-tab="cashboxesTab" onclick="switchTab('cashboxesTab', this)">
+                <i class="fa-solid fa-cash-register"></i> الصناديق والسندات
+            </button>
+            <button class="nav-tab" data-tab="customersTab" onclick="switchTab('customersTab', this)">
+                <i class="fa-solid fa-users"></i> العملاء وكشف الحساب
+            </button>
+            <button id="employeesNavBtn" class="nav-tab" data-tab="employeesTab" onclick="switchTab('employeesTab', this)">
+                <i class="fa-solid fa-user-tie"></i> الموظفون والصلاحيات
+            </button>
+        </div>
+
+        <!-- تبويب 1: لوحة التحكم -->
+        <div id="dashboardTab" class="tab-content">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <span class="kpi-label">إجمالي المبيعات</span>
+                        <span class="kpi-icon" style="background: #eff6ff; color: #2563eb;"><i class="fa-solid fa-cart-shopping"></i></span>
+                    </div>
+                    <div class="kpi-value mono" id="kpiTotalSales">0.00</div>
+                    <div class="kpi-sub" id="kpiSalesBreakdown">نقدي: 0 | آجل: 0</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <span class="kpi-label">رصيد الصناديق الفعلي</span>
+                        <span class="kpi-icon" style="background: #dcfce7; color: #16a34a;"><i class="fa-solid fa-vault"></i></span>
+                    </div>
+                    <div class="kpi-value mono" id="kpiTotalCash">0.00</div>
+                    <div class="kpi-sub" id="kpiCashboxesCount">0 صناديق نشطة</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <span class="kpi-label">ديون العملاء (الآجل)</span>
+                        <span class="kpi-icon" style="background: #fef3c7; color: #d97706;"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+                    </div>
+                    <div class="kpi-value mono" id="kpiTotalReceivables">0.00</div>
+                    <div class="kpi-sub" id="kpiCustomersCount">0 عملاء مسجلون</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <span class="kpi-label">المصروفات وسندات الصرف</span>
+                        <span class="kpi-icon" style="background: #fee2e2; color: #dc2626;"><i class="fa-solid fa-money-bill-transfer"></i></span>
+                    </div>
+                    <div class="kpi-value mono" id="kpiTotalExpenses">0.00</div>
+                    <div class="kpi-sub">إجمالي الصرف الخارجي</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card-box">
+                    <div class="card-title">
+                        <span><i class="fa-solid fa-vault" style="color: var(--primary);"></i> أرصدة الصناديق الحالية</span>
+                    </div>
+                    <div id="dashboardCashboxesList"></div>
+                </div>
+
+                <div class="card-box">
+                    <div class="card-title">
+                        <span><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> آخر العمليات المالية</span>
+                    </div>
+                    <div id="dashboardRecentActivity"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- تبويب 2: المبيعات والفواتير -->
+        <div id="salesTab" class="tab-content hidden">
+            <div class="card-box">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-file-circle-plus" style="color: var(--primary);"></i> إنشاء فاتورة مبيعات جديدة</span>
+                </div>
+
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label>نوع الفاتورة</label>
+                        <select id="invPaymentType" class="form-control" onchange="toggleInvoicePaymentFields()">
+                            <option value="cash">نقدية (تُرحّل للصندوق مباشرة)</option>
+                            <option value="credit">آجلة (تُقيّد على حساب العميل)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="invCashboxGroup">
+                        <label>الصندوق المستلم</label>
+                        <select id="invCashboxSelect" class="form-control"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>العميل</label>
+                        <select id="invCustomerSelect" class="form-control"></select>
+                    </div>
+                </div>
+
+                <div style="margin: 10px 0 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 13.5px;">بنود وأصناف الفاتورة:</strong>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="addInvoiceItemRow()">
+                        <i class="fa-solid fa-plus"></i> إضافة صنف
+                    </button>
+                </div>
+
+                <div id="invoiceItemsContainer"></div>
+
+                <div class="grid-2" style="margin-top: 12px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>قيمة الخصم</label>
+                        <input type="number" id="invDiscount" class="form-control" value="0" min="0" oninput="recalculateInvoiceTotal()">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>ملاحظات الفاتورة</label>
+                        <input type="text" id="invNotes" class="form-control" placeholder="مثال: تسليم فوري / رقم مرجعي...">
+                    </div>
+                </div>
+
+                <div class="summary-bar">
+                    <div>
+                        <span style="font-size: 13px; color: var(--text-muted); font-weight: 700;">صافي الفاتورة النهائي:</span>
+                        <div class="mono" id="invNetTotalDisplay" style="font-size: 22px; color: var(--primary);">0.00</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSalesInvoice()">
+                        <i class="fa-solid fa-check-circle"></i> اعتماد وترحيل الفاتورة
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-receipt" style="color: var(--primary);"></i> سجل فواتير المبيعات</span>
+                    <input type="text" id="invoiceSearchInput" class="form-control" style="max-width: 260px; padding: 7px 12px;" placeholder="بحث برقم الفاتورة أو العميل..." oninput="renderInvoicesTable()">
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>رقم الفاتورة</th>
+                                <th>التاريخ</th>
+                                <th>العميل</th>
+                                <th>النوع</th>
+                                <th>الصندوق</th>
+                                <th>الصافي</th>
+                                <th>الموظف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoicesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- تبويب 3: الصناديق والسندات -->
+        <div id="cashboxesTab" class="tab-content hidden">
+            <div class="grid-2">
+                <!-- إنشاء صندوق جديد -->
+                <div class="card-box">
+                    <div class="card-title">
+                        <span><i class="fa-solid fa-box-open" style="color: var(--primary);"></i> إضافة صندوق مالي</span>
+                    </div>
+                    <div class="form-group">
+                        <label>اسم الصندوق</label>
+                        <input type="text" id="newCashboxName" class="form-control" placeholder="مثال: الصندوق الرئيسي / صندوق الكاشير">
+                    </div>
+                    <div class="form-group">
+                        <label>الرصيد الافتتاحي</label>
+                        <input type="number" id="newCashboxOpening" class="form-control" value="0" min="0">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="createCashbox()">
+                        <i class="fa-solid fa-plus-circle"></i> فتح الصندوق
+                    </button>
+                </div>
+
+                <!-- سند قبض / سند صرف -->
+                <div class="card-box">
+                    <div class="card-title">
+                        <span><i class="fa-solid fa-money-check-dollar" style="color: var(--primary);"></i> إصدار سند قبض / صرف</span>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>نوع السند</label>
+                            <select id="voucherType" class="form-control" onchange="toggleVoucherCustomerField()">
+                                <option value="receipt">سند قبض (إيداع / تسديد عميل)</option>
+                                <option value="payment">سند صرف (مصروفات / دفعة)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>الصندوق</label>
+                            <select id="voucherCashboxSelect" class="form-control"></select>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group" id="voucherCustomerGroup">
+                            <label>العميل (اختياري لتسديد الذمم)</label>
+                            <select id="voucherCustomerSelect" class="form-control"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>المبلغ</label>
+                            <input type="number" id="voucherAmount" class="form-control" min="0" placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>البيان / السبب</label>
+                        <input type="text" id="voucherNote" class="form-control" placeholder="مثال: دفعة من الحساب / إيجار / كهرباء...">
+                    </div>
+
+                    <button class="btn btn-primary btn-full" onclick="createVoucher()">
+                        <i class="fa-solid fa-file-signature"></i> حفظ السند وتحديث الرصيد
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> سجل السندات وحركة الصناديق</span>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>النوع</th>
+                                <th>التاريخ</th>
+                                <th>الصندوق</th>
+                                <th>العميل / الجهة</th>
+                                <th>المبلغ</th>
+                                <th>البيان</th>
+                                <th>الموظف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vouchersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- تبويب 4: العملاء وكشف الحساب -->
+        <div id="customersTab" class="tab-content hidden">
+            <div class="card-box">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-user-plus" style="color: var(--primary);"></i> إضافة عميل جديد</span>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>اسم العميل / الجهة</label>
+                        <input type="text" id="newCustomerName" class="form-control" placeholder="مثال: عملاء معمل أبو محمد">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>رقم الهاتف</label>
+                        <input type="text" id="newCustomerPhone" class="form-control" placeholder="77xxxxxxx">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>حد الائتمان (سقف الآجل)</label>
+                        <input type="number" id="newCustomerLimit" class="form-control" value="100000" min="0">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="createCustomer()" style="margin-top: 14px;">
+                    <i class="fa-solid fa-check"></i> حفظ بيانات العميل
+                </button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-address-book" style="color: var(--primary);"></i> دليل العملاء والأرصدة</span>
+                    <input type="text" id="customerSearchInput" class="form-control" style="max-width: 260px; padding: 7px 12px;" placeholder="بحث باسم العميل أو الهاتف..." oninput="renderCustomersTable()">
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>اسم العميل</th>
+                                <th>الهاتف</th>
+                                <th>حد الائتمان</th>
+                                <th>الرصيد المستحق (عليه)</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- تبويب 5: الموظفون والصلاحيات -->
+        <div id="employeesTab" class="tab-content hidden">
+            <div class="card-box">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-user-shield" style="color: var(--primary);"></i> إضافة موظف جديد للنظام</span>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>اسم الموظف الكامل</label>
+                        <input type="text" id="newEmpFullName" class="form-control" placeholder="مثال: أحمد علي">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>اسم الدخول</label>
+                        <input type="text" id="newEmpUsername" class="form-control" placeholder="مثال: ahmed">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>كلمة المرور</label>
+                        <input type="text" id="newEmpPassword" class="form-control" placeholder="2026">
+                    </div>
+                </div>
+                <div class="grid-2" style="margin-top: 12px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>الصلاحية</label>
+                        <select id="newEmpRole" class="form-control">
+                            <option value="cashier">كاشير / موظف مبيعات</option>
+                            <option value="admin">مدير نظام (صلاحيات كاملة)</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button class="btn btn-primary btn-full" onclick="createEmployee()">
+                            <i class="fa-solid fa-user-check"></i> اعتماد حساب الموظف
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title">
+                    <span><i class="fa-solid fa-users-gear" style="color: var(--primary);"></i> قائمة الموظفين وصلاحياتهم</span>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>اسم الدخول</th>
+                                <th>الصلاحية</th>
+                                <th>الحالة</th>
+                                <th>تحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- نافذة كشف حساب العميل -->
+<div id="statementModal" class="modal-backdrop hidden" onclick="closeStatementModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+            <div>
+                <h3 id="statementCustomerTitle" style="font-size: 18px; font-weight: 800;">كشف حساب العميل</h3>
+                <p id="statementCustomerSummary" style="font-size: 13px; color: var(--text-muted); margin-top: 2px;"></p>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="closeStatementModal()">
+                <i class="fa-solid fa-xmark"></i> إغلاق
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>نوع الحركة</th>
+                        <th>البيان</th>
+                        <th>مدين (عليه)</th>
+                        <th>دائن (له)</th>
+                    </tr>
+                </thead>
+                <tbody id="statementTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- إشعار عائم -->
+<div id="toast" class="toast">
+    <i class="fa-solid fa-circle-check" style="color: #4ade80;"></i>
+    <span id="toastText">تم بنجاح</span>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDDm0KDSEHzwPJXAKPyhqQc3EtmN7zDVIY",
+        authDomain: "abu-mohammad-accounting-223c8.firebaseapp.com",
+        projectId: "abu-mohammad-accounting-223c8",
+        storageBucket: "abu-mohammad-accounting-223c8.firebasestorage.app",
+        messagingSenderId: "469928137766",
+        appId: "1:469928137766:web:cd5526796ef3b4e0fb02e7",
+        measurementId: "G-VX90LCEBKM"
     };
 
-    sessionStorage.setItem("erp_active_user", JSON.stringify(currentUser));
-    document.getElementById("loginView").classList.add("hidden");
-    document.getElementById("mainAppView").classList.remove("hidden");
-    renderAllViews();
-    showToast("تم تسجيل الدخول بنجاح");
-}
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let isDemoMode = false;
 
-function handleLogout() {
-    currentUser = null;
-    sessionStorage.removeItem("erp_active_user");
-    document.getElementById("mainAppView").classList.add("hidden");
-    document.getElementById("loginView").classList.remove("hidden");
-}
+    let currentUser = null;
+    let state = {
+        cashboxes: [],
+        customers: [],
+        invoices: [],
+        vouchers: [],
+        employees: []
+    };
+
+    function initDemoStorageIfNeeded() {
+        const saved = localStorage.getItem('abu_mohammad_erp_v1');
+        if (saved) {
+            state = JSON.parse(saved);
+            return;
+        }
+        state = {
+            cashboxes: [
+                { id: 'cb_1', name: 'صندوق معمل أبو محمد الرئيسي', balance: 50000 },
+                { id: 'cb_2', name: 'صندوق المبيعات 1', balance: 12500 }
+            ],
+            customers: [
+                { id: 'cust_cash', name: 'عميل نقدي عام', phone: '-', creditLimit: 0, balance: 0 },
+                { id: 'cust_1', name: 'عميل آجل - معمل أبو محمد', phone: '777123456', creditLimit: 500000, balance: 35000 }
+            ],
+            invoices: [
+                {
+                    id: 'INV-1001',
+                    date: new Date().toISOString().split('T')[0],
+                    customerId: 'cust_1',
+                    customerName: 'عميل آجل - معمل أبو محمد',
+                    paymentType: 'credit',
+                    cashboxId: '',
+                    cashboxName: 'آجل',
+                    items: [{ name: 'طلبية تشغيل / منتجات المعمل', qty: 1, price: 35000 }],
+                    discount: 0,
+                    netTotal: 35000,
+                    employee: 'المدير العام',
+                    notes: 'رصيد أول المدة'
+                }
+            ],
+            vouchers: [
+                {
+                    id: 'VCH-101',
+                    type: 'receipt',
+                    date: new Date().toISOString().split('T')[0],
+                    cashboxId: 'cb_1',
+                    cashboxName: 'صندوق معمل أبو محمد الرئيسي',
+                    customerId: '',
+                    customerName: 'إيداع افتتاحي',
+                    amount: 50000,
+                    note: 'رصيد بداية النشاط',
+                    employee: 'المدير العام'
+                }
+            ],
+            employees: [
+                { id: 'emp_admin', fullName: 'المدير العام — معمل أبو محمد', username: 'admin', password: '12345', role: 'admin', active: true },
+                { id: 'emp_1', fullName: 'كاشير المبيعات', username: 'cashier', password: '123', role: 'cashier', active: true }
+            ]
+        };
+        persistDemoStorage();
+    }
+
+    function persistDemoStorage() {
+        if (isDemoMode) {
+            localStorage.setItem('abu_mohammad_erp_v1', JSON.stringify(state));
+        }
+    }
+
+    function showToast(msg) {
+        const el = document.getElementById('toast');
+        document.getElementById('toastText').textContent = msg;
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 2500);
+    }
+
+    function formatMoney(num) {
+        return Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function loadCollection(name) {
+        const snap = await db.collection(name).get();
+        const list = [];
+        snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+        return list;
+    }
+
+    async function reloadAllData() {
+        try {
+            state.cashboxes = await loadCollection('cashboxes');
+            state.customers = await loadCollection('customers');
+            state.invoices = await loadCollection('invoices');
+            state.vouchers = await loadCollection('vouchers');
+            state.employees = await loadCollection('employees');
+            isDemoMode = false;
+        } catch (err) {
+            console.warn('Firestore fallback:', err);
+            isDemoMode = true;
+            initDemoStorageIfNeeded();
+        }
+        renderAllViews();
+    }
+
+    async function handleLogin() {
+        const u = document.getElementById('loginUser').value.trim();
+        const p = document.getElementById('loginPass').value.trim();
+
+        if (!u || !p) {
+            showToast('يرجى إدخال اسم المستخدم وكلمة المرور');
+            return;
+        }
+
+        await reloadAllData();
+
+        if (u === 'admin' && p === '12345' && state.employees.length === 0) {
+            currentUser = { fullName: 'المدير العام — معمل أبو محمد', username: 'admin', role: 'admin' };
+        } else {
+            const found = state.employees.find(e => e.username === u && e.password === p);
+            if (!found) {
+                showToast('بيانات الدخول غير صحيحة');
+                return;
+            }
+            if (found.active === false) {
+                showToast('هذا الحساب موقوف حالياً');
+                return;
+            }
+            currentUser = found;
+        }
+
+        const statusBadge = document.getElementById('connectionStatusBadge');
+        if (isDemoMode) {
+            statusBadge.className = 'db-status demo';
+            statusBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> تحقق من تفعيل Firestore في Firebase';
+        } else {
+            statusBadge.className = 'db-status';
+            statusBadge.innerHTML = '<i class="fa-solid fa-cloud-check"></i> متصل بقاعدة بيانات Firebase';
+        }
+
+        document.getElementById('headerWelcome').textContent = `معمل أبو محمد — مرحباً، ${currentUser.fullName}`;
+        document.getElementById('currentUserRoleBadge').textContent =
+            currentUser.role === 'admin' ? 'مدير النظام' : 'كاشير / مبيعات';
+
+        const empBtn = document.getElementById('employeesNavBtn');
+        if (currentUser.role !== 'admin') {
+            empBtn.classList.add('hidden');
+        } else {
+            empBtn.classList.remove('hidden');
+        }
+
+        document.getElementById('loginView').classList.add('hidden');
+        document.getElementById('mainAppView').classList.remove('hidden');
+
+        if (document.getElementById('invoiceItemsContainer').children.length === 0) {
+            addInvoiceItemRow();
+        }
+
+        renderAllViews();
+        showToast('تم تسجيل الدخول إلى نظام معمل أبو محمد');
+    }
+
+    function handleLogout() {
+        currentUser = null;
+        document.getElementById('mainAppView').classList.add('hidden');
+        document.getElementById('loginView').classList.remove('hidden');
+    }
+
+    function switchTab(tabId, btnEl) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(tabId).classList.remove('hidden');
+        btnEl.classList.add('active');
+    }
+
+    function renderAllViews() {
+        populateDropdowns();
+        renderDashboard();
+        renderInvoicesTable();
+        renderVouchersTable();
+        renderCustomersTable();
+        renderEmployeesTable();
+    }
+
+    function populateDropdowns() {
+        const cashboxOptions = state.cashboxes.length
+            ? state.cashboxes.map(c => `<option value="${c.id}">${c.name} (الرصيد: ${formatMoney(c.balance)})</option>`).join('')
+            : '<option value="">لا توجد صناديق - أضف صندوقاً أولاً</option>';
+
+        document.getElementById('invCashboxSelect').innerHTML = cashboxOptions;
+        document.getElementById('voucherCashboxSelect').innerHTML = cashboxOptions;
+
+        const customerOptions = state.customers.length
+            ? state.customers.map(c => `<option value="${c.id}">${c.name} (عليه: ${formatMoney(c.balance)})</option>`).join('')
+            : '<option value="">لا يوجد عملاء</option>';
+
+        document.getElementById('invCustomerSelect').innerHTML = customerOptions;
+        document.getElementById('voucherCustomerSelect').innerHTML =
+            '<option value="">-- حركة عامة بدون عميل --</option>' + customerOptions;
+    }
+
+    function renderDashboard() {
+        let cashSales = 0;
+        let creditSales = 0;
+        state.invoices.forEach(inv => {
+            if (inv.paymentType === 'cash') cashSales += Number(inv.netTotal || 0);
+            else creditSales += Number(inv.netTotal || 0);
+        });
+
+        const totalCash = state.cashboxes.reduce((sum, c) => sum + Number(c.balance || 0), 0);
+        const totalReceivables = state.customers.reduce((sum, c) => sum + Number(c.balance || 0), 0);
+        const totalExpenses = state.v
