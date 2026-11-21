@@ -155,6 +155,32 @@
             font-weight: 700;
         }
 
+        .perm-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            background: #fff;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-top: 10px;
+        }
+
+        .perm-check {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .perm-check input {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--primary);
+        }
+
         .btn {
             padding: 10px 14px;
             border-radius: 12px;
@@ -556,6 +582,7 @@
                                 <th>النوع</th>
                                 <th>الصافي</th>
                                 <th>الموظف</th>
+                                <th>إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="invoicesTableBody"></tbody>
@@ -613,6 +640,7 @@
                                 <th>الجهة / العميل</th>
                                 <th>المبلغ</th>
                                 <th>الموظف</th>
+                                <th>إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="vouchersTableBody"></tbody>
@@ -678,6 +706,7 @@
                                 <th>الكمية</th>
                                 <th>السعر</th>
                                 <th>الإجمالي</th>
+                                <th>إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="warehouseTableBody"></tbody>
@@ -718,6 +747,7 @@
                                 <th>الاسم</th>
                                 <th>الهاتف</th>
                                 <th>الرصيد المستحق</th>
+                                <th>إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="customersTableBody"></tbody>
@@ -747,9 +777,9 @@
                 <div class="grid-2" style="margin-top:12px;">
                     <div class="form-group" style="margin-bottom:0;">
                         <label>الصلاحية</label>
-                        <select id="newEmpRole" class="form-control">
-                            <option value="cashier">موظف / كاشير</option>
-                            <option value="supervisor">مشرف عام</option>
+                        <select id="newEmpRole" class="form-control" onchange="toggleEmployeePermBox()">
+                            <option value="cashier">موظف (صلاحيات محددة)</option>
+                            <option value="supervisor">مشرف عام (معه كل شيء)</option>
                             <option value="admin">مدير</option>
                         </select>
                     </div>
@@ -759,10 +789,22 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- صلاحيات التعديل والحذف للموظف -->
+                <div id="empPermissionsBox" class="perm-box">
+                    <label class="perm-check">
+                        <input type="checkbox" id="newEmpCanEdit">
+                        <span>سماح بالتعديل</span>
+                    </label>
+                    <label class="perm-check">
+                        <input type="checkbox" id="newEmpCanDelete">
+                        <span>سماح بالحذف</span>
+                    </label>
+                </div>
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-users-gear"></i> المستخدمون والصلاحيات</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-users-gear"></i> المستخدمون وصلاحيات التعديل والحذف</span></div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -770,8 +812,9 @@
                                 <th>الاسم</th>
                                 <th>الدخول</th>
                                 <th>الصلاحية</th>
+                                <th>تعديل / حذف</th>
                                 <th>الحالة</th>
-                                <th>إجراء</th>
+                                <th>تحكم</th>
                             </tr>
                         </thead>
                         <tbody id="employeesTableBody"></tbody>
@@ -814,6 +857,23 @@
         warehouse: []
     };
 
+    function hasFullAccess(user = currentUser) {
+        if (!user) return false;
+        return user.role === 'admin' || user.role === 'supervisor';
+    }
+
+    function canEditRecord() {
+        if (!currentUser) return false;
+        if (hasFullAccess(currentUser)) return true;
+        return Boolean(currentUser.canEdit);
+    }
+
+    function canDeleteRecord() {
+        if (!currentUser) return false;
+        if (hasFullAccess(currentUser)) return true;
+        return Boolean(currentUser.canDelete);
+    }
+
     function roleLabel(role) {
         if (role === 'admin') return 'مدير';
         if (role === 'supervisor') return 'مشرف عام';
@@ -824,6 +884,11 @@
         if (role === 'admin') return 'badge-role';
         if (role === 'supervisor') return 'badge-sup';
         return 'badge-cash';
+    }
+
+    function toggleEmployeePermBox() {
+        const role = document.getElementById('newEmpRole').value;
+        document.getElementById('empPermissionsBox').classList.toggle('hidden', role !== 'cashier');
     }
 
     function showToast(msg) {
@@ -855,6 +920,10 @@
                 loadCollection('warehouse')
             ]);
             state = { cashboxes, customers, invoices, vouchers, employees, warehouse };
+            if (currentUser && currentUser.id) {
+                const updatedMe = state.employees.find(e => e.id === currentUser.id);
+                if (updatedMe) currentUser = updatedMe;
+            }
             isDemoMode = false;
             if (showMsg) showToast('تم تحديث البيانات');
         } catch (err) {
@@ -901,6 +970,8 @@
                     username: ADMIN_USER,
                     password: ADMIN_PASS,
                     role: 'admin',
+                    canEdit: true,
+                    canDelete: true,
                     active: true
                 };
                 if (!isDemoMode && db) {
@@ -923,8 +994,8 @@
             roleBadge.textContent = roleLabel(currentUser.role);
             roleBadge.className = `badge ${roleBadgeClass(currentUser.role)}`;
 
-            // صلاحيات إدارة الموظفين للمدير فقط، والمشرف العام له كافة الأقسام التشغيلية
-            document.getElementById('employeesNavBtn').classList.toggle('hidden', currentUser.role !== 'admin');
+            // المشرف العام والمدير يظهر لهما قسم الموظفين وكامل الصلاحيات
+            document.getElementById('employeesNavBtn').classList.toggle('hidden', !hasFullAccess(currentUser));
 
             const badge = document.getElementById('connectionStatusBadge');
             badge.className = isDemoMode ? 'db-status demo' : 'db-status';
@@ -937,7 +1008,6 @@
                 addInvoiceItemRow();
             }
 
-            // فتح الواجهة فوراً ثم تحميل باقي البيانات في الخلفية
             reloadAllData(false);
         } finally {
             isBusy = false;
@@ -955,8 +1025,8 @@
     }
 
     function switchTab(tabId, btnEl) {
-        if (tabId === 'employeesTab' && currentUser && currentUser.role !== 'admin') {
-            showToast('هذا القسم مخصص للمدير فقط');
+        if (tabId === 'employeesTab' && !hasFullAccess(currentUser)) {
+            showToast('هذا القسم للمشرف العام والمدير فقط');
             return;
         }
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -1116,6 +1186,31 @@
         }
     }
 
+    async function editInvoiceNote(invId) {
+        if (!canEditRecord()) {
+            showToast('ليس لديك صلاحية التعديل');
+            return;
+        }
+        const inv = state.invoices.find(i => i.id === invId);
+        if (!inv) return;
+        const nextNote = prompt('تعديل ملاحظة الفاتورة:', inv.notes || '');
+        if (nextNote === null) return;
+        await db.collection('invoices').doc(invId).update({ notes: nextNote.trim() });
+        await reloadAllData(false);
+        showToast('تم تعديل الفاتورة');
+    }
+
+    async function deleteInvoiceRecord(invId) {
+        if (!canDeleteRecord()) {
+            showToast('ليس لديك صلاحية الحذف');
+            return;
+        }
+        if (!confirm('تأكيد حذف الفاتورة؟')) return;
+        await db.collection('invoices').doc(invId).delete();
+        await reloadAllData(false);
+        showToast('تم حذف الفاتورة');
+    }
+
     function renderInvoicesTable() {
         const q = (document.getElementById('invoiceSearchInput').value || '').toLowerCase().trim();
         const list = state.invoices
@@ -1130,9 +1225,14 @@
                     <td>${i.paymentType === 'cash' ? '<span class="badge badge-cash">نقدي</span>' : '<span class="badge badge-credit">آجل</span>'}</td>
                     <td><span class="mono">${formatMoney(i.netTotal)}</span></td>
                     <td>${i.employee || '-'}</td>
+                    <td>
+                        ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editInvoiceNote('${i.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+                        ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteInvoiceRecord('${i.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+                        ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
+                    </td>
                 </tr>
             `).join('')
-            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا توجد فواتير</td></tr>';
+            : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد فواتير</td></tr>';
     }
 
     function toggleVoucherCustomerField() {
@@ -1197,6 +1297,31 @@
         }
     }
 
+    async function editVoucherNote(vchId) {
+        if (!canEditRecord()) {
+            showToast('ليس لديك صلاحية التعديل');
+            return;
+        }
+        const v = state.vouchers.find(x => x.id === vchId);
+        if (!v) return;
+        const nextNote = prompt('تعديل البيان:', v.note || '');
+        if (nextNote === null) return;
+        await db.collection('vouchers').doc(vchId).update({ note: nextNote.trim() });
+        await reloadAllData(false);
+        showToast('تم تعديل السند');
+    }
+
+    async function deleteVoucherRecord(vchId) {
+        if (!canDeleteRecord()) {
+            showToast('ليس لديك صلاحية الحذف');
+            return;
+        }
+        if (!confirm('تأكيد حذف السند؟')) return;
+        await db.collection('vouchers').doc(vchId).delete();
+        await reloadAllData(false);
+        showToast('تم حذف السند');
+    }
+
     function renderVouchersTable() {
         const list = state.vouchers.slice().reverse();
         document.getElementById('vouchersTableBody').innerHTML = list.length
@@ -1207,9 +1332,14 @@
                     <td>${v.customerName || '-'}</td>
                     <td><span class="mono">${formatMoney(v.amount)}</span></td>
                     <td>${v.employee || '-'}</td>
+                    <td>
+                        ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editVoucherNote('${v.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+                        ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteVoucherRecord('${v.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+                        ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
+                    </td>
                 </tr>
             `).join('')
-            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا توجد أسناد</td></tr>';
+            : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد أسناد</td></tr>';
     }
 
     async function createCashbox() {
@@ -1265,6 +1395,10 @@
         try {
             const existing = state.warehouse.find(w => w.name.toLowerCase() === name.toLowerCase());
             if (existing) {
+                if (!canEditRecord()) {
+                    showToast('ليس لديك صلاحية التعديل على المخزون');
+                    return;
+                }
                 await db.collection('warehouse').doc(existing.id).update({ qty, price });
             } else {
                 const id = `wh_${Date.now()}`;
@@ -1281,6 +1415,36 @@
         }
     }
 
+    async function editWarehouseItem(itemId) {
+        if (!canEditRecord()) {
+            showToast('ليس لديك صلاحية التعديل');
+            return;
+        }
+        const item = state.warehouse.find(w => w.id === itemId);
+        if (!item) return;
+        const nextQty = prompt(`تعديل كمية (${item.name}):`, item.qty);
+        if (nextQty === null) return;
+        const nextPrice = prompt(`تعديل سعر (${item.name}):`, item.price);
+        if (nextPrice === null) return;
+        await db.collection('warehouse').doc(itemId).update({
+            qty: Number(nextQty || 0),
+            price: Number(nextPrice || 0)
+        });
+        await reloadAllData(false);
+        showToast('تم تعديل الصنف');
+    }
+
+    async function deleteWarehouseItem(itemId) {
+        if (!canDeleteRecord()) {
+            showToast('ليس لديك صلاحية الحذف');
+            return;
+        }
+        if (!confirm('تأكيد حذف الصنف من المخزون؟')) return;
+        await db.collection('warehouse').doc(itemId).delete();
+        await reloadAllData(false);
+        showToast('تم حذف الصنف');
+    }
+
     function renderWarehouseTable() {
         const tbody = document.getElementById('warehouseTableBody');
         tbody.innerHTML = state.warehouse.length
@@ -1293,10 +1457,15 @@
                         <td><span class="badge ${q > 0 ? 'badge-cash' : 'badge-expense'} mono">${q}</span></td>
                         <td><span class="mono">${formatMoney(p)}</span></td>
                         <td><span class="mono">${formatMoney(q * p)}</span></td>
+                        <td>
+                            ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editWarehouseItem('${w.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+                            ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteWarehouseItem('${w.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+                            ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
+                        </td>
                     </tr>
                 `;
             }).join('')
-            : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا توجد أصناف في المخزون</td></tr>';
+            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا توجد أصناف في المخزون</td></tr>';
     }
 
     async function createCustomer() {
@@ -1325,6 +1494,36 @@
         }
     }
 
+    async function editCustomerItem(custId) {
+        if (!canEditRecord()) {
+            showToast('ليس لديك صلاحية التعديل');
+            return;
+        }
+        const c = state.customers.find(x => x.id === custId);
+        if (!c) return;
+        const nextName = prompt('تعديل اسم العميل:', c.name);
+        if (nextName === null || !nextName.trim()) return;
+        const nextPhone = prompt('تعديل رقم الهاتف:', c.phone || '');
+        if (nextPhone === null) return;
+        await db.collection('customers').doc(custId).update({
+            name: nextName.trim(),
+            phone: nextPhone.trim() || '-'
+        });
+        await reloadAllData(false);
+        showToast('تم تعديل العميل');
+    }
+
+    async function deleteCustomerItem(custId) {
+        if (!canDeleteRecord()) {
+            showToast('ليس لديك صلاحية الحذف');
+            return;
+        }
+        if (!confirm('تأكيد حذف العميل؟')) return;
+        await db.collection('customers').doc(custId).delete();
+        await reloadAllData(false);
+        showToast('تم حذف العميل');
+    }
+
     function renderCustomersTable() {
         const tbody = document.getElementById('customersTableBody');
         tbody.innerHTML = state.customers.length
@@ -1333,9 +1532,14 @@
                     <td><strong>${c.name}</strong></td>
                     <td>${c.phone || '-'}</td>
                     <td><span class="mono">${formatMoney(c.balance)}</span></td>
+                    <td>
+                        ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editCustomerItem('${c.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+                        ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteCustomerItem('${c.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+                        ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
+                    </td>
                 </tr>
             `).join('')
-            : '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">لا يوجد عملاء</td></tr>';
+            : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا يوجد عملاء</td></tr>';
     }
 
     async function createEmployee() {
@@ -1345,6 +1549,9 @@
         const username = document.getElementById('newEmpUsername').value.trim();
         const password = document.getElementById('newEmpPassword').value.trim();
         const role = document.getElementById('newEmpRole').value;
+        const isFull = role === 'admin' || role === 'supervisor';
+        const canEdit = isFull ? true : document.getElementById('newEmpCanEdit').checked;
+        const canDelete = isFull ? true : document.getElementById('newEmpCanDelete').checked;
 
         if (!fullName || !username || !password) {
             showToast('أدخل جميع بيانات الحساب');
@@ -1361,15 +1568,40 @@
                 return;
             }
             const id = `emp_${Date.now()}`;
-            await db.collection('employees').doc(id).set({ id, fullName, username, password, role, active: true });
+            await db.collection('employees').doc(id).set({
+                id,
+                fullName,
+                username,
+                password,
+                role,
+                canEdit,
+                canDelete,
+                active: true
+            });
             document.getElementById('newEmpFullName').value = '';
             document.getElementById('newEmpUsername').value = '';
             document.getElementById('newEmpPassword').value = '';
+            document.getElementById('newEmpCanEdit').checked = false;
+            document.getElementById('newEmpCanDelete').checked = false;
             await reloadAllData(false);
-            showToast('تم حفظ الحساب مرة واحدة');
+            showToast('تم حفظ الحساب');
         } finally {
             isBusy = false;
             btn.disabled = false;
+        }
+    }
+
+    async function toggleEmployeePerm(empId, field) {
+        if (isBusy) return;
+        const emp = state.employees.find(e => e.id === empId);
+        if (!emp || emp.role === 'admin' || emp.role === 'supervisor') return;
+        isBusy = true;
+        try {
+            await db.collection('employees').doc(empId).update({ [field]: !Boolean(emp[field]) });
+            await reloadAllData(false);
+            showToast('تم تحديث الصلاحية');
+        } finally {
+            isBusy = false;
         }
     }
 
@@ -1389,19 +1621,33 @@
 
     function renderEmployeesTable() {
         const tbody = document.getElementById('employeesTableBody');
-        tbody.innerHTML = state.employees.map(emp => `
-            <tr>
-                <td><strong>${emp.fullName}</strong></td>
-                <td><span class="mono">${emp.username}</span></td>
-                <td><span class="badge ${roleBadgeClass(emp.role)}">${roleLabel(emp.role)}</span></td>
-                <td>${emp.active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
-                <td>
-                    <button class="btn ${emp.active ? 'btn-warning' : 'btn-success'} btn-sm" onclick="toggleEmployeeStatus('${emp.id}')">
-                        ${emp.active ? 'إيقاف' : 'تفعيل'}
+        tbody.innerHTML = state.employees.map(emp => {
+            const full = emp.role === 'admin' || emp.role === 'supervisor';
+            const permsHtml = full
+                ? '<span class="badge badge-sup">تعديل + حذف (كامل)</span>'
+                : `
+                    <button class="btn ${emp.canEdit ? 'btn-success' : 'btn-outline'} btn-sm" onclick="toggleEmployeePerm('${emp.id}', 'canEdit')">
+                        ${emp.canEdit ? 'تعديل ✓' : 'تعديل ✕'}
                     </button>
-                </td>
-            </tr>
-        `).join('');
+                    <button class="btn ${emp.canDelete ? 'btn-danger' : 'btn-outline'} btn-sm" onclick="toggleEmployeePerm('${emp.id}', 'canDelete')">
+                        ${emp.canDelete ? 'حذف ✓' : 'حذف ✕'}
+                    </button>
+                  `;
+            return `
+                <tr>
+                    <td><strong>${emp.fullName}</strong></td>
+                    <td><span class="mono">${emp.username}</span></td>
+                    <td><span class="badge ${roleBadgeClass(emp.role)}">${roleLabel(emp.role)}</span></td>
+                    <td>${permsHtml}</td>
+                    <td>${emp.active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
+                    <td>
+                        <button class="btn ${emp.active ? 'btn-warning' : 'btn-success'} btn-sm" onclick="toggleEmployeeStatus('${emp.id}')">
+                            ${emp.active ? 'إيقاف' : 'تفعيل'}
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 </script>
 </body>
