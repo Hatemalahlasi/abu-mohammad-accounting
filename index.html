@@ -297,20 +297,20 @@
 
         @media (min-width: 768px) {
             .quick-nav {
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(4, 1fr);
                 gap: 12px;
             }
         }
 
         .nav-tab {
-            padding: 16px 12px;
+            padding: 15px 10px;
             border-radius: 16px;
             border: 1.5px solid var(--border);
             background: var(--bg-surface);
             color: var(--text-main);
             font-family: 'Cairo', sans-serif;
             font-weight: 800;
-            font-size: 14.5px;
+            font-size: 14px;
             cursor: pointer;
             display: flex;
             flex-direction: column;
@@ -320,7 +320,8 @@
             transition: all 0.18s ease;
         }
 
-        .nav-tab i { font-size: 22px; color: var(--primary); }
+        .nav-tab i { font-size: 21px; color: var(--primary); }
+        .nav-tab.accent-tab i { color: var(--accent); }
         .nav-tab:hover {
             border-color: var(--primary);
             background: var(--primary-soft);
@@ -345,13 +346,6 @@
             color: var(--primary);
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-
-        .topbar-actions {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
             gap: 8px;
         }
 
@@ -401,6 +395,25 @@
             .grid-2 { grid-template-columns: 1fr 1fr; }
             .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
             .grid-4 { grid-template-columns: repeat(4, 1fr); }
+        }
+
+        .branches-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .branch-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+            border: 1.5px solid var(--border);
+            border-radius: 11px;
+            padding: 7px 11px;
+            font-size: 13px;
+            font-weight: 700;
         }
 
         .table-responsive {
@@ -695,6 +708,14 @@
                     <i class="fa-solid fa-users"></i>
                     <span>العملاء</span>
                 </button>
+                <button class="nav-tab accent-tab" onclick="openAddItemModal()">
+                    <i class="fa-solid fa-box-open"></i>
+                    <span>إضافة أصناف</span>
+                </button>
+                <button class="nav-tab accent-tab" onclick="openTransferModal()">
+                    <i class="fa-solid fa-right-left"></i>
+                    <span>نقل مخازن</span>
+                </button>
                 <button id="employeesNavBtn" class="nav-tab" onclick="openFullPage('employeesTab')">
                     <i class="fa-solid fa-user-tie"></i>
                     <span>الموظفون</span>
@@ -918,26 +939,18 @@
             </div>
         </section>
 
-        <!-- 4. صفحة المخازن والفروع (منظمة بأزرار منفصلة بدون زحمة) -->
+        <!-- 4. صفحة المخازن والفروع -->
         <section id="warehouseTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-boxes-stacked"></i> المخازن والفروع</div>
-                <div class="topbar-actions">
-                    <button type="button" class="btn btn-primary btn-sm" onclick="openAddItemModal()">
-                        <i class="fa-solid fa-plus"></i> إضافة أصناف
-                    </button>
-                    <button type="button" class="btn btn-accent btn-sm" onclick="openTransferModal()">
-                        <i class="fa-solid fa-right-left"></i> نقل مخازن
-                    </button>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
-                        <i class="fa-solid fa-arrow-right"></i> رجوع
-                    </button>
-                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
             </div>
 
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-code-branch"></i> الفروع وإضافة فرع</span>
+                    <span><i class="fa-solid fa-code-branch"></i> الفروع وإضافة وتعديل أسماء الفروع</span>
                     <span id="warehouseTotalValueBadge" class="badge badge-cash">قيمة المخزون: 0.00</span>
                 </div>
                 <div class="grid-2">
@@ -955,6 +968,8 @@
                         </div>
                     </div>
                 </div>
+
+                <div id="branchesManageChips" class="branches-chips"></div>
             </div>
 
             <div class="card-box">
@@ -982,17 +997,9 @@
         <section id="customersTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-users"></i> العملاء وكشوف الحساب</div>
-                <div class="topbar-actions">
-                    <button type="button" class="btn btn-primary btn-sm" onclick="openAddItemModal()">
-                        <i class="fa-solid fa-plus"></i> إضافة أصناف
-                    </button>
-                    <button type="button" class="btn btn-accent btn-sm" onclick="openTransferModal()">
-                        <i class="fa-solid fa-right-left"></i> نقل مخازن
-                    </button>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
-                        <i class="fa-solid fa-arrow-right"></i> رجوع
-                    </button>
-                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
             </div>
 
             <div class="card-box">
@@ -1384,7 +1391,10 @@
             renderWarehouseCatalogDropdown();
             updateInvoiceStatementPreview();
         }
-        if (tabId === 'warehouseTab') populateTransferItems();
+        if (tabId === 'warehouseTab') {
+            renderBranchesChips();
+            populateTransferItems();
+        }
         if (tabId === 'vouchersTab') updateVoucherStatementPreview();
         if (tabId === 'customersTab') {
             toggleStatementCustomerPicker();
@@ -1720,6 +1730,7 @@
         renderInvoicesTable();
         renderVouchersTable();
         renderCashboxesList();
+        renderBranchesChips();
         renderWarehouseTable();
         renderCustomersTable();
         renderCustomerStatement();
@@ -2577,6 +2588,65 @@
             isBusy = false;
             btn.disabled = false;
         }
+    }
+
+    async function editBranchName(branchId) {
+        if (isBusy) return;
+        if (!canEditRecord()) {
+            showToast('ليس لديك صلاحية تعديل أسماء الفروع');
+            return;
+        }
+        const br = state.branches.find(b => b.id === branchId);
+        if (!br) return;
+        const nextName = prompt('تعديل اسم الفرع:', br.name || '');
+        if (nextName === null) return;
+        const cleanName = nextName.trim();
+        if (!cleanName) {
+            showToast('اسم الفرع لا يمكن أن يكون فارغاً');
+            return;
+        }
+
+        isBusy = true;
+        try {
+            await db.collection('branches').doc(branchId).update({ name: cleanName });
+
+            const relatedWh = state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId);
+            for (const w of relatedWh) {
+                await db.collection('warehouse').doc(w.id).update({ branchName: cleanName });
+            }
+
+            const relatedInv = state.invoices.filter(i => (i.branchId || 'main_branch') === branchId);
+            for (const inv of relatedInv) {
+                await db.collection('invoices').doc(inv.id).update({ branchName: cleanName });
+            }
+
+            showToast('تم تعديل اسم الفرع');
+        } catch (e) {
+            showToast('تعذر تعديل اسم الفرع');
+        } finally {
+            isBusy = false;
+        }
+    }
+
+    function renderBranchesChips() {
+        const container = document.getElementById('branchesManageChips');
+        if (!container) return;
+        const allowEdit = canEditRecord();
+
+        if (!state.branches.length) {
+            container.innerHTML = `<span class="branch-chip"><i class="fa-solid fa-code-branch"></i> الفرع الرئيسي <span style="font-size:11px; color:var(--text-muted);">(افتراضي)</span></span>`;
+            return;
+        }
+
+        container.innerHTML = state.branches.map(b => `
+            <span class="branch-chip">
+                <i class="fa-solid fa-code-branch" style="color:var(--primary);"></i>
+                <span>${b.name}</span>
+                ${allowEdit
+                    ? `<button type="button" class="btn btn-outline btn-sm" style="padding:3px 7px;" onclick="editBranchName('${b.id}')" title="تعديل اسم الفرع"><i class="fa-solid fa-pen"></i></button>`
+                    : ''}
+            </span>
+        `).join('');
     }
 
     async function saveWarehouseItem() {
