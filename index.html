@@ -1848,8 +1848,9 @@
             </div>
             <div class="card-box">
                 <div class="card-title"><span>الأصناف ومصادرها</span><span class="badge badge-unit" id="itemListCount">0 صنف</span></div>
-                <div class="grid-2">
-                    <div class="form-group"><label for="itemListSearch">بحث باسم الصنف أو المصدر</label><input id="itemListSearch" class="form-control" type="search" placeholder="اكتب اسم الصنف أو المورد..." oninput="renderItemList()"></div>
+                <div id="itemListSummary" class="item-list-summary"></div>
+                <div class="item-list-filters">
+                    <div class="form-group"><label for="itemListSearch">بحث باسم الصنف أو المورد أو المصدر</label><input id="itemListSearch" class="form-control" type="search" placeholder="اكتب اسم الصنف أو المورد..." oninput="renderItemList()"></div>
                     <div class="form-group"><label for="itemListBranch">المخزن</label><select id="itemListBranch" class="form-control" onchange="renderItemList()"><option value="ALL">كل المخازن المسموحة</option></select></div>
                 </div>
                 <div id="itemListCards" class="item-list-grid"></div>
@@ -6530,23 +6531,58 @@ function initMenuPermissionCheckboxes() {
     function renderItemList() {
         const host = document.getElementById('itemListCards');
         const count = document.getElementById('itemListCount');
+        const summary = document.getElementById('itemListSummary');
         if (!host) return;
         const query = (document.getElementById('itemListSearch')?.value || '').trim().toLowerCase();
         const branchId = document.getElementById('itemListBranch')?.value || 'ALL';
-        let items = getScopedWarehouseItems().filter(item => branchId === 'ALL' || (item.branchId || 'main_branch') === branchId);
+        const accessible = getScopedWarehouseItems();
+        let items = accessible.filter(item => branchId === 'ALL' || (item.branchId || 'main_branch') === branchId);
+        const sourceOf = item => getWarehouseItemSource(item);
+        const isSourceKnown = item => !sourceOf(item).includes('مصدر غير مسجل');
         items = items.filter(item => {
-            const source = getWarehouseItemSource(item).toLowerCase();
-            return !query || String(item.name || '').toLowerCase().includes(query) || source.includes(query) || String(item.branchName || '').toLowerCase().includes(query);
-        }).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
+            const source = sourceOf(item).toLowerCase();
+            const branchName = item.branchName || getAllBranches().find(b => b.id === item.branchId)?.name || 'المخزن الرئيسي';
+            return !query || String(item.name || '').toLowerCase().includes(query) || source.includes(query) || String(branchName).toLowerCase().includes(query);
+        }).sort((a, b) => {
+            const branchA = a.branchName || getAllBranches().find(x => x.id === a.branchId)?.name || '';
+            const branchB = b.branchName || getAllBranches().find(x => x.id === b.branchId)?.name || '';
+            return String(branchA).localeCompare(String(branchB), 'ar') || String(a.name || '').localeCompare(String(b.name || ''), 'ar');
+        });
         if (count) count.textContent = `${items.length} صنف`;
+        if (summary) {
+            const known = items.filter(isSourceKnown).length;
+            const unknown = items.length - known;
+            summary.innerHTML = `
+                <div class="item-list-stat"><span>الأصناف المعروضة</span><strong>${items.length}</strong></div>
+                <div class="item-list-stat"><span>مصدر معروف</span><strong class="known">${known}</strong></div>
+                <div class="item-list-stat"><span>مصدر غير مسجل</span><strong class="unknown">${unknown}</strong></div>`;
+        }
         host.innerHTML = items.length ? items.map(item => {
             const branch = item.branchName || getAllBranches().find(b => b.id === item.branchId)?.name || 'المخزن الرئيسي';
-            const source = getWarehouseItemSource(item);
+            const source = sourceOf(item);
+            const sourceKnown = isSourceKnown(item);
+            const qty = Number(item.qty || 0);
+            const costCurrency = item.costCurrency || item.priceCurrency || 'YER';
+            const saleCurrency = item.priceCurrency || 'YER';
+            const inventoryCost = qty * Number(item.costPrice ?? item.price ?? 0);
             return `<article class="item-list-card">
-                <div class="item-list-card-head"><strong>${escapeUiText(item.name || 'صنف بدون اسم')}</strong><span class="badge badge-unit">${escapeUiText(item.unit || 'حبة')}</span></div>
-                <div class="item-list-meta"><span>المخزن: <b>${escapeUiText(branch)}</b></span><span>الكمية: <b class="mono">${formatQty(item.qty || 0)}</b></span></div>
-                <div class="item-list-source"><i class="fa-solid fa-truck-ramp-box"></i> ${escapeUiText(source)}</div>
-                <div class="item-list-prices"><span>التكلفة: <b>${formatMoney(item.costPrice ?? item.price ?? 0)} ${escapeUiText(item.costCurrency || item.priceCurrency || 'YER')}</b></span><span>البيع: <b>${formatMoney(item.price || 0)} ${escapeUiText(item.priceCurrency || 'YER')}</b></span></div>
+                <div class="item-list-card-head">
+                    <div class="item-list-name-wrap"><span class="item-list-kicker">اسم الصنف</span><strong>${escapeUiText(item.name || 'صنف بدون اسم')}</strong></div>
+                    <span class="item-list-unit">${escapeUiText(item.unit || 'حبة')}</span>
+                </div>
+                <div class="item-list-qty-panel">
+                    <div><span>المخزن</span><b>${escapeUiText(branch)}</b></div>
+                    <div><span>الكمية الحالية</span><b class="item-list-qty-number">${formatQty(qty)} <small>${escapeUiText(item.unit || 'حبة')}</small></b></div>
+                </div>
+                <div class="item-list-source ${sourceKnown ? 'source-known' : 'source-unknown'}">
+                    <div class="item-list-source-title"><i class="fa-solid ${sourceKnown ? 'fa-truck-ramp-box' : 'fa-circle-info'}"></i><b>${sourceKnown ? 'مصدر الصنف' : 'مصدر الصنف غير متوفر'}</b></div>
+                    <div class="item-list-source-text">${escapeUiText(source.replace(/^مصدر الصنف:\s*/,'').replace(/^مصدر غير مسجل \(صنف قديم\)$/,'لا توجد بيانات توريد أو إضافة محفوظة لهذا الصنف'))}</div>
+                </div>
+                <div class="item-list-price-grid">
+                    <div class="item-list-price-box"><span>سعر التكلفة</span><b>${formatMoney(item.costPrice ?? item.price ?? 0)} <small>${escapeUiText(costCurrency)}</small></b></div>
+                    <div class="item-list-price-box"><span>سعر البيع</span><b>${formatMoney(item.price || 0)} <small>${escapeUiText(saleCurrency)}</small></b></div>
+                    <div class="item-list-price-box item-list-total-box"><span>قيمة الكمية بالتكلفة</span><b>${formatMoney(inventoryCost)} <small>${escapeUiText(costCurrency)}</small></b></div>
+                </div>
                 <div class="item-list-actions">
                     ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editWarehouseItemQuantity('${item.id}')"><i class="fa-solid fa-pen"></i> تعديل الكمية</button>` : ''}
                     ${canDeleteRecord() ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteWarehouseItem('${item.id}')"><i class="fa-solid fa-trash"></i> حذف الصنف</button>` : ''}
@@ -8547,17 +8583,42 @@ thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avo
 @page{size:A4 portrait;margin:9mm}
 @media print{html,body{width:100%;height:auto}.employee-dues-pdf-sheet{width:100%;padding:3mm}.employee-dues-pdf-sheet:not(:last-child){break-after:page;page-break-after:always}}
 
-        .item-list-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:10px}
-        .item-list-card{min-width:0;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
-        .item-list-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-        .item-list-card-head strong{font-size:15px;line-height:1.8;overflow-wrap:anywhere}
-        .item-list-meta,.item-list-prices{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;color:var(--text-muted)}
-        .item-list-meta b,.item-list-prices b{color:var(--text-main)}
-        .item-list-source{font-size:12px;line-height:1.8;color:#315c84;background:#f3f7fb;padding:8px 10px;border-radius:9px;overflow-wrap:anywhere}
-        .item-list-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:auto}
+        .item-list-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:4px 0 14px}
+        .item-list-stat{background:#f7fafc;border:1px solid var(--border);border-radius:13px;padding:11px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+        .item-list-stat span{font-size:11px;color:var(--text-muted);font-weight:700}
+        .item-list-stat strong{font-size:21px;color:var(--primary);font-weight:900;font-variant-numeric:tabular-nums}
+        .item-list-stat strong.known{color:#15803d}.item-list-stat strong.unknown{color:#b45309}
+        .item-list-filters{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;align-items:end}
+        .item-list-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:12px;align-items:stretch}
+        .item-list-card{min-width:0;background:#fff;border:1px solid #dce5ed;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:13px;box-shadow:0 5px 18px rgba(15,40,70,.055)}
+        .item-list-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:11px;border-bottom:1px solid #edf1f5}
+        .item-list-name-wrap{min-width:0;display:flex;flex-direction:column;gap:4px}
+        .item-list-kicker{font-size:10px;color:var(--text-muted);font-weight:800}
+        .item-list-card-head strong{font-size:18px;line-height:1.65;overflow-wrap:anywhere;word-break:normal;color:var(--navy)}
+        .item-list-unit{flex:0 0 auto;padding:7px 11px;border-radius:999px;background:#e8f1f8;color:var(--primary);font-size:12px;font-weight:800;white-space:nowrap}
+        .item-list-qty-panel{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+        .item-list-qty-panel>div{background:#f7fafc;border:1px solid #e8edf2;border-radius:12px;padding:11px;display:flex;flex-direction:column;gap:5px;min-width:0}
+        .item-list-qty-panel span{font-size:11px;color:var(--text-muted);font-weight:700}
+        .item-list-qty-panel b{font-size:14px;color:var(--text-main);overflow-wrap:anywhere}
+        .item-list-qty-panel .item-list-qty-number{font-size:21px;color:#087a50;font-weight:900;font-variant-numeric:tabular-nums}
+        .item-list-qty-number small{font-size:11px;font-weight:700}
+        .item-list-source{font-size:13px;line-height:1.8;padding:11px 12px;border-radius:12px;overflow-wrap:anywhere;word-break:break-word}
+        .item-list-source.source-known{color:#245b42;background:#eff8f1;border:1px solid #d9eddf}
+        .item-list-source.source-unknown{color:#825316;background:#fff8e9;border:1px solid #f2e4c5}
+        .item-list-source-title{display:flex;align-items:center;gap:7px;font-size:11px;margin-bottom:4px}
+        .item-list-source-text{font-weight:700}
+        .item-list-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .item-list-price-box{background:#fbfcfd;border:1px solid #edf1f5;border-radius:11px;padding:10px;display:flex;flex-direction:column;gap:5px;min-width:0}
+        .item-list-price-box span{font-size:11px;color:var(--text-muted);font-weight:700}
+        .item-list-price-box b{font-size:14px;color:var(--text-main);font-weight:900;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+        .item-list-price-box small{font-size:10px;color:var(--text-muted)}
+        .item-list-total-box{grid-column:1/-1;background:#f4f8fc}
+        .item-list-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:3px}
+        .item-list-actions .btn{min-height:42px}
         .item-list-readonly{font-size:12px;color:var(--text-muted)}
-        .item-list-empty{grid-column:1/-1;text-align:center;padding:22px;color:var(--text-muted);background:var(--bg-surface);border-radius:12px}
-        @media(max-width:650px){.item-list-grid{grid-template-columns:1fr;gap:10px}.item-list-card{padding:13px}.item-list-card-head strong{font-size:16px}.item-list-actions .btn{flex:1;min-height:42px}}
+        .item-list-empty{grid-column:1/-1;text-align:center;padding:24px;color:var(--text-muted);background:var(--bg-surface);border-radius:12px}
+        @media(max-width:700px){.item-list-summary{gap:6px}.item-list-stat{padding:9px 8px}.item-list-stat span{font-size:10px}.item-list-stat strong{font-size:18px}.item-list-filters{grid-template-columns:1fr;gap:4px}.item-list-grid{grid-template-columns:1fr;gap:12px}.item-list-card{padding:15px;border-radius:16px}.item-list-card-head strong{font-size:19px;line-height:1.75}.item-list-qty-panel .item-list-qty-number{font-size:23px}.item-list-source{font-size:14px}.item-list-price-box b{font-size:15px}.item-list-actions .btn{flex:1;min-height:46px;font-size:13px}}
+        @media(max-width:360px){.item-list-summary{grid-template-columns:1fr 1fr}.item-list-stat:first-child{grid-column:1/-1}.item-list-qty-panel{grid-template-columns:1fr}.item-list-card{padding:12px}}
 </style>
 </head>
 <body>${safeSheets}
