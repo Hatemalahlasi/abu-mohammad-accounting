@@ -1295,6 +1295,10 @@
                     <i class="fa-solid fa-boxes-stacked"></i>
                     <span>المخازن والفروع</span>
                 </button>
+                <button class="nav-tab accent-tab" data-menu-key="itemListTab" onclick="openFullPage('itemListTab')">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>قائمة الأصناف</span>
+                </button>
                 <button class="nav-tab" data-menu-key="customersTab" onclick="openFullPage('customersTab')">
                     <i class="fa-solid fa-users"></i>
                     <span>العملاء</span>
@@ -1834,6 +1838,23 @@
                     </table>
                 </div>
             </div>
+        </section>
+
+        <!-- قائمة الأصناف مع مصدر كل صنف وإدارة الكمية -->
+        <section id="itemListTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-list-check"></i> قائمة الأصناف</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span>الأصناف ومصادرها</span><span class="badge badge-unit" id="itemListCount">0 صنف</span></div>
+                <div class="grid-2">
+                    <div class="form-group"><label for="itemListSearch">بحث باسم الصنف أو المصدر</label><input id="itemListSearch" class="form-control" type="search" placeholder="اكتب اسم الصنف أو المورد..." oninput="renderItemList()"></div>
+                    <div class="form-group"><label for="itemListBranch">المخزن</label><select id="itemListBranch" class="form-control" onchange="renderItemList()"><option value="ALL">كل المخازن المسموحة</option></select></div>
+                </div>
+                <div id="itemListCards" class="item-list-grid"></div>
+            </div>
+            <div class="employee-permission-note">يعرض مصدر الصنف حسب بيانات التوريد أو الإضافة المسجلة. الأصناف القديمة التي لم يكن لها مصدر محفوظ ستظهر بعبارة «مصدر غير مسجل».</div>
         </section>
 
         <!-- صفحة إضافة أصناف -->
@@ -2858,6 +2879,7 @@
         { key: 'vouchersTab', label: 'الأسناد' },
         { key: 'cashboxTab', label: 'الصندوق' },
         { key: 'warehouseTab', label: 'المخازن والفروع' },
+        { key: 'itemListTab', label: 'قائمة الأصناف' },
         { key: 'customersTab', label: 'العملاء' },
         { key: 'quantitiesTab', label: 'إدخال كميات الأصناف' },
         { key: 'addItemTab', label: 'إضافة أصناف' },
@@ -3952,6 +3974,10 @@ function initMenuPermissionCheckboxes() {
         }
         if (tabId === 'warehouseTab' || tabId === 'transferTab') {
             populateTransferItems();
+        }
+        if (tabId === 'itemListTab') {
+            populateItemListBranchFilter();
+            renderItemList();
         }
         if (tabId === 'quantitiesTab') {
             applyQuantityUpdateModePermission();
@@ -6389,7 +6415,7 @@ function initMenuPermissionCheckboxes() {
             } else {
                 const result = await createRecordOnce('warehouse', 'wh', {
                     action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
-                }, { branchId, branchName, name, unit, qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency }, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
+                }, { branchId, branchName, name, unit, qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, sourceType: 'manual', sourceName: getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() }, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
                 if (!result.created) { showToast('هذا الصنف موجود أو تمت إضافته للتو؛ لن يتكرر في المخزن.'); return; }
             }
             document.getElementById('newItemName').value = '';
@@ -6425,9 +6451,109 @@ function initMenuPermissionCheckboxes() {
             showToast('ليس لديك صلاحية الحذف');
             return;
         }
-        if (!confirm('تأكيد حذف الصنف من المخزون؟')) return;
-        await db.collection('warehouse').doc(itemId).delete();
-        showToast('تم حذف الصنف');
+        const item = (state.warehouse || []).find(entry => entry.id === itemId);
+        if (!item) { showToast('الصنف غير موجود'); return; }
+        if (!isBranchAllowedForOperation(item.branchId || 'main_branch', 'warehouseTab')) {
+            showToast('هذا المخزن غير مسموح لهذا الحساب');
+            return;
+        }
+        if (!confirm(`تأكيد حذف الصنف «${item.name || ''}» من المخزون؟`)) return;
+        try {
+            await db.collection('warehouse').doc(itemId).delete();
+            state.warehouse = (state.warehouse || []).filter(entry => entry.id !== itemId);
+            renderItemList();
+            renderWarehouseTable();
+            if (typeof renderWarehouseCatalogDropdown === 'function') renderWarehouseCatalogDropdown();
+            renderStats();
+            showToast('تم حذف الصنف');
+        } catch (error) {
+            console.warn('Delete warehouse item error:', error);
+            showToast('تعذر حذف الصنف');
+        }
+    }
+
+    function populateItemListBranchFilter() {
+        const select = document.getElementById('itemListBranch');
+        if (!select) return;
+        const previous = select.value || 'ALL';
+        const branches = getAccessibleBranchesForOperation('warehouseTab');
+        select.innerHTML = '<option value="ALL">كل المخازن المسموحة</option>' + branches.map(branch => `<option value="${escapeUiText(branch.id)}">${escapeUiText(branch.name)}</option>`).join('');
+        select.value = branches.some(branch => branch.id === previous) ? previous : 'ALL';
+    }
+
+    function getWarehouseItemSource(item) {
+        if (item?.sourceType === 'supplierPurchase' && item.sourceName) {
+            return `توريد من المورد: ${item.sourceName}${item.sourceDate ? ` — ${item.sourceDate}` : ''}`;
+        }
+        if (item?.sourceType === 'manual') {
+            return `إضافة مباشرة${item.sourceName ? ` بواسطة ${item.sourceName}` : ''}${item.sourceDate ? ` — ${item.sourceDate}` : ''}`;
+        }
+        const matches = (state.purchases || []).filter(purchase =>
+            purchase.kind === 'supplierPurchase' &&
+            (purchase.branchId || 'main_branch') === (item.branchId || 'main_branch') &&
+            (purchase.items || []).some(line =>
+                String(line.name || '').trim().toLowerCase() === String(item.name || '').trim().toLowerCase() &&
+                (line.unit || 'حبة') === (item.unit || 'حبة')
+            )
+        ).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+        if (matches.length) {
+            const latest = matches[0];
+            return `توريد من المورد: ${latest.supplierName || 'مورد غير محدد'}${latest.date ? ` — ${latest.date}` : ''}`;
+        }
+        const lastAdjustment = (item.quantityAdjustmentHistory || []).slice().sort((a, b) =>
+            String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || ''))
+        )[0];
+        if (lastAdjustment) return `آخر إدخال كمية بواسطة ${lastAdjustment.actorName || 'مستخدم'} — ${lastAdjustment.date || ''}`;
+        return 'مصدر غير مسجل (صنف قديم)';
+    }
+
+    async function editWarehouseItemQuantity(itemId) {
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية تعديل الكمية'); return; }
+        const item = (state.warehouse || []).find(entry => entry.id === itemId);
+        if (!item) { showToast('الصنف غير موجود'); return; }
+        if (!isBranchAllowedForOperation(item.branchId || 'main_branch', 'warehouseTab')) { showToast('هذا المخزن غير مسموح لهذا الحساب'); return; }
+        const next = prompt(`أدخل الكمية الجديدة للصنف: ${item.name}\nالمخزون الحالي: ${formatQty(item.qty || 0)} ${item.unit || 'حبة'}`, String(item.qty ?? 0));
+        if (next === null) return;
+        const qty = Number(next);
+        if (!Number.isFinite(qty) || qty < 0) { showToast('أدخل كمية صحيحة غير سالبة'); return; }
+        try {
+            await db.collection('warehouse').doc(itemId).update({ qty });
+            item.qty = qty;
+            renderItemList(); renderWarehouseTable(); renderStats();
+            showToast('تم تعديل كمية الصنف');
+        } catch (error) {
+            console.warn('Edit item quantity error:', error);
+            showToast('تعذر تعديل كمية الصنف');
+        }
+    }
+
+    function renderItemList() {
+        const host = document.getElementById('itemListCards');
+        const count = document.getElementById('itemListCount');
+        if (!host) return;
+        const query = (document.getElementById('itemListSearch')?.value || '').trim().toLowerCase();
+        const branchId = document.getElementById('itemListBranch')?.value || 'ALL';
+        let items = getScopedWarehouseItems().filter(item => branchId === 'ALL' || (item.branchId || 'main_branch') === branchId);
+        items = items.filter(item => {
+            const source = getWarehouseItemSource(item).toLowerCase();
+            return !query || String(item.name || '').toLowerCase().includes(query) || source.includes(query) || String(item.branchName || '').toLowerCase().includes(query);
+        }).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
+        if (count) count.textContent = `${items.length} صنف`;
+        host.innerHTML = items.length ? items.map(item => {
+            const branch = item.branchName || getAllBranches().find(b => b.id === item.branchId)?.name || 'المخزن الرئيسي';
+            const source = getWarehouseItemSource(item);
+            return `<article class="item-list-card">
+                <div class="item-list-card-head"><strong>${escapeUiText(item.name || 'صنف بدون اسم')}</strong><span class="badge badge-unit">${escapeUiText(item.unit || 'حبة')}</span></div>
+                <div class="item-list-meta"><span>المخزن: <b>${escapeUiText(branch)}</b></span><span>الكمية: <b class="mono">${formatQty(item.qty || 0)}</b></span></div>
+                <div class="item-list-source"><i class="fa-solid fa-truck-ramp-box"></i> ${escapeUiText(source)}</div>
+                <div class="item-list-prices"><span>التكلفة: <b>${formatMoney(item.costPrice ?? item.price ?? 0)} ${escapeUiText(item.costCurrency || item.priceCurrency || 'YER')}</b></span><span>البيع: <b>${formatMoney(item.price || 0)} ${escapeUiText(item.priceCurrency || 'YER')}</b></span></div>
+                <div class="item-list-actions">
+                    ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editWarehouseItemQuantity('${item.id}')"><i class="fa-solid fa-pen"></i> تعديل الكمية</button>` : ''}
+                    ${canDeleteRecord() ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteWarehouseItem('${item.id}')"><i class="fa-solid fa-trash"></i> حذف الصنف</button>` : ''}
+                    ${(!canEditRecord() && !canDeleteRecord()) ? '<span class="item-list-readonly">عرض فقط</span>' : ''}
+                </div>
+            </article>`;
+        }).join('') : '<div class="item-list-empty">لا توجد أصناف مطابقة في المخازن المسموحة.</div>';
     }
 
     function renderWarehouseTable() {
@@ -8420,6 +8546,18 @@ body{padding:0}
 thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avoid}
 @page{size:A4 portrait;margin:9mm}
 @media print{html,body{width:100%;height:auto}.employee-dues-pdf-sheet{width:100%;padding:3mm}.employee-dues-pdf-sheet:not(:last-child){break-after:page;page-break-after:always}}
+
+        .item-list-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:10px}
+        .item-list-card{min-width:0;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+        .item-list-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+        .item-list-card-head strong{font-size:15px;line-height:1.8;overflow-wrap:anywhere}
+        .item-list-meta,.item-list-prices{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;color:var(--text-muted)}
+        .item-list-meta b,.item-list-prices b{color:var(--text-main)}
+        .item-list-source{font-size:12px;line-height:1.8;color:#315c84;background:#f3f7fb;padding:8px 10px;border-radius:9px;overflow-wrap:anywhere}
+        .item-list-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:auto}
+        .item-list-readonly{font-size:12px;color:var(--text-muted)}
+        .item-list-empty{grid-column:1/-1;text-align:center;padding:22px;color:var(--text-muted);background:var(--bg-surface);border-radius:12px}
+        @media(max-width:650px){.item-list-grid{grid-template-columns:1fr;gap:10px}.item-list-card{padding:13px}.item-list-card-head strong{font-size:16px}.item-list-actions .btn{flex:1;min-height:42px}}
 </style>
 </head>
 <body>${safeSheets}
