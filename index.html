@@ -2777,6 +2777,10 @@
             salaryCurrency: CURRENCY_CODES.includes(account.salaryCurrency) ? account.salaryCurrency : 'YER',
             warehouseBranchId: account.warehouseBranchId || '',
             warehouseBranchIds: Array.isArray(account.warehouseBranchIds) ? normalizeBranchIds(account.warehouseBranchIds) : (account.warehouseBranchId ? [account.warehouseBranchId] : []),
+            quantityBranchIds: Array.isArray(account.quantityBranchIds) ? normalizeBranchIds(account.quantityBranchIds) : undefined,
+            quantityBranchNames: Array.isArray(account.quantityBranchNames) ? account.quantityBranchNames : [],
+            transferBranchIds: Array.isArray(account.transferBranchIds) ? normalizeBranchIds(account.transferBranchIds) : undefined,
+            transferBranchNames: Array.isArray(account.transferBranchNames) ? account.transferBranchNames : [],
             warehouseBranchName: account.warehouseBranchName || '',
             active: account.active !== false,
             username: account.username || '',
@@ -3289,14 +3293,19 @@ function initMenuPermissionCheckboxes() {
         return [...new Set(values.map(item => String(item || '').trim()).filter(Boolean))];
     }
 
+    function getLinkedStaffForUser(user = currentUser) {
+        if (!user) return null;
+        return (state.staff || []).find(staff =>
+            staff.id === user.staffId || staff.userAccountId === user.id || staff.legacyUserId === user.id
+        ) || null;
+    }
+
     function getAssignedBranchIds(user = currentUser) {
         if (!user) return [];
         if (Array.isArray(user.warehouseBranchIds)) return normalizeBranchIds(user.warehouseBranchIds);
         const direct = user.warehouseBranchId || user.branchId || '';
         if (direct) return [String(direct)];
-        const linkedStaff = (state.staff || []).find(staff =>
-            staff.id === user.staffId || staff.userAccountId === user.id || staff.legacyUserId === user.id
-        );
+        const linkedStaff = getLinkedStaffForUser(user);
         if (!linkedStaff) return [];
         if (Array.isArray(linkedStaff.warehouseBranchIds)) return normalizeBranchIds(linkedStaff.warehouseBranchIds);
         return linkedStaff.warehouseBranchId ? [String(linkedStaff.warehouseBranchId)] : [];
@@ -3304,6 +3313,29 @@ function initMenuPermissionCheckboxes() {
 
     function getAssignedBranchId(user = currentUser) {
         return getAssignedBranchIds(user)[0] || '';
+    }
+
+    // لكل عملية نطاق مخازن مستقل. إذا لم يُحفظ نطاق خاص بعد، نرجع
+    // إلى المخازن العامة القديمة لضمان استمرار حسابات الموظفين الحالية.
+    function getBranchIdsForOperation(operation, user = currentUser) {
+        if (!user) return [];
+        if (hasFullAccess(user)) return getAllBranches().map(branch => branch.id);
+        const field = operation === 'quantitiesTab' ? 'quantityBranchIds'
+            : operation === 'transferTab' ? 'transferBranchIds' : '';
+        const linkedStaff = getLinkedStaffForUser(user);
+        if (field && Array.isArray(user[field])) return normalizeBranchIds(user[field]);
+        if (field && linkedStaff && Array.isArray(linkedStaff[field])) return normalizeBranchIds(linkedStaff[field]);
+        return getAssignedBranchIds(user);
+    }
+
+    function getAccessibleBranchesForOperation(operation, user = currentUser) {
+        const allowedIds = new Set(getBranchIdsForOperation(operation, user));
+        return getAllBranches().filter(branch => allowedIds.has(branch.id));
+    }
+
+    function isBranchAllowedForOperation(branchId, operation, user = currentUser) {
+        if (!user || hasFullAccess(user)) return true;
+        return getBranchIdsForOperation(operation, user).includes(String(branchId || ''));
     }
 
     function getStaffBranchIds(staff) {
@@ -3402,6 +3434,10 @@ function initMenuPermissionCheckboxes() {
         }
         if (!canAccessMenu(tabId, currentUser)) {
             showToast('ليس لديك صلاحية الدخول إلى هذا القسم');
+            return;
+        }
+        if (tabId === 'transferTab' && getAccessibleBranchesForOperation('transferTab').length < 2) {
+            showToast('يجب أن يحدد لك المشرف مخزنين على الأقل لصلاحية النقل (من وإلى)');
             return;
         }
         document.getElementById('homeMenuContainer').classList.add('hidden');
@@ -3948,11 +3984,16 @@ function initMenuPermissionCheckboxes() {
     function populateDropdowns() {
         const allBranches = getAllBranches();
         const branchList = getAccessibleBranches();
-        const noBranchOption = '<option value="">لم يحدد المشرف مخزناً لهذا الموظف</option>';
-        const branchOptions = branchList.length
-            ? branchList.map(b => `<option value="${b.id}">${b.name}</option>`).join('')
-            : noBranchOption;
-        const allBranchOptions = allBranches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        const quantityBranches = getAccessibleBranchesForOperation('quantitiesTab');
+        const transferBranches = getAccessibleBranchesForOperation('transferTab');
+        const makeBranchOptions = list => list.length
+            ? list.map(b => `<option value="${escapeUiText(b.id)}">${escapeUiText(b.name)}</option>`).join('')
+            : '<option value="">لم يحدد المشرف مخزناً لهذا الموظف</option>';
+        const branchOptions = makeBranchOptions(branchList);
+        const quantityBranchOptions = makeBranchOptions(quantityBranches);
+        const transferBranchOptions = transferBranches.length
+            ? makeBranchOptions(transferBranches)
+            : '<option value="">لم يحدد المشرف مخازن النقل</option>';
 
         const selects = {
             inv: document.getElementById('invBranchSelect'),
@@ -3965,9 +4006,9 @@ function initMenuPermissionCheckboxes() {
         };
         const previous = Object.fromEntries(Object.entries(selects).map(([key, el]) => [key, el?.value || '']));
 
-        ['inv', 'pur', 'item', 'qty', 'from', 'to'].forEach(key => {
-            if (selects[key]) selects[key].innerHTML = branchOptions;
-        });
+        ['inv', 'pur', 'item'].forEach(key => { if (selects[key]) selects[key].innerHTML = branchOptions; });
+        if (selects.qty) selects.qty.innerHTML = quantityBranchOptions;
+        ['from', 'to'].forEach(key => { if (selects[key]) selects[key].innerHTML = transferBranchOptions; });
         if (selects.filter) {
             selects.filter.innerHTML = (currentUser && !hasFullAccess(currentUser) ? '' : '<option value="ALL">جميع الفروع</option>') + branchOptions;
         }
@@ -4154,7 +4195,7 @@ function initMenuPermissionCheckboxes() {
         const container = document.getElementById('qtyAdjustmentRows');
         if (!container) return;
         if (!container.querySelector('.batch-qty-row')) addStockQuantityRow();
-        const items = isBranchAllowed(branchId)
+        const items = isBranchAllowedForOperation(branchId, 'quantitiesTab')
             ? state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId)
             : [];
         container.querySelectorAll('.batch-qty-row').forEach(row => {
@@ -4166,6 +4207,7 @@ function initMenuPermissionCheckboxes() {
             if (previous && items.some(item => item.id === previous)) select.value = previous;
             updateStockQuantityRowInfo(select);
         });
+        renderQuantitiesPreviewTable();
     }
 
     function addStockQuantityRow() {
@@ -4201,7 +4243,7 @@ function initMenuPermissionCheckboxes() {
         const btn = document.getElementById('saveQtyBtn');
         const branchId = document.getElementById('qtyBranchSelect')?.value || '';
         const mode = document.getElementById('qtyUpdateMode')?.value || 'add';
-        if (!branchId || !isBranchAllowed(branchId)) { showToast('لم يحدد المشرف مخزناً لهذا الموظف'); return; }
+        if (!branchId || !isBranchAllowedForOperation(branchId, 'quantitiesTab')) { showToast('لم يحدد المشرف مخزناً لإدخال الكميات لهذا الموظف'); return; }
         const rows = Array.from(document.querySelectorAll('#qtyAdjustmentRows .batch-qty-row'));
         const entries = rows.map(row => {
             const quantityInput = row.querySelector('.batch-qty-value');
@@ -4217,8 +4259,8 @@ function initMenuPermissionCheckboxes() {
             if (seen.has(entry.itemId)) { showToast('الصنف مكرر في أكثر من صف؛ اجمع كميته في صف واحد'); return; }
             seen.add(entry.itemId);
             const item = state.warehouse.find(w => w.id === entry.itemId);
-            if (!item || (item.branchId || 'main_branch') !== branchId || !isBranchAllowed(item.branchId || 'main_branch')) {
-                showToast('تأكد أن جميع الأصناف من المخزن المحدد لك'); return;
+            if (!item || (item.branchId || 'main_branch') !== branchId || !isBranchAllowedForOperation(item.branchId || 'main_branch', 'quantitiesTab')) {
+                showToast('تأكد أن جميع الأصناف من مخزن إدخال الكميات المسموح لك به'); return;
             }
         }
         const signature = {
@@ -4276,7 +4318,11 @@ function initMenuPermissionCheckboxes() {
     function renderQuantitiesPreviewTable() {
         const tbody = document.getElementById('quantitiesPreviewBody');
         if (!tbody) return;
-        const visibleWarehouse = getScopedWarehouseItems();
+        const selectedBranchId = document.getElementById('qtyBranchSelect')?.value || '';
+        const visibleWarehouse = (state.warehouse || []).filter(item =>
+            (!selectedBranchId || (item.branchId || 'main_branch') === selectedBranchId) &&
+            isBranchAllowedForOperation(item.branchId || 'main_branch', 'quantitiesTab')
+        );
         tbody.innerHTML = visibleWarehouse.length
             ? visibleWarehouse.map(w => `
                 <tr>
@@ -4294,8 +4340,8 @@ function initMenuPermissionCheckboxes() {
     function populateTransferItems() {
         const fromBranchId = document.getElementById('transferFromBranch').value || '';
         const sel = document.getElementById('transferItemSelect');
-        if (!fromBranchId || !isBranchAllowed(fromBranchId)) {
-            sel.innerHTML = '<option value="">لم يحدد المشرف مخزناً لهذا الموظف</option>';
+        if (!fromBranchId || !isBranchAllowedForOperation(fromBranchId, 'transferTab')) {
+            sel.innerHTML = '<option value="">اختر مخزن مصدر مسموحاً به للنقل</option>';
             return;
         }
         const prevVal = sel.value;
@@ -4318,12 +4364,12 @@ function initMenuPermissionCheckboxes() {
         const btn = document.getElementById('executeTransferBtn');
         const fromBranchId = document.getElementById('transferFromBranch').value || '';
         const toBranchId = document.getElementById('transferToBranch').value || '';
-        if (!fromBranchId || !toBranchId || !isBranchAllowed(fromBranchId) || !isBranchAllowed(toBranchId)) { showToast('النقل مسموح فقط داخل المخزن المحدد لك'); return; }
+        if (!fromBranchId || !toBranchId || !isBranchAllowedForOperation(fromBranchId, 'transferTab') || !isBranchAllowedForOperation(toBranchId, 'transferTab')) { showToast('حدد مخزني المصدر والوجهة من المخازن التي سمح بها المشرف للنقل'); return; }
         const itemId = document.getElementById('transferItemSelect').value;
         const qtyToMove = Number(document.getElementById('transferQty').value || 0);
         if (fromBranchId === toBranchId) { showToast('اختر مخزناً مختلفاً للنقل إليه'); return; }
         const sourceItem = state.warehouse.find(w => w.id === itemId);
-        if (sourceItem && !isBranchAllowed(sourceItem.branchId || 'main_branch')) { showToast('هذا الصنف خارج المخزن المحدد لك'); return; }
+        if (sourceItem && !isBranchAllowedForOperation(sourceItem.branchId || 'main_branch', 'transferTab')) { showToast('هذا الصنف خارج مخازن النقل المسموحة لك'); return; }
         if (!sourceItem) { showToast('اختر الصنف المراد نقله'); return; }
         const currentQty = Number(sourceItem.qty || 0);
         if (qtyToMove <= 0 || qtyToMove > currentQty) { showToast(`الكمية غير صحيحة (المتاح: ${formatQty(currentQty)})`); return; }
@@ -6279,6 +6325,17 @@ function initMenuPermissionCheckboxes() {
         finally { isBusy = false; btn.disabled = false; }
     }
 
+    function parseBranchPromptSelection(answer, branches, allowNone = true) {
+        if (answer === null) return null;
+        const raw = String(answer).trim().toLowerCase();
+        if (allowNone && ['none', 'لا شيء', 'بدون', 'لا'].includes(raw)) return [];
+        if (['all', 'كل', 'الكل'].includes(raw)) return branches.map(branch => branch.id);
+        if (!raw) return allowNone ? [] : null;
+        const indexes = raw.split(/[،,\s]+/).filter(Boolean).map(value => Number(value));
+        if (!indexes.length || indexes.some(index => !Number.isInteger(index) || index < 1 || index > branches.length)) return null;
+        return [...new Set(indexes)].map(index => branches[index - 1].id);
+    }
+
     async function editEmployeeWarehouse(staffId) {
         if (isBusy || !canManageUsers()) return;
         const staff = getStaffById(staffId);
@@ -6286,41 +6343,61 @@ function initMenuPermissionCheckboxes() {
         const branches = getAllBranches();
         if (!branches.length) { showToast('لا توجد مخازن معرفة'); return; }
         const guide = branches.map((branch, index) => `${index + 1}. ${branch.name}`).join('\n');
-        const currentIds = new Set(getStaffBranchIds(staff));
-        const currentNumbers = branches.map((branch, index) => currentIds.has(branch.id) ? index + 1 : null).filter(Boolean).join(',');
-        const answer = prompt(
-            `حدد المخازن المسموح بها للموظف (${staff.fullName}).\nاكتب أرقام المخازن مفصولة بفاصلة مثل 1,2 أو اكتب all للسماح بكل المخازن:\n\n${guide}`,
-            currentIds.size === branches.length ? 'all' : currentNumbers
+        const currentGeneral = getStaffBranchIds(staff);
+        const currentQuantity = Array.isArray(staff.quantityBranchIds) ? normalizeBranchIds(staff.quantityBranchIds) : currentGeneral;
+        const currentTransfer = Array.isArray(staff.transferBranchIds) ? normalizeBranchIds(staff.transferBranchIds) : currentGeneral;
+        const toNumbers = ids => branches.map((branch, index) => ids.includes(branch.id) ? index + 1 : null).filter(Boolean).join(',');
+        const defaultText = ids => ids.length === branches.length ? 'all' : toNumbers(ids);
+
+        const generalAnswer = prompt(
+            `1) المخازن العامة للموظف (${staff.fullName})\nتُستخدم للمبيعات وعرض المخزون والعمليات العامة.\nاكتب الأرقام مفصولة بفاصلة، أو all لكل المخازن، أو none لمنع الوصول العام:\n\n${guide}`,
+            defaultText(currentGeneral)
         );
-        if (answer === null) return;
-        const raw = answer.trim().toLowerCase();
-        let branchIds = [];
-        if (raw === 'all' || raw === 'كل' || raw === 'الكل') {
-            branchIds = branches.map(branch => branch.id);
-        } else {
-            const indexes = raw.split(/[،,\s]+/).filter(Boolean).map(value => Number(value));
-            if (!indexes.length || indexes.some(index => !Number.isInteger(index) || index < 1 || index > branches.length)) {
-                showToast('أدخل أرقاماً صحيحة مفصولة بفاصلة، أو اكتب all لكل المخازن');
-                return;
-            }
-            branchIds = [...new Set(indexes)].map(index => branches[index - 1].id);
+        if (generalAnswer === null) return;
+        const generalIds = parseBranchPromptSelection(generalAnswer, branches, true);
+        if (generalIds === null) { showToast('اختيار المخازن العامة غير صحيح'); return; }
+
+        const quantityAnswer = prompt(
+            `2) مخازن إدخال الكميات للموظف (${staff.fullName})\nحدد المخزن أو المخازن التي يستطيع زيادة أو تعديل كمياتها فقط.\nاكتب الأرقام مفصولة بفاصلة، أو all لكل المخازن، أو none لمنع إدخال الكميات:\n\n${guide}`,
+            defaultText(currentQuantity)
+        );
+        if (quantityAnswer === null) return;
+        const quantityIds = parseBranchPromptSelection(quantityAnswer, branches, true);
+        if (quantityIds === null) { showToast('اختيار مخازن إدخال الكميات غير صحيح'); return; }
+
+        const transferAnswer = prompt(
+            `3) مخازن نقل المخزون للموظف (${staff.fullName})\nحدد المخازن التي يسمح له بالنقل منها وإليها. يحتاج النقل إلى مخزنين على الأقل.\nاكتب الأرقام مفصولة بفاصلة، أو all لكل المخازن، أو none لمنع النقل:\n\n${guide}`,
+            defaultText(currentTransfer)
+        );
+        if (transferAnswer === null) return;
+        const transferIds = parseBranchPromptSelection(transferAnswer, branches, true);
+        if (transferIds === null) { showToast('اختيار مخازن النقل غير صحيح'); return; }
+        if (transferIds.length === 1) {
+            showToast('اختر مخزنين على الأقل للنقل، أو اكتب none لمنع النقل');
+            return;
         }
-        const selected = branches.filter(branch => branchIds.includes(branch.id));
-        const names = selected.map(branch => branch.name);
-        const primaryId = branchIds[0] || '';
-        const nameText = names.join('، ');
+
+        const generalBranches = branches.filter(branch => generalIds.includes(branch.id));
+        const quantityBranches = branches.filter(branch => quantityIds.includes(branch.id));
+        const transferBranches = branches.filter(branch => transferIds.includes(branch.id));
+        const patch = {
+            warehouseBranchId: generalIds[0] || '',
+            warehouseBranchIds: generalIds,
+            warehouseBranchName: generalBranches.map(branch => branch.name).join('، ') || 'لا يوجد',
+            warehouseBranchNames: generalBranches.map(branch => branch.name),
+            quantityBranchIds: quantityIds,
+            quantityBranchNames: quantityBranches.map(branch => branch.name),
+            transferBranchIds: transferIds,
+            transferBranchNames: transferBranches.map(branch => branch.name)
+        };
+
         isBusy = true;
         try {
-            const patch = {
-                warehouseBranchId: primaryId,
-                warehouseBranchIds: branchIds,
-                warehouseBranchName: nameText,
-                warehouseBranchNames: names
-            };
             if (staff.legacy) {
                 const account = state.employees.find(item => item.id === staff.legacyUserId);
-                if (account) await db.collection('employees').doc(account.id).update(patch);
-                if (account) Object.assign(account, patch);
+                if (!account) throw new Error('LEGACY_ACCOUNT_NOT_FOUND');
+                await db.collection('employees').doc(account.id).update(patch);
+                Object.assign(account, patch);
             } else {
                 await db.collection('staff').doc(staffId).update(patch);
                 Object.assign(staff, patch);
@@ -6330,11 +6407,16 @@ function initMenuPermissionCheckboxes() {
                     Object.assign(linked, patch);
                 }
             }
-            showToast(`تم السماح للموظف باستخدام ${names.length === branches.length ? 'كل المخازن' : names.join(' و')}. أصبح بإمكانه النقل بينها.`);
+            const summary = [
+                `العامة: ${generalBranches.map(branch => branch.name).join('، ') || 'لا يوجد'}`,
+                `إدخال الكميات: ${quantityBranches.map(branch => branch.name).join('، ') || 'ممنوع'}`,
+                `النقل: ${transferBranches.map(branch => branch.name).join('، ') || 'ممنوع'}`
+            ].join(' | ');
+            showToast(`تم حفظ صلاحيات المخازن. ${summary}`);
             await reloadAllData(false);
         } catch (e) {
-            console.warn('Update staff warehouses error:', e);
-            showToast('تعذر تحديث مخازن الموظف');
+            console.warn('Update staff warehouse scopes error:', e);
+            showToast('تعذر تحديث صلاحيات المخازن؛ تحقق من اتصال Firebase');
         } finally {
             isBusy = false;
         }
@@ -6711,7 +6793,7 @@ function initMenuPermissionCheckboxes() {
                     <td>${active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
                     <td style="white-space:nowrap;">
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeName('${item.id}')" title="تعديل اسم الموظف"><i class="fa-solid fa-user-pen"></i> تعديل الاسم</button>` : ''}
-                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeWarehouse('${item.id}')" title="تحديد المخزن"><i class="fa-solid fa-warehouse"></i> المخزن</button>` : ''}
+                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeWarehouse('${item.id}')" title="تحديد المخازن العامة ومخازن إدخال الكميات ومخازن النقل بشكل مستقل"><i class="fa-solid fa-warehouse"></i> صلاحيات المخازن</button>` : ''}
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeePaySettings('${item.id}')" title="تعديل الراتب أو التسعيرة"><i class="fa-solid fa-pen"></i> ${isPieceworkStaff(item) ? 'التسعيرة' : 'الراتب'}</button>` : ''}
                         ${allowManage ? `<button class="btn btn-danger btn-sm" onclick="deleteStaffDefinition('${item.id}')" title="حذف تعريف الموظف"><i class="fa-solid fa-trash"></i> حذف</button>` : ''}
                     </td>
