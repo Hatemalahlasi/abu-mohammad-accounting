@@ -1033,6 +1033,28 @@
         }
         @keyframes salesCartSlideUp{from{transform:translateY(24px);opacity:.7}to{transform:translateY(0);opacity:1}}
 
+        /* شاشة نقطة بيع مباشرة للهاتف: كل الأصناف ظاهرة وتتدفق مع الصفحة دون منطقة تمرير داخلية */
+        .sales-direct-hint{display:flex;align-items:center;gap:7px;margin:4px 0 10px;padding:9px 11px;border-radius:11px;background:#edf8f0;color:#27623d;border:1px solid #d7ebdc;font-size:11px;font-weight:700}
+        .sales-direct-hint i{color:#16834b}
+        .sales-quick-title,.invoice-quick-products{display:none!important}
+        .invoice-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:none!important;height:auto!important;overflow:visible!important;overscroll-behavior:initial!important;gap:10px;padding:2px}
+        .invoice-product-card{min-height:126px;padding:12px;border:1px solid #d8e8dc;border-radius:15px;background:linear-gradient(180deg,#fff 0%,#f8fcf9 100%);box-shadow:0 3px 12px rgba(22,101,52,.07);gap:8px}
+        .invoice-product-card strong{font-size:12px;line-height:1.55;min-height:36px;color:#173c28}
+        .invoice-product-meta{font-size:10px;color:#64748b}
+        .invoice-product-price{font-size:13px;color:#176b3a;font-weight:900}
+        .invoice-product-add-label{display:flex;justify-content:center;align-items:center;gap:5px;margin-top:auto;border-radius:9px;padding:7px 5px;background:#e8f5ec;color:#176b3a;font-size:11px}
+        .invoice-product-card:disabled{background:#f3f4f6;border-color:#e5e7eb}
+        .invoice-product-card:disabled .invoice-product-add-label{background:#eceff1;color:#7b8794}
+        .sales-product-search{box-shadow:0 3px 10px rgba(15,76,129,.05)}
+        @media(max-width:700px){
+            .sales-workspace-grid{display:block}
+            .sales-products-panel{padding:10px}
+            .invoice-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:none!important;overflow:visible!important;gap:8px}
+            .invoice-product-card{min-height:122px;padding:10px}
+            .sales-product-search{position:static}
+        }
+        @media(max-width:360px){.invoice-product-grid{grid-template-columns:1fr}.invoice-product-card{min-height:110px}}
+
     </style>
 </head>
 <body>
@@ -1241,16 +1263,16 @@
                 <div class="sales-workspace-grid">
                     <div class="sales-products-panel">
                         <div class="sales-panel-heading">
-                            <div><strong><i class="fa-solid fa-boxes-stacked"></i> اختر الصنف</strong><small>ابحث بالاسم أو اختر من الأصناف السريعة؛ لن تحتاج لتصفح المخزن كله</small></div>
+                            <div><strong><i class="fa-solid fa-boxes-stacked"></i> اختر الصنف</strong><small>كل الأصناف المتوفرة تظهر مباشرة؛ ابحث فقط إذا أردت الوصول لصنف بسرعة</small></div>
                             <span class="badge badge-sup" id="invoiceProductsCount">0 صنف</span>
                         </div>
                         <div class="sales-product-search">
                             <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="search" id="warehouseItemSearch" class="form-control" placeholder="اكتب اسم الصنف للعثور عليه فوراً..." oninput="renderWarehouseCatalogDropdown()" autocomplete="off">
+                            <input type="search" id="warehouseItemSearch" class="form-control" placeholder="ابحث عن اسم الصنف (اختياري)..." oninput="renderWarehouseCatalogDropdown()" autocomplete="off">
                             <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('warehouseItemSearch').value=''; renderWarehouseCatalogDropdown();" title="مسح البحث"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                        <div class="sales-quick-title"><i class="fa-solid fa-bolt"></i> الأصناف الأكثر استخداماً</div>
-                        <div id="invoiceQuickProducts" class="invoice-quick-products"><span class="quick-products-hint">تظهر هنا الأصناف التي تستخدمها كثيراً</span></div>
+                        <div class="sales-direct-hint"><i class="fa-solid fa-hand-pointer"></i> اضغط على أي صنف لإضافته مباشرة إلى الفاتورة. الأصناف المتوفرة مرتبة في بطاقات واضحة.</div>
+                        <div id="invoiceQuickProducts" class="invoice-quick-products hidden" aria-hidden="true"></div>
                         <div id="invoiceProductGrid" class="invoice-product-grid"><div class="empty-products">اكتب جزءاً من اسم الصنف للبحث، أو اختر صنفاً سريعاً بالأعلى</div></div>
                         <select id="warehouseCatalogSelect" class="hidden" aria-hidden="true"><option value="">اختر صنفاً</option></select>
                     </div>
@@ -1420,7 +1442,7 @@
                 <div class="fullpage-title" style="color:var(--danger);"><i class="fa-solid fa-money-bill-transfer"></i> تسجيل مصروف جديد</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
             </div>
-            <div class="employee-permission-note" style="margin-bottom:12px;">سجّل المصروف مباشرة من الصندوق المسموح لك، وفي حدود المخزن المحدد لحسابك. لا تحتاج إلى فتح صفحة الموردين.</div>
+            <div class="employee-permission-note" style="margin-bottom:12px;">سجّل ما اشتريته أو سبب المصروف والمبلغ والعملة والصندوق. لا يلزم إدخال اسم عميل أو مورد.</div>
             <div class="card-box">
                 <div class="card-title" style="color:var(--danger);">
                     <span><i class="fa-solid fa-money-bill-transfer"></i> تسجيل مصروف جديد</span>
@@ -1447,15 +1469,9 @@
                             <option value="USD">دولار أمريكي (USD)</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>المورد (اختياري)</label>
-                        <select id="purSupplierSelect" class="form-control">
-                            <option value="">بدون مورد</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>بيان المصروف</label>
-                        <input type="text" id="purTitle" class="form-control" placeholder="مثال: كهرباء، إيجار، صيانة">
+                    <div class="form-group" style="grid-column:1/-1;">
+                        <label>ماذا اشتريت أو ما سبب المصروف؟</label>
+                        <input type="text" id="purTitle" class="form-control" placeholder="مثال: شراء أدوات تنظيف، وقود، كهرباء، صيانة">
                     </div>
                 </div>
                 <div class="form-group">
@@ -1465,21 +1481,20 @@
                 <button id="savePurchaseBtn" class="btn btn-danger btn-full" onclick="createPurchaseExpense()">
                     <i class="fa-solid fa-check"></i> حفظ المصروف
                 </button>
-                <div class="employee-permission-note" style="margin-top:9px;">هذه الصفحة لإدارة الموردين وتسجيل المصروفات فقط. إدخال الأصناف والكميات يتم من صفحات المخازن المخصصة.</div>
+                <div class="employee-permission-note" style="margin-top:9px;">اكتب ما اشتريته أو سبب المصروف والمبلغ فقط. لا يلزم اختيار عميل أو مورد؛ حساب الموردين مستقل في صفحته.</div>
             </div>
 
             <div class="card-box">
                 <div class="card-title">
                     <span><i class="fa-solid fa-list-check"></i> سجل المصروفات</span>
-                    <input type="text" id="purchaseSearchInput" class="form-control" style="max-width:220px; padding:7px 10px;" placeholder="بحث ببيان المصروف أو المورد..." oninput="renderPurchasesTable()">
+                    <input type="text" id="purchaseSearchInput" class="form-control" style="max-width:220px; padding:7px 10px;" placeholder="بحث باسم المصروف أو الملاحظة..." oninput="renderPurchasesTable()">
                 </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
                                 <th>التاريخ</th>
-                                <th>بيان المصروف</th>
-                                <th>المورد</th>
+                                <th>ما تم شراؤه / سبب المصروف</th>
                                 <th>الفرع</th>
                                 <th>الصندوق</th>
                                 <th>العملة</th>
@@ -3840,35 +3855,20 @@ function initMenuPermissionCheckboxes() {
         if (!branchId || !isBranchAllowed(branchId)) {
             sel.innerHTML = '<option value="">لم يحدد المشرف مخزناً</option>';
             grid.innerHTML = '<div class="empty-products">لم يتم تحديد مخزن مسموح لهذا الحساب</div>';
-            if (quick) quick.innerHTML = '<span class="quick-products-hint">لم يتم تحديد مخزن لهذا الحساب</span>';
+            if (quick) quick.innerHTML = '';
             const count = document.getElementById('invoiceProductsCount'); if (count) count.textContent = '0 صنف';
             return;
         }
-        const branchItems = (state.warehouse || []).filter(w => (w.branchId || 'main_branch') === branchId);
+        const branchItems = (state.warehouse || []).filter(w => (w.branchId || 'main_branch') === branchId && Number(w.qty || 0) > 0);
+        const items = branchItems.filter(w => !q || String(w.name || '').toLowerCase().includes(q));
         const count = document.getElementById('invoiceProductsCount');
-        if (count) count.textContent = `${branchItems.length} صنف بالمخزن`;
-
-        // Shortcuts: show only the most-used six items when search is empty.
-        if (quick) {
-            const quickItems = getQuickInvoiceProducts(branchItems);
-            quick.innerHTML = quickItems.length ? quickItems.map(item => {
-                const currency = item.priceCurrency || 'YER';
-                const price = Number(item.price || 0) > 0 ? `${formatMoney(item.price)} ${currency}` : 'أدخل السعر';
-                return `<button type="button" class="quick-product-chip" data-add-stock="${escapeUiText(item.id)}"><strong>${escapeUiText(item.name || 'صنف')}</strong><span>${price}</span></button>`;
-            }).join('') : '<span class="quick-products-hint">لا توجد أصناف متاحة في هذا المخزن</span>';
-            bindInvoiceProductButtons(quick);
-        }
-
-        if (!q) {
-            sel.innerHTML = '<option value="">اكتب اسم الصنف للبحث</option>';
-            grid.innerHTML = '<div class="empty-products"><i class="fa-solid fa-magnifying-glass"></i><br>اكتب جزءاً من اسم الصنف في خانة البحث، أو اضغط على أحد الأصناف السريعة بالأعلى.<br><small>لن نعرض قائمة المخزن الطويلة حتى لا تتعب في النزول.</small></div>';
-            return;
-        }
-
-        const items = branchItems.filter(w => String(w.name || '').toLowerCase().includes(q)).slice(0, 16);
-        sel.innerHTML = items.length ? items.map(w => `<option value="${escapeUiText(w.id)}">${escapeUiText(w.name)}</option>`).join('') : '<option value="">لا توجد أصناف</option>';
+        if (count) count.textContent = `${items.length} صنف ظاهر`;
+        if (quick) quick.innerHTML = '';
+        sel.innerHTML = items.length
+            ? items.map(w => `<option value="${escapeUiText(w.id)}">${escapeUiText(w.name)}</option>`).join('')
+            : '<option value="">لا توجد أصناف مطابقة</option>';
         if (!items.length) {
-            grid.innerHTML = '<div class="empty-products">لا توجد أصناف مطابقة. جرّب كتابة جزء آخر من الاسم.</div>';
+            grid.innerHTML = '<div class="empty-products"><i class="fa-solid fa-box-open"></i><br>لا توجد أصناف مطابقة للبحث.</div>';
             return;
         }
         grid.innerHTML = items.map(item => {
@@ -3880,7 +3880,7 @@ function initMenuPermissionCheckboxes() {
                 <strong>${safeName}</strong>
                 <div class="invoice-product-meta"><span>${escapeUiText(item.unit || 'حبة')}</span><span>المتاح: ${formatQty(available)}</span></div>
                 <div class="invoice-product-price">${priceLabel}</div>
-                <span class="invoice-product-add-label"><i class="fa-solid fa-plus"></i> ${available > 0 ? 'إضافة' : 'نفد المخزون'}</span>
+                <span class="invoice-product-add-label"><i class="fa-solid fa-plus"></i> ${available > 0 ? 'أضف للفاتورة' : 'نفد المخزون'}</span>
             </button>`;
         }).join('');
         bindInvoiceProductButtons(grid);
@@ -4186,8 +4186,7 @@ function initMenuPermissionCheckboxes() {
         const amount = Number(document.getElementById('purAmount')?.value || 0);
         const title = (document.getElementById('purTitle')?.value || '').trim();
         const notes = (document.getElementById('purNotes')?.value || '').trim();
-        const supplierId = document.getElementById('purSupplierSelect')?.value || '';
-        const supplier = supplierId ? state.suppliers.find(item => item.id === supplierId) : null;
+        // المصروف اليومي مستقل عن حساب الموردين؛ تفاصيله في البيان والملاحظة فقط.
         const cashboxId = document.getElementById('purCashboxSelect')?.value || '';
         const cashbox = cashboxId ? state.cashboxes.find(item => item.id === cashboxId) : null;
         if (!title || !Number.isFinite(amount) || amount <= 0) { showToast('أدخل بيان المصروف والمبلغ الصحيح'); return; }
@@ -4199,13 +4198,13 @@ function initMenuPermissionCheckboxes() {
         const record = {
             kind: 'expense', date, branchId, branchName,
             cashboxId: cashbox.id, cashboxName: cashbox.name,
-            paymentType: 'cash', supplierId: supplier?.id || '', supplierName: supplier?.name || '',
+            paymentType: 'cash', supplierId: '', supplierName: '',
             currency, currencyName: CURRENCY_NAMES[currency] || CURRENCY_NAMES.YER,
             title, amount, addQty: 0, unit: '', unitCost: 0, addedToWarehouse: false,
             notes, employee: getAccountDisplayName(currentUser), createdByUserId: currentUser?.id || ''
         };
         const signature = {
-            kind: 'expense', date, branchId, cashboxId, supplierId: record.supplierId,
+            kind: 'expense', date, branchId, cashboxId, supplierId: '',
             currency, title: title.toLowerCase(), amount, notes, actor: dedupeActorId()
         };
         const bucket = Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS);
@@ -4545,7 +4544,6 @@ function initMenuPermissionCheckboxes() {
             .filter(p =>
                 (p.title || '').toLowerCase().includes(q) ||
                 (p.branchName || '').toLowerCase().includes(q) ||
-                (p.supplierName || '').toLowerCase().includes(q) ||
                 (p.notes || '').toLowerCase().includes(q)
             ).slice().reverse();
         const totalByCurrency = {};
@@ -4555,16 +4553,15 @@ function initMenuPermissionCheckboxes() {
         tbody.innerHTML = list.length ? list.map(p => `
             <tr>
                 <td><span class="mono">${p.date || '-'}</span></td>
-                <td><strong>${p.title || '-'}</strong>${p.notes ? `<div style="font-size:11px;color:var(--text-muted);">${p.notes}</div>` : ''}</td>
-                <td>${p.supplierName || '-'}</td>
-                <td>${p.branchName || 'الفرع الرئيسي'}</td>
+                <td><strong>${escapeUiText(p.title || '-')}</strong>${p.notes ? `<div style="font-size:11px;color:var(--text-muted);">${escapeUiText(p.notes)}</div>` : ''}</td>
+                <td>${escapeUiText(p.branchName || 'الفرع الرئيسي')}</td>
                 <td>${p.cashboxName || '-'}</td>
                 <td>${CURRENCY_NAMES[p.currency || 'YER'] || CURRENCY_NAMES.YER}</td>
                 <td><span class="mono" style="color:var(--danger);">${formatCurrency(p.amount, p.currency || 'YER')}</span></td>
                 <td>${p.employee || '-'}</td>
                 <td>${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deletePurchaseRecord('${p.id}')"><i class="fa-solid fa-trash"></i> حذف</button>` : '<span style="color:var(--text-muted);font-size:11px;">عرض فقط</span>'}</td>
             </tr>
-        `).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">لا توجد مصروفات مسجلة</td></tr>';
+        `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد مصروفات مسجلة</td></tr>';
     }
 
     function toggleInvoicePaymentFields() {
@@ -4661,11 +4658,8 @@ function initMenuPermissionCheckboxes() {
     }
 
     function populatePurchaseSupplierOptions() {
-        const select = document.getElementById('purSupplierSelect');
-        if (!select) return;
-        const previous = select.value;
-        select.innerHTML = '<option value="">اختر المورد</option>' + (state.suppliers || []).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-        if (previous && state.suppliers.some(s => s.id === previous)) select.value = previous;
+        // لا يوجد مورد في نموذج المصروف اليومي؛ حساب الموردين مستقل في صفحة الموردين.
+        return;
     }
 
     function populateSupplierAccountOptions() {
