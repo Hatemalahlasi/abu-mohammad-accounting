@@ -1820,6 +1820,7 @@
                             <option value="add">إضافة إلى الرصيد الحالي (+)</option>
                             <option value="set">تعيين الرصيد الفعلي الموجود (=)</option>
                         </select>
+                        <div id="qtySetModePermissionNote" class="employee-permission-note hidden" style="margin-top:6px;">هذا الحساب مسموح له بالإضافة فقط. لا يمكنه استبدال الرصيد الحالي أو تصفيره.</div>
                     </div>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0;">
@@ -2487,6 +2488,14 @@
                                 <span>السماح بعرض جدول «الكميات المسجلة حالياً في المخازن» للموظف، بما فيه الأرصدة وأسعار التكلفة والبيع</span>
                             </label>
                             <div class="employee-permission-note" style="margin-top:8px;">عند إيقاف هذا الخيار يستطيع الموظف إدخال الكميات حسب صلاحياته، لكن لن يظهر له جدول الكميات المسجلة أو تفاصيل الأسعار. المدير والمشرف العام يريان الجدول دائماً.</div>
+                        </div>
+                        <div class="card-box" style="margin-top:12px; margin-bottom:0;">
+                            <div class="card-title"><span><i class="fa-solid fa-arrow-up-1-9"></i> صلاحية تعيين رصيد المخزون</span></div>
+                            <label class="perm-check" style="align-items:flex-start;">
+                                <input type="checkbox" id="permissionCanSetStockQuantity">
+                                <span>السماح للموظف باستخدام «تعيين الرصيد الفعلي الموجود (=)» واستبدال الكمية الحالية</span>
+                            </label>
+                            <div class="employee-permission-note" style="margin-top:8px;">عند إيقاف هذا الخيار يكون تحديث الموظف إضافة فقط (+) إلى الرصيد الحالي، ولا يستطيع استبدال الرصيد أو تصفيره. عند تفعيله يظهر له خيار الإضافة أو التعيين. المدير والمشرف العام لديهما الصلاحية دائمًا.</div>
                         </div>
                         <div class="card-box" style="margin-top:12px; margin-bottom:0;">
                             <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> صلاحيات مؤشرات الشاشة الرئيسية</span></div>
@@ -3368,6 +3377,8 @@ function initMenuPermissionCheckboxes() {
         document.getElementById('permissionCanDelete').checked = Boolean(emp.canDelete);
         const viewQuantitiesPreview = document.getElementById('permissionCanViewQuantitiesPreview');
         if (viewQuantitiesPreview) viewQuantitiesPreview.checked = emp.canViewQuantitiesPreview === true;
+        const setStockQuantity = document.getElementById('permissionCanSetStockQuantity');
+        if (setStockQuantity) setStockQuantity.checked = emp.canSetStockQuantity === true;
         const allowed = getAllowedMenusForUser(emp);
         document.querySelectorAll('#permissionMenusGrid .emp-menu-cb').forEach(cb => {
             cb.checked = allowed.includes(cb.value);
@@ -3401,6 +3412,7 @@ function initMenuPermissionCheckboxes() {
             canEdit: document.getElementById('permissionCanEdit').checked,
             canDelete: document.getElementById('permissionCanDelete').checked,
             canViewQuantitiesPreview: Boolean(document.getElementById('permissionCanViewQuantitiesPreview')?.checked),
+            canSetStockQuantity: Boolean(document.getElementById('permissionCanSetStockQuantity')?.checked),
             allowedMenus,
             dashboardWidgets: Object.fromEntries(Array.from(document.querySelectorAll('.emp-dashboard-cb')).map(cb => [cb.value, cb.checked])),
             warehouseBranchId: warehouseBranchIds[0] || '',
@@ -3422,6 +3434,7 @@ function initMenuPermissionCheckboxes() {
             const same = (a, b) => JSON.stringify(normalizeBranchIds(a)) === JSON.stringify(normalizeBranchIds(b));
             if (!Array.isArray(verifiedAccount.allowedMenus) || allowedMenus.some(key => !verifiedAccount.allowedMenus.includes(key)) ||
                 verifiedAccount.canViewQuantitiesPreview !== patch.canViewQuantitiesPreview ||
+                verifiedAccount.canSetStockQuantity !== patch.canSetStockQuantity ||
                 !same(verifiedAccount.warehouseBranchIds, warehouseBranchIds) ||
                 !same(verifiedAccount.quantityBranchIds, quantityBranchIds) ||
                 !same(verifiedAccount.transferBranchIds, transferBranchIds)) {
@@ -3694,6 +3707,7 @@ function initMenuPermissionCheckboxes() {
             populateTransferItems();
         }
         if (tabId === 'quantitiesTab') {
+            applyQuantityUpdateModePermission();
             populateQuantityItems();
             renderQuantitiesPreviewTable();
         }
@@ -4459,12 +4473,34 @@ function initMenuPermissionCheckboxes() {
         populateQuantityItems();
     }
 
+    function canSetStockQuantity(user = currentUser) {
+        return Boolean(user && (hasFullAccess(user) || user.canSetStockQuantity === true));
+    }
+
+    function applyQuantityUpdateModePermission() {
+        const select = document.getElementById('qtyUpdateMode');
+        const note = document.getElementById('qtySetModePermissionNote');
+        if (!select) return;
+        const allowed = canSetStockQuantity(currentUser);
+        const setOption = select.querySelector('option[value="set"]');
+        if (setOption) {
+            setOption.disabled = !allowed;
+            setOption.hidden = !allowed;
+        }
+        if (!allowed) select.value = 'add';
+        select.disabled = !allowed;
+        note?.classList.toggle('hidden', allowed);
+    }
+
     async function saveStockQuantity() {
         if (isBusy) return;
         if (!canAccessMenu('quantitiesTab')) { showToast('ليس لديك صلاحية إدخال كميات الأصناف'); return; }
         const btn = document.getElementById('saveQtyBtn');
         const branchId = document.getElementById('qtyBranchSelect')?.value || '';
-        const mode = document.getElementById('qtyUpdateMode')?.value || 'add';
+        const requestedMode = document.getElementById('qtyUpdateMode')?.value || 'add';
+        const canUseSetMode = canSetStockQuantity(currentUser);
+        const mode = requestedMode === 'set' && canUseSetMode ? 'set' : 'add';
+        if (!canUseSetMode && document.getElementById('qtyUpdateMode')) document.getElementById('qtyUpdateMode').value = 'add';
         if (!branchId || !isBranchAllowedForOperation(branchId, 'quantitiesTab')) { showToast('لم يحدد المشرف مخزناً لإدخال الكميات لهذا الموظف'); return; }
         const rows = Array.from(document.querySelectorAll('#qtyAdjustmentRows .batch-qty-row'));
         const entries = rows.map(row => {
