@@ -62,40 +62,98 @@
             .app-shell { padding: 24px 30px; }
         }
 
-        /* لون صفحة الدخول: أخضر وأحمر */
+        /* تصميم صفحة الدخول فقط: أحمر وأخضر بطابع مميز */
         .login-wrapper {
-            max-width: 400px;
+            position: relative;
+            isolation: isolate;
+            overflow: hidden;
+            max-width: 420px;
             margin: 36px auto;
-            background: linear-gradient(180deg, #dcfce7 0%, #ffffff 50%, #fee2e2 100%);
-            border: 2px solid #15803d;
-            border-radius: 22px;
-            padding: 26px 20px;
+            padding: 30px 22px 26px;
+            background:
+                radial-gradient(circle at 100% 0%, rgba(22, 163, 74, .16), transparent 34%),
+                radial-gradient(circle at 0% 100%, rgba(220, 38, 38, .15), transparent 36%),
+                linear-gradient(145deg, #f0fdf4 0%, #ffffff 48%, #fff1f2 100%);
+            border: 2px solid #166534;
+            border-radius: 26px;
+            box-shadow: 0 24px 60px rgba(21, 128, 61, .15), 0 12px 34px rgba(185, 28, 28, .10);
+        }
+
+        .login-wrapper::before {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 7px;
+            background: linear-gradient(90deg, #b91c1c 0%, #ef4444 38%, #16a34a 62%, #14532d 100%);
+        }
+
+        .login-wrapper::after {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            width: 190px;
+            height: 190px;
+            left: -100px;
+            bottom: -115px;
+            border: 24px solid rgba(185, 28, 28, .055);
+            border-radius: 50%;
+            pointer-events: none;
         }
 
         .login-wrapper h1 {
             text-align: center;
-            font-size: 22px;
-            font-weight: 800;
-            color: #15803d;
-            margin-bottom: 4px;
+            font-size: 23px;
+            font-weight: 900;
+            color: #14532d;
+            margin-bottom: 5px;
+            text-shadow: 0 1px 0 #ffffff;
         }
 
         .login-wrapper p {
             text-align: center;
             color: #b91c1c;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 13px;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
+        }
+
+        .login-wrapper .form-group label {
+            color: #14532d;
+            font-weight: 800;
+        }
+
+        .login-wrapper .form-control {
+            border: 1.5px solid #bbf7d0;
+            background: rgba(255, 255, 255, .96);
+            transition: border-color .18s ease, box-shadow .18s ease;
         }
 
         .login-wrapper .form-control:focus {
-            border-color: #15803d;
-            box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.16);
+            border-color: #16a34a;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, .15), 0 0 0 5px rgba(220, 38, 38, .055);
         }
 
         .login-btn-color {
-            background: linear-gradient(90deg, #15803d 0%, #b91c1c 100%);
+            background: linear-gradient(105deg, #166534 0%, #16a34a 46%, #dc2626 54%, #991b1b 100%);
             color: #fff;
+            border: 1px solid rgba(255,255,255,.45);
+            box-shadow: 0 9px 22px rgba(21, 128, 61, .20), 0 5px 16px rgba(185, 28, 28, .16);
+            transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+        }
+
+        .login-btn-color:hover {
+            filter: saturate(1.12) brightness(1.04);
+            transform: translateY(-1px);
+            box-shadow: 0 12px 26px rgba(21, 128, 61, .24), 0 7px 18px rgba(185, 28, 28, .19);
+        }
+
+        .login-wrapper .brand-logo {
+            border: 3px solid #16a34a;
+            outline: 3px solid rgba(185, 28, 28, .13);
+            box-shadow: 0 8px 25px rgba(21, 128, 61, .16), 0 5px 16px rgba(185, 28, 28, .10);
         }
 
         .brand-logo {
@@ -1786,7 +1844,10 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-list-check"></i> سجل الإنتاج المسجل</span></div>
+                <div class="card-title">
+                    <span><i class="fa-solid fa-list-check"></i> سجل الإنتاج المسجل</span>
+                    <button type="button" class="btn btn-warning btn-sm" onclick="cleanupDuplicateProductionRecords()"><i class="fa-solid fa-broom"></i> تنظيف سجلات الإنتاج المكررة</button>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead><tr><th>التاريخ</th><th>الموظف</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th><th>سجل بواسطة</th><th>إجراء</th></tr></thead>
@@ -2032,6 +2093,81 @@
         employeeProduction: [],
         warehouse: []
     };
+
+
+    // يمنع تكرار نفس عملية الإضافة خلال دقيقتين حتى لو تكرر الضغط
+    // من نافذتين أو جهازين. التخزين يتم داخل مستند العملية نفسه، ولا يحتاج
+    // إلى إنشاء مجموعة Firestore جديدة أو تعديل قواعد البيانات.
+    const CREATE_DEDUPE_WINDOW_MS = 2 * 60 * 1000;
+
+    function stableDedupeValue(value) {
+        if (Array.isArray(value)) return value.map(stableDedupeValue);
+        if (value && typeof value === 'object') {
+            const result = {};
+            Object.keys(value).sort().forEach(key => {
+                if (value[key] !== undefined) result[key] = stableDedupeValue(value[key]);
+            });
+            return result;
+        }
+        if (typeof value === 'number' && Number.isFinite(value)) return Number(value.toFixed(8));
+        return value;
+    }
+
+    function dedupeHash(value) {
+        const input = JSON.stringify(stableDedupeValue(value));
+        let h1 = 0x811c9dc5;
+        let h2 = 0x9e3779b1;
+        for (let i = 0; i < input.length; i++) {
+            const code = input.charCodeAt(i);
+            h1 = Math.imul(h1 ^ code, 0x01000193);
+            h2 = Math.imul(h2 ^ (code + i), 0x85ebca6b);
+        }
+        return `${(h1 >>> 0).toString(36)}${(h2 >>> 0).toString(36)}`;
+    }
+
+    function dedupeActorId() {
+        return String(currentUser?.id || currentUser?.username || 'unknown-user');
+    }
+
+    async function createRecordOnce(collectionName, prefix, signature, record, preferredId = '') {
+        const bucket = Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS);
+        const hash = dedupeHash({ collectionName, signature });
+        const ids = preferredId
+            ? [String(preferredId)]
+            : [`${prefix}_${hash}_${bucket}`, `${prefix}_${hash}_${bucket - 1}`];
+        const refs = ids.map(id => db.collection(collectionName).doc(id));
+
+        return db.runTransaction(async transaction => {
+            const snapshots = [];
+            for (const ref of refs) snapshots.push(await transaction.get(ref));
+            const existing = snapshots.find(snapshot => snapshot.exists);
+            if (existing) return { created: false, id: existing.id };
+            const id = refs[0].id;
+            transaction.set(refs[0], { ...record, id });
+            return { created: true, id };
+        });
+    }
+
+    async function updateDocumentOnce(collectionName, docId, signature, updateFactory) {
+        const now = Date.now();
+        const bucket = Math.floor(now / CREATE_DEDUPE_WINDOW_MS);
+        const hash = dedupeHash({ collectionName, docId, signature });
+        const keys = [`${hash}:${bucket}`, `${hash}:${bucket - 1}`];
+        const ref = db.collection(collectionName).doc(docId);
+
+        return db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(ref);
+            if (!snapshot.exists) throw new Error(`المستند غير موجود: ${collectionName}/${docId}`);
+            const current = snapshot.data() || {};
+            const markers = Array.isArray(current.__recentOperationMarkers) ? current.__recentOperationMarkers : [];
+            const recent = markers.filter(item => item && Number(item.at || 0) > now - (10 * 60 * 1000));
+            if (recent.some(item => keys.includes(item.key))) return false;
+            const patch = updateFactory(current);
+            recent.push({ key: keys[0], at: now });
+            transaction.update(ref, { ...patch, __recentOperationMarkers: recent.slice(-30) });
+            return true;
+        });
+    }
 
     function getLegacyStaffFromAccount(account) {
         return {
@@ -2449,23 +2585,27 @@
         const btn = document.getElementById('saveSupplierBtn');
         const name = document.getElementById('newSupplierName').value.trim();
         const phone = document.getElementById('newSupplierPhone').value.trim();
-        if (!name) {
-            showToast('أدخل اسم المورد');
-            return;
+        if (!name) { showToast('أدخل اسم المورد'); return; }
+        const normalizedName = name.replace(/\s+/g, ' ').toLowerCase();
+        if ((state.suppliers || []).some(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalizedName && String(item.phone || '-') === (phone || '-'))) {
+            showToast('هذا المورد موجود مسبقاً في السجل؛ لم تتم إضافته مرة أخرى.'); return;
         }
         isBusy = true;
         btn.disabled = true;
         try {
-            const id = `sup_${Date.now()}`;
-            await db.collection('suppliers').doc(id).set({ id, name, phone: phone || '-' });
+            const record = { name, phone: phone || '-' };
+            const result = await createRecordOnce('suppliers', 'sup', {
+                name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-', actor: dedupeActorId()
+            }, record, `sup_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-' })}`);
+            if (!result.created) { showToast('هذا المورد مسجل مسبقاً أو تمت إضافته للتو؛ لم تتم إضافة نسخة أخرى.'); return; }
             document.getElementById('newSupplierName').value = '';
             document.getElementById('newSupplierPhone').value = '';
             document.getElementById('supplierFormContainer').classList.add('hidden');
             showToast('تم حفظ المورد');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) {
+            console.warn('Create supplier error:', e);
+            showToast('تعذر حفظ المورد');
+        } finally { isBusy = false; btn.disabled = false; }
     }
 
     function updateInvoiceStatementPreview() {
@@ -2995,41 +3135,22 @@
         const itemId = document.getElementById('qtyItemSelect').value;
         const mode = document.getElementById('qtyUpdateMode').value;
         const qtyVal = Number(document.getElementById('qtyInputValue').value);
-        if (!branchId || !isBranchAllowed(branchId)) {
-            showToast('لم يحدد المشرف مخزناً لهذا الموظف');
-            return;
-        }
-
+        if (!branchId || !isBranchAllowed(branchId)) { showToast('لم يحدد المشرف مخزناً لهذا الموظف'); return; }
         const item = state.warehouse.find(w => w.id === itemId);
-        if (!item) {
-            showToast('اختر صنفاً من المخزن أولاً');
-            return;
-        }
-        if (isNaN(qtyVal) || qtyVal < 0) {
-            showToast('أدخل كمية صحيحة');
-            return;
-        }
-
-        if (!isBranchAllowed(item.branchId || 'main_branch')) {
-            showToast('هذا الصنف خارج المخزن المحدد لك');
-            return;
-        }
-        const currentQty = Number(item.qty || 0);
-        const nextQty = mode === 'set' ? qtyVal : (currentQty + qtyVal);
-        const updatePayload = { qty: nextQty };
-
+        if (!item) { showToast('اختر صنفاً من المخزن أولاً'); return; }
+        if (isNaN(qtyVal) || qtyVal < 0) { showToast('أدخل كمية صحيحة'); return; }
+        if (!isBranchAllowed(item.branchId || 'main_branch')) { showToast('هذا الصنف خارج المخزن المحدد لك'); return; }
         isBusy = true;
         btn.disabled = true;
         try {
-            await db.collection('warehouse').doc(item.id).update(updatePayload);
+            const updated = await updateDocumentOnce('warehouse', item.id, {
+                action: 'stock-quantity-adjustment', branchId, mode, qtyVal, actor: dedupeActorId()
+            }, current => ({ qty: mode === 'set' ? qtyVal : Number(current.qty || 0) + qtyVal }));
+            if (!updated) { showToast('تم منع تكرار تسجيل الكمية نفسها خلال وقت قصير.'); return; }
             document.getElementById('qtyInputValue').value = '1';
-            showToast(`تم تحديث كمية ${item.name} إلى ${formatQty(nextQty)}`);
-        } catch (e) {
-            showToast('تعذر تحديث الكمية');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+            showToast(`تم تحديث كمية ${item.name}`);
+        } catch (e) { console.warn('Save stock quantity error:', e); showToast('تعذر تحديث الكمية'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     function renderQuantitiesPreviewTable() {
@@ -3076,76 +3197,49 @@
         const btn = document.getElementById('executeTransferBtn');
         const fromBranchId = document.getElementById('transferFromBranch').value || '';
         const toBranchId = document.getElementById('transferToBranch').value || '';
-        if (!fromBranchId || !toBranchId || !isBranchAllowed(fromBranchId) || !isBranchAllowed(toBranchId)) {
-            showToast('النقل مسموح فقط داخل المخزن المحدد لك');
-            return;
-        }
+        if (!fromBranchId || !toBranchId || !isBranchAllowed(fromBranchId) || !isBranchAllowed(toBranchId)) { showToast('النقل مسموح فقط داخل المخزن المحدد لك'); return; }
         const itemId = document.getElementById('transferItemSelect').value;
         const qtyToMove = Number(document.getElementById('transferQty').value || 0);
-
-        if (fromBranchId === toBranchId) {
-            showToast('اختر مخزناً مختلفاً للنقل إليه');
-            return;
-        }
-
+        if (fromBranchId === toBranchId) { showToast('اختر مخزناً مختلفاً للنقل إليه'); return; }
         const sourceItem = state.warehouse.find(w => w.id === itemId);
-        if (sourceItem && !isBranchAllowed(sourceItem.branchId || 'main_branch')) {
-            showToast('هذا الصنف خارج المخزن المحدد لك');
-            return;
-        }
-        if (!sourceItem) {
-            showToast('اختر الصنف المراد نقله');
-            return;
-        }
-
+        if (sourceItem && !isBranchAllowed(sourceItem.branchId || 'main_branch')) { showToast('هذا الصنف خارج المخزن المحدد لك'); return; }
+        if (!sourceItem) { showToast('اختر الصنف المراد نقله'); return; }
         const currentQty = Number(sourceItem.qty || 0);
-        if (qtyToMove <= 0 || qtyToMove > currentQty) {
-            showToast(`الكمية غير صحيحة (المتاح: ${formatQty(currentQty)})`);
-            return;
-        }
-
+        if (qtyToMove <= 0 || qtyToMove > currentQty) { showToast(`الكمية غير صحيحة (المتاح: ${formatQty(currentQty)})`); return; }
         const toBranchObj = state.branches.find(b => b.id === toBranchId);
         const toBranchName = toBranchObj ? toBranchObj.name : 'الفرع المستهدف';
         const unit = sourceItem.unit || 'حبة';
         const price = Number(sourceItem.price || 0);
-
+        const transferSignature = { action: 'warehouse-transfer', fromBranchId, toBranchId, sourceItemId: itemId, qty: qtyToMove, actor: dedupeActorId() };
         isBusy = true;
         btn.disabled = true;
-
         try {
-            await db.collection('warehouse').doc(sourceItem.id).update({ qty: currentQty - qtyToMove });
-
-            const targetItem = state.warehouse.find(
-                w => (w.branchId || 'main_branch') === toBranchId &&
-                     w.name.toLowerCase() === sourceItem.name.toLowerCase() &&
-                     (w.unit || 'حبة') === unit
+            const movedOut = await updateDocumentOnce('warehouse', sourceItem.id, transferSignature,
+                current => {
+                    const available = Number(current.qty || 0);
+                    if (qtyToMove > available) throw new Error('TRANSFER_QTY_CHANGED');
+                    return { qty: available - qtyToMove };
+                });
+            if (!movedOut) { showToast('تم منع تكرار عملية النقل نفسها خلال وقت قصير.'); return; }
+            const targetItem = state.warehouse.find(w =>
+                (w.branchId || 'main_branch') === toBranchId &&
+                String(w.name || '').toLowerCase() === String(sourceItem.name || '').toLowerCase() &&
+                (w.unit || 'حبة') === unit
             );
-
             if (targetItem) {
-                await db.collection('warehouse').doc(targetItem.id).update({
-                    qty: Number(targetItem.qty || 0) + qtyToMove
-                });
+                await updateDocumentOnce('warehouse', targetItem.id, { ...transferSignature, action: 'warehouse-transfer-in' },
+                    current => ({ qty: Number(current.qty || 0) + qtyToMove }));
             } else {
-                const newId = `wh_${Date.now()}`;
-                await db.collection('warehouse').doc(newId).set({
-                    id: newId,
-                    branchId: toBranchId,
-                    branchName: toBranchName,
-                    name: sourceItem.name,
-                    unit,
-                    qty: qtyToMove,
-                    price
-                });
+                await createRecordOnce('warehouse', 'wh', { ...transferSignature, action: 'warehouse-transfer-new-target' }, {
+                    branchId: toBranchId, branchName: toBranchName, name: sourceItem.name, unit, qty: qtyToMove, price
+                }, `wh_transfer_${dedupeHash(transferSignature)}`);
             }
-
             document.getElementById('transferQty').value = '1';
             showToast(`تم نقل ${formatQty(qtyToMove)} ${unit} إلى ${toBranchName}`);
         } catch (e) {
-            showToast('تعذر إتمام النقل');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+            console.warn('Transfer stock error:', e);
+            showToast(e?.message === 'TRANSFER_QTY_CHANGED' ? 'الكمية المتاحة تغيرت؛ حدّث المخزون وحاول مجدداً' : 'تعذر إتمام النقل');
+        } finally { isBusy = false; btn.disabled = false; }
     }
 
     function renderStats() {
@@ -3176,10 +3270,7 @@
         const btn = document.getElementById('savePurchaseBtn');
         const kind = document.getElementById('purKind').value || 'purchase';
         const branchId = document.getElementById('purBranchSelect').value || '';
-        if (!branchId || !isBranchAllowed(branchId)) {
-            showToast('لم يحدد المشرف مخزناً لهذا الموظف');
-            return;
-        }
+        if (!branchId || !isBranchAllowed(branchId)) { showToast('لم يحدد المشرف مخزناً لهذا الموظف'); return; }
         const branchObj = state.branches.find(b => b.id === branchId);
         const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
         const cashboxId = document.getElementById('purCashboxSelect').value;
@@ -3188,85 +3279,49 @@
         const title = document.getElementById('purTitle').value.trim();
         const addQty = Number(document.getElementById('purAddQty').value || 0);
         const unit = document.getElementById('purUnit').value || 'حبة';
-        const addToWarehouseChecked = document.getElementById('purAddToWarehouseCheck')?.checked ?? true;
-        const shouldAddToWarehouse = kind === 'purchase' && addToWarehouseChecked && addQty > 0;
+        const shouldAddToWarehouse = kind === 'purchase' && (document.getElementById('purAddToWarehouseCheck')?.checked ?? true) && addQty > 0;
         const notes = document.getElementById('purNotes').value.trim();
-
-        if (!title || amount <= 0) {
-            showToast('أدخل البيان والمبلغ الصحيح');
-            return;
-        }
-
+        if (!title || amount <= 0) { showToast('أدخل البيان والمبلغ الصحيح'); return; }
         const cashbox = state.cashboxes.find(c => c.id === cashboxId);
-        if (!cashbox) {
-            showToast('اختر الصندوق');
-            return;
-        }
-        if ((cashbox.currency || 'YER') !== currency) {
-            showToast('عملة المشتريات يجب أن تطابق عملة الصندوق المختار');
-            return;
-        }
-
+        if (!cashbox) { showToast('اختر الصندوق'); return; }
+        if ((cashbox.currency || 'YER') !== currency) { showToast('عملة المشتريات يجب أن تطابق عملة الصندوق المختار'); return; }
         isBusy = true;
         btn.disabled = true;
-
         try {
-            const purId = `PUR-${Date.now()}`;
-            await db.collection('purchases').doc(purId).set({
-                id: purId,
-                kind,
-                date: new Date().toISOString().split('T')[0],
-                branchId,
-                branchName,
-                cashboxId: cashbox.id,
-                cashboxName: cashbox.name,
-                currency,
-                currencyName: CURRENCY_NAMES[currency],
-                title,
-                amount,
-                addQty: shouldAddToWarehouse ? addQty : 0,
-                unit,
-                addedToWarehouse: shouldAddToWarehouse,
-                notes,
-                employee: currentUser.fullName
-            });
-
+            const date = getLocalDateKey();
+            const record = {
+                kind, date, branchId, branchName, cashboxId: cashbox.id, cashboxName: cashbox.name,
+                currency, currencyName: CURRENCY_NAMES[currency], title, amount,
+                addQty: shouldAddToWarehouse ? addQty : 0, unit, addedToWarehouse: shouldAddToWarehouse,
+                notes, employee: currentUser.fullName
+            };
+            const saved = await createRecordOnce('purchases', 'PUR', {
+                kind, date, branchId, cashboxId, currency, title: title.toLowerCase(), amount,
+                addQty: shouldAddToWarehouse ? addQty : 0, unit, notes, actor: dedupeActorId()
+            }, record);
+            if (!saved.created) { showToast('تم منع تكرار المشتريات / المصروفات نفسها خلال وقت قصير.'); return; }
+            const purId = saved.id;
             if (shouldAddToWarehouse) {
-                const existing = state.warehouse.find(
-                    w => (w.branchId || 'main_branch') === branchId &&
-                         w.name.toLowerCase() === title.toLowerCase() &&
-                         (w.unit || 'حبة') === unit
+                const existing = state.warehouse.find(w =>
+                    (w.branchId || 'main_branch') === branchId &&
+                    String(w.name || '').toLowerCase() === title.toLowerCase() && (w.unit || 'حبة') === unit
                 );
                 const unitCost = Number((amount / addQty).toFixed(2));
                 if (existing) {
-                    await db.collection('warehouse').doc(existing.id).update({
-                        qty: Number(existing.qty || 0) + addQty
-                    });
+                    await updateDocumentOnce('warehouse', existing.id, { action: 'purchase-stock', purchaseId: purId }, current => ({ qty: Number(current.qty || 0) + addQty }));
                 } else {
-                    const whId = `wh_${Date.now()}`;
-                    await db.collection('warehouse').doc(whId).set({
-                        id: whId,
-                        branchId,
-                        branchName,
-                        name: title,
-                        unit,
-                        qty: addQty,
-                        price: unitCost
-                    });
+                    await createRecordOnce('warehouse', 'wh', { action: 'purchase-stock-new-item', purchaseId: purId }, {
+                        branchId, branchName, name: title, unit, qty: addQty, price: unitCost
+                    }, `wh_purchase_${dedupeHash(purId)}`);
                 }
             }
-
             document.getElementById('purTitle').value = '';
             document.getElementById('purAmount').value = '';
             document.getElementById('purAddQty').value = '0';
             document.getElementById('purNotes').value = '';
             showToast('تم حفظ المشتروات / المصروفات');
-        } catch (e) {
-            showToast('تعذر حفظ السجل');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) { console.warn('Create purchase error:', e); showToast('تعذر حفظ السجل'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     async function deletePurchaseRecord(purId) {
@@ -3439,19 +3494,14 @@
         const branchId = document.getElementById('invBranchSelect').value || 'main_branch';
         const branchObj = state.branches.find(b => b.id === branchId);
         const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
-
         const paymentType = document.getElementById('invPaymentType').value;
         const currency = document.getElementById('invCurrency').value || 'YER';
-        if (!branchId || !isBranchAllowed(branchId)) {
-            showToast('لا يمكنك إصدار فاتورة من خارج المخزن المحدد من المشرف');
-            return;
-        }
+        if (!branchId || !isBranchAllowed(branchId)) { showToast('لا يمكنك إصدار فاتورة من خارج المخزن المحدد من المشرف'); return; }
         const cashboxId = document.getElementById('invCashboxSelect').value;
         const customerId = document.getElementById('invCustomerSelect').value;
         const discount = Number(document.getElementById('invDiscount').value || 0);
         const refNum = (document.getElementById('invRefNumber')?.value || '').trim();
         const notes = `عليكم فاتورة مبيعات برقم ${refNum || '—'}`;
-
         const items = [];
         document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(r => {
             const name = r.querySelector('.item-name').value.trim();
@@ -3460,72 +3510,51 @@
             const price = Number(r.querySelector('.item-price').value || 0);
             if (name && qty > 0) items.push({ name, unit, qty, price });
         });
-
-        if (items.length === 0) {
-            showToast('أضف صنفاً واحداً على الأقل');
-            return;
-        }
-
+        if (!items.length) { showToast('أضف صنفاً واحداً على الأقل'); return; }
         const customer = state.customers.find(c => c.id === customerId);
-        if (!customer) {
-            showToast('اختر العميل');
-            return;
-        }
-
+        if (!customer) { showToast('اختر العميل'); return; }
         const cashbox = paymentType === 'cash' ? state.cashboxes.find(c => c.id === cashboxId) : null;
-        if (paymentType === 'cash' && !cashbox) {
-            showToast('اختر الصندوق');
-            return;
-        }
-        if (paymentType === 'cash' && (cashbox.currency || 'YER') !== currency) {
-            showToast('عملة الفاتورة يجب أن تطابق عملة الصندوق المختار');
-            return;
-        }
-
+        if (paymentType === 'cash' && !cashbox) { showToast('اختر الصندوق'); return; }
+        if (paymentType === 'cash' && (cashbox.currency || 'YER') !== currency) { showToast('عملة الفاتورة يجب أن تطابق عملة الصندوق المختار'); return; }
         isBusy = true;
         btn.disabled = true;
-
         try {
-            const subtotal = items.reduce((s, x) => s + x.qty * x.price, 0);
+            const date = getLocalDateKey();
+            const subtotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
             const netTotal = Math.max(0, subtotal - discount);
-            const invId = refNum ? `INV-${refNum}` : `INV-${Date.now()}`;
-
             const invoiceDoc = {
-                id: invId,
-                refNumber: refNum,
-                date: new Date().toISOString().split('T')[0],
-                branchId,
-                branchName,
-                customerId: customer.id,
-                customerName: customer.name,
-                paymentType,
-                currency,
-                currencyName: CURRENCY_NAMES[currency],
-                cashboxId: cashbox ? cashbox.id : '',
-                cashboxName: cashbox ? cashbox.name : 'آجل',
-                items,
-                discount,
-                netTotal,
-                employee: currentUser.fullName,
-                employeeRole: currentUser.role,
-                notes
+                refNumber: refNum, date, branchId, branchName, customerId: customer.id, customerName: customer.name,
+                paymentType, currency, currencyName: CURRENCY_NAMES[currency],
+                cashboxId: cashbox ? cashbox.id : '', cashboxName: cashbox ? cashbox.name : 'آجل',
+                items, discount, netTotal, employee: currentUser.fullName, employeeRole: currentUser.role, notes
             };
-
-            await db.collection('invoices').doc(invId).set(invoiceDoc);
-
-            // خصم الكميات المباعة من المخزن تلقائياً إن وجد الصنف في الفرع
+            if (!refNum && (state.invoices || []).some(old =>
+                !old.refNumber && old.date === date && old.branchId === branchId && old.customerId === customer.id &&
+                old.paymentType === paymentType && (old.currency || 'YER') === currency &&
+                Number(old.netTotal || 0) === netTotal && Number(old.discount || 0) === discount &&
+                String(old.employee || '') === String(currentUser.fullName || '') &&
+                JSON.stringify(old.items || []) === JSON.stringify(items)
+            )) {
+                showToast('هذه الفاتورة مطابقة لفاتورة محفوظة اليوم؛ أضف رقم فاتورة مختلفاً إن كانت عملية جديدة.');
+                return;
+            }
+            const saved = await createRecordOnce('invoices', 'INV', {
+                refNum, date, branchId, customerId, paymentType, currency, cashboxId,
+                items, discount, netTotal, actor: dedupeActorId()
+            }, invoiceDoc, refNum ? `INV-${refNum}` : '');
+            if (!saved.created) { showToast('تم منع تكرار الفاتورة؛ هذه الفاتورة مسجلة مسبقاً.'); return; }
+            invoiceDoc.id = saved.id;
             for (const it of items) {
-                const whItem = state.warehouse.find(
-                    w => (w.branchId || 'main_branch') === branchId &&
-                         (w.name || '').trim().toLowerCase() === it.name.toLowerCase() &&
-                         (w.unit || 'حبة') === it.unit
+                const whItem = state.warehouse.find(w =>
+                    (w.branchId || 'main_branch') === branchId &&
+                    (w.name || '').trim().toLowerCase() === it.name.toLowerCase() && (w.unit || 'حبة') === it.unit
                 );
                 if (whItem) {
-                    const nextQ = Math.max(0, Number(whItem.qty || 0) - Number(it.qty || 0));
-                    await db.collection('warehouse').doc(whItem.id).update({ qty: nextQ });
+                    await updateDocumentOnce('warehouse', whItem.id, {
+                        action: 'invoice-stock-out', invoiceId: saved.id, item: whItem.id, qty: it.qty
+                    }, current => ({ qty: Math.max(0, Number(current.qty || 0) - Number(it.qty || 0)) }));
                 }
             }
-
             document.getElementById('invoiceItemsContainer').innerHTML = '';
             addInvoiceItemRow();
             document.getElementById('invDiscount').value = '0.00';
@@ -3533,12 +3562,8 @@
             updateInvoiceStatementPreview();
             showToast('تم حفظ الفاتورة وتحديث المخزون');
             openPrintModal(invoiceDoc);
-        } catch (e) {
-            showToast('تعذر حفظ الفاتورة');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) { console.warn('Save invoice error:', e); showToast('تعذر حفظ الفاتورة'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     async function editInvoiceNote(invId) {
@@ -3631,52 +3656,31 @@
         const customerId = type === 'receipt' ? document.getElementById('voucherCustomerSelect').value : '';
         const amount = Number(document.getElementById('voucherAmount').value || 0);
         const refNum = (document.getElementById('voucherRefNumber')?.value || '').trim();
-        const note = type === 'receipt'
-            ? `لكم سند قبض برقم ${refNum || '—'}`
-            : `عليكم سند صرف برقم ${refNum || '—'}`;
-
         const cashbox = state.cashboxes.find(c => c.id === cashboxId);
-        if (!cashbox || amount <= 0) {
-            showToast('اختر الصندوق وأدخل مبلغاً صحيحاً');
-            return;
-        }
+        if (!cashbox || amount <= 0) { showToast('اختر الصندوق وأدخل مبلغاً صحيحاً'); return; }
         const currentCbBal = computeSystemCashboxBalance(cashbox);
-        if (type === 'payment' && currentCbBal < amount) {
-            showToast('رصيد الصندوق غير كافٍ');
-            return;
-        }
-
+        if (type === 'payment' && currentCbBal < amount) { showToast('رصيد الصندوق غير كافٍ'); return; }
         isBusy = true;
         btn.disabled = true;
-
         try {
             const customer = customerId ? state.customers.find(c => c.id === customerId) : null;
-            const vchId = refNum ? `VCH-${refNum}` : `VCH-${Date.now()}`;
-            await db.collection('vouchers').doc(vchId).set({
-                id: vchId,
-                refNumber: refNum,
-                type,
-                date: new Date().toISOString().split('T')[0],
-                cashboxId: cashbox.id,
-                cashboxName: cashbox.name,
+            const note = type === 'receipt' ? `لكم سند قبض برقم ${refNum || '—'}` : `عليكم سند صرف برقم ${refNum || '—'}`;
+            const record = {
+                refNumber: refNum, type, date: getLocalDateKey(), cashboxId: cashbox.id, cashboxName: cashbox.name,
                 currency: CURRENCY_CODES.includes(cashbox.currency) ? cashbox.currency : 'YER',
-                customerId: customer ? customer.id : '',
-                customerName: customer ? customer.name : 'عام',
-                amount,
-                note,
-                employee: currentUser.fullName
-            });
-
+                customerId: customer ? customer.id : '', customerName: customer ? customer.name : 'عام',
+                amount, note, employee: currentUser.fullName
+            };
+            const result = await createRecordOnce('vouchers', 'vch', {
+                refNumber: refNum, type, cashboxId, customerId, amount, note, actor: dedupeActorId()
+            }, record, refNum ? `VCH-${refNum}` : '');
+            if (!result.created) { showToast('تم منع تكرار السند؛ هذا السند مسجل مسبقاً.'); return; }
             document.getElementById('voucherAmount').value = '';
             document.getElementById('voucherRefNumber').value = '';
             updateVoucherStatementPreview();
             showToast('تم حفظ السند');
-        } catch (e) {
-            showToast('تعذر حفظ السند');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) { console.warn('Create voucher error:', e); showToast('تعذر حفظ السند'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     async function editVoucherNote(vchId) {
@@ -3747,30 +3751,24 @@
         const name = document.getElementById('newCashboxName').value.trim();
         const opening = Number(document.getElementById('newCashboxOpening').value || 0);
         const currency = document.getElementById('newCashboxCurrency').value || 'YER';
-        if (!name) {
-            showToast('أدخل اسم الصندوق');
-            return;
+        if (!name) { showToast('أدخل اسم الصندوق'); return; }
+        const normalizedName = name.replace(/\s+/g, ' ').toLowerCase();
+        if ((state.cashboxes || []).some(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalizedName && (item.currency || 'YER') === currency)) {
+            showToast('يوجد صندوق بهذا الاسم والعملة بالفعل؛ لن تتم إضافة نسخة أخرى.'); return;
         }
-
         isBusy = true;
         btn.disabled = true;
         try {
-            const id = `cb_${Date.now()}`;
-            await db.collection('cashboxes').doc(id).set({
-                id,
-                name,
-                currency,
-                openingBalance: opening,
-                balance: opening
-            });
+            const result = await createRecordOnce('cashboxes', 'cb', {
+                name: name.replace(/\s+/g, ' ').toLowerCase(), currency, opening, actor: dedupeActorId()
+            }, { name, currency, openingBalance: opening, balance: opening }, `cb_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), currency })}`);
+            if (!result.created) { showToast('هذا الصندوق مسجل مسبقاً؛ لم تتم إضافة نسخة أخرى.'); return; }
             document.getElementById('newCashboxName').value = '';
             document.getElementById('newCashboxOpening').value = '0.00';
             document.getElementById('newCashboxCurrency').value = 'YER';
             showToast('تمت إضافة الصندوق');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) { console.warn('Create cashbox error:', e); showToast('تعذر إضافة الصندوق'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     async function editCashboxOpening(cbId) {
@@ -3824,27 +3822,25 @@
     }
 
     async function createBranch() {
-        if (isBusy || !canManageUsers()) {
-            showToast('إدارة الفروع للمشرف العام والمدير فقط');
-            return;
-        }
+        if (isBusy || !canManageUsers()) { showToast('إدارة الفروع للمشرف العام والمدير فقط'); return; }
         const btn = document.getElementById('saveBranchBtn');
         const name = document.getElementById('newBranchName').value.trim();
-        if (!name) {
-            showToast('أدخل اسم الفرع');
-            return;
+        if (!name) { showToast('أدخل اسم الفرع'); return; }
+        const normalizedName = name.replace(/\s+/g, ' ').toLowerCase();
+        if ((state.branches || []).some(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalizedName)) {
+            showToast('هذا الفرع موجود بالفعل؛ لن تتم إضافته مرة أخرى.'); return;
         }
         isBusy = true;
         btn.disabled = true;
         try {
-            const id = `br_${Date.now()}`;
-            await db.collection('branches').doc(id).set({ id, name });
+            const result = await createRecordOnce('branches', 'br', {
+                name: name.replace(/\s+/g, ' ').toLowerCase(), actor: dedupeActorId()
+            }, { name }, `br_${dedupeHash(name.replace(/\s+/g, ' ').toLowerCase())}`);
+            if (!result.created) { showToast('هذا الفرع مسجل مسبقاً؛ لم تتم إضافة نسخة أخرى.'); return; }
             document.getElementById('newBranchName').value = '';
             showToast('تمت إضافة الفرع');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) { console.warn('Create branch error:', e); showToast('تعذر إضافة الفرع'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     async function editBranchItem(branchId) {
@@ -3930,48 +3926,40 @@
         if (isBusy) return;
         const btn = document.getElementById('saveWarehouseItemBtn');
         const branchId = document.getElementById('whItemBranchSelect').value || '';
-        if (!branchId || !isBranchAllowed(branchId)) {
-            showToast('لم يحدد المشرف مخزناً لهذا الموظف');
-            return;
-        }
+        if (!branchId || !isBranchAllowed(branchId)) { showToast('لم يحدد المشرف مخزناً لهذا الموظف'); return; }
         const branchObj = state.branches.find(b => b.id === branchId);
         const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
-
         const name = document.getElementById('newItemName').value.trim();
         const unit = document.getElementById('newItemUnit').value || 'حبة';
         const qty = Number(document.getElementById('newItemQty').value || 0);
         const price = Number(document.getElementById('newItemPrice').value || 0);
-        if (!name) {
-            showToast('أدخل اسم الصنف');
-            return;
-        }
-
+        if (!name) { showToast('أدخل اسم الصنف'); return; }
         isBusy = true;
         btn.disabled = true;
         try {
-            const existing = state.warehouse.find(
-                w => (w.branchId || 'main_branch') === branchId &&
-                     w.name.toLowerCase() === name.toLowerCase() &&
-                     (w.unit || 'حبة') === unit
+            const existing = state.warehouse.find(w =>
+                (w.branchId || 'main_branch') === branchId &&
+                String(w.name || '').trim().toLowerCase() === name.toLowerCase() &&
+                (w.unit || 'حبة') === unit
             );
             if (existing) {
-                if (!canEditRecord()) {
-                    showToast('ليس لديك صلاحية التعديل على المخزون');
-                    return;
-                }
-                await db.collection('warehouse').doc(existing.id).update({ qty, price, unit, branchId, branchName });
+                if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل على المخزون'); return; }
+                const updated = await updateDocumentOnce('warehouse', existing.id, {
+                    action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, price, actor: dedupeActorId()
+                }, () => ({ qty, price, unit, branchId, branchName }));
+                if (!updated) { showToast('تم منع تكرار حفظ الصنف نفسه خلال وقت قصير.'); return; }
             } else {
-                const id = `wh_${Date.now()}`;
-                await db.collection('warehouse').doc(id).set({ id, branchId, branchName, name, unit, qty, price });
+                const result = await createRecordOnce('warehouse', 'wh', {
+                    action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, price, actor: dedupeActorId()
+                }, { branchId, branchName, name, unit, qty, price }, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
+                if (!result.created) { showToast('هذا الصنف موجود أو تمت إضافته للتو؛ لن يتكرر في المخزن.'); return; }
             }
             document.getElementById('newItemName').value = '';
             document.getElementById('newItemQty').value = '1';
             document.getElementById('newItemPrice').value = '0.00';
             showToast('تم حفظ الصنف في المخزن');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) { console.warn('Save warehouse item error:', e); showToast('تعذر حفظ الصنف في المخزن'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     async function editWarehouseItem(itemId) {
@@ -4039,23 +4027,23 @@
         const name = document.getElementById('newCustomerName').value.trim();
         const phone = document.getElementById('newCustomerPhone').value.trim();
         const creditLimit = Number(document.getElementById('newCustomerLimit').value || 0);
-        if (!name) {
-            showToast('أدخل اسم العميل');
-            return;
+        if (!name) { showToast('أدخل اسم العميل'); return; }
+        const normalizedName = name.replace(/\s+/g, ' ').toLowerCase();
+        if ((state.customers || []).some(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalizedName && String(item.phone || '-') === (phone || '-'))) {
+            showToast('هذا العميل موجود بالفعل بنفس رقم الهاتف؛ لم تتم إضافته مرة أخرى.'); return;
         }
-
         isBusy = true;
         btn.disabled = true;
         try {
-            const id = `cust_${Date.now()}`;
-            await db.collection('customers').doc(id).set({ id, name, phone: phone || '-', creditLimit, balance: 0 });
+            const result = await createRecordOnce('customers', 'cust', {
+                name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-', creditLimit, actor: dedupeActorId()
+            }, { name, phone: phone || '-', creditLimit, balance: 0 }, `cust_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-' })}`);
+            if (!result.created) { showToast('هذا العميل مسجل مسبقاً؛ لم تتم إضافة نسخة أخرى.'); return; }
             document.getElementById('newCustomerName').value = '';
             document.getElementById('newCustomerPhone').value = '';
             showToast('تم حفظ العميل');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) { console.warn('Create customer error:', e); showToast('تعذر حفظ العميل'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     async function editCustomerItem(custId) {
@@ -4433,56 +4421,33 @@
         const role = document.getElementById('newUserRole').value || 'cashier';
         const staff = getStaffById(staffId);
         const btn = document.getElementById('createEmployeeUserBtn');
-
-        if (!staff) {
-            showToast('اختر موظفاً معرفاً مسبقاً');
-            return;
-        }
-        if (getStaffLoginAccount(staff)) {
-            showToast('هذا الموظف لديه حساب دخول بالفعل');
-            return;
-        }
-        if (!username || !password) {
-            showToast('أدخل اسم المستخدم وكلمة المرور');
-            return;
-        }
-        if (state.employees.some(account => String(account.username || '').trim() === username)) {
-            showToast('اسم المستخدم موجود مسبقاً');
-            return;
-        }
-        if (role === 'cashier' && !staff.warehouseBranchId) {
-            showToast('حدد مخزن الموظف من صفحة تعريف الموظفين أولاً');
-            return;
-        }
-
+        if (!staff) { showToast('اختر موظفاً معرفاً مسبقاً'); return; }
+        if (getStaffLoginAccount(staff)) { showToast('هذا الموظف لديه حساب دخول بالفعل'); return; }
+        if (!username || !password) { showToast('أدخل اسم المستخدم وكلمة المرور'); return; }
+        if (state.employees.some(account => String(account.username || '').trim().toLowerCase() === username.toLowerCase())) { showToast('اسم المستخدم موجود مسبقاً'); return; }
+        if (role === 'cashier' && !staff.warehouseBranchId) { showToast('حدد مخزن الموظف من صفحة تعريف الموظفين أولاً'); return; }
         isBusy = true;
         btn.disabled = true;
         try {
-            const id = `user_${Date.now()}`;
             const account = {
-                id,
-                staffId: staff.legacy ? '' : staff.id,
-                fullName: staff.fullName,
-                username,
-                password,
-                role,
-                salary: Number(staff.salary || 0),
-                salaryCurrency: getStaffSalaryCurrency(staff),
-                payType: staff.payType || 'monthly',
-                pieceRates: Array.isArray(staff.pieceRates) ? staff.pieceRates : [],
+                staffId: staff.legacy ? '' : staff.id, fullName: staff.fullName, username, password, role,
+                salary: Number(staff.salary || 0), salaryCurrency: getStaffSalaryCurrency(staff),
+                payType: staff.payType || 'monthly', pieceRates: Array.isArray(staff.pieceRates) ? staff.pieceRates : [],
                 warehouseBranchId: role === 'supervisor' ? '' : (staff.warehouseBranchId || ''),
                 warehouseBranchName: role === 'supervisor' ? 'كل المخازن' : (staff.warehouseBranchName || ''),
-                canEdit: false,
-                canDelete: false,
-                allowedMenus: [],
+                canEdit: false, canDelete: false, allowedMenus: [],
                 dashboardWidgets: { sales: false, cash: false, receivables: false, stock: false },
-                active: staff.active !== false,
-                createdAt: new Date().toISOString()
+                active: staff.active !== false, createdAt: new Date().toISOString()
             };
-            await db.collection('employees').doc(id).set(account);
+            const preferredId = `user_${dedupeHash(username.toLowerCase())}`;
+            const saved = await createRecordOnce('employees', 'user', {
+                username: username.toLowerCase(), staffId: staff.id, role
+            }, account, preferredId);
+            if (!saved.created) { showToast('تم منع تكرار حساب الدخول؛ اسم المستخدم أو الحساب مسجل مسبقاً.'); return; }
+            account.id = saved.id;
             if (!staff.legacy) {
-                await db.collection('staff').doc(staff.id).update({ userAccountId: id, username });
-                staff.userAccountId = id;
+                await db.collection('staff').doc(staff.id).update({ userAccountId: saved.id, username });
+                staff.userAccountId = saved.id;
                 staff.username = username;
             }
             state.employees.push(account);
@@ -4491,18 +4456,13 @@
             document.getElementById('newUserStaffSelect').value = '';
             populateNewUserStaffOptions();
             populateEmployeePermissionOptions();
-            document.getElementById('permissionEmployeeSelect').value = id;
+            document.getElementById('permissionEmployeeSelect').value = saved.id;
             loadEmployeePermissions();
             renderEmployeesTable();
             renderEmployeePermissionsTable();
             showToast('تم إنشاء حساب المستخدم. حدد صلاحياته من نفس الصفحة');
-        } catch (e) {
-            console.warn('Create user error:', e);
-            showToast('تعذر إنشاء حساب المستخدم');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) { console.warn('Create user error:', e); showToast('تعذر إنشاء حساب المستخدم'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     async function editEmployeeWarehouse(staffId) {
@@ -4994,53 +4954,36 @@
         const amount = Number(document.getElementById('employeeExpenseAmount').value || 0);
         const note = document.getElementById('employeeExpenseNote').value.trim();
         const btn = document.getElementById('saveEmployeeExpenseBtn');
-        if (!staff) {
-            showToast('اختر الموظف أولاً');
-            return;
-        }
-        if (!Number.isFinite(amount) || amount <= 0) {
-            showToast('أدخل مبلغاً صحيحاً للمصروف');
-            return;
-        }
+        if (!staff) { showToast('اختر الموظف أولاً'); return; }
+        if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً للمصروف'); return; }
         const period = getCurrentPayrollPeriod();
+        const date = getLocalDateKey();
         const entitlement = getEmployeePeriodEntitlement(staff, period);
         const spent = getEmployeePeriodSpent(staff.id, period);
         const remaining = entitlement - spent;
-        if (amount > remaining) {
-            showToast(`المبلغ أكبر من المستحق المتبقي (${formatMoney(Math.max(0, remaining))} ${getStaffSalaryCurrency(staff)})`);
-            return;
-        }
-
+        if (amount > remaining) { showToast(`المبلغ أكبر من المستحق المتبقي (${formatMoney(Math.max(0, remaining))} ${getStaffSalaryCurrency(staff)})`); return; }
         isBusy = true;
         btn.disabled = true;
         try {
-            const id = `emp_exp_${Date.now()}`;
             const record = {
-                id,
-                staffId: staff.id,
-                staffName: staff.fullName,
-                amount,
-                currency: getStaffSalaryCurrency(staff),
+                staffId: staff.id, staffName: staff.fullName, amount, currency: getStaffSalaryCurrency(staff),
                 note: note || (isPieceworkStaff(staff) ? 'دفعة من مستحق الإنتاج' : 'مصروف من الراتب'),
-                period,
-                date: getLocalDateKey(),
-                createdAt: new Date().toISOString(),
-                createdBy: currentUser?.fullName || 'الإدارة',
-                createdByUserId: currentUser?.id || ''
+                period, date, createdAt: new Date().toISOString(),
+                createdBy: currentUser?.fullName || 'الإدارة', createdByUserId: currentUser?.id || ''
             };
-            await db.collection('employeeExpenses').doc(id).set(record);
-            state.employeeExpenses.push(record);
+            const saved = await createRecordOnce('employeeExpenses', 'emp_exp', {
+                staffId: staff.id, amount, currency: record.currency, note: record.note, period, date,
+                actor: dedupeActorId()
+            }, record);
+            if (!saved.created) { showToast('تم منع تكرار المصروف نفسه؛ سجل هذا المبلغ قبل قليل.'); return; }
+            record.id = saved.id;
+            state.employeeExpenses = state.employeeExpenses.filter(item => item.id !== saved.id).concat(record);
             document.getElementById('employeeExpenseAmount').value = '';
             document.getElementById('employeeExpenseNote').value = '';
             renderEmployeeExpenses();
             showToast('تم تسجيل المبلغ وتحديث المستحق المتبقي للموظف');
-        } catch (e) {
-            console.warn('Record employee expense error:', e);
-            showToast('تعذر تسجيل مصروف الموظف');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) { console.warn('Record employee expense error:', e); showToast('تعذر تسجيل مصروف الموظف'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     function getSelectedProductionRate() {
@@ -5104,59 +5047,52 @@
         const date = document.getElementById('productionDate').value || getLocalDateKey();
         const note = document.getElementById('productionNote').value.trim();
         const btn = document.getElementById('saveProductionBtn');
-        if (!staff || !isPieceworkStaff(staff)) {
-            showToast('اختر موظفاً معرفاً بنظام القطعة');
-            return;
-        }
-        if (!rate) {
-            showToast('اختر نوع العمل أو القطعة');
-            return;
-        }
-        if (!Number.isFinite(quantity) || quantity <= 0) {
-            showToast('أدخل كمية صحيحة أكبر من صفر');
-            return;
-        }
+        if (!staff || !isPieceworkStaff(staff)) { showToast('اختر موظفاً معرفاً بنظام القطعة'); return; }
+        if (!rate) { showToast('اختر نوع العمل أو القطعة'); return; }
+        if (!Number.isFinite(quantity) || quantity <= 0) { showToast('أدخل كمية صحيحة أكبر من صفر'); return; }
         const amount = quantity * Number(rate.rate || 0);
-        if (!Number.isFinite(amount) || amount <= 0) {
-            showToast('تعذر احتساب مستحق الإنتاج؛ راجع التسعيرة');
+        if (!Number.isFinite(amount) || amount <= 0) { showToast('تعذر احتساب مستحق الإنتاج؛ راجع التسعيرة'); return; }
+        const actorId = dedupeActorId();
+        const normalizedNote = note.trim();
+        const recentExisting = (state.employeeProduction || []).find(item =>
+            item.staffId === staff.id && item.rateId === rate.id && item.date === date &&
+            Number(item.quantity) === quantity && Number(item.unitRate) === Number(rate.rate) &&
+            String(item.note || '').trim() === normalizedNote &&
+            String(item.createdByUserId || '') === actorId &&
+            (Date.now() - new Date(item.createdAt || item.date).getTime()) < (10 * 60 * 1000)
+        );
+        if (recentExisting) {
+            showToast('هذا الإنتاج مطابق لسجل أُضيف قبل قليل. لم تتم إضافته مرة ثانية.');
             return;
         }
         isBusy = true;
         btn.disabled = true;
         try {
-            const id = `emp_prod_${Date.now()}`;
             const record = {
-                id,
-                staffId: staff.id,
-                staffName: staff.fullName,
-                rateId: rate.id,
-                workName: rate.name,
-                unit: rate.unit,
-                quantity,
-                unitRate: Number(rate.rate),
-                amount,
-                currency: getStaffSalaryCurrency(staff),
-                period: date.slice(0, 7),
-                date,
-                note,
-                createdAt: new Date().toISOString(),
-                createdBy: currentUser?.fullName || 'المشرف',
+                staffId: staff.id, staffName: staff.fullName, rateId: rate.id, workName: rate.name, unit: rate.unit,
+                quantity, unitRate: Number(rate.rate), amount, currency: getStaffSalaryCurrency(staff),
+                period: date.slice(0, 7), date, note: normalizedNote,
+                createdAt: new Date().toISOString(), createdBy: currentUser?.fullName || 'المشرف',
                 createdByUserId: currentUser?.id || ''
             };
-            await db.collection('employeeProduction').doc(id).set(record);
-            state.employeeProduction.push(record);
+            const saved = await createRecordOnce('employeeProduction', 'emp_prod', {
+                staffId: staff.id, rateId: rate.id, date, quantity, unitRate: Number(rate.rate),
+                amount, currency: record.currency, note: normalizedNote, actor: actorId
+            }, record);
+            if (!saved.created) {
+                showToast('تم منع تكرار الإنتاج؛ نفس الموظف والكمية ونوع العمل سُجلت قبل قليل.');
+                await reloadAllData(false);
+                return;
+            }
+            record.id = saved.id;
+            state.employeeProduction = state.employeeProduction.filter(item => item.id !== saved.id).concat(record);
             document.getElementById('productionQuantity').value = '';
             document.getElementById('productionNote').value = '';
             renderEmployeeProduction();
             renderEmployeeExpenses();
             showToast(`تم تسجيل ${formatQty(quantity)} ${rate.unit} وإضافة ${formatMoney(amount)} ${record.currency} إلى مستحق ${staff.fullName}`);
-        } catch (e) {
-            console.warn('Record employee production error:', e);
-            showToast('تعذر حفظ إنتاج الموظف');
-        } finally {
-            isBusy = false;
-            btn.disabled = false;
-        }
+        } catch (e) { console.warn('Record employee production error:', e); showToast('تعذر حفظ إنتاج الموظف'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     async function deleteEmployeeProduction(productionId) {
@@ -5176,6 +5112,51 @@
         } finally {
             isBusy = false;
         }
+    }
+
+    function productionDuplicateSignature(item) {
+        return dedupeHash({
+            staffId: item.staffId || '', rateId: item.rateId || '', date: item.date || '',
+            workName: item.workName || '', unit: item.unit || '', quantity: Number(item.quantity || 0),
+            unitRate: Number(item.unitRate || 0), amount: Number(item.amount || 0),
+            currency: item.currency || 'YER', note: String(item.note || '').trim(),
+            createdByUserId: item.createdByUserId || ''
+        });
+    }
+
+    async function cleanupDuplicateProductionRecords() {
+        if (isBusy || !canManageUsers()) return;
+        const groups = new Map();
+        (state.employeeProduction || []).forEach(item => {
+            const key = productionDuplicateSignature(item);
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(item);
+        });
+        const duplicates = [];
+        groups.forEach(group => {
+            if (group.length < 2) return;
+            group.sort((a, b) => String(a.createdAt || a.id).localeCompare(String(b.createdAt || b.id)));
+            duplicates.push(...group.slice(1));
+        });
+        if (!duplicates.length) { showToast('لا توجد سجلات إنتاج متطابقة مكررة'); return; }
+        if (!confirm(`تم العثور على ${duplicates.length} سجل إنتاج مطابق مكرر. سيتم الإبقاء على نسخة واحدة من كل عملية وحذف النسخ الزائدة فقط. إذا كان تكرار الشغل مقصوداً، اضغط إلغاء. متابعة؟`)) return;
+        isBusy = true;
+        try {
+            for (let i = 0; i < duplicates.length; i += 400) {
+                const batch = db.batch();
+                duplicates.slice(i, i + 400).forEach(item => batch.delete(db.collection('employeeProduction').doc(item.id)));
+                await batch.commit();
+            }
+            const ids = new Set(duplicates.map(item => item.id));
+            state.employeeProduction = (state.employeeProduction || []).filter(item => !ids.has(item.id));
+            renderEmployeeProduction();
+            renderEmployeeExpenses();
+            showToast(`تم حذف ${duplicates.length} سجل مكرر وتحديث مستحقات الموظفين`);
+        } catch (e) {
+            console.warn('Cleanup duplicate production error:', e);
+            await reloadAllData(false);
+            showToast('تعذر تنظيف السجلات المكررة؛ تم تحديث البيانات');
+        } finally { isBusy = false; }
     }
 
     function renderEmployeeProduction() {
