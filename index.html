@@ -1121,6 +1121,10 @@
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span>الموردون والمصروفات</span>
                 </button>
+                <button class="nav-tab expense-tab" data-menu-key="expenseEntryTab" onclick="openFullPage('expenseEntryTab')">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>تسجيل مصروف جديد</span>
+                </button>
                 <button class="nav-tab" data-menu-key="vouchersTab" onclick="openFullPage('vouchersTab')">
                     <i class="fa-solid fa-file-signature"></i>
                     <span>الأسناد</span>
@@ -1322,7 +1326,7 @@
         <!-- صفحة الموردين والمصروفات فقط -->
         <section id="purchasesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title" style="color:var(--danger);"><i class="fa-solid fa-file-invoice-dollar"></i> الموردون والمصروفات</div>
+                <div class="fullpage-title" style="color:var(--primary);"><i class="fa-solid fa-truck"></i> الموردون وحساباتهم</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
@@ -1406,6 +1410,17 @@
                 <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>الأصناف / البيان</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الرصيد بعد الحركة</th></tr></thead><tbody id="supplierLedgerBody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr></tbody></table></div>
             </div>
 
+            <div class="employee-permission-note">هذه الصفحة مخصصة للموردين وفواتير التوريد وتسديد الموردين وكشوف حساباتهم. لتسجيل المصروفات اليومية استخدم زر «تسجيل مصروف جديد» في القائمة الرئيسية.</div>
+        </section>
+
+
+        <!-- صفحة مستقلة لتسجيل المصروفات -->
+        <section id="expenseEntryTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title" style="color:var(--danger);"><i class="fa-solid fa-money-bill-transfer"></i> تسجيل مصروف جديد</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+            </div>
+            <div class="employee-permission-note" style="margin-bottom:12px;">سجّل المصروف مباشرة من الصندوق المسموح لك، وفي حدود المخزن المحدد لحسابك. لا تحتاج إلى فتح صفحة الموردين.</div>
             <div class="card-box">
                 <div class="card-title" style="color:var(--danger);">
                     <span><i class="fa-solid fa-money-bill-transfer"></i> تسجيل مصروف جديد</span>
@@ -1477,6 +1492,7 @@
                     </table>
                 </div>
             </div>
+
         </section>
 
         <!-- 2. صفحة الأسناد الكاملة -->
@@ -2315,7 +2331,7 @@
                             <div id="newUserWarehouseInfo" class="employee-permission-note" style="margin-top:5px;">اختر المخزن الذي يسمح لهذا الحساب بالعمل فيه.</div>
                         </div>
                     </div>
-                    <div class="employee-permission-note">بعد إنشاء الحساب، افتح صفحة الموظفون لربطه بملف الموظف عند الحاجة إلى تسجيل إنتاجه أو عرض حسابه الشخصي.</div>
+                    <div class="employee-permission-note">بعد إنشاء الحساب، اربطه بملف الموظف من صفحة الموظفون. يرتبط الحساب بالمخزن المحدد في ملف الموظف، ولا يستطيع الموظف فتح مخزن آخر حتى لو حاول تغيير الاختيار.</div>
                     <button id="createEmployeeUserBtn" type="button" class="btn btn-accent btn-full" onclick="createEmployeeUser()">
                         <i class="fa-solid fa-user-plus"></i> إضافة حساب دخول
                     </button>
@@ -2343,7 +2359,7 @@
                             <button type="button" class="btn btn-outline btn-sm" onclick="setAllPermissionMenus(false)">إلغاء كل الأقسام</button>
                         </div>
                         <div style="margin-top:10px; font-size:12.5px; font-weight:800; color:var(--primary);">
-                            حدد الأقسام التي يمكن لهذا الحساب فتحها:
+                            حدد الأقسام التي تسمح لهذا الحساب بفتحها. جميع الأقسام مغلقة افتراضياً، ولا يظهر للموظف إلا ما تفعّله وتحفظه هنا:
                         </div>
                         <div id="permissionMenusGrid" class="menu-perms-grid"></div>
                         <div class="employee-permission-note" style="margin-top:8px;">مهم: لإظهار زر «إضافة شغل للموظفين» لهذا الحساب، فعّل هذا القسم ثم احفظ الصلاحيات. يجب ربط الحساب بملف الموظف من صفحة «الموظفون»؛ بعدها يستطيع الموظف تسجيل إنتاجه لنفسه فقط، ولا تظهر له ملفات بقية الموظفين.</div>
@@ -2524,6 +2540,7 @@
     const MAIN_MENU_ITEMS = [
         { key: 'salesTab', label: 'المبيعات والفواتير' },
         { key: 'purchasesTab', label: 'الموردون والمصروفات' },
+        { key: 'expenseEntryTab', label: 'تسجيل مصروف جديد' },
         { key: 'vouchersTab', label: 'الأسناد' },
         { key: 'cashboxTab', label: 'الصندوق' },
         { key: 'warehouseTab', label: 'المخازن والفروع' },
@@ -2987,7 +3004,7 @@
 function initMenuPermissionCheckboxes() {
         const grid = document.getElementById('permissionMenusGrid');
         if (!grid) return;
-        const employeeAssignableMenus = MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab', 'quantitiesTab'].includes(m.key));
+        const employeeAssignableMenus = MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab', 'quantitiesTab', 'backupTab'].includes(m.key));
         grid.innerHTML = employeeAssignableMenus.map(m => `
             <label class="perm-check">
                 <input type="checkbox" class="emp-menu-cb" value="${m.key}">
@@ -3112,7 +3129,13 @@ function initMenuPermissionCheckboxes() {
     }
 
     function getAssignedBranchId(user = currentUser) {
-        return user?.warehouseBranchId || user?.branchId || '';
+        if (!user) return '';
+        const direct = user.warehouseBranchId || user.branchId || '';
+        if (direct) return direct;
+        const linkedStaff = (state.staff || []).find(staff =>
+            staff.id === user.staffId || staff.userAccountId === user.id || staff.legacyUserId === user.id
+        );
+        return linkedStaff?.warehouseBranchId || '';
     }
 
     function getAccessibleBranches() {
@@ -3141,8 +3164,9 @@ function initMenuPermissionCheckboxes() {
     function getAllowedMenusForUser(user = currentUser) {
         if (!user) return [];
         if (hasFullAccess(user)) return MAIN_MENU_ITEMS.map(m => m.key);
-        if (Array.isArray(user.allowedMenus)) return user.allowedMenus.filter(key => key !== 'quantitiesTab');
-        return MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab', 'quantitiesTab'].includes(m.key)).map(m => m.key);
+        // الموظف لا يحصل على أي قسم افتراضياً؛ المدير/المشرف يفعّل الأقسام المطلوبة صراحةً.
+        if (Array.isArray(user.allowedMenus)) return user.allowedMenus.filter(key => !['employeesTab', 'employeePermissionsTab', 'quantitiesTab', 'backupTab'].includes(key));
+        return [];
     }
 
     function canAccessMenu(menuKey, user = currentUser) {
@@ -3195,6 +3219,13 @@ function initMenuPermissionCheckboxes() {
             if (!document.querySelector('#invoiceItemsContainer .invoice-item-row')) addInvoiceItemRow();
             updateMobileCartDock();
             recalculateInvoiceTotal();
+        }
+        if (tabId === 'expenseEntryTab') {
+            filterPurchaseCashboxes();
+            populatePurchaseSupplierOptions();
+            renderPurchasesTable();
+            const branchSelect = document.getElementById('purBranchSelect');
+            if (branchSelect && !branchSelect.value && branchSelect.options.length) branchSelect.selectedIndex = 0;
         }
         if (tabId === 'purchasesTab') {
             populateSupplierAccountOptions();
@@ -3660,6 +3691,7 @@ function initMenuPermissionCheckboxes() {
         renderInvoicesTable();
         renderPurchasesTable();
         renderSupplierBalances();
+        if (!document.getElementById('expenseEntryTab')?.classList.contains('hidden')) { filterPurchaseCashboxes(); renderPurchasesTable(); }
         renderVouchersTable();
         renderCashboxesList();
         renderBranchesChips();
