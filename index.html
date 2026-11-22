@@ -631,6 +631,27 @@
             transform: translate(-50%, -50%);
         }
 
+        .employee-subnav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .employee-subnav .btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .employee-permission-note {
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
         .hidden { display: none !important; }
 
         @media print {
@@ -720,15 +741,15 @@
             <div id="summaryStatsStrip" class="summary-strip">
                 <div class="mini-stat">
                     <div class="mini-stat-label">المبيعات</div>
-                    <div class="mini-stat-val mono" id="kpiTotalSales">0.00</div>
+                    <div class="mini-stat-val" id="kpiTotalSales" style="font-size:12px; line-height:1.7;">0.00 YER</div>
                 </div>
                 <div class="mini-stat">
                     <div class="mini-stat-label">رصيد الصندوق</div>
-                    <div class="mini-stat-val mono" id="kpiTotalCash" style="color:var(--success);">0.00</div>
+                    <div class="mini-stat-val" id="kpiTotalCash" style="color:var(--success); font-size:12px; line-height:1.7;">0.00 YER</div>
                 </div>
                 <div class="mini-stat">
                     <div class="mini-stat-label">ديون العملاء</div>
-                    <div class="mini-stat-val mono" id="kpiTotalReceivables" style="color:var(--warning);">0.00</div>
+                    <div class="mini-stat-val" id="kpiTotalReceivables" style="color:var(--warning); font-size:12px; line-height:1.7;">0.00 YER</div>
                 </div>
                 <div class="mini-stat">
                     <div class="mini-stat-label">المخزون (إجمالي الكميات)</div>
@@ -818,6 +839,17 @@
                     </div>
                 </div>
 
+                <div class="grid-2" style="margin-top:8px;">
+                    <div class="form-group">
+                        <label>عملة الفاتورة</label>
+                        <select id="invCurrency" class="form-control" onchange="recalculateInvoiceTotal()">
+                            <option value="YER">ريال يمني</option>
+                            <option value="SAR">ريال سعودي</option>
+                            <option value="USD">دولار أمريكي</option>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- بحث واختيار الأصناف من المخازن -->
                 <div class="stock-picker-box">
                     <div style="font-size:13px; font-weight:800; color:var(--primary); margin-bottom:8px;">
@@ -893,6 +925,7 @@
                                 <th>الأصناف</th>
                                 <th>البيان</th>
                                 <th>النوع</th>
+                                <th>العملة</th>
                                 <th>الصافي</th>
                                 <th>الموظف</th>
                                 <th>إجراءات</th>
@@ -965,6 +998,14 @@
                         <label>المبلغ</label>
                         <input type="number" step="0.01" inputmode="decimal" id="purAmount" class="form-control num-input" min="0" placeholder="0.00">
                     </div>
+                    <div class="form-group">
+                        <label>العملة</label>
+                        <select id="purCurrency" class="form-control">
+                            <option value="YER">ريال يمني</option>
+                            <option value="SAR">ريال سعودي</option>
+                            <option value="USD">دولار أمريكي</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="grid-3">
@@ -979,6 +1020,7 @@
                             <select id="purUnit" class="form-control">
                                 <option value="حبة">حبة</option>
                                 <option value="شدة">شدة</option>
+                                <option value="وار">وار</option>
                             </select>
                         </div>
                     </div>
@@ -1015,6 +1057,7 @@
                                 <th>البيان</th>
                                 <th>الصندوق</th>
                                 <th>للمخزن</th>
+                                <th>العملة</th>
                                 <th>المبلغ</th>
                                 <th>الموظف</th>
                                 <th>إجراءات</th>
@@ -1106,10 +1149,18 @@
             <div class="card-box">
                 <div class="card-title"><span>الصناديق والأرصدة النظامية</span></div>
                 <div id="dashboardCashboxesList" style="margin-bottom:14px;"></div>
-                <div class="grid-2">
+                <div class="grid-3">
                     <div class="form-group" style="margin-bottom:0;">
                         <label>اسم الصندوق الجديد</label>
                         <input type="text" id="newCashboxName" class="form-control" placeholder="مثال: صندوق المعمل">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>عملة الصندوق</label>
+                        <select id="newCashboxCurrency" class="form-control">
+                            <option value="YER">ريال يمني</option>
+                            <option value="SAR">ريال سعودي</option>
+                            <option value="USD">دولار أمريكي</option>
+                        </select>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label>الرصيد الافتتاحي</label>
@@ -1152,7 +1203,7 @@
                         <label>عرض مخزون فرع</label>
                         <select id="activeBranchFilter" class="form-control" onchange="renderWarehouseTable()"></select>
                     </div>
-                    <div class="form-group" style="margin-bottom:0;">
+                    <div id="branchManagementTools" class="form-group" style="margin-bottom:0;">
                         <label>اسم فرع جديد</label>
                         <div style="display:flex; gap:8px;">
                             <input type="text" id="newBranchName" class="form-control" placeholder="مثال: فرع إب">
@@ -1211,6 +1262,7 @@
                         <select id="newItemUnit" class="form-control">
                             <option value="حبة">حبة</option>
                             <option value="شدة">شدة</option>
+                            <option value="وار">وار</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -1257,15 +1309,9 @@
                     </div>
                 </div>
 
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>الكمية</label>
-                        <input type="number" step="0.01" inputmode="decimal" id="qtyInputValue" class="form-control num-input" value="1" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>سعر الصنف (اختياري — اتركه فارغاً للإبقاء على السعر الحالي)</label>
-                        <input type="number" step="0.01" inputmode="decimal" id="qtyItemPriceInput" class="form-control num-input" placeholder="مثال: 250.00" min="0">
-                    </div>
+                <div class="form-group">
+                    <label>الكمية</label>
+                    <input type="number" step="0.01" inputmode="decimal" id="qtyInputValue" class="form-control num-input" value="1" min="0">
                 </div>
 
                 <button id="saveQtyBtn" class="btn btn-accent btn-full" onclick="saveStockQuantity()">
@@ -1481,102 +1527,153 @@
             </div>
         </section>
 
-        <!-- 7. صفحة الموظفون والرواتب والصلاحيات الكاملة -->
+        <!-- 7. الموظفون: تعريف مستقل وصلاحيات مستقلة -->
         <section id="employeesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-user-tie"></i> الموظفون والرواتب والصلاحيات</div>
+                <div class="fullpage-title"><i class="fa-solid fa-user-tie"></i> إدارة الموظفين</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
 
-            <div class="summary-strip" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="mini-stat">
-                    <div class="mini-stat-label">عدد الموظفين المسجلين</div>
-                    <div class="mini-stat-val mono" id="empCountStat">0</div>
+            <div class="employee-subnav">
+                <button type="button" id="employeeDefinitionTabBtn" class="btn btn-outline active" onclick="switchEmployeePanel('employeeDefinitionPanel')">
+                    <i class="fa-solid fa-id-card"></i> تعريف الموظفين والرواتب
+                </button>
+                <button type="button" id="employeePermissionsTabBtn" class="btn btn-outline" onclick="switchEmployeePanel('employeePermissionsPanel')">
+                    <i class="fa-solid fa-user-shield"></i> صلاحيات الموظفين
+                </button>
+            </div>
+
+            <div id="employeeDefinitionPanel">
+                <div class="summary-strip" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="mini-stat">
+                        <div class="mini-stat-label">عدد الموظفين المسجلين</div>
+                        <div class="mini-stat-val mono" id="empCountStat">0</div>
+                    </div>
+                    <div class="mini-stat">
+                        <div class="mini-stat-label">إجمالي الرواتب الشهرية</div>
+                        <div class="mini-stat-val mono" id="empTotalSalariesStat" style="color:var(--success);">0.00</div>
+                    </div>
                 </div>
-                <div class="mini-stat">
-                    <div class="mini-stat-label">إجمالي الرواتب الشهرية</div>
-                    <div class="mini-stat-val mono" id="empTotalSalariesStat" style="color:var(--success);">0.00</div>
+
+                <div class="card-box">
+                    <div class="card-title"><span><i class="fa-solid fa-id-card"></i> تعريف موظف جديد</span></div>
+                    <div class="grid-4">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>اسم الموظف</label>
+                            <input type="text" id="newEmpFullName" class="form-control" placeholder="اسم الموظف أو المشرف">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>الراتب</label>
+                            <input type="number" step="0.01" inputmode="decimal" id="newEmpSalary" class="form-control num-input" value="0.00" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>اسم الدخول</label>
+                            <input type="text" id="newEmpUsername" class="form-control num-input" placeholder="مثال: 12007">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>كلمة المرور</label>
+                            <input type="password" id="newEmpPassword" class="form-control num-input" placeholder="كلمة المرور" autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <div class="grid-2" style="margin-top:12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>نوع الحساب</label>
+                            <select id="newEmpRole" class="form-control" onchange="toggleEmployeePermBox()">
+                                <option value="cashier">موظف</option>
+                                <option value="supervisor">مشرف عام (كل المخازن والأقسام)</option>
+                                <option value="admin">مدير</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="newEmpWarehouseGroup" style="margin-bottom:0;">
+                            <label>المخزن المحدد للموظف بواسطة المشرف</label>
+                            <select id="newEmpWarehouseBranch" class="form-control">
+                                <option value="">اختر المخزن</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="saveEmployeeBtn" class="btn btn-primary btn-full" onclick="createEmployee()" style="margin-top:12px;">
+                        <i class="fa-solid fa-user-check"></i> حفظ تعريف الموظف
+                    </button>
+                    <div class="employee-permission-note" style="margin-top:10px; margin-bottom:0;">
+                        يتم ضبط صلاحيات الأقسام والتعديل والحذف من تبويب «صلاحيات الموظفين» بشكل مستقل.
+                    </div>
+                </div>
+
+                <div class="card-box">
+                    <div class="card-title"><span><i class="fa-solid fa-users"></i> بيانات الموظفين والرواتب والمخازن المحددة</span></div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>الاسم</th>
+                                    <th>الراتب</th>
+                                    <th>اسم الدخول</th>
+                                    <th>النوع</th>
+                                    <th>المخزن المحدد</th>
+                                    <th>الحالة</th>
+                                    <th>تحكم</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeesTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-user-shield"></i> إضافة / تحديث موظف وتحديد راتبه وصلاحياته</span></div>
-                <div class="grid-4">
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>الاسم</label>
-                        <input type="text" id="newEmpFullName" class="form-control" placeholder="اسم الموظف أو المشرف">
-                    </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>الراتب</label>
-                        <input type="number" step="0.01" inputmode="decimal" id="newEmpSalary" class="form-control num-input" value="0.00" min="0" placeholder="0.00">
-                    </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>اسم الدخول</label>
-                        <input type="text" id="newEmpUsername" class="form-control num-input" placeholder="مثال: 12007">
-                    </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>كلمة المرور</label>
-                        <input type="text" id="newEmpPassword" class="form-control num-input" placeholder="كلمة المرور">
-                    </div>
-                </div>
-
-                <div class="grid-2" style="margin-top:12px;">
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>نوع الحساب</label>
-                        <select id="newEmpRole" class="form-control" onchange="toggleEmployeePermBox()">
-                            <option value="cashier">موظف (تحديد الأقسام والصلاحيات)</option>
-                            <option value="supervisor">مشرف عام (كل الأقسام + حذف المستخدمين)</option>
-                            <option value="admin">مدير</option>
+            <div id="employeePermissionsPanel" class="hidden">
+                <div class="card-box">
+                    <div class="card-title"><span><i class="fa-solid fa-user-shield"></i> تحديد صلاحيات موظف</span></div>
+                    <div class="form-group">
+                        <label>اختر الموظف</label>
+                        <select id="permissionEmployeeSelect" class="form-control" onchange="loadEmployeePermissions()">
+                            <option value="">اختر الموظف</option>
                         </select>
                     </div>
-                    <div style="display:flex; align-items:flex-end;">
-                        <button id="saveEmployeeBtn" class="btn btn-primary btn-full" onclick="createEmployee()">
-                            <i class="fa-solid fa-user-check"></i> حفظ الموظف والراتب والصلاحيات
+                    <div id="permissionEditorBox" class="hidden">
+                        <div class="perm-box">
+                            <label class="perm-check">
+                                <input type="checkbox" id="permissionCanEdit">
+                                <span>السماح بالتعديل</span>
+                            </label>
+                            <label class="perm-check">
+                                <input type="checkbox" id="permissionCanDelete">
+                                <span>السماح بالحذف</span>
+                            </label>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="setAllPermissionMenus(true)">تحديد كل الأقسام</button>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="setAllPermissionMenus(false)">إلغاء كل الأقسام</button>
+                        </div>
+                        <div style="margin-top:10px; font-size:12.5px; font-weight:800; color:var(--primary);">
+                            حدد الأقسام التي يمكن للموظف فتحها:
+                        </div>
+                        <div id="permissionMenusGrid" class="menu-perms-grid"></div>
+                        <button id="saveEmployeePermissionsBtn" type="button" class="btn btn-primary btn-full" onclick="saveEmployeePermissions()" style="margin-top:12px;">
+                            <i class="fa-solid fa-floppy-disk"></i> حفظ صلاحيات الموظف
                         </button>
                     </div>
+                    <div id="permissionFullAccessNote" class="employee-permission-note hidden">
+                        هذا الحساب مدير أو مشرف عام، ولديه صلاحيات كاملة تلقائياً.
+                    </div>
                 </div>
 
-                <div id="empPermissionsBox">
-                    <div class="perm-box">
-                        <label class="perm-check">
-                            <input type="checkbox" id="newEmpCanEdit">
-                            <span>سماح بالتعديل</span>
-                        </label>
-                        <label class="perm-check">
-                            <input type="checkbox" id="newEmpCanDelete">
-                            <span>سماح بالحذف</span>
-                        </label>
-                        <button type="button" class="btn btn-outline btn-sm" onclick="setAllMenuPerms(true)">تحديد الكل</button>
-                        <button type="button" class="btn btn-outline btn-sm" onclick="setAllMenuPerms(false)">إلغاء الكل</button>
+                <div class="card-box">
+                    <div class="card-title"><span><i class="fa-solid fa-list-check"></i> ملخص صلاحيات الموظفين</span></div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>الموظف</th>
+                                    <th>الأقسام المسموحة</th>
+                                    <th>التعديل</th>
+                                    <th>الحذف</th>
+                                    <th>إدارة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeePermissionsTableBody"></tbody>
+                        </table>
                     </div>
-
-                    <div style="margin-top:10px; font-size:12.5px; font-weight:800; color:var(--primary);">
-                        اختر الأقسام التي تظهر للموظف في القائمة الرئيسية:
-                    </div>
-                    <div id="newEmpMenusGrid" class="menu-perms-grid"></div>
-                </div>
-            </div>
-
-            <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-users-gear"></i> قائمة الموظفين والرواتب والصلاحيات</span></div>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>الاسم</th>
-                                <th>الراتب</th>
-                                <th>الدخول</th>
-                                <th>النوع</th>
-                                <th>الأقسام المسموحة</th>
-                                <th>تعديل / حذف</th>
-                                <th>الحالة</th>
-                                <th>تحكم</th>
-                            </tr>
-                        </thead>
-                        <tbody id="employeesTableBody"></tbody>
-                    </table>
                 </div>
             </div>
         </section>
@@ -1596,6 +1693,7 @@
                 <div>رقم الفاتورة: <span class="mono" id="prInvId">-</span></div>
                 <div>التاريخ: <span class="mono" id="prInvDate">-</span></div>
                 <div>الفرع: <strong id="prInvBranch">-</strong></div>
+                <div>العملة: <strong id="prInvCurrency">ريال يمني</strong></div>
             </div>
         </div>
 
@@ -1648,6 +1746,8 @@
 <script>
     const ADMIN_USER = "12006";
     const ADMIN_PASS = "5028611";
+    const CURRENCY_NAMES = { YER: 'ريال يمني', SAR: 'ريال سعودي', USD: 'دولار أمريكي' };
+    const CURRENCY_CODES = ['YER', 'SAR', 'USD'];
 
     const MAIN_MENU_ITEMS = [
         { key: 'salesTab', label: 'المبيعات والفواتير' },
@@ -1695,20 +1795,144 @@
     };
 
     function initMenuPermissionCheckboxes() {
-        const grid = document.getElementById('newEmpMenusGrid');
+        const grid = document.getElementById('permissionMenusGrid');
         if (!grid) return;
         grid.innerHTML = MAIN_MENU_ITEMS.map(m => `
             <label class="perm-check">
-                <input type="checkbox" class="emp-menu-cb" value="${m.key}" checked>
+                <input type="checkbox" class="emp-menu-cb" value="${m.key}">
                 <span>${m.label}</span>
             </label>
         `).join('');
     }
 
-    function setAllMenuPerms(checked) {
-        document.querySelectorAll('#newEmpMenusGrid .emp-menu-cb').forEach(cb => {
+    function setAllPermissionMenus(checked) {
+        document.querySelectorAll('#permissionMenusGrid .emp-menu-cb').forEach(cb => {
             cb.checked = checked;
         });
+    }
+
+    function switchEmployeePanel(panelId) {
+        const definition = document.getElementById('employeeDefinitionPanel');
+        const permissions = document.getElementById('employeePermissionsPanel');
+        const isDefinition = panelId === 'employeeDefinitionPanel';
+        definition.classList.toggle('hidden', !isDefinition);
+        permissions.classList.toggle('hidden', isDefinition);
+        document.getElementById('employeeDefinitionTabBtn').classList.toggle('active', isDefinition);
+        document.getElementById('employeePermissionsTabBtn').classList.toggle('active', !isDefinition);
+        if (!isDefinition) {
+            populateEmployeePermissionOptions();
+            loadEmployeePermissions();
+        }
+    }
+
+    function populateEmployeePermissionOptions() {
+        const sel = document.getElementById('permissionEmployeeSelect');
+        if (!sel) return;
+        const previous = sel.value;
+        const eligible = state.employees.filter(e => e.role !== 'admin' && e.role !== 'supervisor');
+        sel.innerHTML = '<option value="">اختر الموظف</option>' + eligible.map(e =>
+            `<option value="${e.id}">${e.fullName} — ${e.username}</option>`
+        ).join('');
+        if (previous && eligible.some(e => e.id === previous)) sel.value = previous;
+    }
+
+    function loadEmployeePermissions() {
+        const empId = document.getElementById('permissionEmployeeSelect')?.value || '';
+        const emp = state.employees.find(e => e.id === empId);
+        const editor = document.getElementById('permissionEditorBox');
+        const fullNote = document.getElementById('permissionFullAccessNote');
+        if (!emp) {
+            editor?.classList.add('hidden');
+            fullNote?.classList.add('hidden');
+            return;
+        }
+        if (hasFullAccess(emp)) {
+            editor?.classList.add('hidden');
+            fullNote?.classList.remove('hidden');
+            return;
+        }
+        fullNote?.classList.add('hidden');
+        editor?.classList.remove('hidden');
+        document.getElementById('permissionCanEdit').checked = Boolean(emp.canEdit);
+        document.getElementById('permissionCanDelete').checked = Boolean(emp.canDelete);
+        const allowed = getAllowedMenusForUser(emp);
+        document.querySelectorAll('#permissionMenusGrid .emp-menu-cb').forEach(cb => {
+            cb.checked = allowed.includes(cb.value);
+        });
+    }
+
+    async function saveEmployeePermissions() {
+        if (isBusy || !canManageUsers()) return;
+        const empId = document.getElementById('permissionEmployeeSelect').value;
+        const emp = state.employees.find(e => e.id === empId);
+        if (!emp || hasFullAccess(emp)) {
+            showToast('اختر موظفاً عادياً لتعديل صلاحياته');
+            return;
+        }
+        const allowedMenus = Array.from(document.querySelectorAll('#permissionMenusGrid .emp-menu-cb:checked')).map(cb => cb.value);
+        isBusy = true;
+        const btn = document.getElementById('saveEmployeePermissionsBtn');
+        btn.disabled = true;
+        try {
+            await db.collection('employees').doc(empId).update({
+                canEdit: document.getElementById('permissionCanEdit').checked,
+                canDelete: document.getElementById('permissionCanDelete').checked,
+                allowedMenus
+            });
+            showToast('تم حفظ صلاحيات الموظف');
+        } catch (e) {
+            showToast('تعذر حفظ الصلاحيات');
+        } finally {
+            isBusy = false;
+            btn.disabled = false;
+        }
+    }
+
+    function formatCurrency(amount, code = 'YER') {
+        const currencyName = CURRENCY_NAMES[code] || CURRENCY_NAMES.YER;
+        return `${formatMoney(amount)} ${currencyName}`;
+    }
+
+    function formatCurrencyBreakdown(records, amountField) {
+        const totals = { YER: 0, SAR: 0, USD: 0 };
+        records.forEach(record => {
+            const code = CURRENCY_CODES.includes(record.currency) ? record.currency : 'YER';
+            totals[code] += Number(record[amountField] || 0);
+        });
+        return CURRENCY_CODES.filter(code => totals[code] !== 0)
+            .map(code => `${formatMoney(totals[code])} ${code}`)
+            .join(' | ') || `0.00 YER`;
+    }
+
+    function getAllBranches() {
+        return state.branches.length ? state.branches : [{ id: 'main_branch', name: 'الفرع الرئيسي' }];
+    }
+
+    function getAssignedBranchId(user = currentUser) {
+        return user?.warehouseBranchId || user?.branchId || '';
+    }
+
+    function getAccessibleBranches() {
+        const all = getAllBranches();
+        if (!currentUser || hasFullAccess(currentUser)) return all;
+        const assignedId = getAssignedBranchId(currentUser);
+        return assignedId ? all.filter(branch => branch.id === assignedId) : [];
+    }
+
+    function isBranchAllowed(branchId, user = currentUser) {
+        if (!user || hasFullAccess(user)) return true;
+        const assignedId = getAssignedBranchId(user);
+        return Boolean(assignedId && branchId === assignedId);
+    }
+
+    function getScopedWarehouseItems() {
+        if (!currentUser || hasFullAccess(currentUser)) return state.warehouse;
+        const branchId = getAssignedBranchId(currentUser);
+        return branchId ? state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId) : [];
+    }
+
+    function recordIsInUserBranch(record) {
+        return !currentUser || hasFullAccess(currentUser) || isBranchAllowed(record.branchId || 'main_branch');
     }
 
     function getAllowedMenusForUser(user = currentUser) {
@@ -1732,6 +1956,10 @@
     }
 
     function openFullPage(tabId) {
+        if (tabId === 'employeesTab' && !canManageUsers(currentUser)) {
+            showToast('إدارة الموظفين والصلاحيات للمشرف العام والمدير فقط');
+            return;
+        }
         if (!canAccessMenu(tabId, currentUser)) {
             showToast('ليس لديك صلاحية الدخول إلى هذا القسم');
             return;
@@ -1911,7 +2139,8 @@
 
     function toggleEmployeePermBox() {
         const role = document.getElementById('newEmpRole').value;
-        document.getElementById('empPermissionsBox').classList.toggle('hidden', role !== 'cashier');
+        const warehouseGroup = document.getElementById('newEmpWarehouseGroup');
+        if (warehouseGroup) warehouseGroup.classList.toggle('hidden', role === 'admin' || role === 'supervisor');
     }
 
     function showToast(msg) {
@@ -1946,41 +2175,69 @@
 
     function computeSystemCashboxBalance(cb) {
         const opening = getCashboxOpening(cb);
+        const cashCurrency = CURRENCY_CODES.includes(cb.currency) ? cb.currency : 'YER';
         const cashSales = state.invoices
-            .filter(i => i.paymentType === 'cash' && i.cashboxId === cb.id)
+            .filter(i => i.paymentType === 'cash' && i.cashboxId === cb.id && (i.currency || 'YER') === cashCurrency)
             .reduce((s, i) => s + Number(i.netTotal || 0), 0);
 
         const receipts = state.vouchers
-            .filter(v => v.type === 'receipt' && v.cashboxId === cb.id)
+            .filter(v => v.type === 'receipt' && v.cashboxId === cb.id && (v.currency || cashCurrency) === cashCurrency)
             .reduce((s, v) => s + Number(v.amount || 0), 0);
 
         const payments = state.vouchers
-            .filter(v => v.type === 'payment' && v.cashboxId === cb.id)
+            .filter(v => v.type === 'payment' && v.cashboxId === cb.id && (v.currency || cashCurrency) === cashCurrency)
             .reduce((s, v) => s + Number(v.amount || 0), 0);
 
         const purchasesOut = state.purchases
-            .filter(p => p.cashboxId === cb.id)
+            .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
             .reduce((s, p) => s + Number(p.amount || 0), 0);
 
         return opening + cashSales + receipts - payments - purchasesOut;
     }
 
+    function getVoucherCurrency(voucher) {
+        if (CURRENCY_CODES.includes(voucher.currency)) return voucher.currency;
+        const cashbox = state.cashboxes.find(c => c.id === voucher.cashboxId);
+        return CURRENCY_CODES.includes(cashbox?.currency) ? cashbox.currency : 'YER';
+    }
+
+    function computeSystemCustomerBalances(cust) {
+        const totals = { YER: 0, SAR: 0, USD: 0 };
+        const matchesCustomer = (recordCustId, recordCustName) =>
+            (cust.id && recordCustId === cust.id) ||
+            (!recordCustId && recordCustName && cust.name && recordCustName.trim() === cust.name.trim());
+
+        state.invoices
+            .filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName))
+            .forEach(i => {
+                const code = CURRENCY_CODES.includes(i.currency) ? i.currency : 'YER';
+                totals[code] += Number(i.netTotal || 0);
+            });
+
+        state.vouchers
+            .filter(v => v.type === 'receipt' && matchesCustomer(v.customerId, v.customerName))
+            .forEach(v => {
+                const code = getVoucherCurrency(v);
+                totals[code] -= Number(v.amount || 0);
+            });
+
+        CURRENCY_CODES.forEach(code => { totals[code] = Math.max(0, totals[code]); });
+        return totals;
+    }
+
+    function formatCurrencyTotals(totals) {
+        return CURRENCY_CODES.filter(code => Number(totals[code] || 0) !== 0)
+            .map(code => `${formatMoney(totals[code])} ${code}`)
+            .join(' | ') || '0.00 YER';
+    }
+
+    function formatCustomerBalances(cust) {
+        return formatCurrencyTotals(computeSystemCustomerBalances(cust));
+    }
+
     function computeSystemCustomerBalance(cust) {
-        const creditInvoices = state.invoices
-            .filter(i => i.paymentType === 'credit' && (
-                (cust.id && i.customerId === cust.id) ||
-                (!i.customerId && i.customerName && cust.name && i.customerName.trim() === cust.name.trim())
-            ))
-            .reduce((s, i) => s + Number(i.netTotal || 0), 0);
-
-        const receipts = state.vouchers
-            .filter(v => v.type === 'receipt' && (
-                (cust.id && v.customerId === cust.id) ||
-                (!v.customerId && v.customerName && cust.name && v.customerName.trim() === cust.name.trim())
-            ))
-            .reduce((s, v) => s + Number(v.amount || 0), 0);
-
-        return Math.max(0, creditInvoices - receipts);
+        const totals = computeSystemCustomerBalances(cust);
+        return CURRENCY_CODES.reduce((sum, code) => sum + totals[code], 0);
     }
 
     async function loadCollection(name) {
@@ -2134,50 +2391,59 @@
             renderProfitsSection();
         }
         renderEmployeesTable();
+        renderEmployeePermissionsTable();
+        if (!document.getElementById('employeePermissionsPanel')?.classList.contains('hidden')) loadEmployeePermissions();
     }
 
     function populateDropdowns() {
-        const branchList = state.branches.length
-            ? state.branches
-            : [{ id: 'main_branch', name: 'الفرع الرئيسي' }];
+        const allBranches = getAllBranches();
+        const branchList = getAccessibleBranches();
+        const noBranchOption = '<option value="">لم يحدد المشرف مخزناً لهذا الموظف</option>';
+        const branchOptions = branchList.length
+            ? branchList.map(b => `<option value="${b.id}">${b.name}</option>`).join('')
+            : noBranchOption;
+        const allBranchOptions = allBranches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
 
-        const invBrSel = document.getElementById('invBranchSelect');
-        const purBrSel = document.getElementById('purBranchSelect');
-        const whBrSel = document.getElementById('whItemBranchSelect');
-        const qtyBrSel = document.getElementById('qtyBranchSelect');
-        const filterBrSel = document.getElementById('activeBranchFilter');
-        const fromBrSel = document.getElementById('transferFromBranch');
-        const toBrSel = document.getElementById('transferToBranch');
+        const selects = {
+            inv: document.getElementById('invBranchSelect'),
+            pur: document.getElementById('purBranchSelect'),
+            item: document.getElementById('whItemBranchSelect'),
+            qty: document.getElementById('qtyBranchSelect'),
+            filter: document.getElementById('activeBranchFilter'),
+            from: document.getElementById('transferFromBranch'),
+            to: document.getElementById('transferToBranch')
+        };
+        const previous = Object.fromEntries(Object.entries(selects).map(([key, el]) => [key, el?.value || '']));
 
-        const prevInvBr = invBrSel.value;
-        const prevPurBr = purBrSel.value;
-        const prevWhBr = whBrSel.value;
-        const prevQtyBr = qtyBrSel.value;
-        const prevFilterBr = filterBrSel.value;
-        const prevFromBr = fromBrSel.value;
-        const prevToBr = toBrSel.value;
+        ['inv', 'pur', 'item', 'qty', 'from', 'to'].forEach(key => {
+            if (selects[key]) selects[key].innerHTML = branchOptions;
+        });
+        if (selects.filter) {
+            selects.filter.innerHTML = (currentUser && !hasFullAccess(currentUser) ? '' : '<option value="ALL">جميع الفروع</option>') + branchOptions;
+        }
 
-        const brOpts = branchList.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-        invBrSel.innerHTML = brOpts;
-        purBrSel.innerHTML = brOpts;
-        whBrSel.innerHTML = brOpts;
-        qtyBrSel.innerHTML = brOpts;
-        filterBrSel.innerHTML = '<option value="ALL">جميع الفروع</option>' + brOpts;
-        fromBrSel.innerHTML = brOpts;
-        toBrSel.innerHTML = brOpts;
+        const restore = (key, value) => {
+            const sel = selects[key];
+            if (!sel) return;
+            if (value && Array.from(sel.options).some(o => o.value === value)) sel.value = value;
+            else if (sel.options.length) sel.selectedIndex = 0;
+        };
+        Object.keys(selects).forEach(key => {
+            restore(key, previous[key]);
+            if (selects[key]) selects[key].disabled = Boolean(currentUser && !hasFullAccess(currentUser));
+        });
 
-        if (prevInvBr && branchList.some(b => b.id === prevInvBr)) invBrSel.value = prevInvBr;
-        if (prevPurBr && branchList.some(b => b.id === prevPurBr)) purBrSel.value = prevPurBr;
-        if (prevWhBr && branchList.some(b => b.id === prevWhBr)) whBrSel.value = prevWhBr;
-        if (prevQtyBr && branchList.some(b => b.id === prevQtyBr)) qtyBrSel.value = prevQtyBr;
-        if (prevFilterBr) filterBrSel.value = prevFilterBr;
-        if (prevFromBr && branchList.some(b => b.id === prevFromBr)) fromBrSel.value = prevFromBr;
-        if (prevToBr && branchList.some(b => b.id === prevToBr)) toBrSel.value = prevToBr;
-        else if (branchList.length > 1) toBrSel.value = branchList[1].id;
+        const empBranchSel = document.getElementById('newEmpWarehouseBranch');
+        if (empBranchSel) {
+            const prior = empBranchSel.value;
+            empBranchSel.innerHTML = '<option value="">اختر المخزن</option>' + allBranchOptions;
+            if (prior && allBranches.some(b => b.id === prior)) empBranchSel.value = prior;
+        }
 
         renderWarehouseCatalogDropdown();
         populateQuantityItems();
         populateTransferItems();
+        populateEmployeePermissionOptions();
 
         const cbSelInv = document.getElementById('invCashboxSelect');
         const cbSelPur = document.getElementById('purCashboxSelect');
@@ -2187,7 +2453,7 @@
         const prevCbVch = cbSelVch.value;
 
         const cbOpts = state.cashboxes.length
-            ? state.cashboxes.map(c => `<option value="${c.id}">${c.name} (${formatMoney(computeSystemCashboxBalance(c))})</option>`).join('')
+            ? state.cashboxes.map(c => `<option value="${c.id}">${c.name} — ${CURRENCY_NAMES[c.currency || 'YER']} (${formatMoney(computeSystemCashboxBalance(c))})</option>`).join('')
             : '<option value="">أضف صندوقاً أولاً</option>';
         cbSelInv.innerHTML = cbOpts;
         cbSelPur.innerHTML = cbOpts;
@@ -2213,11 +2479,13 @@
     function renderWarehouseCatalogDropdown() {
         const sel = document.getElementById('warehouseCatalogSelect');
         if (!sel) return;
-        const branchId = document.getElementById('invBranchSelect').value || 'main_branch';
+        const branchId = document.getElementById('invBranchSelect').value || '';
         const q = (document.getElementById('warehouseItemSearch').value || '').trim().toLowerCase();
-
+        if (!branchId || !isBranchAllowed(branchId)) {
+            sel.innerHTML = '<option value="">لم يحدد المشرف مخزناً لهذا الموظف</option>';
+            return;
+        }
         let items = state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId);
-        if (!items.length) items = state.warehouse.slice();
 
         if (q) {
             items = items.filter(w => (w.name || '').toLowerCase().includes(q));
@@ -2255,7 +2523,9 @@
         if (!sel) return;
         const prevVal = sel.value;
 
-        const items = state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId);
+        const items = isBranchAllowed(branchId)
+            ? state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId)
+            : [];
         sel.innerHTML = items.length
             ? items.map(w => `<option value="${w.id}">${w.name} (${w.unit || 'حبة'}) — الحالي: ${formatQty(w.qty || 0)}</option>`).join('')
             : '<option value="">لا توجد أصناف في هذا الفرع (أضف صنفاً أولاً)</option>';
@@ -2268,21 +2538,24 @@
 
     function fillSelectedItemCurrentQty() {
         const itemId = document.getElementById('qtyItemSelect')?.value;
-        const priceInp = document.getElementById('qtyItemPriceInput');
         const item = state.warehouse.find(w => w.id === itemId);
-        if (item && priceInp && !priceInp.value) {
-            priceInp.placeholder = `الحالي: ${formatMoney(item.price || 0)}`;
+        if (item) {
+            const branchSelect = document.getElementById('qtyBranchSelect');
+            if (branchSelect && item.branchId) branchSelect.value = item.branchId;
         }
     }
 
     async function saveStockQuantity() {
         if (isBusy) return;
         const btn = document.getElementById('saveQtyBtn');
-        const branchId = document.getElementById('qtyBranchSelect').value || 'main_branch';
+        const branchId = document.getElementById('qtyBranchSelect').value || '';
         const itemId = document.getElementById('qtyItemSelect').value;
         const mode = document.getElementById('qtyUpdateMode').value;
         const qtyVal = Number(document.getElementById('qtyInputValue').value);
-        const priceRaw = document.getElementById('qtyItemPriceInput').value.trim();
+        if (!branchId || !isBranchAllowed(branchId)) {
+            showToast('لم يحدد المشرف مخزناً لهذا الموظف');
+            return;
+        }
 
         const item = state.warehouse.find(w => w.id === itemId);
         if (!item) {
@@ -2294,23 +2567,19 @@
             return;
         }
 
+        if (!isBranchAllowed(item.branchId || 'main_branch')) {
+            showToast('هذا الصنف خارج المخزن المحدد لك');
+            return;
+        }
         const currentQty = Number(item.qty || 0);
         const nextQty = mode === 'set' ? qtyVal : (currentQty + qtyVal);
         const updatePayload = { qty: nextQty };
-
-        if (priceRaw !== '') {
-            const pVal = Number(priceRaw);
-            if (!isNaN(pVal) && pVal >= 0) {
-                updatePayload.price = pVal;
-            }
-        }
 
         isBusy = true;
         btn.disabled = true;
         try {
             await db.collection('warehouse').doc(item.id).update(updatePayload);
             document.getElementById('qtyInputValue').value = '1';
-            document.getElementById('qtyItemPriceInput').value = '';
             showToast(`تم تحديث كمية ${item.name} إلى ${formatQty(nextQty)}`);
         } catch (e) {
             showToast('تعذر تحديث الكمية');
@@ -2323,8 +2592,9 @@
     function renderQuantitiesPreviewTable() {
         const tbody = document.getElementById('quantitiesPreviewBody');
         if (!tbody) return;
-        tbody.innerHTML = state.warehouse.length
-            ? state.warehouse.map(w => `
+        const visibleWarehouse = getScopedWarehouseItems();
+        tbody.innerHTML = visibleWarehouse.length
+            ? visibleWarehouse.map(w => `
                 <tr>
                     <td>${w.branchName || 'الفرع الرئيسي'}</td>
                     <td><strong>${w.name}</strong></td>
@@ -2333,12 +2603,16 @@
                     <td><span class="mono">${formatMoney(w.price || 0)}</span></td>
                 </tr>
             `).join('')
-            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا توجد أصناف مسجلة</td></tr>';
+            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا توجد أصناف مسجلة في المخزن المحدد</td></tr>';
     }
 
     function populateTransferItems() {
-        const fromBranchId = document.getElementById('transferFromBranch').value || 'main_branch';
+        const fromBranchId = document.getElementById('transferFromBranch').value || '';
         const sel = document.getElementById('transferItemSelect');
+        if (!fromBranchId || !isBranchAllowed(fromBranchId)) {
+            sel.innerHTML = '<option value="">لم يحدد المشرف مخزناً لهذا الموظف</option>';
+            return;
+        }
         const prevVal = sel.value;
 
         const availableItems = state.warehouse.filter(
@@ -2357,8 +2631,12 @@
     async function transferWarehouseStock() {
         if (isBusy) return;
         const btn = document.getElementById('executeTransferBtn');
-        const fromBranchId = document.getElementById('transferFromBranch').value || 'main_branch';
-        const toBranchId = document.getElementById('transferToBranch').value || 'main_branch';
+        const fromBranchId = document.getElementById('transferFromBranch').value || '';
+        const toBranchId = document.getElementById('transferToBranch').value || '';
+        if (!fromBranchId || !toBranchId || !isBranchAllowed(fromBranchId) || !isBranchAllowed(toBranchId)) {
+            showToast('النقل مسموح فقط داخل المخزن المحدد لك');
+            return;
+        }
         const itemId = document.getElementById('transferItemSelect').value;
         const qtyToMove = Number(document.getElementById('transferQty').value || 0);
 
@@ -2368,6 +2646,10 @@
         }
 
         const sourceItem = state.warehouse.find(w => w.id === itemId);
+        if (sourceItem && !isBranchAllowed(sourceItem.branchId || 'main_branch')) {
+            showToast('هذا الصنف خارج المخزن المحدد لك');
+            return;
+        }
         if (!sourceItem) {
             showToast('اختر الصنف المراد نقله');
             return;
@@ -2424,18 +2706,25 @@
     }
 
     function renderStats() {
-        const sales = state.invoices.reduce((s, i) => s + Number(i.netTotal || 0), 0);
-        const cash = state.cashboxes.reduce((s, c) => s + computeSystemCashboxBalance(c), 0);
-        const debts = state.customers.reduce((s, c) => s + computeSystemCustomerBalance(c), 0);
-        const totalStockQty = state.warehouse.reduce((s, w) => s + Number(w.qty || 0), 0);
-        const totalStockVal = state.warehouse.reduce((s, w) => s + (Number(w.qty || 0) * Number(w.price || 0)), 0);
-        const totalPurchases = state.purchases.reduce((s, p) => s + Number(p.amount || 0), 0);
+        const visibleInvoices = state.invoices.filter(recordIsInUserBranch);
+        const visiblePurchases = state.purchases.filter(recordIsInUserBranch);
+        const cashTotals = { YER: 0, SAR: 0, USD: 0 };
+        state.cashboxes.forEach(c => { const code = CURRENCY_CODES.includes(c.currency) ? c.currency : 'YER'; cashTotals[code] += computeSystemCashboxBalance(c); });
+        const cash = CURRENCY_CODES.filter(code => cashTotals[code] !== 0).map(code => `${formatMoney(cashTotals[code])} ${code}`).join(' | ') || '0.00 YER';
+        const debtTotals = { YER: 0, SAR: 0, USD: 0 };
+        state.customers.forEach(c => {
+            const balances = computeSystemCustomerBalances(c);
+            CURRENCY_CODES.forEach(code => { debtTotals[code] += balances[code]; });
+        });
+        const visibleWarehouse = getScopedWarehouseItems();
+        const totalStockQty = visibleWarehouse.reduce((s, w) => s + Number(w.qty || 0), 0);
+        const totalStockVal = visibleWarehouse.reduce((s, w) => s + (Number(w.qty || 0) * Number(w.price || 0)), 0);
 
-        document.getElementById('kpiTotalSales').textContent = formatMoney(sales);
-        document.getElementById('kpiTotalCash').textContent = formatMoney(cash);
-        document.getElementById('kpiTotalReceivables').textContent = formatMoney(debts);
+        document.getElementById('kpiTotalSales').textContent = formatCurrencyBreakdown(visibleInvoices, 'netTotal');
+        document.getElementById('kpiTotalCash').textContent = cash;
+        document.getElementById('kpiTotalReceivables').textContent = formatCurrencyTotals(debtTotals);
         document.getElementById('kpiWarehouseStock').textContent = formatQty(totalStockQty);
-        document.getElementById('purchasesTabTotal').textContent = formatMoney(totalPurchases);
+        document.getElementById('purchasesTabTotal').textContent = formatCurrencyBreakdown(visiblePurchases, 'amount');
         document.getElementById('warehouseTotalValueBadge').textContent = `قيمة المخزون: ${formatMoney(totalStockVal)}`;
     }
 
@@ -2443,11 +2732,16 @@
         if (isBusy) return;
         const btn = document.getElementById('savePurchaseBtn');
         const kind = document.getElementById('purKind').value || 'purchase';
-        const branchId = document.getElementById('purBranchSelect').value || 'main_branch';
+        const branchId = document.getElementById('purBranchSelect').value || '';
+        if (!branchId || !isBranchAllowed(branchId)) {
+            showToast('لم يحدد المشرف مخزناً لهذا الموظف');
+            return;
+        }
         const branchObj = state.branches.find(b => b.id === branchId);
         const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
         const cashboxId = document.getElementById('purCashboxSelect').value;
         const amount = Number(document.getElementById('purAmount').value || 0);
+        const currency = document.getElementById('purCurrency').value || 'YER';
         const title = document.getElementById('purTitle').value.trim();
         const addQty = Number(document.getElementById('purAddQty').value || 0);
         const unit = document.getElementById('purUnit').value || 'حبة';
@@ -2465,6 +2759,10 @@
             showToast('اختر الصندوق');
             return;
         }
+        if ((cashbox.currency || 'YER') !== currency) {
+            showToast('عملة المشتريات يجب أن تطابق عملة الصندوق المختار');
+            return;
+        }
 
         isBusy = true;
         btn.disabled = true;
@@ -2479,6 +2777,8 @@
                 branchName,
                 cashboxId: cashbox.id,
                 cashboxName: cashbox.name,
+                currency,
+                currencyName: CURRENCY_NAMES[currency],
                 title,
                 amount,
                 addQty: shouldAddToWarehouse ? addQty : 0,
@@ -2550,6 +2850,7 @@
         if (!tbody) return;
         const q = (document.getElementById('purchaseSearchInput')?.value || '').toLowerCase().trim();
         const list = state.purchases
+            .filter(p => recordIsInUserBranch(p))
             .filter(p =>
                 (p.title || '').toLowerCase().includes(q) ||
                 (p.branchName || '').toLowerCase().includes(q) ||
@@ -2569,14 +2870,15 @@
                     </td>
                     <td>${p.cashboxName || '-'}</td>
                     <td>${Number(p.addQty || 0) > 0 ? `<span class="badge badge-cash mono">${formatQty(p.addQty)}</span> ${p.unit || 'حبة'}` : '<span style="color:var(--text-muted);">-</span>'}</td>
-                    <td><span class="mono" style="color:var(--danger);">${formatMoney(p.amount)}</span></td>
+                    <td>${CURRENCY_NAMES[p.currency || 'YER'] || CURRENCY_NAMES.YER}</td>
+                    <td><span class="mono" style="color:var(--danger);">${formatCurrency(p.amount, p.currency || 'YER')}</span></td>
                     <td>${p.employee || '-'}</td>
                     <td>
                         ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deletePurchaseRecord('${p.id}')"><i class="fa-solid fa-trash"></i></button>` : '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>'}
                     </td>
                 </tr>
             `).join('')
-            : '<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">لا توجد مشتروات أو مصروفات مسجلة</td></tr>';
+            : '<tr><td colspan="10" style="text-align:center; color:var(--text-muted);">لا توجد مشتروات أو مصروفات مسجلة</td></tr>';
     }
 
     function toggleInvoicePaymentFields() {
@@ -2608,6 +2910,7 @@
             <select class="form-control item-unit">
                 <option value="حبة" ${unitVal === 'حبة' ? 'selected' : ''}>حبة</option>
                 <option value="شدة" ${unitVal === 'شدة' ? 'selected' : ''}>شدة</option>
+                <option value="وار" ${unitVal === 'وار' ? 'selected' : ''}>وار</option>
             </select>
             <input type="number" step="0.01" inputmode="decimal" class="form-control item-qty num-input" value="${qtyVal}" min="0.01" placeholder="الكمية" oninput="recalculateInvoiceTotal()">
             <input type="number" step="0.01" inputmode="decimal" class="form-control item-price num-input" value="${priceVal}" min="0" placeholder="السعر" oninput="recalculateInvoiceTotal()">
@@ -2628,11 +2931,11 @@
             const lineTotal = q * p;
             subtotal += lineTotal;
             const lineBox = r.querySelector('.row-line-total');
-            if (lineBox) lineBox.textContent = formatMoney(lineTotal);
+            if (lineBox) lineBox.textContent = `${formatMoney(lineTotal)} ${document.getElementById('invCurrency')?.value || 'YER'}`;
         });
         const discount = Number(document.getElementById('invDiscount').value || 0);
         const net = Math.max(0, subtotal - discount);
-        document.getElementById('invNetTotalDisplay').textContent = formatMoney(net);
+        document.getElementById('invNetTotalDisplay').textContent = `${formatMoney(net)} ${document.getElementById('invCurrency')?.value || 'YER'}`;
         return net;
     }
 
@@ -2644,6 +2947,8 @@
         document.getElementById('prInvCustomer').textContent = inv.customerName || '-';
         document.getElementById('prInvType').textContent = inv.paymentType === 'cash' ? `نقدي (${inv.cashboxName || 'الصندوق'})` : 'آجل';
         document.getElementById('prInvEmp').textContent = inv.employee || '-';
+        const invCurrency = CURRENCY_NAMES[inv.currency || 'YER'] || CURRENCY_NAMES.YER;
+        document.getElementById('prInvCurrency').textContent = invCurrency;
 
         const items = Array.isArray(inv.items) ? inv.items : [];
         document.getElementById('prInvItemsBody').innerHTML = items.length
@@ -2654,15 +2959,15 @@
                         <td>${it.name}</td>
                         <td>${it.unit || 'حبة'}</td>
                         <td><span class="mono">${formatQty(it.qty)}</span></td>
-                        <td><span class="mono">${formatMoney(it.price)}</span></td>
-                        <td><span class="mono">${formatMoney(rowTotal)}</span></td>
+                        <td><span class="mono">${formatMoney(it.price)} ${inv.currency || 'YER'}</span></td>
+                        <td><span class="mono">${formatMoney(rowTotal)} ${inv.currency || 'YER'}</span></td>
                     </tr>
                 `;
             }).join('')
             : '<tr><td colspan="5" style="text-align:center;">لا توجد أصناف</td></tr>';
 
-        document.getElementById('prInvDiscount').textContent = formatMoney(inv.discount || 0);
-        document.getElementById('prInvNet').textContent = formatMoney(inv.netTotal || 0);
+        document.getElementById('prInvDiscount').textContent = `${formatMoney(inv.discount || 0)} ${CURRENCY_NAMES[inv.currency || 'YER'] || CURRENCY_NAMES.YER}`;
+        document.getElementById('prInvNet').textContent = `${formatMoney(inv.netTotal || 0)} ${CURRENCY_NAMES[inv.currency || 'YER'] || CURRENCY_NAMES.YER}`;
 
         const notesRow = document.getElementById('prInvNotesRow');
         if (inv.notes) {
@@ -2693,6 +2998,11 @@
         const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
 
         const paymentType = document.getElementById('invPaymentType').value;
+        const currency = document.getElementById('invCurrency').value || 'YER';
+        if (!branchId || !isBranchAllowed(branchId)) {
+            showToast('لا يمكنك إصدار فاتورة من خارج المخزن المحدد من المشرف');
+            return;
+        }
         const cashboxId = document.getElementById('invCashboxSelect').value;
         const customerId = document.getElementById('invCustomerSelect').value;
         const discount = Number(document.getElementById('invDiscount').value || 0);
@@ -2724,6 +3034,10 @@
             showToast('اختر الصندوق');
             return;
         }
+        if (paymentType === 'cash' && (cashbox.currency || 'YER') !== currency) {
+            showToast('عملة الفاتورة يجب أن تطابق عملة الصندوق المختار');
+            return;
+        }
 
         isBusy = true;
         btn.disabled = true;
@@ -2742,6 +3056,8 @@
                 customerId: customer.id,
                 customerName: customer.name,
                 paymentType,
+                currency,
+                currencyName: CURRENCY_NAMES[currency],
                 cashboxId: cashbox ? cashbox.id : '',
                 cashboxName: cashbox ? cashbox.name : 'آجل',
                 items,
@@ -2823,6 +3139,7 @@
     function renderInvoicesTable() {
         const q = (document.getElementById('invoiceSearchInput').value || '').toLowerCase().trim();
         const list = state.invoices
+            .filter(i => recordIsInUserBranch(i))
             .filter(i =>
                 (i.id || '').toLowerCase().includes(q) ||
                 (i.customerName || '').toLowerCase().includes(q) ||
@@ -2844,7 +3161,8 @@
                         <td style="max-width:190px;">${itemsSummary}</td>
                         <td style="max-width:190px; font-weight:700;">${stmtText}</td>
                         <td>${i.paymentType === 'cash' ? '<span class="badge badge-cash">نقدي</span>' : '<span class="badge badge-credit">آجل</span>'}</td>
-                        <td><span class="mono">${formatMoney(i.netTotal)}</span></td>
+                        <td>${CURRENCY_NAMES[i.currency || 'YER'] || CURRENCY_NAMES.YER}</td>
+                        <td><span class="mono">${formatCurrency(i.netTotal, i.currency || 'YER')}</span></td>
                         <td>${i.employee || '-'}</td>
                         <td style="white-space:nowrap;">
                             <button class="btn btn-outline btn-sm" onclick="printInvoiceById('${i.id}')" title="طباعة"><i class="fa-solid fa-print"></i></button>
@@ -2854,7 +3172,7 @@
                     </tr>
                 `;
             }).join('')
-            : '<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">لا توجد فواتير</td></tr>';
+            : '<tr><td colspan="10" style="text-align:center; color:var(--text-muted);">لا توجد فواتير</td></tr>';
     }
 
     function toggleVoucherCustomerField() {
@@ -2898,6 +3216,7 @@
                 date: new Date().toISOString().split('T')[0],
                 cashboxId: cashbox.id,
                 cashboxName: cashbox.name,
+                currency: CURRENCY_CODES.includes(cashbox.currency) ? cashbox.currency : 'YER',
                 customerId: customer ? customer.id : '',
                 customerName: customer ? customer.name : 'عام',
                 amount,
@@ -2966,7 +3285,7 @@
                         <td>${v.cashboxName || '-'}</td>
                         <td>${v.customerName || '-'}</td>
                         <td style="font-weight:700;">${v.note || defaultNote}</td>
-                        <td><span class="mono">${formatMoney(v.amount)}</span></td>
+                        <td><span class="mono">${formatMoney(v.amount)} ${getVoucherCurrency(v)}</span></td>
                         <td>${v.employee || '-'}</td>
                         <td>
                             ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editVoucherNote('${v.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
@@ -2984,6 +3303,7 @@
         const btn = document.getElementById('saveCashboxBtn');
         const name = document.getElementById('newCashboxName').value.trim();
         const opening = Number(document.getElementById('newCashboxOpening').value || 0);
+        const currency = document.getElementById('newCashboxCurrency').value || 'YER';
         if (!name) {
             showToast('أدخل اسم الصندوق');
             return;
@@ -2996,11 +3316,13 @@
             await db.collection('cashboxes').doc(id).set({
                 id,
                 name,
+                currency,
                 openingBalance: opening,
                 balance: opening
             });
             document.getElementById('newCashboxName').value = '';
             document.getElementById('newCashboxOpening').value = '0.00';
+            document.getElementById('newCashboxCurrency').value = 'YER';
             showToast('تمت إضافة الصندوق');
         } finally {
             isBusy = false;
@@ -3046,10 +3368,10 @@
                     <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
                         <div>
                             <strong>${c.name}</strong>
-                            <div style="font-size:11px; color:var(--text-muted);">رصيد افتتاحي: <span class="mono">${formatMoney(opening)}</span></div>
+                            <div style="font-size:11px; color:var(--text-muted);">${CURRENCY_NAMES[c.currency || 'YER']} — رصيد افتتاحي: <span class="mono">${formatMoney(opening)}</span></div>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <span class="mono" style="color:var(--success); font-size:15px;">${formatMoney(sysBal)}</span>
+                            <span class="mono" style="color:var(--success); font-size:15px;">${formatMoney(sysBal)} ${c.currency || 'YER'}</span>
                             ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editCashboxOpening('${c.id}')" title="تعديل الرصيد الافتتاحي"><i class="fa-solid fa-pen"></i></button>` : ''}
                         </div>
                     </div>
@@ -3059,7 +3381,10 @@
     }
 
     async function createBranch() {
-        if (isBusy) return;
+        if (isBusy || !canManageUsers()) {
+            showToast('إدارة الفروع للمشرف العام والمدير فقط');
+            return;
+        }
         const btn = document.getElementById('saveBranchBtn');
         const name = document.getElementById('newBranchName').value.trim();
         if (!name) {
@@ -3080,7 +3405,10 @@
     }
 
     async function editBranchItem(branchId) {
-        if (isBusy) return;
+        if (isBusy || !canManageUsers()) {
+            showToast('إدارة الفروع للمشرف العام والمدير فقط');
+            return;
+        }
         if (!canEditRecord()) {
             showToast('ليس لديك صلاحية التعديل');
             return;
@@ -3095,9 +3423,11 @@
         try {
             await db.collection('branches').doc(branchId).update({ name: cleanName });
             const relatedWh = state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId);
-            await Promise.all(
-                relatedWh.map(w => db.collection('warehouse').doc(w.id).update({ branchName: cleanName }))
-            );
+            const relatedEmployees = state.employees.filter(e => getAssignedBranchId(e) === branchId);
+            await Promise.all([
+                ...relatedWh.map(w => db.collection('warehouse').doc(w.id).update({ branchName: cleanName })),
+                ...relatedEmployees.map(e => db.collection('employees').doc(e.id).update({ warehouseBranchName: cleanName }))
+            ]);
             showToast('تم تعديل اسم الفرع');
         } finally {
             isBusy = false;
@@ -3105,7 +3435,10 @@
     }
 
     async function deleteBranchItem(branchId) {
-        if (isBusy) return;
+        if (isBusy || !canManageUsers()) {
+            showToast('إدارة الفروع للمشرف العام والمدير فقط');
+            return;
+        }
         if (!canDeleteRecord()) {
             showToast('ليس لديك صلاحية الحذف');
             return;
@@ -3131,16 +3464,19 @@
     function renderBranchesChips() {
         const container = document.getElementById('branchesListChips');
         if (!container) return;
-        if (!state.branches.length) {
-            container.innerHTML = '<span class="branch-chip"><i class="fa-solid fa-store"></i> الفرع الرئيسي</span>';
+        const branchTools = document.getElementById('branchManagementTools');
+        if (branchTools) branchTools.classList.toggle('hidden', !canManageUsers());
+        const visibleBranches = getAccessibleBranches();
+        if (!visibleBranches.length) {
+            container.innerHTML = '<span class="branch-chip">لم يحدد المشرف مخزناً لهذا الموظف</span>';
             return;
         }
-        container.innerHTML = state.branches.map(b => `
+        container.innerHTML = visibleBranches.map(b => `
             <div class="branch-chip">
                 <i class="fa-solid fa-store" style="color:var(--primary);"></i>
                 <span>${b.name}</span>
-                ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" style="padding:3px 7px;" onclick="editBranchItem('${b.id}')" title="تعديل"><i class="fa-solid fa-pen"></i></button>` : ''}
-                ${canDeleteRecord() ? `<button type="button" class="btn btn-danger btn-sm" style="padding:3px 7px;" onclick="deleteBranchItem('${b.id}')" title="حذف"><i class="fa-solid fa-trash"></i></button>` : ''}
+                ${canManageUsers() ? `<button type="button" class="btn btn-outline btn-sm" style="padding:3px 7px;" onclick="editBranchItem('${b.id}')" title="تعديل"><i class="fa-solid fa-pen"></i></button>` : ''}
+                ${canManageUsers() ? `<button type="button" class="btn btn-danger btn-sm" style="padding:3px 7px;" onclick="deleteBranchItem('${b.id}')" title="حذف"><i class="fa-solid fa-trash"></i></button>` : ''}
             </div>
         `).join('');
     }
@@ -3148,7 +3484,11 @@
     async function saveWarehouseItem() {
         if (isBusy) return;
         const btn = document.getElementById('saveWarehouseItemBtn');
-        const branchId = document.getElementById('whItemBranchSelect').value || 'main_branch';
+        const branchId = document.getElementById('whItemBranchSelect').value || '';
+        if (!branchId || !isBranchAllowed(branchId)) {
+            showToast('لم يحدد المشرف مخزناً لهذا الموظف');
+            return;
+        }
         const branchObj = state.branches.find(b => b.id === branchId);
         const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
 
@@ -3220,9 +3560,10 @@
     function renderWarehouseTable() {
         const tbody = document.getElementById('warehouseTableBody');
         const selectedBranch = document.getElementById('activeBranchFilter').value || 'ALL';
+        const scopedWarehouse = getScopedWarehouseItems();
         const filtered = selectedBranch === 'ALL'
-            ? state.warehouse
-            : state.warehouse.filter(w => (w.branchId || 'main_branch') === selectedBranch);
+            ? scopedWarehouse
+            : scopedWarehouse.filter(w => (w.branchId || 'main_branch') === selectedBranch);
 
         tbody.innerHTML = filtered.length
             ? filtered.map(w => {
@@ -3312,7 +3653,7 @@
                     <tr>
                         <td><strong>${c.name}</strong></td>
                         <td>${c.phone || '-'}</td>
-                        <td><span class="mono" style="color:${sysBal > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(sysBal)}</span></td>
+                        <td><span class="mono" style="color:${sysBal > 0 ? 'var(--warning)' : 'var(--success)'};">${formatCustomerBalances(c)}</span></td>
                         <td style="white-space:nowrap;">
                             <button class="btn btn-outline btn-sm" onclick="openCustomerStatement('${c.id}')" title="كشف حساب"><i class="fa-solid fa-file-lines"></i> كشف</button>
                             ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editCustomerItem('${c.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
@@ -3344,7 +3685,6 @@
             (!recordCustId && recordCustName && cust.name && recordCustName.trim() === cust.name.trim());
 
         const entries = [];
-
         state.invoices
             .filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName))
             .forEach(i => {
@@ -3353,6 +3693,7 @@
                     date: i.date || '-',
                     ref: i.id || '-',
                     desc: i.notes || `عليكم فاتورة مبيعات برقم ${refDisplay}`,
+                    currency: CURRENCY_CODES.includes(i.currency) ? i.currency : 'YER',
                     debit: Number(i.netTotal || 0),
                     credit: 0,
                     sortKey: String(i.id || '')
@@ -3367,6 +3708,7 @@
                     date: v.date || '-',
                     ref: v.id || '-',
                     desc: v.note || `لكم سند قبض برقم ${refDisplay}`,
+                    currency: getVoucherCurrency(v),
                     debit: 0,
                     credit: Number(v.amount || 0),
                     sortKey: String(v.id || '')
@@ -3379,23 +3721,24 @@
             return a.sortKey.localeCompare(b.sortKey);
         });
 
-        let runningBalance = 0;
-        let totalDebit = 0;
-        let totalCredit = 0;
+        const running = { YER: 0, SAR: 0, USD: 0 };
+        const totalDebit = { YER: 0, SAR: 0, USD: 0 };
+        const totalCredit = { YER: 0, SAR: 0, USD: 0 };
 
         const rowsHtml = entries.length
             ? entries.map(en => {
-                totalDebit += en.debit;
-                totalCredit += en.credit;
-                runningBalance += (en.debit - en.credit);
+                const code = en.currency || 'YER';
+                totalDebit[code] += en.debit;
+                totalCredit[code] += en.credit;
+                running[code] += en.debit - en.credit;
                 return `
                     <tr>
                         <td><span class="mono">${en.date}</span></td>
                         <td><span class="mono">${en.ref}</span></td>
                         <td>${en.desc}</td>
-                        <td>${en.debit > 0 ? `<span class="mono" style="color:var(--warning);">${formatMoney(en.debit)}</span>` : '<span class="mono">0.00</span>'}</td>
-                        <td>${en.credit > 0 ? `<span class="mono" style="color:var(--success);">${formatMoney(en.credit)}</span>` : '<span class="mono">0.00</span>'}</td>
-                        <td><span class="mono" style="color:${runningBalance > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(runningBalance)}</span></td>
+                        <td>${en.debit > 0 ? `<span class="mono" style="color:var(--warning);">${formatMoney(en.debit)} ${code}</span>` : '<span class="mono">0.00</span>'}</td>
+                        <td>${en.credit > 0 ? `<span class="mono" style="color:var(--success);">${formatMoney(en.credit)} ${code}</span>` : '<span class="mono">0.00</span>'}</td>
+                        <td><span class="mono" style="color:${running[code] > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(running[code])} ${code}</span></td>
                     </tr>
                 `;
             }).join('')
@@ -3405,16 +3748,15 @@
         document.getElementById('pdfStmtCustName').textContent = cust.name;
         document.getElementById('pdfStmtCustPhone').textContent = cust.phone || '-';
         document.getElementById('pdfStmtDate').textContent = new Date().toISOString().split('T')[0];
-
-        document.getElementById('stmtTotalDebit').textContent = formatMoney(totalDebit);
-        document.getElementById('stmtTotalCredit').textContent = formatMoney(totalCredit);
-        document.getElementById('stmtFinalBalance').textContent = formatMoney(Math.max(0, totalDebit - totalCredit));
+        document.getElementById('stmtTotalDebit').textContent = formatCurrencyTotals(totalDebit);
+        document.getElementById('stmtTotalCredit').textContent = formatCurrencyTotals(totalCredit);
+        const finalBalances = { YER: 0, SAR: 0, USD: 0 };
+        CURRENCY_CODES.forEach(code => { finalBalances[code] = Math.max(0, totalDebit[code] - totalCredit[code]); });
+        document.getElementById('stmtFinalBalance').textContent = formatCurrencyTotals(finalBalances);
         document.getElementById('customerStatementBody').innerHTML = rowsHtml;
 
         card.classList.remove('hidden');
-        if (shouldScroll) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        if (shouldScroll) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function exportStatementPDF() {
@@ -3492,29 +3834,33 @@
     }
 
     async function createEmployee() {
-        if (isBusy) return;
+        if (isBusy || !canManageUsers()) return;
         const btn = document.getElementById('saveEmployeeBtn');
         const fullName = document.getElementById('newEmpFullName').value.trim();
         const salary = Number(document.getElementById('newEmpSalary').value || 0);
         const username = document.getElementById('newEmpUsername').value.trim();
         const password = document.getElementById('newEmpPassword').value.trim();
         const role = document.getElementById('newEmpRole').value;
-        const isFull = role === 'admin' || role === 'supervisor';
-        const canEdit = isFull ? true : document.getElementById('newEmpCanEdit').checked;
-        const canDelete = isFull ? true : document.getElementById('newEmpCanDelete').checked;
-
-        const allowedMenus = isFull
-            ? MAIN_MENU_ITEMS.map(m => m.key)
-            : Array.from(document.querySelectorAll('#newEmpMenusGrid .emp-menu-cb:checked')).map(cb => cb.value);
+        const warehouseBranchId = (role === 'admin' || role === 'supervisor')
+            ? ''
+            : document.getElementById('newEmpWarehouseBranch').value;
+        const branch = getAllBranches().find(b => b.id === warehouseBranchId);
 
         if (!fullName || !username || !password) {
             showToast('أدخل الاسم واسم الدخول وكلمة المرور');
             return;
         }
+        if (!Number.isFinite(salary) || salary < 0) {
+            showToast('أدخل راتباً صحيحاً');
+            return;
+        }
+        if (role === 'cashier' && !warehouseBranchId) {
+            showToast('حدد المخزن المخصص للموظف أولاً');
+            return;
+        }
 
         isBusy = true;
         btn.disabled = true;
-
         try {
             if (state.employees.some(e => String(e.username).trim() === username)) {
                 showToast('اسم الدخول موجود مسبقاً');
@@ -3528,22 +3874,52 @@
                 username,
                 password,
                 role,
-                canEdit,
-                canDelete,
-                allowedMenus,
+                warehouseBranchId,
+                warehouseBranchName: branch ? branch.name : (role === 'cashier' ? '' : 'كل المخازن'),
+                canEdit: false,
+                canDelete: false,
+                allowedMenus: [],
                 active: true
             });
             document.getElementById('newEmpFullName').value = '';
             document.getElementById('newEmpSalary').value = '0.00';
             document.getElementById('newEmpUsername').value = '';
             document.getElementById('newEmpPassword').value = '';
-            document.getElementById('newEmpCanEdit').checked = false;
-            document.getElementById('newEmpCanDelete').checked = false;
-            setAllMenuPerms(true);
-            showToast('تم حفظ الموظف والراتب والصلاحيات');
+            document.getElementById('newEmpWarehouseBranch').value = '';
+            showToast('تم حفظ تعريف الموظف. انتقل إلى تبويب الصلاحيات لتحديد صلاحياته');
+        } catch (e) {
+            showToast('تعذر حفظ تعريف الموظف');
         } finally {
             isBusy = false;
             btn.disabled = false;
+        }
+    }
+
+    async function editEmployeeWarehouse(empId) {
+        if (isBusy || !canManageUsers()) return;
+        const emp = state.employees.find(e => e.id === empId);
+        if (!emp || hasFullAccess(emp)) return;
+        const branches = getAllBranches();
+        const guide = branches.map((b, i) => `${i + 1}. ${b.name}`).join('\n');
+        const currentIndex = branches.findIndex(b => b.id === getAssignedBranchId(emp));
+        const answer = prompt(`حدد رقم المخزن المخصص لـ (${emp.fullName}):\n${guide}`, currentIndex >= 0 ? String(currentIndex + 1) : '');
+        if (answer === null) return;
+        const index = Number(answer) - 1;
+        if (!Number.isInteger(index) || !branches[index]) {
+            showToast('رقم المخزن غير صحيح');
+            return;
+        }
+        isBusy = true;
+        try {
+            await db.collection('employees').doc(empId).update({
+                warehouseBranchId: branches[index].id,
+                warehouseBranchName: branches[index].name
+            });
+            showToast('تم تحديث المخزن المحدد للموظف');
+        } catch (e) {
+            showToast('تعذر تحديث مخزن الموظف');
+        } finally {
+            isBusy = false;
         }
     }
 
@@ -3568,39 +3944,17 @@
     }
 
     async function editEmployeeMenus(empId) {
-        if (isBusy || !canManageUsers()) return;
-        const emp = state.employees.find(e => e.id === empId);
-        if (!emp || emp.role === 'admin' || emp.role === 'supervisor') return;
-
-        const currentAllowed = getAllowedMenusForUser(emp);
-        const menuGuide = MAIN_MENU_ITEMS.map((m, idx) => `${idx + 1}. ${m.label} (${currentAllowed.includes(m.key) ? 'مفعل' : 'مغلق'})`).join('\n');
-        const answer = prompt(
-            `أدخل أرقام الأقسام المسموحة لـ (${emp.fullName}) مفصولة بفاصلة، أو اكتب (الكل):\n\n${menuGuide}`,
-            MAIN_MENU_ITEMS.map((m, idx) => currentAllowed.includes(m.key) ? (idx + 1) : null).filter(Boolean).join(',')
-        );
-        if (answer === null) return;
-
-        let chosenKeys = [];
-        if (answer.trim() === 'الكل' || answer.trim().toLowerCase() === 'all') {
-            chosenKeys = MAIN_MENU_ITEMS.map(m => m.key);
-        } else {
-            const nums = answer.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 1 && n <= MAIN_MENU_ITEMS.length);
-            chosenKeys = nums.map(n => MAIN_MENU_ITEMS[n - 1].key);
-        }
-
-        isBusy = true;
-        try {
-            await db.collection('employees').doc(empId).update({ allowedMenus: chosenKeys });
-            showToast('تم تحديث الأقسام المسموحة للموظف');
-        } finally {
-            isBusy = false;
-        }
+        if (!canManageUsers()) return;
+        switchEmployeePanel('employeePermissionsPanel');
+        const sel = document.getElementById('permissionEmployeeSelect');
+        if (sel) sel.value = empId;
+        loadEmployeePermissions();
     }
 
     async function toggleEmployeePerm(empId, field) {
         if (isBusy || !canManageUsers()) return;
         const emp = state.employees.find(e => e.id === empId);
-        if (!emp || emp.role === 'admin' || emp.role === 'supervisor') return;
+        if (!emp || hasFullAccess(emp) || !['canEdit', 'canDelete'].includes(field)) return;
         isBusy = true;
         try {
             await db.collection('employees').doc(empId).update({ [field]: !Boolean(emp[field]) });
@@ -3655,62 +4009,58 @@
     function renderEmployeesTable() {
         const tbody = document.getElementById('employeesTableBody');
         if (!tbody) return;
-        const allowDeleteUsers = canManageUsers();
-
-        const totalSalaries = state.employees.reduce((s, e) => s + Number(e.salary || 0), 0);
+        const allowManage = canManageUsers();
+        const totalSalaries = state.employees.reduce((sum, emp) => sum + Number(emp.salary || 0), 0);
         const countEl = document.getElementById('empCountStat');
-        const salEl = document.getElementById('empTotalSalariesStat');
+        const salaryEl = document.getElementById('empTotalSalariesStat');
         if (countEl) countEl.textContent = String(state.employees.length);
-        if (salEl) salEl.textContent = formatMoney(totalSalaries);
+        if (salaryEl) salaryEl.textContent = formatMoney(totalSalaries);
 
-        tbody.innerHTML = state.employees.map(emp => {
-            const full = emp.role === 'admin' || emp.role === 'supervisor';
-            const isProtectedAdmin = emp.id === 'emp_admin' || emp.username === ADMIN_USER;
-            const allowed = getAllowedMenusForUser(emp);
-            const allowedLabels = full
-                ? '<span class="badge badge-sup">كل الأقسام</span>'
-                : (allowed.length
-                    ? allowed.map(k => MAIN_MENU_ITEMS.find(m => m.key === k)?.label).filter(Boolean).join('، ')
-                    : '<span style="color:var(--danger);">لا يوجد أقسام</span>');
-
-            const permsHtml = full
-                ? '<span class="badge badge-sup">تعديل + حذف (كامل)</span>'
-                : `
-                    <button class="btn ${emp.canEdit ? 'btn-success' : 'btn-outline'} btn-sm" onclick="toggleEmployeePerm('${emp.id}', 'canEdit')">
-                        ${emp.canEdit ? 'تعديل ✓' : 'تعديل ✕'}
-                    </button>
-                    <button class="btn ${emp.canDelete ? 'btn-danger' : 'btn-outline'} btn-sm" onclick="toggleEmployeePerm('${emp.id}', 'canDelete')">
-                        ${emp.canDelete ? 'حذف ✓' : 'حذف ✕'}
-                    </button>
-                  `;
-            const deleteBtnHtml = (allowDeleteUsers && !isProtectedAdmin)
-                ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeAccount('${emp.id}')" title="حذف المستخدم"><i class="fa-solid fa-trash"></i></button>`
-                : '';
-
+        tbody.innerHTML = state.employees.length ? state.employees.map(emp => {
+            const branchName = hasFullAccess(emp)
+                ? 'كل المخازن'
+                : (emp.warehouseBranchName || getAllBranches().find(b => b.id === getAssignedBranchId(emp))?.name || 'لم يحدد');
+            const protectedAdmin = emp.id === 'emp_admin' || emp.username === ADMIN_USER;
             return `
                 <tr>
-                    <td><strong>${emp.fullName}</strong></td>
-                    <td>
-                        <span class="mono" style="color:var(--success);">${formatMoney(emp.salary || 0)}</span>
-                        ${allowDeleteUsers ? `<button class="btn btn-outline btn-sm" style="padding:3px 7px; margin-right:4px;" onclick="editEmployeeSalary('${emp.id}')" title="تعديل الراتب"><i class="fa-solid fa-pen"></i></button>` : ''}
-                    </td>
-                    <td><span class="mono">${emp.username}</span></td>
+                    <td><strong>${emp.fullName || '-'}</strong></td>
+                    <td><span class="mono">${formatMoney(emp.salary || 0)}</span></td>
+                    <td><span class="mono">${emp.username || '-'}</span></td>
                     <td><span class="badge ${roleBadgeClass(emp.role)}">${roleLabel(emp.role)}</span></td>
-                    <td style="max-width:220px; font-size:12px;">
-                        <div>${allowedLabels}</div>
-                        ${(!full && allowDeleteUsers) ? `<button class="btn btn-outline btn-sm" style="padding:2px 8px; margin-top:4px; font-size:11px;" onclick="editEmployeeMenus('${emp.id}')">تحديد الأقسام</button>` : ''}
-                    </td>
-                    <td>${permsHtml}</td>
-                    <td>${emp.active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
+                    <td>${branchName}</td>
+                    <td>${emp.active !== false ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
                     <td style="white-space:nowrap;">
-                        <button class="btn ${emp.active ? 'btn-warning' : 'btn-success'} btn-sm" onclick="toggleEmployeeStatus('${emp.id}')">
-                            ${emp.active ? 'إيقاف' : 'تفعيل'}
-                        </button>
-                        ${deleteBtnHtml}
+                        ${allowManage && !hasFullAccess(emp) ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeWarehouse('${emp.id}')" title="تحديد المخزن"><i class="fa-solid fa-warehouse"></i> المخزن</button>` : ''}
+                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeSalary('${emp.id}')" title="تعديل الراتب"><i class="fa-solid fa-pen"></i> الراتب</button>` : ''}
+                        ${allowManage && !protectedAdmin ? `<button class="btn ${emp.active === false ? 'btn-success' : 'btn-warning'} btn-sm" onclick="toggleEmployeeStatus('${emp.id}')">${emp.active === false ? 'تفعيل' : 'إيقاف'}</button>` : ''}
+                        ${allowManage && !protectedAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeAccount('${emp.id}')" title="حذف الموظف"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </td>
                 </tr>
             `;
-        }).join('');
+        }).join('') : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون مسجلون</td></tr>';
+        populateEmployeePermissionOptions();
+    }
+
+    function renderEmployeePermissionsTable() {
+        const tbody = document.getElementById('employeePermissionsTableBody');
+        if (!tbody) return;
+        const employees = state.employees;
+        tbody.innerHTML = employees.length ? employees.map(emp => {
+            const full = hasFullAccess(emp);
+            const allowed = getAllowedMenusForUser(emp);
+            const labels = full ? 'كل الأقسام' : (allowed.length
+                ? allowed.map(key => MAIN_MENU_ITEMS.find(item => item.key === key)?.label).filter(Boolean).join('، ')
+                : 'لم تُحدد أقسام بعد');
+            return `
+                <tr>
+                    <td><strong>${emp.fullName || '-'}</strong></td>
+                    <td style="max-width:260px; font-size:12px;">${labels}</td>
+                    <td>${full || emp.canEdit ? '<span class="badge badge-cash">مسموح</span>' : '<span class="badge badge-unit">غير مسموح</span>'}</td>
+                    <td>${full || emp.canDelete ? '<span class="badge badge-cash">مسموح</span>' : '<span class="badge badge-unit">غير مسموح</span>'}</td>
+                    <td>${full ? '<span class="badge badge-sup">كامل</span>' : `<button class="btn btn-outline btn-sm" onclick="editEmployeeMenus('${emp.id}')">إدارة الصلاحيات</button>`}</td>
+                </tr>
+            `;
+        }).join('') : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون</td></tr>';
     }
 
     initMenuPermissionCheckboxes();
