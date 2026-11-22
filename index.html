@@ -242,6 +242,21 @@
             margin-top: 10px;
         }
 
+        .menu-perms-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            background: #fff;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        @media (min-width: 700px) {
+            .menu-perms-grid { grid-template-columns: repeat(5, 1fr); }
+        }
+
         .perm-check {
             display: inline-flex;
             align-items: center;
@@ -255,6 +270,7 @@
             width: 17px;
             height: 17px;
             accent-color: var(--primary);
+            flex-shrink: 0;
         }
 
         .btn {
@@ -303,7 +319,7 @@
         .quick-nav {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            gap: 11px;
             margin-bottom: 16px;
         }
 
@@ -322,13 +338,14 @@
             color: var(--text-main);
             font-family: 'Cairo', sans-serif;
             font-weight: 800;
-            font-size: 14px;
+            font-size: 13.5px;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            text-align: center;
             transition: all 0.18s ease;
         }
 
@@ -474,19 +491,30 @@
 
         .invoice-item-row {
             display: grid;
-            grid-template-columns: 2fr 1fr 0.9fr 1fr auto;
+            grid-template-columns: 2fr 0.9fr 0.9fr 1fr 1fr auto;
             gap: 8px;
             align-items: center;
             margin-bottom: 8px;
+            background: #fff;
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
         }
 
-        @media (max-width: 680px) {
+        .row-line-total {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 9px 10px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--primary);
+        }
+
+        @media (max-width: 760px) {
             .invoice-item-row {
                 grid-template-columns: 1fr 1fr;
-                background: #fff;
                 padding: 10px;
-                border-radius: 12px;
-                border: 1px solid var(--border);
             }
             .invoice-item-row .item-name {
                 grid-column: span 2;
@@ -703,51 +731,55 @@
                     <div class="mini-stat-val mono" id="kpiTotalReceivables" style="color:var(--warning);">0.00</div>
                 </div>
                 <div class="mini-stat">
-                    <div class="mini-stat-label">المخزون (إجمالي الوحدات)</div>
-                    <div class="mini-stat-val mono" id="kpiWarehouseStock" style="color:var(--accent);">0</div>
+                    <div class="mini-stat-label">المخزون (إجمالي الكميات)</div>
+                    <div class="mini-stat-val mono" id="kpiWarehouseStock" style="color:var(--accent);">0.00</div>
                 </div>
             </div>
 
             <div class="quick-nav">
-                <button class="nav-tab" onclick="openFullPage('salesTab')">
+                <button class="nav-tab" data-menu-key="salesTab" onclick="openFullPage('salesTab')">
                     <i class="fa-solid fa-file-invoice-dollar"></i>
                     <span>المبيعات والفواتير</span>
                 </button>
-                <button class="nav-tab expense-tab" onclick="openFullPage('purchasesTab')">
+                <button class="nav-tab expense-tab" data-menu-key="purchasesTab" onclick="openFullPage('purchasesTab')">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span>المشتروات والمصروفات</span>
                 </button>
-                <button class="nav-tab" onclick="openFullPage('vouchersTab')">
+                <button class="nav-tab" data-menu-key="vouchersTab" onclick="openFullPage('vouchersTab')">
                     <i class="fa-solid fa-file-signature"></i>
                     <span>الأسناد</span>
                 </button>
-                <button class="nav-tab" onclick="openFullPage('cashboxTab')">
+                <button class="nav-tab" data-menu-key="cashboxTab" onclick="openFullPage('cashboxTab')">
                     <i class="fa-solid fa-vault"></i>
                     <span>الصندوق</span>
                 </button>
-                <button class="nav-tab" onclick="openFullPage('warehouseTab')">
+                <button class="nav-tab" data-menu-key="warehouseTab" onclick="openFullPage('warehouseTab')">
                     <i class="fa-solid fa-boxes-stacked"></i>
                     <span>المخازن والفروع</span>
                 </button>
-                <button class="nav-tab" onclick="openFullPage('customersTab')">
+                <button class="nav-tab" data-menu-key="customersTab" onclick="openFullPage('customersTab')">
                     <i class="fa-solid fa-users"></i>
                     <span>العملاء</span>
                 </button>
-                <button class="nav-tab accent-tab" onclick="openAddItemModal()">
+                <button class="nav-tab accent-tab" data-menu-key="addItemTab" onclick="openFullPage('addItemTab')">
                     <i class="fa-solid fa-box-open"></i>
                     <span>إضافة أصناف</span>
                 </button>
-                <button class="nav-tab accent-tab" onclick="openTransferModal()">
+                <button class="nav-tab accent-tab" data-menu-key="quantitiesTab" onclick="openFullPage('quantitiesTab')">
+                    <i class="fa-solid fa-cubes-stacked"></i>
+                    <span>إدخال كميات الأصناف</span>
+                </button>
+                <button class="nav-tab accent-tab" data-menu-key="transferTab" onclick="openFullPage('transferTab')">
                     <i class="fa-solid fa-right-left"></i>
                     <span>نقل مخازن</span>
                 </button>
-                <button class="nav-tab profit-tab" onclick="openFullPage('profitsTab')">
+                <button class="nav-tab profit-tab" data-menu-key="profitsTab" onclick="openFullPage('profitsTab')">
                     <i class="fa-solid fa-chart-line"></i>
                     <span>الأرباح</span>
                 </button>
-                <button id="employeesNavBtn" class="nav-tab" onclick="openFullPage('employeesTab')">
+                <button class="nav-tab" data-menu-key="employeesTab" onclick="openFullPage('employeesTab')">
                     <i class="fa-solid fa-user-tie"></i>
-                    <span>الموظفون</span>
+                    <span>الموظفون والرواتب</span>
                 </button>
             </div>
         </div>
@@ -755,14 +787,14 @@
         <!-- 1. صفحة المبيعات والفواتير الكاملة -->
         <section id="salesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-file-invoice-dollar"></i> الفواتير والمبيعات</div>
+                <div class="fullpage-title"><i class="fa-solid fa-file-invoice-dollar"></i> المبيعات والفواتير</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span>إصدار فاتورة مبيعات</span></div>
+                <div class="card-title"><span>إصدار فاتورة مبيعات سريعة</span></div>
 
                 <div class="grid-4">
                     <div class="form-group">
@@ -789,7 +821,7 @@
                 <!-- بحث واختيار الأصناف من المخازن -->
                 <div class="stock-picker-box">
                     <div style="font-size:13px; font-weight:800; color:var(--primary); margin-bottom:8px;">
-                        <i class="fa-solid fa-magnifying-glass"></i> بحث واختيار صنف من المخازن
+                        <i class="fa-solid fa-magnifying-glass"></i> بحث وإضافة صنف من المخزن للفاتورة
                     </div>
                     <div class="grid-2" style="margin-bottom:0;">
                         <div class="form-group" style="margin-bottom:0;">
@@ -811,10 +843,10 @@
                     </div>
                 </div>
 
-                <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center;">
+                <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <strong style="font-size:13px;">أصناف الفاتورة (حبة / شدة):</strong>
                     <button type="button" class="btn btn-outline btn-sm" onclick="addInvoiceItemRow()">
-                        <i class="fa-solid fa-plus"></i> سطر صنف يدوي
+                        <i class="fa-solid fa-plus"></i> سطر صنف جديد
                     </button>
                 </div>
 
@@ -823,7 +855,7 @@
                 <div class="grid-2">
                     <div class="form-group" style="margin-bottom:0;">
                         <label>الخصم</label>
-                        <input type="number" id="invDiscount" class="form-control num-input" value="0" min="0" oninput="recalculateInvoiceTotal()">
+                        <input type="number" step="0.01" inputmode="decimal" id="invDiscount" class="form-control num-input" value="0.00" min="0" oninput="recalculateInvoiceTotal()">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label>البيان لكشف الحساب (رقم الفاتورة)</label>
@@ -881,7 +913,6 @@
                 </button>
             </div>
 
-            <!-- زر إضافة مورد وفتح نموذج البيانات -->
             <div class="card-box">
                 <div class="card-title" style="margin-bottom:0;">
                     <span><i class="fa-solid fa-truck"></i> الموردون</span>
@@ -911,7 +942,7 @@
             <div class="card-box">
                 <div class="card-title" style="color:var(--danger);">
                     <span>تسجيل مشترى أو مصروف</span>
-                    <span class="badge badge-expense">إجمالي المشتروات والمصروفات: <span class="mono" id="purchasesTabTotal" style="margin-right:4px;">0.00</span></span>
+                    <span class="badge badge-expense">الإجمالي: <span class="mono" id="purchasesTabTotal" style="margin-right:4px;">0.00</span></span>
                 </div>
 
                 <div class="grid-4">
@@ -932,7 +963,7 @@
                     </div>
                     <div class="form-group">
                         <label>المبلغ</label>
-                        <input type="number" id="purAmount" class="form-control num-input" min="0" placeholder="0.00">
+                        <input type="number" step="0.01" inputmode="decimal" id="purAmount" class="form-control num-input" min="0" placeholder="0.00">
                     </div>
                 </div>
 
@@ -944,7 +975,7 @@
                     <div class="form-group">
                         <label>إضافة كمية للمخزن (اختياري)</label>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                            <input type="number" id="purAddQty" class="form-control num-input" value="0" min="0" placeholder="الكمية">
+                            <input type="number" step="0.01" inputmode="decimal" id="purAddQty" class="form-control num-input" value="0" min="0" placeholder="الكمية">
                             <select id="purUnit" class="form-control">
                                 <option value="حبة">حبة</option>
                                 <option value="شدة">شدة</option>
@@ -957,7 +988,6 @@
                     </div>
                 </div>
 
-                <!-- زر الصح: مفعّل دائماً ما لم يُلغِه المستخدم -->
                 <div class="perm-box" style="margin-top:0; margin-bottom:12px;">
                     <label class="perm-check">
                         <input type="checkbox" id="purAddToWarehouseCheck" checked>
@@ -1027,7 +1057,7 @@
                     </div>
                     <div class="form-group">
                         <label>المبلغ</label>
-                        <input type="number" id="voucherAmount" class="form-control num-input" min="0" placeholder="0.00">
+                        <input type="number" step="0.01" inputmode="decimal" id="voucherAmount" class="form-control num-input" min="0" placeholder="0.00">
                     </div>
                 </div>
                 <div class="form-group">
@@ -1083,7 +1113,7 @@
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label>الرصيد الافتتاحي</label>
-                        <input type="number" id="newCashboxOpening" class="form-control num-input" value="0" min="0">
+                        <input type="number" step="0.01" inputmode="decimal" id="newCashboxOpening" class="form-control num-input" value="0.00" min="0">
                     </div>
                 </div>
                 <button id="saveCashboxBtn" class="btn btn-primary btn-full" onclick="createCashbox()" style="margin-top:12px;">
@@ -1097,10 +1127,13 @@
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-boxes-stacked"></i> المخازن والفروع</div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <button type="button" class="btn btn-accent btn-sm" onclick="openAddItemModal()">
+                    <button type="button" class="btn btn-accent btn-sm" onclick="openFullPage('addItemTab')">
                         <i class="fa-solid fa-plus"></i> إضافة صنف
                     </button>
-                    <button type="button" class="btn btn-accent btn-sm" onclick="openTransferModal()">
+                    <button type="button" class="btn btn-accent btn-sm" onclick="openFullPage('quantitiesTab')">
+                        <i class="fa-solid fa-cubes-stacked"></i> إدخال كميات
+                    </button>
+                    <button type="button" class="btn btn-accent btn-sm" onclick="openFullPage('transferTab')">
                         <i class="fa-solid fa-right-left"></i> نقل مخازن
                     </button>
                     <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
@@ -1141,7 +1174,7 @@
                                 <th>الفرع</th>
                                 <th>الصنف</th>
                                 <th>الوحدة</th>
-                                <th>الكمية</th>
+                                <th>الكمية الموجودة</th>
                                 <th>السعر</th>
                                 <th>الإجمالي</th>
                                 <th>إجراءات</th>
@@ -1150,6 +1183,149 @@
                         <tbody id="warehouseTableBody"></tbody>
                     </table>
                 </div>
+            </div>
+        </section>
+
+        <!-- صفحة إضافة أصناف -->
+        <section id="addItemTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title" style="color:var(--accent);"><i class="fa-solid fa-box-open"></i> إضافة أصناف</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>تعريف / إضافة صنف جديد للمخزن</span></div>
+                <div class="form-group">
+                    <label>الفرع</label>
+                    <select id="whItemBranchSelect" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                    <label>اسم الصنف</label>
+                    <input type="text" id="newItemName" class="form-control" placeholder="اسم المادة أو المنتج">
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label>الوحدة</label>
+                        <select id="newItemUnit" class="form-control">
+                            <option value="حبة">حبة</option>
+                            <option value="شدة">شدة</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>الكمية</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="newItemQty" class="form-control num-input" value="1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>السعر</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="newItemPrice" class="form-control num-input" value="0.00" min="0">
+                    </div>
+                </div>
+                <button id="saveWarehouseItemBtn" class="btn btn-primary btn-full" onclick="saveWarehouseItem()">
+                    <i class="fa-solid fa-check"></i> حفظ في المخزن
+                </button>
+            </div>
+        </section>
+
+        <!-- صفحة إدخال كميات الأصناف -->
+        <section id="quantitiesTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title" style="color:var(--accent);"><i class="fa-solid fa-cubes-stacked"></i> إدخال كميات الأصناف</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span>إدخال وتحديث الكميات الموجودة في المخازن</span></div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label>الفرع / المخزن</label>
+                        <select id="qtyBranchSelect" class="form-control" onchange="populateQuantityItems()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>الصنف</label>
+                        <select id="qtyItemSelect" class="form-control" onchange="fillSelectedItemCurrentQty()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>طريقة تحديث الكمية</label>
+                        <select id="qtyUpdateMode" class="form-control">
+                            <option value="add">إضافة إلى الرصيد الحالي (+)</option>
+                            <option value="set">تعيين الرصيد الفعلي الموجود (=)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>الكمية</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="qtyInputValue" class="form-control num-input" value="1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>سعر الصنف (اختياري — اتركه فارغاً للإبقاء على السعر الحالي)</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="qtyItemPriceInput" class="form-control num-input" placeholder="مثال: 250.00" min="0">
+                    </div>
+                </div>
+
+                <button id="saveQtyBtn" class="btn btn-accent btn-full" onclick="saveStockQuantity()">
+                    <i class="fa-solid fa-floppy-disk"></i> تسجيل الكمية في المخزن
+                </button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-table"></i> الكميات المسجلة حالياً في المخازن</span></div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الفرع</th>
+                                <th>الصنف</th>
+                                <th>الوحدة</th>
+                                <th>الكمية المسجلة</th>
+                                <th>السعر</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quantitiesPreviewBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- صفحة نقل مخازن -->
+        <section id="transferTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title" style="color:var(--accent);"><i class="fa-solid fa-right-left"></i> نقل مخازن</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title" style="color:var(--accent);"><span>نقل من مخزن إلى مخزن</span></div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>من مخزن / فرع</label>
+                        <select id="transferFromBranch" class="form-control" onchange="populateTransferItems()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>إلى مخزن / فرع</label>
+                        <select id="transferToBranch" class="form-control"></select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>الصنف المراد نقله</label>
+                        <select id="transferItemSelect" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>الكمية للنقل</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="transferQty" class="form-control num-input" value="1" min="0.01">
+                    </div>
+                </div>
+                <button id="executeTransferBtn" class="btn btn-accent btn-full" onclick="transferWarehouseStock()">
+                    <i class="fa-solid fa-dolly"></i> تنفيذ النقل بين المخازن
+                </button>
             </div>
         </section>
 
@@ -1175,7 +1351,7 @@
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label>حد الائتمان</label>
-                        <input type="number" id="newCustomerLimit" class="form-control num-input" value="100000" min="0">
+                        <input type="number" step="0.01" inputmode="decimal" id="newCustomerLimit" class="form-control num-input" value="100000.00" min="0">
                     </div>
                 </div>
                 <button id="saveCustomerBtn" class="btn btn-primary btn-full" onclick="createCustomer()" style="margin-top:12px;">
@@ -1305,21 +1481,36 @@
             </div>
         </section>
 
-        <!-- 7. صفحة الموظفون والصلاحيات الكاملة -->
+        <!-- 7. صفحة الموظفون والرواتب والصلاحيات الكاملة -->
         <section id="employeesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-user-tie"></i> الموظفون والصلاحيات</div>
+                <div class="fullpage-title"><i class="fa-solid fa-user-tie"></i> الموظفون والرواتب والصلاحيات</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
 
+            <div class="summary-strip" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="mini-stat">
+                    <div class="mini-stat-label">عدد الموظفين المسجلين</div>
+                    <div class="mini-stat-val mono" id="empCountStat">0</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="mini-stat-label">إجمالي الرواتب الشهرية</div>
+                    <div class="mini-stat-val mono" id="empTotalSalariesStat" style="color:var(--success);">0.00</div>
+                </div>
+            </div>
+
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-user-shield"></i> إضافة حساب جديد</span></div>
-                <div class="grid-3">
+                <div class="card-title"><span><i class="fa-solid fa-user-shield"></i> إضافة / تحديث موظف وتحديد راتبه وصلاحياته</span></div>
+                <div class="grid-4">
                     <div class="form-group" style="margin-bottom:0;">
                         <label>الاسم</label>
                         <input type="text" id="newEmpFullName" class="form-control" placeholder="اسم الموظف أو المشرف">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>الراتب</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="newEmpSalary" class="form-control num-input" value="0.00" min="0" placeholder="0.00">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label>اسم الدخول</label>
@@ -1330,43 +1521,55 @@
                         <input type="text" id="newEmpPassword" class="form-control num-input" placeholder="كلمة المرور">
                     </div>
                 </div>
+
                 <div class="grid-2" style="margin-top:12px;">
                     <div class="form-group" style="margin-bottom:0;">
-                        <label>الصلاحية</label>
+                        <label>نوع الحساب</label>
                         <select id="newEmpRole" class="form-control" onchange="toggleEmployeePermBox()">
-                            <option value="cashier">موظف (صلاحيات محددة)</option>
-                            <option value="supervisor">مشرف عام (معه كل شيء + حذف المستخدمين)</option>
+                            <option value="cashier">موظف (تحديد الأقسام والصلاحيات)</option>
+                            <option value="supervisor">مشرف عام (كل الأقسام + حذف المستخدمين)</option>
                             <option value="admin">مدير</option>
                         </select>
                     </div>
                     <div style="display:flex; align-items:flex-end;">
                         <button id="saveEmployeeBtn" class="btn btn-primary btn-full" onclick="createEmployee()">
-                            <i class="fa-solid fa-user-check"></i> حفظ الحساب
+                            <i class="fa-solid fa-user-check"></i> حفظ الموظف والراتب والصلاحيات
                         </button>
                     </div>
                 </div>
 
-                <div id="empPermissionsBox" class="perm-box">
-                    <label class="perm-check">
-                        <input type="checkbox" id="newEmpCanEdit">
-                        <span>سماح بالتعديل</span>
-                    </label>
-                    <label class="perm-check">
-                        <input type="checkbox" id="newEmpCanDelete">
-                        <span>سماح بالحذف</span>
-                    </label>
+                <div id="empPermissionsBox">
+                    <div class="perm-box">
+                        <label class="perm-check">
+                            <input type="checkbox" id="newEmpCanEdit">
+                            <span>سماح بالتعديل</span>
+                        </label>
+                        <label class="perm-check">
+                            <input type="checkbox" id="newEmpCanDelete">
+                            <span>سماح بالحذف</span>
+                        </label>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setAllMenuPerms(true)">تحديد الكل</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setAllMenuPerms(false)">إلغاء الكل</button>
+                    </div>
+
+                    <div style="margin-top:10px; font-size:12.5px; font-weight:800; color:var(--primary);">
+                        اختر الأقسام التي تظهر للموظف في القائمة الرئيسية:
+                    </div>
+                    <div id="newEmpMenusGrid" class="menu-perms-grid"></div>
                 </div>
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-users-gear"></i> المستخدمون والصلاحيات</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-users-gear"></i> قائمة الموظفين والرواتب والصلاحيات</span></div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
                                 <th>الاسم</th>
+                                <th>الراتب</th>
                                 <th>الدخول</th>
-                                <th>الصلاحية</th>
+                                <th>النوع</th>
+                                <th>الأقسام المسموحة</th>
                                 <th>تعديل / حذف</th>
                                 <th>الحالة</th>
                                 <th>تحكم</th>
@@ -1378,88 +1581,6 @@
             </div>
         </section>
 
-    </div>
-</div>
-
-<!-- نافذة إضافة صنف للمخزن -->
-<div id="addItemModal" class="modal-backdrop hidden">
-    <div class="modal-card">
-        <div class="card-title">
-            <span><i class="fa-solid fa-box-open"></i> إضافة / تحديث صنف في المخزن</span>
-            <button type="button" class="btn btn-outline btn-sm" onclick="closeAddItemModal()"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-
-        <div class="form-group">
-            <label>الفرع</label>
-            <select id="whItemBranchSelect" class="form-control"></select>
-        </div>
-        <div class="form-group">
-            <label>اسم الصنف</label>
-            <input type="text" id="newItemName" class="form-control" placeholder="اسم المادة أو المنتج">
-        </div>
-        <div class="grid-3">
-            <div class="form-group">
-                <label>الوحدة</label>
-                <select id="newItemUnit" class="form-control">
-                    <option value="حبة">حبة</option>
-                    <option value="شدة">شدة</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>الكمية</label>
-                <input type="number" id="newItemQty" class="form-control num-input" value="1" min="0">
-            </div>
-            <div class="form-group">
-                <label>السعر</label>
-                <input type="number" id="newItemPrice" class="form-control num-input" value="0" min="0">
-            </div>
-        </div>
-
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button id="saveWarehouseItemBtn" class="btn btn-primary btn-full" onclick="saveWarehouseItem()">
-                <i class="fa-solid fa-check"></i> حفظ في المخزن
-            </button>
-            <button type="button" class="btn btn-outline" onclick="closeAddItemModal()">إلغاء</button>
-        </div>
-    </div>
-</div>
-
-<!-- نافذة النقل بين المخازن -->
-<div id="transferModal" class="modal-backdrop hidden">
-    <div class="modal-card">
-        <div class="card-title" style="color:var(--accent);">
-            <span><i class="fa-solid fa-right-left"></i> نقل من مخزن إلى مخزن</span>
-            <button type="button" class="btn btn-outline btn-sm" onclick="closeTransferModal()"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-
-        <div class="grid-2">
-            <div class="form-group">
-                <label>من مخزن / فرع</label>
-                <select id="transferFromBranch" class="form-control" onchange="populateTransferItems()"></select>
-            </div>
-            <div class="form-group">
-                <label>إلى مخزن / فرع</label>
-                <select id="transferToBranch" class="form-control"></select>
-            </div>
-        </div>
-
-        <div class="grid-2">
-            <div class="form-group">
-                <label>الصنف المراد نقله</label>
-                <select id="transferItemSelect" class="form-control"></select>
-            </div>
-            <div class="form-group">
-                <label>الكمية للنقل</label>
-                <input type="number" id="transferQty" class="form-control num-input" value="1" min="1">
-            </div>
-        </div>
-
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button id="executeTransferBtn" class="btn btn-accent btn-full" onclick="transferWarehouseStock()">
-                <i class="fa-solid fa-dolly"></i> تنفيذ النقل بين المخازن
-            </button>
-            <button type="button" class="btn btn-outline" onclick="closeTransferModal()">إغلاق</button>
-        </div>
     </div>
 </div>
 
@@ -1528,6 +1649,20 @@
     const ADMIN_USER = "12006";
     const ADMIN_PASS = "5028611";
 
+    const MAIN_MENU_ITEMS = [
+        { key: 'salesTab', label: 'المبيعات والفواتير' },
+        { key: 'purchasesTab', label: 'المشتروات والمصروفات' },
+        { key: 'vouchersTab', label: 'الأسناد' },
+        { key: 'cashboxTab', label: 'الصندوق' },
+        { key: 'warehouseTab', label: 'المخازن والفروع' },
+        { key: 'customersTab', label: 'العملاء' },
+        { key: 'addItemTab', label: 'إضافة أصناف' },
+        { key: 'quantitiesTab', label: 'إدخال كميات الأصناف' },
+        { key: 'transferTab', label: 'نقل مخازن' },
+        { key: 'profitsTab', label: 'الأرباح' },
+        { key: 'employeesTab', label: 'الموظفون والرواتب' }
+    ];
+
     const firebaseConfig = {
         apiKey: "AIzaSyDDm0KDSEHzwPJXAKPyhqQc3EtmN7zDVIY",
         authDomain: "abu-mohammad-accounting-223c8.firebaseapp.com",
@@ -1559,9 +1694,46 @@
         warehouse: []
     };
 
+    function initMenuPermissionCheckboxes() {
+        const grid = document.getElementById('newEmpMenusGrid');
+        if (!grid) return;
+        grid.innerHTML = MAIN_MENU_ITEMS.map(m => `
+            <label class="perm-check">
+                <input type="checkbox" class="emp-menu-cb" value="${m.key}" checked>
+                <span>${m.label}</span>
+            </label>
+        `).join('');
+    }
+
+    function setAllMenuPerms(checked) {
+        document.querySelectorAll('#newEmpMenusGrid .emp-menu-cb').forEach(cb => {
+            cb.checked = checked;
+        });
+    }
+
+    function getAllowedMenusForUser(user = currentUser) {
+        if (!user) return [];
+        if (hasFullAccess(user)) return MAIN_MENU_ITEMS.map(m => m.key);
+        if (Array.isArray(user.allowedMenus)) return user.allowedMenus;
+        return MAIN_MENU_ITEMS.map(m => m.key);
+    }
+
+    function canAccessMenu(menuKey, user = currentUser) {
+        if (!user) return false;
+        if (hasFullAccess(user)) return true;
+        return getAllowedMenusForUser(user).includes(menuKey);
+    }
+
+    function applyHomeMenuPermissions() {
+        document.querySelectorAll('#homeMenuContainer .nav-tab[data-menu-key]').forEach(btn => {
+            const key = btn.getAttribute('data-menu-key');
+            btn.classList.toggle('hidden', !canAccessMenu(key, currentUser));
+        });
+    }
+
     function openFullPage(tabId) {
-        if (tabId === 'employeesTab' && !hasFullAccess(currentUser)) {
-            showToast('هذا القسم للمشرف العام والمدير فقط');
+        if (!canAccessMenu(tabId, currentUser)) {
+            showToast('ليس لديك صلاحية الدخول إلى هذا القسم');
             return;
         }
         document.getElementById('homeMenuContainer').classList.add('hidden');
@@ -1570,40 +1742,31 @@
         if (tabId === 'salesTab') {
             renderWarehouseCatalogDropdown();
             updateInvoiceStatementPreview();
+            recalculateInvoiceTotal();
         }
         if (tabId === 'vouchersTab') {
             toggleVoucherCustomerField();
             updateVoucherStatementPreview();
         }
-        if (tabId === 'warehouseTab') populateTransferItems();
-        if (tabId === 'profitsTab') renderProfitsSection();
+        if (tabId === 'warehouseTab' || tabId === 'transferTab') {
+            populateTransferItems();
+        }
+        if (tabId === 'quantitiesTab') {
+            populateQuantityItems();
+            renderQuantitiesPreviewTable();
+        }
+        if (tabId === 'profitsTab') {
+            renderProfitsSection();
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function goBackHome() {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
         document.getElementById('homeMenuContainer').classList.remove('hidden');
+        applyHomeMenuPermissions();
         renderStats();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function openAddItemModal() {
-        populateDropdowns();
-        document.getElementById('addItemModal').classList.remove('hidden');
-    }
-
-    function closeAddItemModal() {
-        document.getElementById('addItemModal').classList.add('hidden');
-    }
-
-    function openTransferModal() {
-        populateDropdowns();
-        populateTransferItems();
-        document.getElementById('transferModal').classList.remove('hidden');
-    }
-
-    function closeTransferModal() {
-        document.getElementById('transferModal').classList.add('hidden');
     }
 
     function toggleSupplierForm() {
@@ -1667,7 +1830,7 @@
                     const roleBadge = document.getElementById('currentUserRoleBadge');
                     roleBadge.textContent = roleLabel(currentUser.role);
                     roleBadge.className = `badge ${roleBadgeClass(currentUser.role)}`;
-                    document.getElementById('employeesNavBtn').classList.toggle('hidden', !hasFullAccess(currentUser));
+                    applyHomeMenuPermissions();
                 }
             }
             renderAllViews();
@@ -1759,7 +1922,19 @@
     }
 
     function formatMoney(num) {
-        return Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const val = Number(num || 0);
+        return (Number.isFinite(val) ? val : 0).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function formatQty(num) {
+        const val = Number(num || 0);
+        if (!Number.isFinite(val)) return '0.00';
+        return Number.isInteger(val)
+            ? val.toLocaleString('en-US')
+            : val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     function getCashboxOpening(cb) {
@@ -1879,8 +2054,10 @@
                     username: ADMIN_USER,
                     password: ADMIN_PASS,
                     role: 'admin',
+                    salary: 0,
                     canEdit: true,
                     canDelete: true,
+                    allowedMenus: MAIN_MENU_ITEMS.map(m => m.key),
                     active: true
                 };
                 if (!isDemoMode && db) {
@@ -1903,7 +2080,9 @@
             roleBadge.textContent = roleLabel(currentUser.role);
             roleBadge.className = `badge ${roleBadgeClass(currentUser.role)}`;
 
-            document.getElementById('employeesNavBtn').classList.toggle('hidden', !hasFullAccess(currentUser));
+            initMenuPermissionCheckboxes();
+            toggleEmployeePermBox();
+            applyHomeMenuPermissions();
 
             document.getElementById('loginView').classList.add('hidden');
             document.getElementById('mainAppView').classList.remove('hidden');
@@ -1946,6 +2125,7 @@
         renderCashboxesList();
         renderBranchesChips();
         renderWarehouseTable();
+        renderQuantitiesPreviewTable();
         renderCustomersTable();
         if (activeStatementCustomerId) {
             renderCustomerStatement(activeStatementCustomerId, false);
@@ -1964,6 +2144,7 @@
         const invBrSel = document.getElementById('invBranchSelect');
         const purBrSel = document.getElementById('purBranchSelect');
         const whBrSel = document.getElementById('whItemBranchSelect');
+        const qtyBrSel = document.getElementById('qtyBranchSelect');
         const filterBrSel = document.getElementById('activeBranchFilter');
         const fromBrSel = document.getElementById('transferFromBranch');
         const toBrSel = document.getElementById('transferToBranch');
@@ -1971,6 +2152,7 @@
         const prevInvBr = invBrSel.value;
         const prevPurBr = purBrSel.value;
         const prevWhBr = whBrSel.value;
+        const prevQtyBr = qtyBrSel.value;
         const prevFilterBr = filterBrSel.value;
         const prevFromBr = fromBrSel.value;
         const prevToBr = toBrSel.value;
@@ -1979,6 +2161,7 @@
         invBrSel.innerHTML = brOpts;
         purBrSel.innerHTML = brOpts;
         whBrSel.innerHTML = brOpts;
+        qtyBrSel.innerHTML = brOpts;
         filterBrSel.innerHTML = '<option value="ALL">جميع الفروع</option>' + brOpts;
         fromBrSel.innerHTML = brOpts;
         toBrSel.innerHTML = brOpts;
@@ -1986,12 +2169,14 @@
         if (prevInvBr && branchList.some(b => b.id === prevInvBr)) invBrSel.value = prevInvBr;
         if (prevPurBr && branchList.some(b => b.id === prevPurBr)) purBrSel.value = prevPurBr;
         if (prevWhBr && branchList.some(b => b.id === prevWhBr)) whBrSel.value = prevWhBr;
+        if (prevQtyBr && branchList.some(b => b.id === prevQtyBr)) qtyBrSel.value = prevQtyBr;
         if (prevFilterBr) filterBrSel.value = prevFilterBr;
         if (prevFromBr && branchList.some(b => b.id === prevFromBr)) fromBrSel.value = prevFromBr;
         if (prevToBr && branchList.some(b => b.id === prevToBr)) toBrSel.value = prevToBr;
         else if (branchList.length > 1) toBrSel.value = branchList[1].id;
 
         renderWarehouseCatalogDropdown();
+        populateQuantityItems();
         populateTransferItems();
 
         const cbSelInv = document.getElementById('invCashboxSelect');
@@ -2040,7 +2225,7 @@
 
         const prevVal = sel.value;
         sel.innerHTML = items.length
-            ? items.map(w => `<option value="${w.id}">${w.name} (${w.unit || 'حبة'}) — متاح: ${w.qty || 0} — سعر: ${formatMoney(w.price)}</option>`).join('')
+            ? items.map(w => `<option value="${w.id}">${w.name} (${w.unit || 'حبة'}) — متاح: ${formatQty(w.qty || 0)} — سعر: ${formatMoney(w.price)}</option>`).join('')
             : '<option value="">لا توجد أصناف مطابقة في المخازن</option>';
 
         if (prevVal && items.some(w => w.id === prevVal)) {
@@ -2064,6 +2249,93 @@
         showToast(`تمت إضافة ${item.name}`);
     }
 
+    function populateQuantityItems() {
+        const branchId = document.getElementById('qtyBranchSelect')?.value || 'main_branch';
+        const sel = document.getElementById('qtyItemSelect');
+        if (!sel) return;
+        const prevVal = sel.value;
+
+        const items = state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId);
+        sel.innerHTML = items.length
+            ? items.map(w => `<option value="${w.id}">${w.name} (${w.unit || 'حبة'}) — الحالي: ${formatQty(w.qty || 0)}</option>`).join('')
+            : '<option value="">لا توجد أصناف في هذا الفرع (أضف صنفاً أولاً)</option>';
+
+        if (prevVal && items.some(w => w.id === prevVal)) {
+            sel.value = prevVal;
+        }
+        fillSelectedItemCurrentQty();
+    }
+
+    function fillSelectedItemCurrentQty() {
+        const itemId = document.getElementById('qtyItemSelect')?.value;
+        const priceInp = document.getElementById('qtyItemPriceInput');
+        const item = state.warehouse.find(w => w.id === itemId);
+        if (item && priceInp && !priceInp.value) {
+            priceInp.placeholder = `الحالي: ${formatMoney(item.price || 0)}`;
+        }
+    }
+
+    async function saveStockQuantity() {
+        if (isBusy) return;
+        const btn = document.getElementById('saveQtyBtn');
+        const branchId = document.getElementById('qtyBranchSelect').value || 'main_branch';
+        const itemId = document.getElementById('qtyItemSelect').value;
+        const mode = document.getElementById('qtyUpdateMode').value;
+        const qtyVal = Number(document.getElementById('qtyInputValue').value);
+        const priceRaw = document.getElementById('qtyItemPriceInput').value.trim();
+
+        const item = state.warehouse.find(w => w.id === itemId);
+        if (!item) {
+            showToast('اختر صنفاً من المخزن أولاً');
+            return;
+        }
+        if (isNaN(qtyVal) || qtyVal < 0) {
+            showToast('أدخل كمية صحيحة');
+            return;
+        }
+
+        const currentQty = Number(item.qty || 0);
+        const nextQty = mode === 'set' ? qtyVal : (currentQty + qtyVal);
+        const updatePayload = { qty: nextQty };
+
+        if (priceRaw !== '') {
+            const pVal = Number(priceRaw);
+            if (!isNaN(pVal) && pVal >= 0) {
+                updatePayload.price = pVal;
+            }
+        }
+
+        isBusy = true;
+        btn.disabled = true;
+        try {
+            await db.collection('warehouse').doc(item.id).update(updatePayload);
+            document.getElementById('qtyInputValue').value = '1';
+            document.getElementById('qtyItemPriceInput').value = '';
+            showToast(`تم تحديث كمية ${item.name} إلى ${formatQty(nextQty)}`);
+        } catch (e) {
+            showToast('تعذر تحديث الكمية');
+        } finally {
+            isBusy = false;
+            btn.disabled = false;
+        }
+    }
+
+    function renderQuantitiesPreviewTable() {
+        const tbody = document.getElementById('quantitiesPreviewBody');
+        if (!tbody) return;
+        tbody.innerHTML = state.warehouse.length
+            ? state.warehouse.map(w => `
+                <tr>
+                    <td>${w.branchName || 'الفرع الرئيسي'}</td>
+                    <td><strong>${w.name}</strong></td>
+                    <td><span class="badge badge-unit">${w.unit || 'حبة'}</span></td>
+                    <td><span class="badge ${Number(w.qty || 0) > 0 ? 'badge-cash' : 'badge-expense'} mono">${formatQty(w.qty || 0)}</span></td>
+                    <td><span class="mono">${formatMoney(w.price || 0)}</span></td>
+                </tr>
+            `).join('')
+            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا توجد أصناف مسجلة</td></tr>';
+    }
+
     function populateTransferItems() {
         const fromBranchId = document.getElementById('transferFromBranch').value || 'main_branch';
         const sel = document.getElementById('transferItemSelect');
@@ -2074,7 +2346,7 @@
         );
 
         sel.innerHTML = availableItems.length
-            ? availableItems.map(w => `<option value="${w.id}">${w.name} — متاح: ${w.qty} ${w.unit || 'حبة'}</option>`).join('')
+            ? availableItems.map(w => `<option value="${w.id}">${w.name} — متاح: ${formatQty(w.qty)} ${w.unit || 'حبة'}</option>`).join('')
             : '<option value="">لا توجد أصناف متاحة في هذا المخزن</option>';
 
         if (prevVal && availableItems.some(w => w.id === prevVal)) {
@@ -2103,7 +2375,7 @@
 
         const currentQty = Number(sourceItem.qty || 0);
         if (qtyToMove <= 0 || qtyToMove > currentQty) {
-            showToast(`الكمية غير صحيحة (المتاح: ${currentQty})`);
+            showToast(`الكمية غير صحيحة (المتاح: ${formatQty(currentQty)})`);
             return;
         }
 
@@ -2142,8 +2414,7 @@
             }
 
             document.getElementById('transferQty').value = '1';
-            showToast(`تم نقل ${qtyToMove} ${unit} إلى ${toBranchName}`);
-            closeTransferModal();
+            showToast(`تم نقل ${formatQty(qtyToMove)} ${unit} إلى ${toBranchName}`);
         } catch (e) {
             showToast('تعذر إتمام النقل');
         } finally {
@@ -2163,7 +2434,7 @@
         document.getElementById('kpiTotalSales').textContent = formatMoney(sales);
         document.getElementById('kpiTotalCash').textContent = formatMoney(cash);
         document.getElementById('kpiTotalReceivables').textContent = formatMoney(debts);
-        document.getElementById('kpiWarehouseStock').textContent = totalStockQty;
+        document.getElementById('kpiWarehouseStock').textContent = formatQty(totalStockQty);
         document.getElementById('purchasesTabTotal').textContent = formatMoney(totalPurchases);
         document.getElementById('warehouseTotalValueBadge').textContent = `قيمة المخزون: ${formatMoney(totalStockVal)}`;
     }
@@ -2297,7 +2568,7 @@
                         ${p.notes ? `<div style="font-size:11px; color:var(--text-muted);">${p.notes}</div>` : ''}
                     </td>
                     <td>${p.cashboxName || '-'}</td>
-                    <td>${Number(p.addQty || 0) > 0 ? `<span class="badge badge-cash mono">${p.addQty}</span> ${p.unit || 'حبة'}` : '<span style="color:var(--text-muted);">-</span>'}</td>
+                    <td>${Number(p.addQty || 0) > 0 ? `<span class="badge badge-cash mono">${formatQty(p.addQty)}</span> ${p.unit || 'حبة'}` : '<span style="color:var(--text-muted);">-</span>'}</td>
                     <td><span class="mono" style="color:var(--danger);">${formatMoney(p.amount)}</span></td>
                     <td>${p.employee || '-'}</td>
                     <td>
@@ -2318,7 +2589,7 @@
         const nameVal = prefill ? prefill.name : '';
         const unitVal = prefill ? (prefill.unit || 'حبة') : 'حبة';
         const qtyVal = prefill ? (prefill.qty || 1) : 1;
-        const priceVal = prefill ? (prefill.price || 0) : 0;
+        const priceVal = prefill ? Number(prefill.price || 0).toFixed(2) : '0.00';
 
         const rows = container.querySelectorAll('.invoice-item-row');
         if (prefill && rows.length === 1 && !rows[0].querySelector('.item-name').value.trim()) {
@@ -2338,8 +2609,9 @@
                 <option value="حبة" ${unitVal === 'حبة' ? 'selected' : ''}>حبة</option>
                 <option value="شدة" ${unitVal === 'شدة' ? 'selected' : ''}>شدة</option>
             </select>
-            <input type="number" class="form-control item-qty num-input" value="${qtyVal}" min="1" placeholder="الكمية" oninput="recalculateInvoiceTotal()">
-            <input type="number" class="form-control item-price num-input" value="${priceVal}" min="0" placeholder="السعر" oninput="recalculateInvoiceTotal()">
+            <input type="number" step="0.01" inputmode="decimal" class="form-control item-qty num-input" value="${qtyVal}" min="0.01" placeholder="الكمية" oninput="recalculateInvoiceTotal()">
+            <input type="number" step="0.01" inputmode="decimal" class="form-control item-price num-input" value="${priceVal}" min="0" placeholder="السعر" oninput="recalculateInvoiceTotal()">
+            <div class="row-line-total mono">0.00</div>
             <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove(); recalculateInvoiceTotal();">
                 <i class="fa-solid fa-trash"></i>
             </button>
@@ -2351,7 +2623,12 @@
     function recalculateInvoiceTotal() {
         let subtotal = 0;
         document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(r => {
-            subtotal += Number(r.querySelector('.item-qty').value || 0) * Number(r.querySelector('.item-price').value || 0);
+            const q = Number(r.querySelector('.item-qty').value || 0);
+            const p = Number(r.querySelector('.item-price').value || 0);
+            const lineTotal = q * p;
+            subtotal += lineTotal;
+            const lineBox = r.querySelector('.row-line-total');
+            if (lineBox) lineBox.textContent = formatMoney(lineTotal);
         });
         const discount = Number(document.getElementById('invDiscount').value || 0);
         const net = Math.max(0, subtotal - discount);
@@ -2376,7 +2653,7 @@
                     <tr>
                         <td>${it.name}</td>
                         <td>${it.unit || 'حبة'}</td>
-                        <td><span class="mono">${it.qty}</span></td>
+                        <td><span class="mono">${formatQty(it.qty)}</span></td>
                         <td><span class="mono">${formatMoney(it.price)}</span></td>
                         <td><span class="mono">${formatMoney(rowTotal)}</span></td>
                     </tr>
@@ -2477,12 +2754,25 @@
 
             await db.collection('invoices').doc(invId).set(invoiceDoc);
 
+            // خصم الكميات المباعة من المخزن تلقائياً إن وجد الصنف في الفرع
+            for (const it of items) {
+                const whItem = state.warehouse.find(
+                    w => (w.branchId || 'main_branch') === branchId &&
+                         (w.name || '').trim().toLowerCase() === it.name.toLowerCase() &&
+                         (w.unit || 'حبة') === it.unit
+                );
+                if (whItem) {
+                    const nextQ = Math.max(0, Number(whItem.qty || 0) - Number(it.qty || 0));
+                    await db.collection('warehouse').doc(whItem.id).update({ qty: nextQ });
+                }
+            }
+
             document.getElementById('invoiceItemsContainer').innerHTML = '';
             addInvoiceItemRow();
-            document.getElementById('invDiscount').value = '0';
+            document.getElementById('invDiscount').value = '0.00';
             document.getElementById('invRefNumber').value = '';
             updateInvoiceStatementPreview();
-            showToast('تم حفظ الفاتورة');
+            showToast('تم حفظ الفاتورة وتحديث المخزون');
             openPrintModal(invoiceDoc);
         } catch (e) {
             showToast('تعذر حفظ الفاتورة');
@@ -2543,7 +2833,7 @@
         document.getElementById('invoicesTableBody').innerHTML = list.length
             ? list.map(i => {
                 const itemsSummary = Array.isArray(i.items) && i.items.length
-                    ? i.items.map(it => `${it.name} (${it.qty} ${it.unit || 'حبة'})`).join('، ')
+                    ? i.items.map(it => `${it.name} (${formatQty(it.qty)} ${it.unit || 'حبة'})`).join('، ')
                     : '-';
                 const stmtText = i.notes || `عليكم فاتورة مبيعات برقم ${i.refNumber || i.id || '—'}`;
                 return `
@@ -2710,7 +3000,7 @@
                 balance: opening
             });
             document.getElementById('newCashboxName').value = '';
-            document.getElementById('newCashboxOpening').value = '0';
+            document.getElementById('newCashboxOpening').value = '0.00';
             showToast('تمت إضافة الصندوق');
         } finally {
             isBusy = false;
@@ -2727,7 +3017,7 @@
         const cb = state.cashboxes.find(x => x.id === cbId);
         if (!cb) return;
         const currentOpen = getCashboxOpening(cb);
-        const nextVal = prompt(`الرصيد الافتتاحي لـ (${cb.name}):`, currentOpen);
+        const nextVal = prompt(`الرصيد الافتتاحي لـ (${cb.name}):`, currentOpen.toFixed(2));
         if (nextVal === null) return;
         const parsed = Number(nextVal);
         if (isNaN(parsed) || parsed < 0) {
@@ -2891,9 +3181,8 @@
             }
             document.getElementById('newItemName').value = '';
             document.getElementById('newItemQty').value = '1';
-            document.getElementById('newItemPrice').value = '0';
+            document.getElementById('newItemPrice').value = '0.00';
             showToast('تم حفظ الصنف في المخزن');
-            closeAddItemModal();
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -2909,7 +3198,7 @@
         if (!item) return;
         const nextQty = prompt(`تعديل كمية (${item.name} - ${item.unit || 'حبة'}):`, item.qty);
         if (nextQty === null) return;
-        const nextPrice = prompt(`تعديل سعر (${item.name}):`, item.price);
+        const nextPrice = prompt(`تعديل سعر (${item.name}):`, Number(item.price || 0).toFixed(2));
         if (nextPrice === null) return;
         await db.collection('warehouse').doc(itemId).update({
             qty: Number(nextQty || 0),
@@ -2944,7 +3233,7 @@
                         <td>${w.branchName || 'الفرع الرئيسي'}</td>
                         <td><strong>${w.name}</strong></td>
                         <td><span class="badge badge-unit">${w.unit || 'حبة'}</span></td>
-                        <td><span class="badge ${q > 0 ? 'badge-cash' : 'badge-expense'} mono">${q}</span></td>
+                        <td><span class="badge ${q > 0 ? 'badge-cash' : 'badge-expense'} mono">${formatQty(q)}</span></td>
                         <td><span class="mono">${formatMoney(p)}</span></td>
                         <td><span class="mono">${formatMoney(q * p)}</span></td>
                         <td>
@@ -3206,6 +3495,7 @@
         if (isBusy) return;
         const btn = document.getElementById('saveEmployeeBtn');
         const fullName = document.getElementById('newEmpFullName').value.trim();
+        const salary = Number(document.getElementById('newEmpSalary').value || 0);
         const username = document.getElementById('newEmpUsername').value.trim();
         const password = document.getElementById('newEmpPassword').value.trim();
         const role = document.getElementById('newEmpRole').value;
@@ -3213,8 +3503,12 @@
         const canEdit = isFull ? true : document.getElementById('newEmpCanEdit').checked;
         const canDelete = isFull ? true : document.getElementById('newEmpCanDelete').checked;
 
+        const allowedMenus = isFull
+            ? MAIN_MENU_ITEMS.map(m => m.key)
+            : Array.from(document.querySelectorAll('#newEmpMenusGrid .emp-menu-cb:checked')).map(cb => cb.value);
+
         if (!fullName || !username || !password) {
-            showToast('أدخل جميع بيانات الحساب');
+            showToast('أدخل الاسم واسم الدخول وكلمة المرور');
             return;
         }
 
@@ -3230,22 +3524,76 @@
             await db.collection('employees').doc(id).set({
                 id,
                 fullName,
+                salary,
                 username,
                 password,
                 role,
                 canEdit,
                 canDelete,
+                allowedMenus,
                 active: true
             });
             document.getElementById('newEmpFullName').value = '';
+            document.getElementById('newEmpSalary').value = '0.00';
             document.getElementById('newEmpUsername').value = '';
             document.getElementById('newEmpPassword').value = '';
             document.getElementById('newEmpCanEdit').checked = false;
             document.getElementById('newEmpCanDelete').checked = false;
-            showToast('تم حفظ الحساب');
+            setAllMenuPerms(true);
+            showToast('تم حفظ الموظف والراتب والصلاحيات');
         } finally {
             isBusy = false;
             btn.disabled = false;
+        }
+    }
+
+    async function editEmployeeSalary(empId) {
+        if (isBusy || !canManageUsers()) return;
+        const emp = state.employees.find(e => e.id === empId);
+        if (!emp) return;
+        const nextSal = prompt(`تعديل راتب (${emp.fullName}):`, Number(emp.salary || 0).toFixed(2));
+        if (nextSal === null) return;
+        const parsed = Number(nextSal);
+        if (isNaN(parsed) || parsed < 0) {
+            showToast('أدخل راتباً صحيحاً');
+            return;
+        }
+        isBusy = true;
+        try {
+            await db.collection('employees').doc(empId).update({ salary: parsed });
+            showToast('تم تحديث الراتب');
+        } finally {
+            isBusy = false;
+        }
+    }
+
+    async function editEmployeeMenus(empId) {
+        if (isBusy || !canManageUsers()) return;
+        const emp = state.employees.find(e => e.id === empId);
+        if (!emp || emp.role === 'admin' || emp.role === 'supervisor') return;
+
+        const currentAllowed = getAllowedMenusForUser(emp);
+        const menuGuide = MAIN_MENU_ITEMS.map((m, idx) => `${idx + 1}. ${m.label} (${currentAllowed.includes(m.key) ? 'مفعل' : 'مغلق'})`).join('\n');
+        const answer = prompt(
+            `أدخل أرقام الأقسام المسموحة لـ (${emp.fullName}) مفصولة بفاصلة، أو اكتب (الكل):\n\n${menuGuide}`,
+            MAIN_MENU_ITEMS.map((m, idx) => currentAllowed.includes(m.key) ? (idx + 1) : null).filter(Boolean).join(',')
+        );
+        if (answer === null) return;
+
+        let chosenKeys = [];
+        if (answer.trim() === 'الكل' || answer.trim().toLowerCase() === 'all') {
+            chosenKeys = MAIN_MENU_ITEMS.map(m => m.key);
+        } else {
+            const nums = answer.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 1 && n <= MAIN_MENU_ITEMS.length);
+            chosenKeys = nums.map(n => MAIN_MENU_ITEMS[n - 1].key);
+        }
+
+        isBusy = true;
+        try {
+            await db.collection('employees').doc(empId).update({ allowedMenus: chosenKeys });
+            showToast('تم تحديث الأقسام المسموحة للموظف');
+        } finally {
+            isBusy = false;
         }
     }
 
@@ -3306,10 +3654,25 @@
 
     function renderEmployeesTable() {
         const tbody = document.getElementById('employeesTableBody');
+        if (!tbody) return;
         const allowDeleteUsers = canManageUsers();
+
+        const totalSalaries = state.employees.reduce((s, e) => s + Number(e.salary || 0), 0);
+        const countEl = document.getElementById('empCountStat');
+        const salEl = document.getElementById('empTotalSalariesStat');
+        if (countEl) countEl.textContent = String(state.employees.length);
+        if (salEl) salEl.textContent = formatMoney(totalSalaries);
+
         tbody.innerHTML = state.employees.map(emp => {
             const full = emp.role === 'admin' || emp.role === 'supervisor';
             const isProtectedAdmin = emp.id === 'emp_admin' || emp.username === ADMIN_USER;
+            const allowed = getAllowedMenusForUser(emp);
+            const allowedLabels = full
+                ? '<span class="badge badge-sup">كل الأقسام</span>'
+                : (allowed.length
+                    ? allowed.map(k => MAIN_MENU_ITEMS.find(m => m.key === k)?.label).filter(Boolean).join('، ')
+                    : '<span style="color:var(--danger);">لا يوجد أقسام</span>');
+
             const permsHtml = full
                 ? '<span class="badge badge-sup">تعديل + حذف (كامل)</span>'
                 : `
@@ -3323,11 +3686,20 @@
             const deleteBtnHtml = (allowDeleteUsers && !isProtectedAdmin)
                 ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeAccount('${emp.id}')" title="حذف المستخدم"><i class="fa-solid fa-trash"></i></button>`
                 : '';
+
             return `
                 <tr>
                     <td><strong>${emp.fullName}</strong></td>
+                    <td>
+                        <span class="mono" style="color:var(--success);">${formatMoney(emp.salary || 0)}</span>
+                        ${allowDeleteUsers ? `<button class="btn btn-outline btn-sm" style="padding:3px 7px; margin-right:4px;" onclick="editEmployeeSalary('${emp.id}')" title="تعديل الراتب"><i class="fa-solid fa-pen"></i></button>` : ''}
+                    </td>
                     <td><span class="mono">${emp.username}</span></td>
                     <td><span class="badge ${roleBadgeClass(emp.role)}">${roleLabel(emp.role)}</span></td>
+                    <td style="max-width:220px; font-size:12px;">
+                        <div>${allowedLabels}</div>
+                        ${(!full && allowDeleteUsers) ? `<button class="btn btn-outline btn-sm" style="padding:2px 8px; margin-top:4px; font-size:11px;" onclick="editEmployeeMenus('${emp.id}')">تحديد الأقسام</button>` : ''}
+                    </td>
                     <td>${permsHtml}</td>
                     <td>${emp.active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
                     <td style="white-space:nowrap;">
@@ -3340,7 +3712,18 @@
             `;
         }).join('');
     }
+
+    initMenuPermissionCheckboxes();
 </script>
 </body>
 </html>
 ```[cite: 4]
+
+---
+
+### كيف تستخدم التعديلات الجديدة بسهولة؟
+* **في المبيعات والفواتير:** اختر الفرع والعميل، ابحث عن الصنف وأضفه بضغطة زر أو أضف سطراً جديداً، وستُحتسب قيمة كل سطر وصافي الفاتورة بالعشريات والفواصل تلقائياً مع خصم الكمية من المخزن عند الحفظ.
+* **إدخال كميات الأصناف:** من القائمة الرئيسية اضغط **«إدخال كميات الأصناف»** لتضيف كمية على الرصيد الحالي أو تحدد الرصيد الفعلي الموجود في الفرع.
+* **الموظفون والرواتب وصلاحيات الأقسام:** من القائمة الرئيسية اضغط **«الموظفون والرواتب»** لإدخال اسم الموظف وراتبه وتحديد الأقسام التي تظهر له بالضبط في القائمة الرئيسية، ويمكنك تعديل الراتب أو الأقسام لأي موظف لاحقاً من الجدول.
+
+هل ترغب بتعديل طريقة خصم أو إرجاع الكميات من المخزن عند تعديل أو حذف فاتورة لاحقاً؟
