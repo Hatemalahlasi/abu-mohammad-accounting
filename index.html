@@ -2269,7 +2269,7 @@
                 </button>
             </div>
 
-            <div class="card-box">
+            <div class="card-box" id="employeeProductionFinancialSummary">
                 <div class="card-title"><span><i class="fa-solid fa-wallet"></i> مستحقات عمال القطعة لهذا الشهر</span></div>
                 <div class="table-responsive">
                     <table>
@@ -7473,14 +7473,19 @@ function initMenuPermissionCheckboxes() {
     function renderEmployeeProduction() {
         if (!canAccessMenu('employeeProductionTab')) return;
         const period = getCurrentPayrollPeriod();
+        const isManagementView = hasFullAccess(currentUser);
         const label = document.getElementById('employeeProductionPeriodLabel');
-        if (label) label.textContent = `الفترة الحالية: ${period}. اختر أحد الموظفين الذين سمح لك المشرف بتسجيل إنتاجهم؛ وسيُحسب المستحق وفق تسعيرة العمل المحددة له.`;
+        if (label) label.textContent = isManagementView
+            ? `الفترة الحالية: ${period}. اختر أحد الموظفين الذين سمح لك المشرف بتسجيل إنتاجهم؛ وسيُحسب المستحق وفق تسعيرة العمل المحددة له.`
+            : `الفترة الحالية: ${period}. يظهر هنا الإنتاج الذي سجلته أنت فقط، مع قيمة كل تسجيل حسب الكمية التي أدخلتها. لا يظهر في هذه الصفحة إجمالي الرصيد المتبقي أو المبالغ المصروفة.`;
         const dateInput = document.getElementById('productionDate');
         if (dateInput && !dateInput.value) dateInput.value = getLocalDateKey();
         populateProductionStaffOptions();
         const staff = getProductionVisibleStaff();
+        const summaryCard = document.getElementById('employeeProductionFinancialSummary');
+        if (summaryCard) summaryCard.classList.toggle('hidden', !isManagementView);
         const summaryBody = document.getElementById('employeeProductionSummaryBody');
-        if (summaryBody) {
+        if (summaryBody && isManagementView) {
             summaryBody.innerHTML = staff.length ? staff.map(item => {
                 const earned = getEmployeePeriodProductionEarnings(item.id, period);
                 const paid = getEmployeePeriodSpent(item.id, period);
@@ -7495,22 +7500,39 @@ function initMenuPermissionCheckboxes() {
             }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لم يحدد المشرف موظفين لهذا الحساب. اطلب من المدير فتح «حسابات الدخول والصلاحيات» واختيار الموظفين المسموح بتسجيل إنتاجهم.</td></tr>';
         }
         const visibleIds = new Set(staff.map(item => item.id));
-        const rows = (state.employeeProduction || []).filter(item => hasFullAccess(currentUser) || visibleIds.has(item.staffId)).slice()
-            .sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
+        const actorId = String(currentUser?.id || '');
+        const actorNames = new Set([
+            normalizeStaffName(getAccountDisplayName(currentUser)),
+            normalizeStaffName(currentUser?.username || '')
+        ].filter(Boolean));
+        const rows = (state.employeeProduction || []).filter(item => {
+            const staffAllowed = isManagementView || visibleIds.has(item.staffId);
+            if (!staffAllowed) return false;
+            if (isManagementView) return true;
+            // الموظف يرى فقط السجلات التي أدخلها بحسابه، وليس إنتاج بقية من يستطيع تسجيلهم.
+            if (item.createdByUserId) return String(item.createdByUserId) === actorId;
+            return actorNames.has(normalizeStaffName(item.createdBy || ''));
+        }).slice().sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
         const tbody = document.getElementById('employeeProductionTableBody');
+        const tableHead = document.querySelector('#employeeProductionTab .card-box:last-child thead tr');
+        if (tableHead && !isManagementView) {
+            tableHead.innerHTML = '<th>التاريخ</th><th>الموظف</th><th>نوع العمل</th><th>الكمية التي سجلتها</th><th>سعر الوحدة</th><th>مستحق هذا التسجيل</th>';
+        } else if (tableHead && isManagementView) {
+            tableHead.innerHTML = '<th>التاريخ</th><th>الموظف</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th><th>سجل بواسطة</th><th>إجراء</th>';
+        }
         if (tbody) {
-            tbody.innerHTML = rows.length ? rows.map(item => `
-                <tr>
+            tbody.innerHTML = rows.length ? rows.map(item => {
+                const commonCells = `
                     <td>${item.date || '-'}</td>
                     <td>${item.staffName || getStaffById(item.staffId)?.fullName || '-'}</td>
                     <td>${item.workName || '-'} (${item.unit || '-'})</td>
                     <td><span class="mono">${formatQty(item.quantity || 0)}</span></td>
                     <td><span class="mono">${formatMoney(item.unitRate || 0)} ${item.currency || 'YER'}</span></td>
-                    <td><strong class="mono">${formatMoney(item.amount || 0)} ${item.currency || 'YER'}</strong></td>
-                    <td>${item.createdBy || '-'}</td>
-                    <td>${canManageUsers() || (canDeleteRecord() && visibleIds.has(item.staffId)) ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeProduction('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button>` : '<span style="color:var(--text-muted);">—</span>'}</td>
-                </tr>
-            `).join('') : '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا يوجد إنتاج مسجل في الحساب المسموح لك</td></tr>';
+                    <td><strong class="mono">${formatMoney(Number(item.quantity || 0) * Number(item.unitRate || 0))} ${item.currency || 'YER'}</strong></td>`;
+                const managementCells = `<td>${item.createdBy || '-'}</td>
+                    <td>${canManageUsers() || (canDeleteRecord() && visibleIds.has(item.staffId)) ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeProduction('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button>` : '<span style="color:var(--text-muted);">—</span>'}</td>`;
+                return `<tr>${commonCells}${isManagementView ? managementCells : ''}</tr>`;
+            }).join('') : `<tr><td colspan="${isManagementView ? 8 : 6}" style="text-align:center; color:var(--text-muted);">${isManagementView ? 'لا يوجد إنتاج مسجل في الحساب المسموح لك' : 'لا توجد سجلات إنتاج سجلتها بهذا الحساب خلال الفترة الحالية'}</td></tr>`;
         }
         updateProductionPreview();
     }
