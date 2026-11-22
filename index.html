@@ -1136,7 +1136,62 @@
             .mobile-cart-dock .btn{min-width:118px;padding:9px}
         }
 
-    </style>
+    
+
+        /* تحسين وضوح شاشة إدخال الكميات على الهاتف */
+        #quantitiesTab, #quantitiesTab * { font-family: 'Cairo', sans-serif; }
+        #quantitiesTab .card-box { min-width: 0; }
+        #qtyAdjustmentRows .batch-qty-row { vertical-align: top; }
+        .qty-item-picker { width: 100%; min-width: 0; }
+        .qty-item-search {
+            display:block; width:100%; min-height:76px; height:76px; padding:12px 14px;
+            resize:none; overflow-y:auto; white-space:pre-wrap; overflow-wrap:anywhere;
+            word-break:normal; text-align:right; direction:rtl; font-size:16px;
+            line-height:1.7; font-weight:700; color:#172033; background:#fff;
+            border:1.5px solid #cbd5e1; border-radius:12px;
+        }
+        .qty-item-search::placeholder { color:#64748b; font-weight:500; font-size:13px; }
+        .qty-item-suggestions {
+            width:100%; max-height:280px; padding:8px; gap:8px;
+            border:1.5px solid #cbd5e1; border-radius:12px; background:#fff;
+        }
+        .qty-item-suggestion {
+            width:100%; min-height:58px; padding:12px 14px; text-align:right;
+            white-space:normal; overflow-wrap:anywhere; word-break:normal;
+            font-size:15px; line-height:1.65; border-radius:11px; background:#f8fafc;
+        }
+        .qty-item-suggestion strong { display:block; font-size:15px; line-height:1.65; font-weight:800; }
+        .qty-item-suggestion small { display:block; font-size:12px; line-height:1.6; }
+        @media (max-width:600px) {
+            #quantitiesTab .grid-2 { grid-template-columns:minmax(0,1fr); gap:10px; }
+            #quantitiesTab .form-group label { display:block; margin-bottom:7px; font-size:14px; font-weight:800; }
+            #qtyAdjustmentRows { display:flex !important; flex-direction:column; width:100%; gap:12px; }
+            #qtyAdjustmentRows .batch-qty-row {
+                display:grid !important; width:100% !important; min-width:0;
+                grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+                gap:12px !important; padding:13px !important; margin:0;
+                border:1px solid #d7e0e9 !important; border-radius:15px !important;
+                background:#fff !important; box-shadow:0 4px 14px rgba(15,23,42,.055);
+            }
+            #qtyAdjustmentRows .batch-qty-row td { display:block !important; width:100%; min-width:0; padding:0 !important; border:0 !important; }
+            #qtyAdjustmentRows .batch-qty-row td:first-child { grid-column:1 / -1 !important; }
+            #qtyAdjustmentRows .batch-qty-row td:nth-child(2)::before,
+            #qtyAdjustmentRows .batch-qty-row td:nth-child(3)::before {
+                display:block; margin:0 0 6px; color:#475569; font-size:12px; font-weight:800;
+            }
+            #qtyAdjustmentRows .batch-qty-row td:nth-child(2)::before { content:'الكمية المراد إضافتها'; }
+            #qtyAdjustmentRows .batch-qty-row td:nth-child(3)::before { content:'الرصيد الحالي'; }
+            #qtyAdjustmentRows .batch-qty-row td:nth-child(4) { grid-column:1 / -1 !important; text-align:left !important; }
+            #qtyAdjustmentRows .batch-qty-row td:nth-child(4) .btn { min-height:42px; }
+            #qtyAdjustmentRows .form-control { width:100%; min-width:0; min-height:48px; font-size:16px; }
+            #qtyAdjustmentRows .batch-qty-current { display:block; min-height:48px; padding:12px 10px; background:#f1f5f9; border-radius:10px; text-align:center; font-size:15px; }
+            .qty-item-search { min-height:82px; height:82px; font-size:16px; }
+            .qty-item-suggestion { min-height:64px; padding:12px; }
+            #qtyEntryEmptyState { line-height:1.8; font-size:13px; }
+            #quantitiesTab .btn-full { min-height:54px; font-size:16px; font-weight:800; }
+        }
+
+</style>
 </head>
 <body>
 
