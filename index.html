@@ -838,7 +838,7 @@
                 </button>
                 <button class="nav-tab profit-tab" data-menu-key="employeeProductionTab" onclick="openFullPage('employeeProductionTab')">
                     <i class="fa-solid fa-people-carry-box"></i>
-                    <span>إنتاج الموظفين بالقطعة</span>
+                    <span>إضافة شغل للموظفين</span>
                 </button>
             </div>
         </div>
@@ -1631,12 +1631,15 @@
                         <i class="fa-solid fa-user-check"></i> حفظ تعريف الموظف
                     </button>
                     <div class="employee-permission-note" style="margin-top:10px; margin-bottom:0;">
-                        عرّف الموظف هنا واختر نظام أجره: راتب شهري ثابت، أو أجر بالقطعة مع تحديد سعر كل نوع عمل ووحدته. يسجل المشرف الكميات من زر «إنتاج الموظفين بالقطعة»، أما اسم المستخدم وكلمة المرور فمن صفحة «الصلاحيات».
+                        عرّف الموظف هنا واختر نظام أجره. يمنع النظام تكرار اسم الموظف؛ عند وجوده استخدم أزرار التعديل. يسجل المشرف الكميات من زر «إضافة شغل للموظفين»، أما اسم المستخدم وكلمة المرور فمن صفحة «الصلاحيات».
                     </div>
                 </div>
 
                 <div class="card-box">
-                    <div class="card-title"><span><i class="fa-solid fa-users"></i> الموظفون والرواتب والحسابات المرتبطة</span></div>
+                    <div class="card-title">
+                        <span><i class="fa-solid fa-users"></i> الموظفون والرواتب والحسابات المرتبطة</span>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="removeDuplicateStaffProfiles()"><i class="fa-solid fa-filter-circle-xmark"></i> فحص وإزالة التكرار المتطابق</button>
+                    </div>
                     <div class="table-responsive">
                         <table>
                             <thead>
@@ -1731,7 +1734,7 @@
         <!-- تسجيل إنتاج الموظفين الذين يعملون بنظام القطعة -->
         <section id="employeeProductionTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-people-carry-box"></i> تسجيل إنتاج الموظفين بالقطعة</div>
+                <div class="fullpage-title"><i class="fa-solid fa-people-carry-box"></i> إضافة شغل للموظفين — تسجيل الإنتاج بالقطعة</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
@@ -1739,7 +1742,7 @@
             <div class="employee-permission-note" id="employeeProductionPeriodLabel">يسجل المشرف عدد القطع التي أنجزها كل موظف، ويحسب النظام مستحقه حسب التسعيرة المحددة مسبقاً.</div>
 
             <div class="card-box" id="employeeProductionEntryCard">
-                <div class="card-title"><span><i class="fa-solid fa-calculator"></i> تسجيل كمية عمل جديدة</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-calculator"></i> إضافة شغل جديد لموظف يعمل بالقطعة</span></div>
                 <div class="grid-4">
                     <div class="form-group">
                         <label>اختر الموظف</label>
@@ -1993,7 +1996,7 @@
         { key: 'employeesTab', label: 'الموظفون' },
         { key: 'employeePermissionsTab', label: 'الصلاحيات' },
         { key: 'employeeExpensesTab', label: 'مصروفات الموظفين' },
-        { key: 'employeeProductionTab', label: 'إنتاج الموظفين بالقطعة' }
+        { key: 'employeeProductionTab', label: 'إضافة شغل للموظفين' }
     ];
 
     const firebaseConfig = {
@@ -2056,6 +2059,44 @@
             staff.push(getLegacyStaffFromAccount(account));
         });
         return staff;
+    }
+
+    function normalizeStaffName(value) {
+        return String(value || '')
+            .normalize('NFKC')
+            .replace(/[\u064B-\u065F\u0670]/g, '')
+            .replace(/ـ/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLocaleLowerCase('ar');
+    }
+
+    function stableStaffIdFromName(name) {
+        const key = normalizeStaffName(name);
+        // FNV-1a hash: deterministic Firestore document ID, so two quick submissions
+        // for the same employee cannot create two separate documents.
+        let hash = 2166136261;
+        for (let i = 0; i < key.length; i++) {
+            hash ^= key.charCodeAt(i);
+            hash = Math.imul(hash, 16777619);
+        }
+        return `staff_name_${(hash >>> 0).toString(16)}`;
+    }
+
+    function staffProfileDuplicateSignature(staff) {
+        const rates = (staff.pieceRates || []).map(rate => [
+            normalizeStaffName(rate.name),
+            String(rate.unit || ''),
+            Number(rate.rate || 0).toFixed(4)
+        ].join('|')).sort();
+        return JSON.stringify({
+            name: normalizeStaffName(staff.fullName),
+            payType: staff.payType || 'monthly',
+            branch: staff.warehouseBranchId || '',
+            currency: getStaffSalaryCurrency(staff),
+            salary: Number(staff.salary || 0).toFixed(2),
+            rates
+        });
     }
 
     function getStaffById(staffId) {
@@ -4291,6 +4332,7 @@
         if (isBusy || !canManageUsers()) return;
         const btn = document.getElementById('saveEmployeeBtn');
         const fullName = document.getElementById('newEmpFullName').value.trim();
+        const nameKey = normalizeStaffName(fullName);
         const payType = document.getElementById('newEmpPayType')?.value || 'monthly';
         const salary = payType === 'piecework' ? 0 : Number(document.getElementById('newEmpSalary').value || 0);
         const salaryCurrency = document.getElementById('newEmpSalaryCurrency').value || 'YER';
@@ -4300,6 +4342,11 @@
 
         if (!fullName) {
             showToast('أدخل اسم الموظف');
+            return;
+        }
+        const duplicate = getAllStaff().find(item => normalizeStaffName(item.fullName) === nameKey);
+        if (duplicate) {
+            showToast(`الموظف «${duplicate.fullName}» مسجل مسبقاً. استخدم زر تعديل الاسم أو التسعيرة بدل إضافته مرة ثانية.`);
             return;
         }
         if (payType === 'monthly' && (!Number.isFinite(salary) || salary < 0)) {
@@ -4322,10 +4369,12 @@
         isBusy = true;
         btn.disabled = true;
         try {
-            const id = `staff_${Date.now()}`;
+            const id = stableStaffIdFromName(fullName);
+            const docRef = db.collection('staff').doc(id);
             const record = {
                 id,
                 fullName,
+                nameKey,
                 payType,
                 salary,
                 salaryCurrency,
@@ -4336,7 +4385,17 @@
                 createdAt: new Date().toISOString(),
                 createdBy: currentUser?.fullName || 'المدير'
             };
-            await db.collection('staff').doc(id).set(record);
+            // Atomic existence check: simultaneous/double submissions for the same name
+            // converge on the same document ID and only one can create the profile.
+            await db.runTransaction(async transaction => {
+                const existing = await transaction.get(docRef);
+                if (existing.exists) {
+                    const err = new Error('STAFF_ALREADY_EXISTS');
+                    err.code = 'STAFF_ALREADY_EXISTS';
+                    throw err;
+                }
+                transaction.set(docRef, record);
+            });
             state.staff.push(record);
             document.getElementById('newEmpFullName').value = '';
             document.getElementById('newEmpSalary').value = '0.00';
@@ -4348,11 +4407,18 @@
             renderEmployeesTable();
             populateNewUserStaffOptions();
             showToast(payType === 'piecework'
-                ? 'تم تعريف موظف القطعة وحفظ تسعيراته. سجل إنتاجه من زر «إنتاج الموظفين بالقطعة»'
+                ? 'تم تعريف موظف القطعة وحفظ تسعيراته. سجل عمله من زر «إضافة شغل للموظفين»'
                 : 'تم تعريف الموظف براتب شهري. لإضافة حساب دخول افتح «الصلاحيات»');
         } catch (e) {
             console.warn('Create staff error:', e);
-            showToast('تعذر حفظ تعريف الموظف');
+            if (e?.code === 'STAFF_ALREADY_EXISTS' || e?.message === 'STAFF_ALREADY_EXISTS') {
+                showToast('هذا الاسم مسجل مسبقاً. لن تتم إضافة سجل مكرر.');
+                await reloadAllData(false);
+            } else {
+                // Refresh in case the write reached Firestore but the client lost the response.
+                try { await reloadAllData(false); } catch (_) {}
+                showToast('تعذر حفظ تعريف الموظف. تم تحديث البيانات للتأكد من عدم تكراره.');
+            }
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -4612,6 +4678,219 @@
         }
     }
 
+    async function editEmployeeName(staffId) {
+        if (isBusy || !canManageUsers()) return;
+        const staff = getStaffById(staffId);
+        if (!staff) return;
+        const answer = prompt('تعديل اسم الموظف:', staff.fullName || '');
+        if (answer === null) return;
+        const nextName = answer.trim();
+        const nextKey = normalizeStaffName(nextName);
+        if (!nextName) {
+            showToast('اسم الموظف لا يمكن أن يكون فارغاً');
+            return;
+        }
+        const duplicate = getAllStaff().find(item => item.id !== staff.id && normalizeStaffName(item.fullName) === nextKey);
+        if (duplicate) {
+            showToast(`لا يمكن استخدام هذا الاسم؛ الموظف «${duplicate.fullName}» مسجل مسبقاً.`);
+            return;
+        }
+        isBusy = true;
+        try {
+            if (staff.legacy) {
+                await db.collection('employees').doc(staff.legacyUserId).update({ fullName: nextName });
+                const account = state.employees.find(item => item.id === staff.legacyUserId);
+                if (account) account.fullName = nextName;
+            } else {
+                const oldId = staff.id;
+                const nextId = stableStaffIdFromName(nextName);
+                const linked = getStaffLoginAccount(staff);
+                const nextRecord = { ...staff, id: nextId, fullName: nextName, nameKey: nextKey };
+                await db.runTransaction(async transaction => {
+                    if (nextId !== oldId) {
+                        const nextRef = db.collection('staff').doc(nextId);
+                        const existing = await transaction.get(nextRef);
+                        if (existing.exists) {
+                            const err = new Error('STAFF_ALREADY_EXISTS');
+                            err.code = 'STAFF_ALREADY_EXISTS';
+                            throw err;
+                        }
+                        transaction.set(nextRef, nextRecord);
+                        transaction.delete(db.collection('staff').doc(oldId));
+                    } else {
+                        transaction.update(db.collection('staff').doc(oldId), { fullName: nextName, nameKey: nextKey });
+                    }
+                    if (linked) {
+                        transaction.update(db.collection('employees').doc(linked.id), { staffId: nextId, fullName: nextName });
+                    }
+                    // Preserve all historical payroll and production links if the document ID changes.
+                    if (nextId !== oldId) {
+                        (state.employeeProduction || []).filter(item => item.staffId === oldId).forEach(item => {
+                            transaction.update(db.collection('employeeProduction').doc(item.id), { staffId: nextId, staffName: nextName });
+                        });
+                        (state.employeeExpenses || []).filter(item => item.staffId === oldId).forEach(item => {
+                            transaction.update(db.collection('employeeExpenses').doc(item.id), { staffId: nextId, staffName: nextName });
+                        });
+                    }
+                });
+                state.staff = state.staff.map(item => item.id === oldId ? nextRecord : item);
+                if (linked) {
+                    linked.staffId = nextId;
+                    linked.fullName = nextName;
+                    staff.userAccountId = linked.id;
+                    nextRecord.userAccountId = linked.id;
+                }
+                (state.employeeProduction || []).forEach(item => {
+                    if (item.staffId === oldId) { item.staffId = nextId; item.staffName = nextName; }
+                });
+                (state.employeeExpenses || []).forEach(item => {
+                    if (item.staffId === oldId) { item.staffId = nextId; item.staffName = nextName; }
+                });
+            }
+            renderEmployeesTable();
+            renderEmployeeProduction();
+            renderEmployeeExpenses();
+            populateNewUserStaffOptions();
+            showToast('تم تعديل اسم الموظف بنجاح');
+        } catch (e) {
+            console.warn('Edit staff name error:', e);
+            if (e?.code === 'STAFF_ALREADY_EXISTS' || e?.message === 'STAFF_ALREADY_EXISTS') {
+                showToast('يوجد موظف مسجل بهذا الاسم مسبقاً');
+            } else {
+                showToast('تعذر تعديل اسم الموظف');
+            }
+        } finally {
+            isBusy = false;
+        }
+    }
+
+    async function deleteStaffDefinition(staffId) {
+        if (isBusy || !canManageUsers()) return;
+        const staff = getStaffById(staffId);
+        if (!staff) return;
+        const account = getStaffLoginAccount(staff);
+        if (account && (account.id === 'emp_admin' || account.username === ADMIN_USER)) {
+            showToast('لا يمكن حذف حساب المدير العام الأساسي');
+            return;
+        }
+        if (account && currentUser?.id === account.id) {
+            showToast('لا يمكنك حذف حساب الدخول الذي تستخدمه حالياً');
+            return;
+        }
+        const accountText = account ? ' وسيُحذف حساب الدخول المرتبط به' : '';
+        const relatedProduction = (state.employeeProduction || []).filter(item => item.staffId === staff.id).length;
+        const relatedExpenses = (state.employeeExpenses || []).filter(item => item.staffId === staff.id).length;
+        const confirmed = confirm(
+            `هل تريد حذف تعريف الموظف «${staff.fullName}»؟${accountText}\n\n` +
+            `سيتم الاحتفاظ بسجلات الإنتاج (${relatedProduction}) والمصروفات (${relatedExpenses}) كسجلات تاريخية، ولن تُحذف المبالغ القديمة.`
+        );
+        if (!confirmed) return;
+        isBusy = true;
+        try {
+            const batch = db.batch();
+            if (!staff.legacy) batch.delete(db.collection('staff').doc(staff.id));
+            if (account) batch.delete(db.collection('employees').doc(account.id));
+            await batch.commit();
+            state.staff = state.staff.filter(item => item.id !== staff.id);
+            if (account) state.employees = state.employees.filter(item => item.id !== account.id);
+            renderEmployeesTable();
+            renderEmployeeProduction();
+            renderEmployeeExpenses();
+            populateNewUserStaffOptions();
+            renderEmployeePermissionsTable();
+            showToast('تم حذف تعريف الموظف وحساب دخوله إن وجد، مع الاحتفاظ بالسجلات التاريخية');
+        } catch (e) {
+            console.warn('Delete staff definition error:', e);
+            showToast('تعذر حذف الموظف. لم يتم حذف السجلات المالية');
+        } finally {
+            isBusy = false;
+        }
+    }
+
+    async function removeDuplicateStaffProfiles() {
+        if (isBusy || !canManageUsers()) return;
+        const groupsMap = new Map();
+        (state.staff || []).forEach(staff => {
+            const signature = staffProfileDuplicateSignature(staff);
+            if (!groupsMap.has(signature)) groupsMap.set(signature, []);
+            groupsMap.get(signature).push(staff);
+        });
+        const groups = Array.from(groupsMap.values()).filter(group => group.length > 1);
+        const duplicateCount = groups.reduce((sum, group) => sum + group.length - 1, 0);
+        if (!duplicateCount) {
+            showToast('لم يتم العثور على تعريفات متطابقة مكررة');
+            return;
+        }
+        if (!confirm(`تم العثور على ${duplicateCount} تعريف مكرر مطابق تماماً.\nسيتم الإبقاء على تعريف واحد، ونقل حساب الدخول وسجلات الإنتاج والمصروفات إليه دون حذف السجلات المالية.\nمتابعة؟`)) return;
+        isBusy = true;
+        let removed = 0;
+        let skipped = 0;
+        try {
+            for (const group of groups) {
+                const withAccounts = group.map(item => ({ staff: item, account: getStaffLoginAccount(item) }))
+                    .filter(entry => entry.account);
+                if (withAccounts.length > 1 || withAccounts.some(entry => entry.account.id === currentUser?.id)) {
+                    skipped += group.length - 1;
+                    continue;
+                }
+                const canonical = group.slice().sort((a, b) => {
+                    const aLinked = getStaffLoginAccount(a) ? 1 : 0;
+                    const bLinked = getStaffLoginAccount(b) ? 1 : 0;
+                    if (aLinked !== bLinked) return bLinked - aLinked;
+                    return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+                })[0];
+                let canonicalAccount = getStaffLoginAccount(canonical);
+                for (const duplicate of group.filter(item => item.id !== canonical.id)) {
+                    const linked = getStaffLoginAccount(duplicate);
+                    if (linked) {
+                        await db.collection('employees').doc(linked.id).update({
+                            staffId: canonical.id,
+                            fullName: canonical.fullName,
+                            salary: Number(canonical.salary || 0),
+                            salaryCurrency: getStaffSalaryCurrency(canonical),
+                            payType: canonical.payType || 'monthly',
+                            pieceRates: Array.isArray(canonical.pieceRates) ? canonical.pieceRates : [],
+                            warehouseBranchId: canonical.warehouseBranchId || '',
+                            warehouseBranchName: canonical.warehouseBranchName || ''
+                        });
+                        linked.staffId = canonical.id;
+                        canonical.userAccountId = linked.id;
+                        canonical.username = linked.username || '';
+                        canonicalAccount = linked;
+                    }
+                    for (const record of (state.employeeProduction || []).filter(item => item.staffId === duplicate.id)) {
+                        await db.collection('employeeProduction').doc(record.id).update({ staffId: canonical.id, staffName: canonical.fullName });
+                        record.staffId = canonical.id;
+                        record.staffName = canonical.fullName;
+                    }
+                    for (const record of (state.employeeExpenses || []).filter(item => item.staffId === duplicate.id)) {
+                        await db.collection('employeeExpenses').doc(record.id).update({ staffId: canonical.id, staffName: canonical.fullName });
+                        record.staffId = canonical.id;
+                        record.staffName = canonical.fullName;
+                    }
+                    await db.collection('staff').doc(duplicate.id).delete();
+                    state.staff = state.staff.filter(item => item.id !== duplicate.id);
+                    state.employees = state.employees.filter(item => item.id !== linked?.id || item.staffId === canonical.id);
+                    removed++;
+                }
+                if (canonicalAccount) {
+                    await db.collection('staff').doc(canonical.id).update({ userAccountId: canonicalAccount.id, username: canonicalAccount.username || '' });
+                }
+            }
+            renderEmployeesTable();
+            renderEmployeeProduction();
+            renderEmployeeExpenses();
+            populateNewUserStaffOptions();
+            showToast(`تمت إزالة ${removed} تعريفات مكررة${skipped ? `، وتم تجاوز ${skipped} لوجود أكثر من حساب دخول` : ''}`);
+        } catch (e) {
+            console.warn('Deduplicate staff profiles error:', e);
+            try { await reloadAllData(false); } catch (_) {}
+            showToast('تعذر إكمال تنظيف التكرار. تم تحديث البيانات؛ راجع القائمة قبل إعادة المحاولة.');
+        } finally {
+            isBusy = false;
+        }
+    }
+
     function renderEmployeesTable() {
         const tbody = document.getElementById('employeesTableBody');
         if (!tbody) return;
@@ -4642,8 +4921,10 @@
                     <td>${account ? `<span class="badge badge-cash">${accountLabel}</span>` : `<span class="badge badge-unit">${accountLabel}</span>`}</td>
                     <td>${active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
                     <td style="white-space:nowrap;">
+                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeName('${item.id}')" title="تعديل اسم الموظف"><i class="fa-solid fa-user-pen"></i> تعديل الاسم</button>` : ''}
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeWarehouse('${item.id}')" title="تحديد المخزن"><i class="fa-solid fa-warehouse"></i> المخزن</button>` : ''}
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeePaySettings('${item.id}')" title="تعديل الراتب أو التسعيرة"><i class="fa-solid fa-pen"></i> ${isPieceworkStaff(item) ? 'التسعيرة' : 'الراتب'}</button>` : ''}
+                        ${allowManage ? `<button class="btn btn-danger btn-sm" onclick="deleteStaffDefinition('${item.id}')" title="حذف تعريف الموظف"><i class="fa-solid fa-trash"></i> حذف</button>` : ''}
                     </td>
                 </tr>
             `;
@@ -4921,8 +5202,7 @@
                 </tr>`;
             }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون بنظام القطعة</td></tr>';
         }
-        const staffIds = new Set(staff.map(item => item.id));
-        const rows = (state.employeeProduction || []).filter(item => staffIds.has(item.staffId)).slice()
+        const rows = (state.employeeProduction || []).slice()
             .sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
         const tbody = document.getElementById('employeeProductionTableBody');
         if (tbody) {
@@ -4983,7 +5263,7 @@
         }
         const allowedIds = new Set(staff.map(item => item.id));
         const expenses = state.employeeExpenses
-            .filter(item => allowedIds.has(item.staffId))
+            .filter(item => canManageUsers() || allowedIds.has(item.staffId))
             .slice()
             .sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
         const expenseBody = document.getElementById('employeeExpensesTableBody');
