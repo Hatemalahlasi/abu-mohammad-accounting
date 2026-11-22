@@ -2443,6 +2443,34 @@
                         <div id="permissionMenusGrid" class="menu-perms-grid"></div>
                         <div class="employee-permission-note" style="margin-top:8px;">مهم: لإظهار زر «إضافة شغل للموظفين» لهذا الحساب، فعّل هذا القسم ثم احفظ الصلاحيات. يجب ربط الحساب بملف الموظف من صفحة «الموظفون»؛ بعدها يستطيع الموظف تسجيل إنتاجه لنفسه فقط، ولا تظهر له ملفات بقية الموظفين.</div>
                         <div class="card-box" style="margin-top:12px; margin-bottom:0;">
+                            <div class="card-title"><span><i class="fa-solid fa-warehouse"></i> المخازن المسموح بها للحساب المحدد</span></div>
+                            <div class="employee-permission-note">يمكنك تعديل مخازن أي حساب موجود دون إنشاء حساب جديد. اختر صلاحية عامة، ثم حدد بشكل مستقل مخازن إدخال الكميات ومخازن النقل.</div>
+                            <div class="form-group">
+                                <label>المخازن العامة (المبيعات وعرض المخزون والعمليات العامة)</label>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0;">
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="setPermissionWarehouseSelection('general',true)">تحديد الكل</button>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="setPermissionWarehouseSelection('general',false)">إلغاء التحديد</button>
+                                </div>
+                                <div id="permissionGeneralWarehouseChoices" class="perm-box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>مخازن إدخال الكميات</label>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0;">
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="setPermissionWarehouseSelection('quantity',true)">تحديد الكل</button>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="setPermissionWarehouseSelection('quantity',false)">إلغاء التحديد</button>
+                                </div>
+                                <div id="permissionQuantityWarehouseChoices" class="perm-box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));"></div>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>مخازن النقل (من وإلى)</label>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0;">
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="setPermissionWarehouseSelection('transfer',true)">تحديد الكل</button>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="setPermissionWarehouseSelection('transfer',false)">إلغاء التحديد</button>
+                                </div>
+                                <div id="permissionTransferWarehouseChoices" class="perm-box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));"></div>
+                            </div>
+                        </div>
+                        <div class="card-box" style="margin-top:12px; margin-bottom:0;">
                             <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> صلاحيات مؤشرات الشاشة الرئيسية</span></div>
                             <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">حدد المؤشرات التي تريد إظهارها لهذا الموظف في الشاشة الرئيسية:</div>
                             <div class="menu-perms-grid" style="margin-top:0;">
@@ -2463,6 +2491,23 @@
                     <div id="permissionFullAccessNote" class="employee-permission-note hidden">
                         هذا الحساب مدير أو مشرف عام، ولديه صلاحيات كاملة تلقائياً.
                     </div>
+                    <div id="permissionPasswordBox" class="card-box hidden" style="margin-top:12px;">
+                        <div class="card-title"><span><i class="fa-solid fa-key"></i> تغيير كلمة مرور الحساب المحدد</span></div>
+                        <div class="employee-permission-note">أدخل كلمة مرور جديدة للحساب الذي اخترته أعلاه. لن تتغير صلاحياته أو بيانات الموظف.</div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label>كلمة المرور الجديدة</label>
+                                <input type="password" id="permissionNewPassword" class="form-control" autocomplete="new-password" placeholder="4 أحرف على الأقل">
+                            </div>
+                            <div class="form-group">
+                                <label>تأكيد كلمة المرور</label>
+                                <input type="password" id="permissionConfirmPassword" class="form-control" autocomplete="new-password" placeholder="أعد كتابة كلمة المرور">
+                            </div>
+                        </div>
+                        <button id="saveAccountPasswordBtn" type="button" class="btn btn-danger btn-full" onclick="saveSelectedAccountPassword()">
+                            <i class="fa-solid fa-lock"></i> حفظ كلمة المرور الجديدة
+                        </button>
+                    </div>
                 </div>
 
                 <div class="card-box">
@@ -2476,6 +2521,7 @@
                                     <th>التعديل</th>
                                     <th>الحذف</th>
                                     <th>مؤشرات الشاشة</th>
+                                    <th>المخازن</th>
                                     <th>إدارة</th>
                                 </tr>
                             </thead>
@@ -3100,6 +3146,8 @@
                     staffId: staff.id,
                     warehouseBranchId: staffBranchIds[0] || '',
                     warehouseBranchIds: staffBranchIds,
+                    quantityBranchIds: Array.isArray(savedAccount.quantityBranchIds) ? savedAccount.quantityBranchIds : staffBranchIds,
+                    transferBranchIds: Array.isArray(savedAccount.transferBranchIds) ? savedAccount.transferBranchIds : staffBranchIds,
                     warehouseBranchName: staffBranches.map(item => item.name).join('، ') || staff.warehouseBranchName || '',
                     securityOnly: true
                 });
@@ -3187,11 +3235,56 @@ function initMenuPermissionCheckboxes() {
         if (previous && eligible.some(account => account.id === previous)) sel.value = previous;
     }
 
+    function renderPermissionWarehouseChoices(scope, selectedIds = []) {
+        const config = {
+            general: { id: 'permissionGeneralWarehouseChoices', cls: 'permission-general-branch-cb' },
+            quantity: { id: 'permissionQuantityWarehouseChoices', cls: 'permission-quantity-branch-cb' },
+            transfer: { id: 'permissionTransferWarehouseChoices', cls: 'permission-transfer-branch-cb' }
+        }[scope];
+        if (!config) return;
+        const container = document.getElementById(config.id);
+        if (!container) return;
+        const selected = new Set(normalizeBranchIds(selectedIds));
+        const branches = getAllBranches();
+        container.innerHTML = branches.map(branch => `
+            <label class="perm-check" style="background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 10px;">
+                <input type="checkbox" class="${config.cls}" value="${branch.id}" ${selected.has(branch.id) ? 'checked' : ''}>
+                <span>${branch.name}</span>
+            </label>
+        `).join('') || '<span style="color:var(--text-muted);">لا توجد مخازن معرفة</span>';
+    }
+
+    function setPermissionWarehouseSelection(scope, checked) {
+        const selector = {
+            general: '#permissionGeneralWarehouseChoices .permission-general-branch-cb',
+            quantity: '#permissionQuantityWarehouseChoices .permission-quantity-branch-cb',
+            transfer: '#permissionTransferWarehouseChoices .permission-transfer-branch-cb'
+        }[scope];
+        if (!selector) return;
+        document.querySelectorAll(selector).forEach(cb => { cb.checked = Boolean(checked); });
+    }
+
+    function getPermissionWarehouseSelection(scope) {
+        const selector = {
+            general: '#permissionGeneralWarehouseChoices .permission-general-branch-cb:checked',
+            quantity: '#permissionQuantityWarehouseChoices .permission-quantity-branch-cb:checked',
+            transfer: '#permissionTransferWarehouseChoices .permission-transfer-branch-cb:checked'
+        }[scope];
+        return selector ? normalizeBranchIds(Array.from(document.querySelectorAll(selector)).map(cb => cb.value)) : [];
+    }
+
     function loadEmployeePermissions() {
         const empId = document.getElementById('permissionEmployeeSelect')?.value || '';
         const emp = state.employees.find(e => e.id === empId);
         const editor = document.getElementById('permissionEditorBox');
         const fullNote = document.getElementById('permissionFullAccessNote');
+        const passwordBox = document.getElementById('permissionPasswordBox');
+        const canEditAccount = Boolean(emp && emp.id !== 'emp_admin' && emp.username !== ADMIN_USER);
+        passwordBox?.classList.toggle('hidden', !canEditAccount);
+        const pass1 = document.getElementById('permissionNewPassword');
+        const pass2 = document.getElementById('permissionConfirmPassword');
+        if (pass1) pass1.value = '';
+        if (pass2) pass2.value = '';
         if (!emp) {
             editor?.classList.add('hidden');
             fullNote?.classList.add('hidden');
@@ -3214,6 +3307,12 @@ function initMenuPermissionCheckboxes() {
         document.querySelectorAll('.emp-dashboard-cb').forEach(cb => {
             cb.checked = Boolean(widgets[cb.value]);
         });
+        const generalIds = getAssignedBranchIds(emp);
+        const quantityIds = Array.isArray(emp.quantityBranchIds) ? normalizeBranchIds(emp.quantityBranchIds) : generalIds;
+        const transferIds = Array.isArray(emp.transferBranchIds) ? normalizeBranchIds(emp.transferBranchIds) : generalIds;
+        renderPermissionWarehouseChoices('general', generalIds);
+        renderPermissionWarehouseChoices('quantity', quantityIds);
+        renderPermissionWarehouseChoices('transfer', transferIds);
     }
 
     async function saveEmployeePermissions() {
@@ -3225,11 +3324,20 @@ function initMenuPermissionCheckboxes() {
             return;
         }
         const allowedMenus = Array.from(document.querySelectorAll('#permissionMenusGrid .emp-menu-cb:checked')).map(cb => cb.value);
+        const warehouseBranchIds = getPermissionWarehouseSelection('general');
+        const quantityBranchIds = getPermissionWarehouseSelection('quantity');
+        const transferBranchIds = getPermissionWarehouseSelection('transfer');
+        const branchNames = getAllBranches().filter(branch => warehouseBranchIds.includes(branch.id)).map(branch => branch.name);
         const patch = {
             canEdit: document.getElementById('permissionCanEdit').checked,
             canDelete: document.getElementById('permissionCanDelete').checked,
             allowedMenus,
-            dashboardWidgets: Object.fromEntries(Array.from(document.querySelectorAll('.emp-dashboard-cb')).map(cb => [cb.value, cb.checked]))
+            dashboardWidgets: Object.fromEntries(Array.from(document.querySelectorAll('.emp-dashboard-cb')).map(cb => [cb.value, cb.checked])),
+            warehouseBranchId: warehouseBranchIds[0] || '',
+            warehouseBranchIds,
+            warehouseBranchName: branchNames.join('، ') || 'لا توجد مخازن',
+            quantityBranchIds,
+            transferBranchIds
         };
         isBusy = true;
         const btn = document.getElementById('saveEmployeePermissionsBtn');
@@ -3241,7 +3349,11 @@ function initMenuPermissionCheckboxes() {
             const verifiedSnap = await accountRef.get();
             if (!verifiedSnap.exists) throw new Error('ACCOUNT_NOT_FOUND_AFTER_SAVE');
             const verifiedAccount = { ...verifiedSnap.data(), id: verifiedSnap.id };
-            if (!Array.isArray(verifiedAccount.allowedMenus) || allowedMenus.some(key => !verifiedAccount.allowedMenus.includes(key))) {
+            const same = (a, b) => JSON.stringify(normalizeBranchIds(a)) === JSON.stringify(normalizeBranchIds(b));
+            if (!Array.isArray(verifiedAccount.allowedMenus) || allowedMenus.some(key => !verifiedAccount.allowedMenus.includes(key)) ||
+                !same(verifiedAccount.warehouseBranchIds, warehouseBranchIds) ||
+                !same(verifiedAccount.quantityBranchIds, quantityBranchIds) ||
+                !same(verifiedAccount.transferBranchIds, transferBranchIds)) {
                 throw new Error('PERMISSIONS_NOT_VERIFIED');
             }
 
@@ -3256,10 +3368,49 @@ function initMenuPermissionCheckboxes() {
             loadEmployeePermissions();
             renderEmployeePermissionsTable();
             applyHomeMenuPermissions();
-            showToast(`تم حفظ ${allowedMenus.length} صلاحية والتحقق منها. سجّل خروج الموظف ثم دخوله لتحديث قائمته.`);
+            showToast(`تم حفظ الأقسام والمخازن: عامة ${warehouseBranchIds.length}، كميات ${quantityBranchIds.length}، نقل ${transferBranchIds.length}.`);
         } catch (e) {
             console.warn('Save employee permissions error:', e);
-            showToast('لم يتم تأكيد حفظ الصلاحيات. تحقق من اتصال Firebase ومعرّف الحساب ثم أعد المحاولة.');
+            showToast('لم يتم تأكيد الحفظ. تحقق من اتصال Firebase وصلاحية الكتابة ثم أعد المحاولة.');
+        } finally {
+            isBusy = false;
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    async function saveSelectedAccountPassword() {
+        if (isBusy || !canManageUsers()) return;
+        const empId = document.getElementById('permissionEmployeeSelect')?.value || '';
+        const account = state.employees.find(item => item.id === empId);
+        if (!account || account.id === 'emp_admin' || account.username === ADMIN_USER) {
+            showToast('اختر حساب موظف أو مشرف لتغيير كلمة مروره');
+            return;
+        }
+        const password = document.getElementById('permissionNewPassword')?.value || '';
+        const confirmPassword = document.getElementById('permissionConfirmPassword')?.value || '';
+        if (password.length < 4) { showToast('كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل'); return; }
+        if (password !== confirmPassword) { showToast('تأكيد كلمة المرور غير مطابق'); return; }
+        if (!confirm(`هل تريد تغيير كلمة مرور الحساب ${account.username || account.id}؟`)) return;
+        const btn = document.getElementById('saveAccountPasswordBtn');
+        isBusy = true;
+        if (btn) btn.disabled = true;
+        try {
+            if (!db || isDemoMode) throw new Error('FIRESTORE_UNAVAILABLE');
+            const accountRef = db.collection('employees').doc(empId);
+            await accountRef.update({ password, passwordUpdatedAt: new Date().toISOString(), passwordUpdatedBy: currentUser?.username || currentUser?.id || 'admin' });
+            const snap = await accountRef.get();
+            if (!snap.exists || String(snap.data()?.password || '') !== password) throw new Error('PASSWORD_NOT_VERIFIED');
+            const updated = { ...snap.data(), id: snap.id };
+            const idx = state.employees.findIndex(item => item.id === empId);
+            if (idx >= 0) state.employees[idx] = updated;
+            if (currentUser?.id === empId) currentUser = updated;
+            document.getElementById('permissionNewPassword').value = '';
+            document.getElementById('permissionConfirmPassword').value = '';
+            renderEmployeePermissionsTable();
+            showToast('تم تغيير كلمة المرور بنجاح. أبلغ صاحب الحساب بكلمة المرور الجديدة بطريقة آمنة.');
+        } catch (e) {
+            console.warn('Change account password error:', e);
+            showToast('تعذر تغيير كلمة المرور. تحقق من اتصال Firebase وصلاحية الكتابة.');
         } finally {
             isBusy = false;
             if (btn) btn.disabled = false;
@@ -6296,6 +6447,8 @@ function initMenuPermissionCheckboxes() {
                 securityOnly: true,
                 warehouseBranchId: role === 'supervisor' ? '' : branchId,
                 warehouseBranchIds: role === 'supervisor' ? [] : warehouseBranchIds,
+                quantityBranchIds: role === 'supervisor' ? [] : warehouseBranchIds,
+                transferBranchIds: role === 'supervisor' ? [] : warehouseBranchIds,
                 warehouseBranchName: role === 'supervisor' ? 'كل المخازن' : branchNames.join('، '),
                 canEdit: false, canDelete: false, allowedMenus: [],
                 dashboardWidgets: { sales: false, cash: false, receivables: false, stock: false },
@@ -6852,10 +7005,11 @@ function initMenuPermissionCheckboxes() {
                     <td>${full || emp.canEdit ? '<span class="badge badge-cash">مسموح</span>' : '<span class="badge badge-unit">غير مسموح</span>'}</td>
                     <td>${full || emp.canDelete ? '<span class="badge badge-cash">مسموح</span>' : '<span class="badge badge-unit">غير مسموح</span>'}</td>
                     <td style="font-size:12px;">${full ? 'كل المؤشرات' : (Object.entries(emp.dashboardWidgets || {}).filter(([, enabled]) => enabled).map(([key]) => ({ sales: 'المبيعات', cash: 'الصندوق', receivables: 'الديون', stock: 'المخزون' }[key])).filter(Boolean).join('، ') || 'لا تظهر')}</td>
+                    <td style="font-size:11px;">${full ? 'كل المخازن' : `عام: ${getAssignedBranchIds(emp).length} | كميات: ${Array.isArray(emp.quantityBranchIds) ? emp.quantityBranchIds.length : getAssignedBranchIds(emp).length} | نقل: ${Array.isArray(emp.transferBranchIds) ? emp.transferBranchIds.length : getAssignedBranchIds(emp).length}`}</td>
                     <td>${full ? '<span class="badge badge-sup">كامل</span>' : `<button class="btn btn-outline btn-sm" onclick="editEmployeeMenus('${emp.id}')">إدارة الصلاحيات</button>`}</td>
                 </tr>
             `;
-        }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد حسابات دخول</td></tr>';
+        }).join('') : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا توجد حسابات دخول</td></tr>';
     }
 
     function populateEmployeeExpenseStaffOptions() {
