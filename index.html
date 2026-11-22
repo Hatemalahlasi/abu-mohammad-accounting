@@ -1864,11 +1864,11 @@
                     </div>
                     <div id="newEmpPieceRatesPanel" class="card-box hidden" style="margin-top:12px; margin-bottom:0; padding:12px;">
                         <div class="card-title">
-                            <span><i class="fa-solid fa-tags"></i> تسعيرة كل نوع قطعة / عمل</span>
-                            <button type="button" class="btn btn-outline btn-sm" onclick="addEmployeePieceRateRow()"><i class="fa-solid fa-plus"></i> إضافة تسعيرة</button>
+                            <span><i class="fa-solid fa-tags"></i> أعمال الموظف وتسعيرة كل عمل</span>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="addEmployeePieceRateRow()"><i class="fa-solid fa-plus"></i> إضافة عمل آخر</button>
                         </div>
                         <div id="newEmpPieceRatesContainer"></div>
-                        <div class="employee-permission-note" style="margin:8px 0 0;">حدد اسم العمل والوحدة وسعر الوحدة الواحدة. يمكن إضافة أكثر من نوع، ولكل نوع سعر مستقل يحدده المدير.</div>
+                        <div class="employee-permission-note" style="margin:8px 0 0;">يمكن للموظف الواحد أن يعمل أكثر من عمل. أضف سطرًا لكل عمل وحدد له سعرًا ووحدة مستقلة؛ مثال: خياطة = 120 ريال/حبة، وتغليف = 80 ريال/حبة. عند تسجيل الإنتاج تختار نوع العمل فيحسب النظام بسعره الخاص.</div>
                     </div>
                     <button id="saveEmployeeBtn" class="btn btn-primary btn-full" onclick="createEmployee()" style="margin-top:12px;">
                         <i class="fa-solid fa-user-check"></i> حفظ تعريف الموظف
@@ -2006,7 +2006,7 @@
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
-            <div class="employee-permission-note" id="employeeProductionPeriodLabel">يسجل المشرف عدد القطع التي أنجزها كل موظف، ويحسب النظام مستحقه حسب التسعيرة المحددة مسبقاً.</div>
+            <div class="employee-permission-note" id="employeeProductionPeriodLabel">إذا كان الموظف يعمل أكثر من عمل، اختر العمل الذي أنجزه في كل تسجيل. سيظهر سعر ذلك العمل تلقائيًا ولن تختلط تسعيرة الخياطة بتسعيرة التغليف أو أي عمل آخر.</div>
 
             <div class="card-box" id="employeeProductionEntryCard">
                 <div class="card-title"><span><i class="fa-solid fa-calculator"></i> إضافة شغل جديد لموظف يعمل بالقطعة</span></div>
@@ -2018,9 +2018,9 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>نوع القطعة / العمل</label>
+                        <label>اختر العمل المنجز (لكل عمل تسعيرته الخاصة)</label>
                         <select id="productionRateSelect" class="form-control" onchange="updateProductionPreview()">
-                            <option value="">اختر نوع العمل</option>
+                            <option value="">اختر نوع العمل الذي أنجزه الموظف</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -2238,6 +2238,29 @@
             </div>
         </section>
 
+    </div>
+</div>
+
+<!-- نافذة إدارة أكثر من عمل وتسعيرة للموظف -->
+<div id="employeePieceRatesModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="employeePieceRatesModalTitle">
+    <div class="modal-card" style="max-width:760px;">
+        <div class="print-header">
+            <div>
+                <h2 id="employeePieceRatesModalTitle" style="font-size:18px;font-weight:800;color:var(--primary);">أعمال الموظف وتسعيراتها</h2>
+                <p id="employeePieceRatesModalStaffName" style="font-size:12px;color:var(--text-muted);margin-top:4px;"></p>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeEmployeePieceRatesEditor()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
+        </div>
+        <div class="employee-permission-note">أضف كل عمل في سطر مستقل. يمكن للموظف أن يكون لديه عملان أو أكثر، ولكل عمل سعر ووحدة مختلفان. سجلات الإنتاج السابقة تحتفظ بسعرها القديم.</div>
+        <div class="card-title" style="margin:10px 0;">
+            <span>قائمة الأعمال وأسعارها</span>
+            <button type="button" class="btn btn-outline btn-sm" onclick="addEmployeePieceRateRow({}, 'editEmpPieceRatesContainer')"><i class="fa-solid fa-plus"></i> إضافة عمل آخر</button>
+        </div>
+        <div id="editEmpPieceRatesContainer"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+            <button id="saveEditedPieceRatesBtn" type="button" class="btn btn-primary" onclick="saveEmployeePieceRatesEditor()"><i class="fa-solid fa-floppy-disk"></i> حفظ جميع الأعمال والتسعيرات</button>
+            <button type="button" class="btn btn-outline" onclick="closeEmployeePieceRatesEditor()">إلغاء</button>
+        </div>
     </div>
 </div>
 
@@ -5083,6 +5106,7 @@ function initMenuPermissionCheckboxes() {
     }
 
     let employeePieceRateRowCounter = 0;
+    let editingPieceRatesStaffId = null;
 
     function toggleEmployeePayTypeFields() {
         const isPiecework = document.getElementById('newEmpPayType')?.value === 'piecework';
@@ -5094,17 +5118,19 @@ function initMenuPermissionCheckboxes() {
         if (isPiecework && container && !container.children.length) addEmployeePieceRateRow();
     }
 
-    function addEmployeePieceRateRow(rate = {}) {
-        const container = document.getElementById('newEmpPieceRatesContainer');
+    function addEmployeePieceRateRow(rate = {}, containerId = 'newEmpPieceRatesContainer') {
+        const container = document.getElementById(containerId);
         if (!container) return;
         const rowId = `piece_rate_${++employeePieceRateRowCounter}`;
         const row = document.createElement('div');
         row.className = 'piece-rate-row';
         row.id = rowId;
+        row.dataset.rateId = String(rate.id || '');
+        const safeName = String(rate.name || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         row.innerHTML = `
             <div class="form-group piece-rate-name">
-                <label>اسم القطعة / نوع العمل</label>
-                <input type="text" class="form-control piece-rate-title" placeholder="مثال: تعبئة العبوة أو تركيب القطعة" value="${String(rate.name || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" />
+                <label>اسم العمل (مثال: خياطة)</label>
+                <input type="text" class="form-control piece-rate-title" placeholder="اكتب اسم هذا العمل" value="${safeName}" />
             </div>
             <div class="form-group">
                 <label>الوحدة</label>
@@ -5114,22 +5140,98 @@ function initMenuPermissionCheckboxes() {
             </div>
             <div class="form-group">
                 <label>سعر الوحدة</label>
-                <input type="number" min="0.01" step="0.01" class="form-control num-input piece-rate-price" placeholder="مثال: 10" value="${Number(rate.rate || 0) || ''}" />
+                <input type="number" min="0.01" step="0.01" class="form-control num-input piece-rate-price" placeholder="مثال: 120" value="${Number(rate.rate || 0) || ''}" />
             </div>
-            <button type="button" class="btn btn-danger btn-sm" onclick="document.getElementById('${rowId}')?.remove()" title="حذف هذه التسعيرة"><i class="fa-solid fa-trash"></i></button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeEmployeePieceRateRow('${rowId}')" title="حذف هذا العمل"><i class="fa-solid fa-trash"></i> حذف</button>
         `;
         container.appendChild(row);
     }
 
-    function collectEmployeePieceRates() {
-        const container = document.getElementById('newEmpPieceRatesContainer');
+    function removeEmployeePieceRateRow(rowId) {
+        const row = document.getElementById(rowId);
+        if (!row) return;
+        const container = row.parentElement;
+        row.remove();
+        if (container && !container.querySelector('.piece-rate-row')) {
+            // Keep one blank row visible so the user can add a first work type again.
+            const containerId = container.id || 'newEmpPieceRatesContainer';
+            addEmployeePieceRateRow({}, containerId);
+        }
+    }
+
+    function collectEmployeePieceRates(containerId = 'newEmpPieceRatesContainer') {
+        const container = document.getElementById(containerId);
         if (!container) return [];
         return Array.from(container.querySelectorAll('.piece-rate-row')).map((row, index) => ({
-            id: `rate_${Date.now()}_${index}`,
+            id: row.dataset.rateId || `rate_${Date.now()}_${++employeePieceRateRowCounter}_${index}`,
             name: row.querySelector('.piece-rate-title')?.value.trim() || '',
             unit: row.querySelector('.piece-rate-unit')?.value || 'حبة',
-            rate: Number(row.querySelector('.piece-rate-price')?.value || 0)
-        })).filter(rate => rate.name && Number.isFinite(rate.rate) && rate.rate > 0);
+            rate: Number(row.querySelector('.piece-rate-price')?.value || 0),
+            _rowNumber: index + 1
+        }));
+    }
+
+    function validateEmployeePieceRates(rates) {
+        if (!rates.length) return 'أضف نوع عمل واحداً على الأقل';
+        for (const rate of rates) {
+            if (!rate.name) return `اكتب اسم العمل في السطر ${rate._rowNumber}`;
+            if (!Number.isFinite(rate.rate) || rate.rate <= 0) return `أدخل سعرًا أكبر من صفر للعمل «${rate.name}»`;
+        }
+        const seen = new Set();
+        for (const rate of rates) {
+            const key = `${normalizeStaffName(rate.name)}|${rate.unit}`;
+            if (seen.has(key)) return `العمل «${rate.name}» بوحدة «${rate.unit}» مكرر. غيّر الاسم أو الوحدة.`;
+            seen.add(key);
+        }
+        return '';
+    }
+
+    function openEmployeePieceRatesEditor(staffId) {
+        if (!canManageUsers()) return;
+        const staff = getStaffById(staffId);
+        if (!staff || !isPieceworkStaff(staff)) return;
+        editingPieceRatesStaffId = staffId;
+        const name = document.getElementById('employeePieceRatesModalStaffName');
+        if (name) name.textContent = `${staff.fullName} — ${getStaffSalaryCurrency(staff)}`;
+        const container = document.getElementById('editEmpPieceRatesContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        (Array.isArray(staff.pieceRates) ? staff.pieceRates : []).forEach(rate => addEmployeePieceRateRow(rate, 'editEmpPieceRatesContainer'));
+        if (!container.children.length) addEmployeePieceRateRow({}, 'editEmpPieceRatesContainer');
+        document.getElementById('employeePieceRatesModal')?.classList.remove('hidden');
+    }
+
+    function closeEmployeePieceRatesEditor() {
+        document.getElementById('employeePieceRatesModal')?.classList.add('hidden');
+        editingPieceRatesStaffId = null;
+    }
+
+    async function saveEmployeePieceRatesEditor() {
+        if (isBusy || !canManageUsers() || !editingPieceRatesStaffId) return;
+        const staff = getStaffById(editingPieceRatesStaffId);
+        if (!staff) { closeEmployeePieceRatesEditor(); return; }
+        const rates = collectEmployeePieceRates('editEmpPieceRatesContainer');
+        const validationError = validateEmployeePieceRates(rates);
+        if (validationError) { showToast(validationError); return; }
+        const cleanRates = rates.map(({ _rowNumber, ...rate }) => rate);
+        const btn = document.getElementById('saveEditedPieceRatesBtn');
+        isBusy = true;
+        if (btn) btn.disabled = true;
+        try {
+            await db.collection('staff').doc(staff.id).update({ pieceRates: cleanRates });
+            staff.pieceRates = cleanRates;
+            closeEmployeePieceRatesEditor();
+            renderEmployeesTable();
+            populateProductionStaffOptions();
+            renderEmployeeProduction();
+            showToast(`تم حفظ ${cleanRates.length} عمل/أعمال للموظف ${staff.fullName}. سجلات الإنتاج السابقة لم تتغير.`);
+        } catch (e) {
+            console.warn('Update staff piece rates error:', e);
+            showToast('تعذر حفظ الأعمال والتسعيرات. لم يتم تغيير السجلات السابقة.');
+        } finally {
+            isBusy = false;
+            if (btn) btn.disabled = false;
+        }
     }
 
     async function createEmployee() {
@@ -5140,7 +5242,9 @@ function initMenuPermissionCheckboxes() {
         const payType = document.getElementById('newEmpPayType')?.value || 'monthly';
         const salary = payType === 'piecework' ? 0 : Number(document.getElementById('newEmpSalary').value || 0);
         const salaryCurrency = document.getElementById('newEmpSalaryCurrency').value || 'YER';
-        const pieceRates = payType === 'piecework' ? collectEmployeePieceRates() : [];
+        const enteredPieceRates = payType === 'piecework' ? collectEmployeePieceRates() : [];
+        const pieceRateValidationError = payType === 'piecework' ? validateEmployeePieceRates(enteredPieceRates) : '';
+        const pieceRates = enteredPieceRates.map(({ _rowNumber, ...rate }) => rate);
         const warehouseBranchId = document.getElementById('newEmpWarehouseBranch').value;
         const branch = getAllBranches().find(item => item.id === warehouseBranchId);
 
@@ -5157,8 +5261,8 @@ function initMenuPermissionCheckboxes() {
             showToast('أدخل راتباً شهرياً صحيحاً');
             return;
         }
-        if (payType === 'piecework' && !pieceRates.length) {
-            showToast('أضف نوع عمل واحداً على الأقل وحدد سعر الوحدة');
+        if (payType === 'piecework' && pieceRateValidationError) {
+            showToast(pieceRateValidationError);
             return;
         }
         if (!CURRENCY_CODES.includes(salaryCurrency)) {
@@ -5311,43 +5415,11 @@ function initMenuPermissionCheckboxes() {
     async function editEmployeePaySettings(staffId) {
         const staff = getStaffById(staffId);
         if (!staff) return;
-        if (!isPieceworkStaff(staff)) return editEmployeeSalary(staffId);
-        const current = (staff.pieceRates || []).map(rate => `${rate.name} | ${rate.unit} | ${rate.rate}`).join('\n');
-        const answer = prompt(
-            `تعديل تسعيرات (${staff.fullName})\nاكتب كل نوع عمل في سطر بهذا الترتيب:
-اسم العمل | الوحدة | سعر الوحدة\nالوحدات المسموحة: حبة، شدة، وار، قطعة، كيلو، متر`,
-            current
-        );
-        if (answer === null) return;
-        const allowedUnits = ['حبة', 'شدة', 'وار', 'قطعة', 'كيلو', 'متر'];
-        const rates = answer.split(/\r?\n/).map((line, index) => {
-            const parts = line.split('|').map(part => part.trim());
-            const name = parts[0] || '';
-            const unit = parts[1] || 'حبة';
-            const rate = Number(parts[2] || 0);
-            if (!name || !Number.isFinite(rate) || rate <= 0 || !allowedUnits.includes(unit)) return null;
-            return { id: `rate_${Date.now()}_${index}`, name, unit, rate };
-        }).filter(Boolean);
-        if (!rates.length) {
-            showToast('لم تُحفظ التسعيرة: أدخل سطراً صحيحاً واحداً على الأقل');
+        if (isPieceworkStaff(staff)) {
+            openEmployeePieceRatesEditor(staffId);
             return;
         }
-        if (isBusy || !canManageUsers()) return;
-        isBusy = true;
-        try {
-            await db.collection('staff').doc(staffId).update({ pieceRates: rates });
-            staff.pieceRates = rates;
-            const linked = getStaffLoginAccount(staff);
-            // التسعيرات محفوظة حصراً في سجل الموظف داخل مجموعة staff وليس في حساب الدخول.
-            renderEmployeesTable();
-            populateProductionRateOptions();
-            showToast('تم تحديث تسعيرات الموظف. سجلات الإنتاج السابقة لا تتغير');
-        } catch (e) {
-            console.warn('Update piece rates error:', e);
-            showToast('تعذر تحديث التسعيرات');
-        } finally {
-            isBusy = false;
-        }
+        return editEmployeeSalary(staffId);
     }
 
     async function editEmployeeSalary(staffId) {
@@ -6443,6 +6515,9 @@ window.addEventListener('load',function(){
         updateEmployeeExpensePreview();
     }
 
+    document.getElementById('employeePieceRatesModal')?.addEventListener('click', function (event) {
+        if (event.target === this) closeEmployeePieceRatesEditor();
+    });
     toggleEmployeePayTypeFields();
     initMenuPermissionCheckboxes();
     if (document.getElementById('cashboxStatementPeriod')) document.getElementById('cashboxStatementPeriod').value = getCurrentPayrollPeriod();
