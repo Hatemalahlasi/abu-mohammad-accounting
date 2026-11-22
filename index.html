@@ -1191,6 +1191,28 @@
             #quantitiesTab .btn-full { min-height:54px; font-size:16px; font-weight:800; }
         }
 
+
+/* قائمة الأصناف: كل صنف في صف واضح، والاسم والكمية متجاوران */
+.item-list-grid{display:flex!important;flex-direction:column!important;gap:12px!important;margin-top:14px!important}
+.item-list-row-card{display:flex;flex-direction:column;gap:0;width:100%;background:#fff;border:1px solid #dbe6df;border-radius:15px;padding:13px 15px;box-shadow:0 3px 12px rgba(20,70,40,.055);min-width:0}
+.item-row-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(105px,.42fr);gap:12px;align-items:stretch;padding-bottom:11px;border-bottom:1px solid #e8eee9}
+.item-row-product,.item-row-quantity{display:flex;flex-direction:column;gap:4px;min-width:0}
+.item-row-product strong{font-size:17px;line-height:1.6;color:#102f25;overflow-wrap:anywhere;white-space:normal}
+.item-row-product small,.item-row-quantity small{font-size:12px;color:#65766d;font-weight:700}
+.item-row-label{font-size:11px;color:#718078;font-weight:800}
+.item-row-quantity{background:#eff8f1;border:1px solid #d8ecdd;border-radius:11px;padding:9px 11px;text-align:center;justify-content:center}
+.item-row-quantity strong{font-size:23px;line-height:1.2;color:#137044;font-weight:900;font-variant-numeric:tabular-nums}
+.item-row-detail,.item-row-source{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:9px 2px;border-bottom:1px solid #eef2ef;min-width:0}
+.item-row-detail span,.item-row-source span{font-size:12px;color:#68766e;font-weight:700;flex:0 0 auto}
+.item-row-detail b,.item-row-source b{font-size:13px;color:#1f2937;font-weight:800;text-align:left;overflow-wrap:anywhere;min-width:0}
+.item-row-source{margin:7px 0;padding:10px 11px;border:1px solid #dcebe0;border-radius:10px;background:#f3faf5;flex-direction:column;gap:4px}
+.item-row-source.source-unknown{background:#fff8eb;border-color:#f1e3c5}
+.item-row-total{margin-top:7px;background:#eff8f1;border-radius:9px;padding:10px}
+.item-row-total b{color:#137044;font-size:15px}
+.item-row-actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:11px}
+.item-row-actions .btn{flex:1;min-height:43px;white-space:normal}
+@media(max-width:520px){.item-list-row-card{padding:11px 12px}.item-row-main{grid-template-columns:minmax(0,1fr) 112px;gap:8px}.item-row-product strong{font-size:16px}.item-row-quantity{padding:8px 6px}.item-row-quantity strong{font-size:21px}.item-row-detail{align-items:center}.item-row-detail b{font-size:12px}.item-row-actions{flex-direction:column}.item-row-actions .btn{width:100%}}
+
 </style>
 </head>
 <body>
@@ -1588,7 +1610,10 @@
         <section id="expenseEntryTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title" style="color:var(--danger);"><i class="fa-solid fa-money-bill-transfer"></i> تسجيل مصروف جديد</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="refreshItemListFromFirestore()"><i class="fa-solid fa-rotate"></i> تحديث الأصناف</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+                </div>
             </div>
             <div class="employee-permission-note" style="margin-bottom:12px;">سجّل ما اشتريته أو سبب المصروف والمبلغ والعملة والصندوق. لا يلزم إدخال اسم عميل أو مورد.</div>
             <div class="card-box">
@@ -3979,6 +4004,7 @@ function initMenuPermissionCheckboxes() {
         if (tabId === 'itemListTab') {
             populateItemListBranchFilter();
             renderItemList();
+            refreshItemListFromFirestore();
         }
         if (tabId === 'quantitiesTab') {
             applyQuantityUpdateModePermission();
@@ -5390,9 +5416,9 @@ function initMenuPermissionCheckboxes() {
                 snapshots.forEach(entry => {
                     if (entry.snapshot.exists) {
                         const current = entry.snapshot.data() || {};
-                        transaction.update(entry.ref, { qty: Number(current.qty || 0) + entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, branchId, branchName: branch.name, name: current.name || entry.target.name, unit: entry.target.unit });
+                        transaction.update(entry.ref, { qty: Number(current.qty || 0) + entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, branchId, branchName: branch.name, name: current.name || entry.target.name, unit: entry.target.unit, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
                     } else {
-                        transaction.set(entry.ref, { id: entry.ref.id, branchId, branchName: branch.name, name: entry.target.name, unit: entry.target.unit, qty: entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency });
+                        transaction.set(entry.ref, { id: entry.ref.id, branchId, branchName: branch.name, name: entry.target.name, unit: entry.target.unit, qty: entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
                     }
                 });
                 return { created: true };
@@ -5401,8 +5427,8 @@ function initMenuPermissionCheckboxes() {
             record.id = docId; state.purchases = (state.purchases || []).concat(record);
             stockTargets.forEach(target => {
                 const local = state.warehouse.find(w => w.id === target.docId);
-                if (local) { local.qty = Number(local.qty || 0) + target.qty; local.costPrice = target.costPrice; local.costCurrency = currency; }
-                else state.warehouse.push({ id: target.docId, branchId, branchName: branch.name, name: target.name, unit: target.unit, qty: target.qty, costPrice: target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency });
+                if (local) { local.qty = Number(local.qty || 0) + target.qty; local.costPrice = target.costPrice; local.costCurrency = currency; local.sourceType = 'supplierPurchase'; local.sourceName = record.supplierName; local.sourceDate = record.date; local.sourcePurchaseId = docId; local.sourceHidden = false; }
+                else state.warehouse.push({ id: target.docId, branchId, branchName: branch.name, name: target.name, unit: target.unit, qty: target.qty, costPrice: target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
             });
             document.getElementById('supplierInvoiceItemsContainer').innerHTML = '';
             addSupplierInvoiceRow();
@@ -6483,6 +6509,10 @@ function initMenuPermissionCheckboxes() {
     }
 
     function getWarehouseItemSource(item) {
+        // إزالة المصدر من بطاقة الصنف لا تحذف الصنف ولا فاتورة المورد المالية.
+        if (item?.sourceHidden === true || item?.sourceType === 'sourceRemoved') {
+            return 'مصدر غير مسجل (تمت إزالة ارتباط المصدر من بطاقة الصنف)';
+        }
         if (item?.sourceType === 'supplierPurchase' && item.sourceName) {
             return `توريد من المورد: ${item.sourceName}${item.sourceDate ? ` — ${item.sourceDate}` : ''}`;
         }
@@ -6506,6 +6536,79 @@ function initMenuPermissionCheckboxes() {
         )[0];
         if (lastAdjustment) return `آخر إدخال كمية بواسطة ${lastAdjustment.actorName || 'مستخدم'} — ${lastAdjustment.date || ''}`;
         return 'مصدر غير مسجل (صنف قديم)';
+    }
+
+    async function removeWarehouseItemSource(itemId) {
+        if (isBusy || !canDeleteRecord()) {
+            showToast('ليس لديك صلاحية إزالة مصدر الصنف');
+            return;
+        }
+        const item = (state.warehouse || []).find(entry => entry.id === itemId);
+        if (!item) { showToast('الصنف غير موجود'); return; }
+        if (!isBranchAllowedForOperation(item.branchId || 'main_branch', 'warehouseTab')) {
+            showToast('هذا المخزن غير مسموح لهذا الحساب');
+            return;
+        }
+        const currentSource = getWarehouseItemSource(item);
+        if (currentSource.includes('مصدر غير مسجل') || item.sourceHidden === true) {
+            showToast('لا يوجد مصدر مسجل لهذا الصنف لإزالته');
+            return;
+        }
+        const ok = confirm(
+            `إزالة مصدر الصنف «${item.name || ''}»؟\n\n` +
+            'سيبقى الصنف والكمية وسعر التكلفة وسعر البيع كما هي.\n' +
+            'لن تُحذف فاتورة المورد أو حسابه المالي؛ ستُزال فقط إحالة المصدر من بطاقة الصنف.'
+        );
+        if (!ok) return;
+        isBusy = true;
+        try {
+            const patch = {
+                sourceHidden: true,
+                sourceType: 'sourceRemoved',
+                sourceName: '',
+                sourceDate: '',
+                sourceRemovedAt: getLocalDateKey(),
+                sourceRemovedBy: getAccountDisplayName(currentUser)
+            };
+            await db.collection('warehouse').doc(itemId).update(patch);
+            Object.assign(item, patch);
+            renderItemList();
+            renderWarehouseTable();
+            showToast('تمت إزالة مصدر الصنف فقط؛ الصنف وكميته لم يتغيرا');
+        } catch (error) {
+            console.warn('Remove warehouse source error:', error);
+            showToast('تعذر إزالة مصدر الصنف');
+        } finally {
+            isBusy = false;
+        }
+    }
+
+    async function refreshItemListFromFirestore() {
+        const host = document.getElementById('itemListCards');
+        if (!host) return;
+        if (!db || isDemoMode) {
+            renderItemList();
+            if (!(state.warehouse || []).length) {
+                host.innerHTML = '<div class="item-list-empty">تعذر تحديث المخزون من قاعدة البيانات. تحقق من الاتصال ثم اضغط «تحديث الأصناف».</div>';
+            }
+            return;
+        }
+        host.innerHTML = '<div class="item-list-empty"><i class="fa-solid fa-spinner fa-spin"></i> جارٍ تحميل الأصناف من المخازن...</div>';
+        try {
+            const freshWarehouse = await loadCollection('warehouse');
+            state.warehouse = freshWarehouse;
+            try { state.purchases = await loadCollection('purchases'); } catch (purchaseError) {
+                console.warn('Could not refresh purchase source data:', purchaseError);
+            }
+            populateItemListBranchFilter();
+            renderItemList();
+            if (!freshWarehouse.length) {
+                host.innerHTML = '<div class="item-list-empty">لم يتم العثور على سجلات أصناف في مجموعة المخزون بقاعدة البيانات. لم يتم حذف أو إنشاء أي صنف تلقائيًا. إذا حُذفت الأصناف سابقًا، استعد نسخة احتياطية قبل متابعة التعديلات.</div>';
+            }
+        } catch (error) {
+            console.warn('Refresh item list error:', error);
+            host.innerHTML = '<div class="item-list-empty">تعذر تحميل الأصناف. تحقق من اتصال Firebase وصلاحية قراءة المخزون، ثم اضغط «تحديث الأصناف».</div>';
+        }
     }
 
     async function editWarehouseItemQuantity(itemId) {
@@ -6535,6 +6638,7 @@ function initMenuPermissionCheckboxes() {
         if (!host) return;
         const query = (document.getElementById('itemListSearch')?.value || '').trim().toLowerCase();
         const branchId = document.getElementById('itemListBranch')?.value || 'ALL';
+        const allWarehouse = Array.isArray(state.warehouse) ? state.warehouse : [];
         const accessible = getScopedWarehouseItems();
         let items = accessible.filter(item => branchId === 'ALL' || (item.branchId || 'main_branch') === branchId);
         const sourceOf = item => getWarehouseItemSource(item);
@@ -6557,39 +6661,49 @@ function initMenuPermissionCheckboxes() {
                 <div class="item-list-stat"><span>مصدر معروف</span><strong class="known">${known}</strong></div>
                 <div class="item-list-stat"><span>مصدر غير مسجل</span><strong class="unknown">${unknown}</strong></div>`;
         }
-        host.innerHTML = items.length ? items.map(item => {
+        if (!items.length) {
+            let emptyMessage = 'لا توجد أصناف مطابقة للبحث أو المخزن المحدد.';
+            if (!allWarehouse.length) emptyMessage = 'قائمة المخزون فارغة في البيانات المحملة. اضغط «تحديث الأصناف». إذا سبق حذف الأصناف، استعد نسخة احتياطية حتى لا نعيد بناء كميات غير مؤكدة.';
+            else if (!accessible.length) emptyMessage = 'توجد أصناف في النظام، لكن لا توجد مخازن مسموحة لهذا الحساب. راجع صلاحيات المخازن مع المدير.';
+            host.innerHTML = `<div class="item-list-empty">${emptyMessage}</div>`;
+            return;
+        }
+        host.innerHTML = items.map(item => {
             const branch = item.branchName || getAllBranches().find(b => b.id === item.branchId)?.name || 'المخزن الرئيسي';
             const source = sourceOf(item);
             const sourceKnown = isSourceKnown(item);
             const qty = Number(item.qty || 0);
+            const unit = item.unit || 'حبة';
             const costCurrency = item.costCurrency || item.priceCurrency || 'YER';
             const saleCurrency = item.priceCurrency || 'YER';
             const inventoryCost = qty * Number(item.costPrice ?? item.price ?? 0);
-            return `<article class="item-list-card">
-                <div class="item-list-card-head">
-                    <div class="item-list-name-wrap"><span class="item-list-kicker">اسم الصنف</span><strong>${escapeUiText(item.name || 'صنف بدون اسم')}</strong></div>
-                    <span class="item-list-unit">${escapeUiText(item.unit || 'حبة')}</span>
+            return `<article class="item-list-row-card">
+                <div class="item-row-main">
+                    <div class="item-row-product">
+                        <span class="item-row-label">اسم الصنف</span>
+                        <strong>${escapeUiText(item.name || 'صنف بدون اسم')}</strong>
+                        <small>الوحدة: ${escapeUiText(unit)}</small>
+                    </div>
+                    <div class="item-row-quantity">
+                        <span class="item-row-label">الكمية الحالية</span>
+                        <strong>${formatQty(qty)}</strong>
+                        <small>${escapeUiText(unit)}</small>
+                    </div>
                 </div>
-                <div class="item-list-qty-panel">
-                    <div><span>المخزن</span><b>${escapeUiText(branch)}</b></div>
-                    <div><span>الكمية الحالية</span><b class="item-list-qty-number">${formatQty(qty)} <small>${escapeUiText(item.unit || 'حبة')}</small></b></div>
+                <div class="item-row-detail"><span>المخزن</span><b>${escapeUiText(branch)}</b></div>
+                <div class="item-row-source ${sourceKnown ? 'source-known' : 'source-unknown'}">
+                    <span>المصدر</span><b>${escapeUiText(source.replace(/^مصدر الصنف:\s*/, '').replace(/^مصدر غير مسجل \(صنف قديم\)$/, 'لا توجد بيانات توريد أو إضافة محفوظة لهذا الصنف'))}</b>
                 </div>
-                <div class="item-list-source ${sourceKnown ? 'source-known' : 'source-unknown'}">
-                    <div class="item-list-source-title"><i class="fa-solid ${sourceKnown ? 'fa-truck-ramp-box' : 'fa-circle-info'}"></i><b>${sourceKnown ? 'مصدر الصنف' : 'مصدر الصنف غير متوفر'}</b></div>
-                    <div class="item-list-source-text">${escapeUiText(source.replace(/^مصدر الصنف:\s*/,'').replace(/^مصدر غير مسجل \(صنف قديم\)$/,'لا توجد بيانات توريد أو إضافة محفوظة لهذا الصنف'))}</div>
-                </div>
-                <div class="item-list-price-grid">
-                    <div class="item-list-price-box"><span>سعر التكلفة</span><b>${formatMoney(item.costPrice ?? item.price ?? 0)} <small>${escapeUiText(costCurrency)}</small></b></div>
-                    <div class="item-list-price-box"><span>سعر البيع</span><b>${formatMoney(item.price || 0)} <small>${escapeUiText(saleCurrency)}</small></b></div>
-                    <div class="item-list-price-box item-list-total-box"><span>قيمة الكمية بالتكلفة</span><b>${formatMoney(inventoryCost)} <small>${escapeUiText(costCurrency)}</small></b></div>
-                </div>
-                <div class="item-list-actions">
+                <div class="item-row-detail"><span>سعر التكلفة</span><b>${formatMoney(item.costPrice ?? item.price ?? 0)} ${escapeUiText(costCurrency)}</b></div>
+                <div class="item-row-detail"><span>سعر البيع</span><b>${formatMoney(item.price || 0)} ${escapeUiText(saleCurrency)}</b></div>
+                <div class="item-row-detail item-row-total"><span>قيمة الكمية بالتكلفة</span><b>${formatMoney(inventoryCost)} ${escapeUiText(costCurrency)}</b></div>
+                <div class="item-row-actions">
                     ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editWarehouseItemQuantity('${item.id}')"><i class="fa-solid fa-pen"></i> تعديل الكمية</button>` : ''}
-                    ${canDeleteRecord() ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteWarehouseItem('${item.id}')"><i class="fa-solid fa-trash"></i> حذف الصنف</button>` : ''}
+                    ${canDeleteRecord() && sourceKnown ? `<button type="button" class="btn btn-warning btn-sm" onclick="removeWarehouseItemSource('${item.id}')"><i class="fa-solid fa-link-slash"></i> إزالة مصدر التوريد</button>` : ''}
                     ${(!canEditRecord() && !canDeleteRecord()) ? '<span class="item-list-readonly">عرض فقط</span>' : ''}
                 </div>
             </article>`;
-        }).join('') : '<div class="item-list-empty">لا توجد أصناف مطابقة في المخازن المسموحة.</div>';
+        }).join('');
     }
 
     function renderWarehouseTable() {
