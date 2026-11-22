@@ -822,13 +822,56 @@
         .employee-dues-kpi span { display: block; color: var(--text-muted); font-size: 11px; font-weight: 700; }
         .employee-dues-kpi strong { display: block; margin-top: 4px; font-size: 16px; font-weight: 900; direction: ltr; text-align: right; }
         .employee-dues-pdf-area {
-            position: absolute;
+            position: fixed;
             left: -12000px;
             top: 0;
             width: 794px;
             background: #fff;
             color: #111827;
             z-index: -1000;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        /* تظهر مساحة التقرير مؤقتاً أثناء الالتقاط فقط، وتبقى خلف شاشة الانتظار */
+        .employee-dues-pdf-area.pdf-exporting {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 794px !important;
+            max-width: none !important;
+            height: auto !important;
+            max-height: none !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            overflow: visible !important;
+            transform: none !important;
+            z-index: 2147483000 !important;
+            background: #fff !important;
+            color: #111827 !important;
+            pointer-events: none !important;
+        }
+        .employee-dues-export-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2147483001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(255,255,255,.96);
+            color: #174d32;
+            font-family: Tahoma, Arial, sans-serif;
+            font-weight: 800;
+            text-align: center;
+        }
+        .employee-dues-export-overlay span {
+            display: inline-block;
+            padding: 16px 22px;
+            border: 1px solid #dcebe1;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 12px 35px rgba(15,76,45,.10);
         }
         .employee-dues-pdf-sheet {
             direction: rtl;
@@ -1998,35 +2041,34 @@
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
-            <div class="employee-permission-note" id="employeeDuesPeriodLabel">حدد الشهر والموظف لعرض الإنتاج والمبالغ المصروفة والمتبقي، ويمكنك استخراج كشف PDF.</div>
+            <div class="employee-permission-note" id="employeeDuesPeriodLabel">اختر الشهر والموظف. سيظهر لك المستحق وما استلمه والمتبقي، ويمكنك حفظ الكشف PDF.</div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-filter"></i> تحديد كشف الحساب</span></div>
-                <div class="grid-3">
+                <div class="card-title"><span><i class="fa-solid fa-filter"></i> اختر الكشف المطلوب</span></div>
+                <div class="grid-2">
                     <div class="form-group" style="margin-bottom:0;">
-                        <label>الفترة / الشهر</label>
+                        <label>الشهر</label>
                         <input type="month" id="employeeDuesPeriod" class="form-control" onchange="renderEmployeeDues()">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
-                        <label>الموظف</label>
+                        <label>اسم الموظف</label>
                         <select id="employeeDuesStaffSelect" class="form-control" onchange="renderEmployeeDuesDetail()">
                             <option value="">اختر الموظف</option>
                         </select>
                     </div>
-                    <div class="form-group" style="margin-bottom:0; display:flex; align-items:flex-end; gap:7px;">
-                        <button type="button" class="btn btn-primary btn-full" onclick="exportEmployeeDuesPdf(false)">
-                            <i class="fa-solid fa-file-pdf"></i> PDF للموظف المحدد
-                        </button>
-                    </div>
                 </div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+                    <button type="button" class="btn btn-primary" onclick="exportEmployeeDuesPdf(false)">
+                        <i class="fa-solid fa-file-pdf"></i> حفظ كشف الموظف PDF
+                    </button>
                     <button type="button" class="btn btn-accent" onclick="exportEmployeeDuesPdf(true)">
-                        <i class="fa-solid fa-file-pdf"></i> PDF شامل لجميع الموظفين
+                        <i class="fa-solid fa-files"></i> حفظ كل الكشوف PDF
                     </button>
                     <button type="button" class="btn btn-outline" onclick="renderEmployeeDues()">
-                        <i class="fa-solid fa-rotate"></i> تحديث الكشف
+                        <i class="fa-solid fa-rotate"></i> تحديث
                     </button>
                 </div>
+                <div class="employee-permission-note" style="margin-top:10px;">اختر موظفًا لعرض كشفه، أو احفظ كل الكشوف في ملف واحد. المبالغ تظهر حسب عملة كل موظف.</div>
             </div>
 
             <div class="card-box">
@@ -5463,7 +5505,7 @@
         const period = getSelectedEmployeeDuesPeriod();
         const staff = populateEmployeeDuesStaffOptions();
         const label = document.getElementById('employeeDuesPeriodLabel');
-        if (label) label.textContent = `كشف الفترة ${period}: يظهر إجمالي ما أنجزه كل موظف، وما استلمه، والمتبقي له. لا يتم جمع العملات المختلفة معاً.`;
+        if (label) label.textContent = `كشف ${period}: المستحق، والمبالغ المستلمة، والمتبقي لكل موظف. كل عملة تُحسب بشكل مستقل.`;
 
         const totals = {};
         staff.forEach(item => {
@@ -5620,33 +5662,111 @@
         `;
     }
 
+    let employeeDuesPdfBusy = false;
+
     async function exportEmployeeDuesPdf(allStaff = false) {
-        if (typeof html2pdf === 'undefined') { showToast('مكتبة PDF غير محملة؛ تحقق من اتصال الإنترنت ثم أعد المحاولة'); return; }
+        if (employeeDuesPdfBusy) return;
+        if (typeof html2pdf === 'undefined') {
+            showToast('مكتبة PDF لم تُحمّل. تحقق من الإنترنت ثم أعد المحاولة.');
+            return;
+        }
         const period = getSelectedEmployeeDuesPeriod();
         const available = getVisiblePayrollStaff();
         const selectedId = document.getElementById('employeeDuesStaffSelect')?.value || '';
         const selected = available.find(item => item.id === selectedId);
         const staffList = allStaff ? available : (selected ? [selected] : []);
-        if (!staffList.length) { showToast(allStaff ? 'لا يوجد موظفون لاستخراج كشفهم' : 'اختر الموظف أولاً'); return; }
+        if (!staffList.length) {
+            showToast(allStaff ? 'لا يوجد موظفون لاستخراج كشوفهم' : 'اختر الموظف أولاً');
+            return;
+        }
         const area = document.getElementById('employeeDuesPdfArea');
         if (!area) { showToast('تعذر تجهيز مساحة كشف PDF'); return; }
-        area.innerHTML = staffList.map((staff, index) => buildEmployeeDuesPdfSheet(staff, period, index === staffList.length - 1)).join('');
-        const filePart = allStaff ? 'جميع_الموظفين' : (staffList[0].fullName || 'موظف').replace(/[^\u0600-\u06FF\w-]+/g, '_');
-        const options = {
-            margin: [8, 7, 8, 7],
-            filename: `كشف_مستحقات_${filePart}_${period}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: '#ffffff' },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['css', 'legacy'] }
-        };
-        showToast('جاري تجهيز كشف المستحقات بصيغة PDF');
+
+        employeeDuesPdfBusy = true;
+        const overlay = document.createElement('div');
+        overlay.className = 'employee-dues-export-overlay';
+        overlay.innerHTML = '<span><i class="fa-solid fa-file-pdf"></i> جاري تجهيز الكشف PDF...<br><small style="font-weight:400;color:#64748b;">لا تغلق الصفحة حتى يبدأ التنزيل</small></span>';
+        document.body.appendChild(overlay);
+
+        const oldStyle = area.getAttribute('style');
+        const oldAriaHidden = area.getAttribute('aria-hidden');
         try {
-            await html2pdf().set(options).from(area).save();
-            showToast('تم تجهيز ملف كشف المستحقات');
+            area.innerHTML = staffList.map((staff, index) =>
+                buildEmployeeDuesPdfSheet(staff, period, index === staffList.length - 1)
+            ).join('');
+            area.classList.add('pdf-exporting');
+            area.removeAttribute('aria-hidden');
+
+            // انتظر الخطوط والصور حتى لا يلتقط html2canvas ورقة فارغة أو شعاراً غير مكتمل.
+            if (document.fonts?.ready) await document.fonts.ready;
+            const images = Array.from(area.querySelectorAll('img'));
+            await Promise.all(images.map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => {
+                    const finish = () => resolve();
+                    img.addEventListener('load', finish, { once: true });
+                    img.addEventListener('error', finish, { once: true });
+                    setTimeout(finish, 3500);
+                });
+            }));
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+            const rect = area.getBoundingClientRect();
+            const contentHeight = Math.max(area.scrollHeight, area.offsetHeight, Math.ceil(rect.height));
+            if (area.querySelectorAll('.employee-dues-pdf-sheet').length !== staffList.length || rect.width < 700 || contentHeight < 250) {
+                throw new Error('PDF report area is empty or has invalid dimensions');
+            }
+
+            const filePart = allStaff ? 'جميع_الموظفين' :
+                (staffList[0].fullName || 'موظف').replace(/[^\u0600-\u06FF\w-]+/g, '_');
+            const options = {
+                margin: [8, 7, 8, 7],
+                filename: `كشف_مستحقات_${filePart}_${period}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: false,
+                    backgroundColor: '#ffffff',
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: 1100,
+                    logging: false
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'] }
+            };
+
+            const worker = html2pdf().set(options).from(area);
+            await worker.toCanvas();
+            const canvas = await worker.get('canvas');
+            if (!canvas || canvas.width < 500 || canvas.height < 250) {
+                throw new Error('PDF capture returned an empty canvas');
+            }
+            const context = canvas.getContext('2d');
+            if (context) {
+                const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+                let visiblePixels = 0;
+                for (let i = 0; i < pixels.length; i += 64) {
+                    if (pixels[i] < 238 || pixels[i + 1] < 238 || pixels[i + 2] < 238) visiblePixels++;
+                    if (visiblePixels > 30) break;
+                }
+                if (visiblePixels < 8) throw new Error('PDF capture appears blank');
+            }
+            await worker.toPdf().save();
+            showToast('تم تنزيل كشف المستحقات بنجاح');
         } catch (error) {
             console.warn('Employee dues PDF error:', error);
-            showToast('تعذر إنشاء PDF؛ حاول مرة أخرى بعد تحديث الصفحة');
+            showToast('لم يتم إنشاء PDF. تحقق من اتصال الإنترنت ثم أعد المحاولة.');
+        } finally {
+            area.classList.remove('pdf-exporting');
+            if (oldStyle === null) area.removeAttribute('style');
+            else area.setAttribute('style', oldStyle);
+            if (oldAriaHidden === null) area.removeAttribute('aria-hidden');
+            else area.setAttribute('aria-hidden', oldAriaHidden);
+            area.innerHTML = '';
+            overlay.remove();
+            employeeDuesPdfBusy = false;
         }
     }
 
