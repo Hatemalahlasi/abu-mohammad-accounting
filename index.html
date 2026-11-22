@@ -601,20 +601,28 @@
             .qty-entry-table-wrap { overflow:visible; border:0; background:transparent; }
             #qtyAdjustmentRows { display:grid; gap:10px; }
             #qtyAdjustmentRows .batch-qty-row {
-                display:grid; grid-template-columns:minmax(0,1fr) minmax(92px,.55fr);
-                gap:9px; padding:11px; border:1px solid var(--border); border-radius:13px;
+                display:grid; grid-template-columns:minmax(0,1fr) 108px 38px;
+                align-items:center; gap:8px; padding:10px; border:1px solid var(--border); border-radius:13px;
                 background:#fff; box-shadow:0 3px 12px rgba(15,23,42,.04);
             }
             #qtyAdjustmentRows .batch-qty-row td { display:block; padding:0; border:0; min-width:0; }
-            #qtyAdjustmentRows .batch-qty-row td:first-child { grid-column:1 / -1; }
+            #qtyAdjustmentRows .batch-qty-row td:first-child { grid-column:auto; }
             #qtyAdjustmentRows .batch-qty-row td:nth-child(2)::before { content:'الكمية'; display:block; font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px; }
-            #qtyAdjustmentRows .batch-qty-row td:nth-child(3)::before { content:'المتاح حالياً'; display:block; font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px; }
-            #qtyAdjustmentRows .batch-qty-row td:nth-child(4) { grid-column:1 / -1; text-align:left; }
+            #qtyAdjustmentRows .qty-row-delete-cell { text-align:center; }
             .qty-item-picker { min-width:0; }
-            .qty-item-search { min-height:54px; font-size:14px; }
-            #qtyAdjustmentRows .form-control { min-width:0; }
-            #myQuantityHistoryCard .table-responsive { overflow-x:auto; }
-            #myQuantityHistoryCard table { min-width:560px; }
+            .qty-item-search { min-height:58px; height:auto; font-size:15px; line-height:1.6; resize:none; white-space:pre-wrap; overflow-wrap:anywhere; }
+            #qtyAdjustmentRows .form-control { min-width:0; width:100%; }
+            #qtyAdjustmentRows .batch-qty-value { min-height:58px; text-align:center; font-size:17px; font-weight:800; }
+            .qty-row-delete { width:36px; height:40px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+            .qty-item-suggestion { min-height:54px; padding:12px; }
+            .qty-item-suggestion strong { display:block; font-size:14px; line-height:1.55; white-space:normal; overflow-wrap:anywhere; }
+            #myQuantityHistoryCard .table-responsive { overflow:visible; }
+            #myQuantityHistoryCard table { min-width:0; table-layout:fixed; }
+            #myQuantityHistoryCard th, #myQuantityHistoryCard td { padding:9px 7px; font-size:12px; white-space:normal; overflow-wrap:anywhere; }
+            #myQuantityHistoryCard th:nth-child(1), #myQuantityHistoryCard td:nth-child(1) { width:27%; }
+            #myQuantityHistoryCard th:nth-child(3), #myQuantityHistoryCard td:nth-child(3) { width:27%; text-align:center; }
+            .qty-history-item-name { display:block; line-height:1.5; overflow-wrap:anywhere; }
+            .qty-history-amount { white-space:normal; }
         }
 
         .summary-bar {
@@ -1213,6 +1221,31 @@
 .item-row-actions .btn{flex:1;min-height:43px;white-space:normal}
 @media(max-width:520px){.item-list-row-card{padding:11px 12px}.item-row-main{grid-template-columns:minmax(0,1fr) 112px;gap:8px}.item-row-product strong{font-size:16px}.item-row-quantity{padding:8px 6px}.item-row-quantity strong{font-size:21px}.item-row-detail{align-items:center}.item-row-detail b{font-size:12px}.item-row-actions{flex-direction:column}.item-row-actions .btn{width:100%}}
 
+
+        /* واجهة إدخال الموظف: اختيار صنف + كمية فقط */
+        #qtyAdjustmentRows .batch-qty-current { display:none !important; }
+        @media (max-width:600px) {
+            #quantitiesTab #qtyAdjustmentRows .batch-qty-row {
+                display:grid !important;
+                grid-template-columns:minmax(0,1fr) 112px 38px !important;
+                align-items:center !important; gap:8px !important; padding:10px !important;
+            }
+            #quantitiesTab #qtyAdjustmentRows .batch-qty-row td { display:block !important; width:100% !important; min-width:0 !important; }
+            #quantitiesTab #qtyAdjustmentRows .batch-qty-row td:first-child { grid-column:auto !important; }
+            #quantitiesTab #qtyAdjustmentRows .batch-qty-row td:nth-child(2)::before {
+                content:'الكمية' !important; display:block !important; margin:0 0 5px !important;
+                font-size:11px !important; font-weight:800 !important; color:#475569 !important;
+            }
+            #quantitiesTab #qtyAdjustmentRows .batch-qty-row td:nth-child(3)::before { content:none !important; display:none !important; }
+            #quantitiesTab #qtyAdjustmentRows .qty-row-delete-cell { text-align:center !important; }
+            #quantitiesTab .qty-item-search { min-height:60px !important; height:auto !important; font-size:15px !important; line-height:1.6 !important; }
+            #quantitiesTab .batch-qty-value { min-height:60px !important; text-align:center !important; font-size:17px !important; }
+            #quantitiesTab .qty-row-delete { width:36px !important; min-height:42px !important; padding:0 !important; }
+            #quantitiesTab .qty-item-suggestion strong { white-space:normal !important; overflow-wrap:anywhere !important; line-height:1.6 !important; }
+            #myQuantityHistoryCard .table-responsive { overflow:visible !important; }
+            #myQuantityHistoryCard table { min-width:0 !important; width:100% !important; table-layout:fixed !important; }
+            #myQuantityHistoryCard th, #myQuantityHistoryCard td { white-space:normal !important; overflow-wrap:anywhere !important; padding:8px 6px !important; font-size:12px !important; }
+        }
 </style>
 </head>
 <body>
@@ -1954,7 +1987,7 @@
                         <label>الفرع / المخزن</label>
                         <select id="qtyBranchSelect" class="form-control" onchange="populateQuantityItems()"></select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="qtyUpdateModeGroup">
                         <label>طريقة تحديث الكميات لكل الصفوف</label>
                         <select id="qtyUpdateMode" class="form-control">
                             <option value="add">إضافة إلى الرصيد الحالي (+)</option>
@@ -1968,7 +2001,7 @@
                     <button type="button" class="btn btn-outline btn-sm" onclick="addStockQuantityRow()"><i class="fa-solid fa-plus"></i> إضافة صنف</button>
                 </div>
                 <div class="table-responsive qty-entry-table-wrap">
-                    <table><thead><tr><th>الصنف</th><th>الكمية</th><th>المتاح حالياً</th><th>حذف</th></tr></thead><tbody id="qtyAdjustmentRows"></tbody></table>
+                    <table class="qty-entry-simple-table"><thead><tr><th>الصنف</th><th>الكمية المراد إضافتها</th><th></th></tr></thead><tbody id="qtyAdjustmentRows"></tbody></table>
                     <div id="qtyEntryEmptyState" class="qty-entry-empty">اضغط «إضافة صنف» لإضافة صف جديد. بعد الحفظ تختفي صفوف الإدخال الفارغة وتظهر عملياتك المسجلة أسفل الصفحة.</div>
                 </div>
                 <button id="saveQtyBtn" class="btn btn-accent btn-full" style="margin-top:12px;" onclick="saveStockQuantity()">
@@ -1980,7 +2013,7 @@
                 <div class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> الكميات التي أدخلتها</span><span class="badge badge-unit" id="myQuantityHistoryCount">0 عملية</span></div>
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>التاريخ</th><th>الصنف</th><th>العملية</th><th>الكمية المسجلة</th><th>الرصيد بعد الحفظ</th></tr></thead>
+                        <thead><tr><th>التاريخ</th><th>الصنف الذي أضفته</th><th>الكمية</th></tr></thead>
                         <tbody id="myQuantityHistoryBody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);">لا توجد عمليات مسجلة منك بعد</td></tr></tbody>
                     </table>
                 </div>
@@ -4785,14 +4818,13 @@ function initMenuPermissionCheckboxes() {
         row.innerHTML = `
             <td>
                 <div class="qty-item-picker">
-                    <textarea rows="2" class="form-control qty-item-search" placeholder="اكتب اسم الصنف أو اضغط هنا للاختيار" autocomplete="off" onfocus="renderStockQuantityItemSuggestions(this)" oninput="renderStockQuantityItemSuggestions(this)"></textarea>
+                    <textarea rows="2" class="form-control qty-item-search" placeholder="اضغط لاختيار الصنف أو اكتب اسمه كاملاً" autocomplete="off" onfocus="renderStockQuantityItemSuggestions(this)" oninput="renderStockQuantityItemSuggestions(this)"></textarea>
                     <select class="batch-qty-item hidden" tabindex="-1" aria-hidden="true"><option value="">اختر الصنف</option></select>
                     <div class="qty-item-suggestions hidden"></div>
                 </div>
             </td>
-            <td><input type="number" step="0.01" min="0.01" class="form-control num-input batch-qty-value" placeholder="أدخل الكمية"></td>
-            <td><span class="batch-qty-current mono">-</span></td>
-            <td><button type="button" class="btn btn-danger btn-sm" title="حذف الصف" onclick="removeStockQuantityRow(this)"><i class="fa-solid fa-trash"></i> حذف</button></td>`;
+            <td><input type="number" step="0.01" min="0.01" inputmode="decimal" class="form-control num-input batch-qty-value" placeholder="أدخل الكمية"></td>
+            <td class="qty-row-delete-cell"><button type="button" class="btn btn-danger btn-sm qty-row-delete" title="حذف الصف" aria-label="حذف الصف" onclick="removeStockQuantityRow(this)"><i class="fa-solid fa-trash"></i></button></td>`;
         container.appendChild(row);
         const emptyState = document.getElementById('qtyEntryEmptyState');
         if (emptyState) emptyState.classList.add('hidden');
@@ -4831,7 +4863,7 @@ function initMenuPermissionCheckboxes() {
         box.innerHTML = effectiveShown.length ? effectiveShown.map(item => `
             <button type="button" class="qty-item-suggestion" data-item-id="${escapeUiText(item.id)}" onclick="selectStockQuantityItem(this)">
                 <strong>${escapeUiText(item.name)}</strong>
-                <small>${escapeUiText(item.unit || 'حبة')} · المتاح: ${formatQty(item.qty || 0)}</small>
+                <small>الوحدة: ${escapeUiText(item.unit || 'حبة')}</small>
             </button>`).join('') : '<div class="qty-entry-empty">لا توجد أصناف مطابقة في هذا المخزن</div>';
         box.classList.remove('hidden');
     }
@@ -4853,11 +4885,8 @@ function initMenuPermissionCheckboxes() {
     }
 
     function updateStockQuantityRowInfo(select) {
-        const row = select?.closest('.batch-qty-row');
-        if (!row) return;
-        const item = state.warehouse.find(w => w.id === select.value);
-        const current = row.querySelector('.batch-qty-current');
-        if (current) current.textContent = item ? `${formatQty(item.qty || 0)} ${item.unit || 'حبة'}` : '-';
+        // نموذج الموظف يعرض اختيار الصنف والكمية فقط، ولا يعرض الرصيد الحالي.
+        return;
     }
 
     function renderMyQuantityHistory() {
@@ -4869,7 +4898,7 @@ function initMenuPermissionCheckboxes() {
         const logs = (state.warehouse || []).flatMap(item =>
             (Array.isArray(item.quantityAdjustmentHistory) ? item.quantityAdjustmentHistory : []).map(log => ({
                 ...log, itemName: log.itemName || item.name || '', itemId: log.itemId || item.id,
-                branchName: log.branchName || item.branchName || '', branchId: log.branchId || item.branchId || 'main_branch'
+                branchName: log.branchName || item.branchName || '', branchId: log.branchId || item.branchId || 'main_branch', unit: log.unit || item.unit || 'حبة'
             }))
         ).filter(log => {
             if (log.actorId && actorId) return String(log.actorId) === actorId;
@@ -4879,11 +4908,9 @@ function initMenuPermissionCheckboxes() {
         tbody.innerHTML = logs.length ? logs.map(log => `
             <tr>
                 <td>${escapeUiText(log.date || '-')}</td>
-                <td><strong>${escapeUiText(log.itemName || '-')}</strong><small style="display:block;color:var(--text-muted);">${escapeUiText(log.branchName || '')}</small></td>
-                <td><span class="badge ${log.mode === 'set' ? 'badge-warning' : 'badge-cash'}">${log.mode === 'set' ? 'تعيين رصيد' : 'إضافة'}</span></td>
-                <td><strong class="mono">${formatQty(log.qty || 0)}</strong></td>
-                <td><strong class="mono">${formatQty(log.quantityAfter ?? 0)}</strong></td>
-            </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:16px;">لا توجد عمليات إدخال كميات مسجلة منك بعد</td></tr>';
+                <td><strong class="qty-history-item-name">${escapeUiText(log.itemName || '-')}</strong><small style="display:block;color:var(--text-muted);">${escapeUiText(log.branchName || '')}</small></td>
+                <td><strong class="mono qty-history-amount">${formatQty(log.qty || 0)} ${escapeUiText(log.unit || '')}</strong></td>
+            </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:16px;">لا توجد عمليات إدخال كميات مسجلة منك بعد</td></tr>';
     }
 
     function fillSelectedItemCurrentQty() {
@@ -4900,6 +4927,8 @@ function initMenuPermissionCheckboxes() {
         const note = document.getElementById('qtySetModePermissionNote');
         if (!select) return;
         const allowed = canSetStockQuantity(currentUser);
+        const modeGroup = document.getElementById('qtyUpdateModeGroup');
+        if (modeGroup) modeGroup.classList.toggle('hidden', !allowed);
         const setOption = select.querySelector('option[value="set"]');
         if (setOption) {
             setOption.disabled = !allowed;
