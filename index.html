@@ -2457,7 +2457,16 @@
                             حدد الأقسام التي تسمح لهذا الحساب بفتحها. جميع الأقسام مغلقة افتراضياً، ولا يظهر للموظف إلا ما تفعّله وتحفظه هنا:
                         </div>
                         <div id="permissionMenusGrid" class="menu-perms-grid"></div>
-                        <div class="employee-permission-note" style="margin-top:8px;">مهم: لإظهار زر «إضافة شغل للموظفين» لهذا الحساب، فعّل هذا القسم ثم احفظ الصلاحيات. يجب ربط الحساب بملف الموظف من صفحة «الموظفون»؛ بعدها يستطيع الموظف تسجيل إنتاجه لنفسه فقط، ولا تظهر له ملفات بقية الموظفين.</div>
+                        <div class="employee-permission-note" style="margin-top:8px;">مهم: لإظهار زر «إضافة شغل للموظفين» فعّل القسم أدناه، ثم اختر الموظفين الذين يُسمح لهذا الحساب بتسجيل إنتاجهم. لا يلزم أن يكون الحساب مربوطاً بأحد هؤلاء الموظفين؛ الاختيار هنا يحدد الأسماء التي تظهر في قائمة تسجيل الإنتاج فقط.</div>
+                        <div class="card-box" style="margin-top:12px; margin-bottom:0;">
+                            <div class="card-title"><span><i class="fa-solid fa-people-group"></i> الموظفون المسموح بتسجيل إنتاجهم لهذا الحساب</span></div>
+                            <div class="employee-permission-note">حدد موظفاً واحداً أو عدة موظفين يعملون بالقطعة. الموظفون غير المحددين لن يظهروا لهذا الحساب في صفحة «إضافة شغل للموظفين» ولن يستطيع تسجيل إنتاج لهم.</div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="setAllProductionStaffChoices(true)">تحديد كل الموظفين</button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="setAllProductionStaffChoices(false)">إلغاء التحديد</button>
+                            </div>
+                            <div id="permissionProductionStaffChoices" class="perm-box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));"></div>
+                        </div>
                         <div class="card-box" style="margin-top:12px; margin-bottom:0;">
                             <div class="card-title"><span><i class="fa-solid fa-warehouse"></i> المخازن المسموح بها للحساب المحدد</span></div>
                             <div class="employee-permission-note">يمكنك تعديل مخازن أي حساب موجود دون إنشاء حساب جديد. اختر صلاحية عامة، ثم حدد بشكل مستقل مخازن إدخال الكميات ومخازن النقل.</div>
@@ -2994,6 +3003,20 @@
         return staff.filter(item => item.id === ownStaffId || item.userAccountId === currentUser?.id || item.legacyUserId === currentUser?.id);
     }
 
+    // الموظفون الذين يسمح المشرف لهذا الحساب بتسجيل إنتاجهم فقط.
+    // لا نوسّع نطاق مصروفات/رواتب الموظف؛ هذه القائمة خاصة بصفحة الإنتاج.
+    function getProductionVisibleStaff() {
+        const staff = getAllStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
+        if (canManageUsers() || hasFullAccess(currentUser)) return staff;
+        if (Array.isArray(currentUser?.productionStaffAccessIds)) {
+            const allowed = new Set(currentUser.productionStaffAccessIds.map(String));
+            return staff.filter(item => allowed.has(String(item.id)));
+        }
+        // توافق خلفي للحسابات القديمة: لا يظهر إلا ملف الموظف المرتبط بالحساب إن وجد.
+        const ownStaffId = currentUser?.staffId || `legacy_${currentUser?.id || ''}`;
+        return staff.filter(item => item.id === ownStaffId || item.userAccountId === currentUser?.id || item.legacyUserId === currentUser?.id);
+    }
+
     async function migrateLegacyEmployeeAccountsToStaff() {
         if (isBusy || !canManageUsers()) return;
         const accounts = state.employees.filter(account => {
@@ -3353,6 +3376,38 @@ function initMenuPermissionCheckboxes() {
         return selector ? normalizeBranchIds(Array.from(document.querySelectorAll(selector)).map(cb => cb.value)) : [];
     }
 
+    function renderPermissionProductionStaffChoices(selectedIds = []) {
+        const container = document.getElementById('permissionProductionStaffChoices');
+        if (!container) return;
+        const selected = new Set((Array.isArray(selectedIds) ? selectedIds : []).map(String));
+        const staff = getAllStaff()
+            .filter(item => isPieceworkStaff(item) && item.active !== false)
+            .sort((a, b) => String(a.fullName || '').localeCompare(String(b.fullName || ''), 'ar'));
+        if (!staff.length) {
+            container.innerHTML = '<div class="employee-permission-note">لا توجد ملفات موظفين نشطة بنظام القطعة. عرّف الموظفين وتسعيراتهم أولاً من صفحة «الموظفون والرواتب».</div>';
+            return;
+        }
+        container.innerHTML = staff.map(item => {
+            const rates = (item.pieceRates || []).map(rate => rate.name).filter(Boolean).join('، ');
+            const label = `${item.fullName || 'موظف'}${rates ? ` — ${rates}` : ''}`;
+            return `<label class="perm-check" style="background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 10px;align-items:flex-start;">
+                <input type="checkbox" class="permission-production-staff-cb" value="${escapeUiText(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''}>
+                <span>${escapeUiText(label)}</span>
+            </label>`;
+        }).join('');
+    }
+
+    function setAllProductionStaffChoices(checked) {
+        document.querySelectorAll('#permissionProductionStaffChoices .permission-production-staff-cb').forEach(cb => {
+            cb.checked = Boolean(checked);
+        });
+    }
+
+    function getPermissionProductionStaffSelection() {
+        return Array.from(document.querySelectorAll('#permissionProductionStaffChoices .permission-production-staff-cb:checked'))
+            .map(cb => cb.value);
+    }
+
     function loadEmployeePermissions() {
         const empId = document.getElementById('permissionEmployeeSelect')?.value || '';
         const emp = state.employees.find(e => e.id === empId);
@@ -3398,6 +3453,12 @@ function initMenuPermissionCheckboxes() {
         renderPermissionWarehouseChoices('general', generalIds);
         renderPermissionWarehouseChoices('quantity', quantityIds);
         renderPermissionWarehouseChoices('transfer', transferIds);
+        let productionStaffIds = Array.isArray(emp.productionStaffAccessIds) ? emp.productionStaffAccessIds : null;
+        if (productionStaffIds === null) {
+            const linkedStaff = getStaffLinkedToAccount(emp);
+            productionStaffIds = linkedStaff && isPieceworkStaff(linkedStaff) ? [linkedStaff.id] : [];
+        }
+        renderPermissionProductionStaffChoices(productionStaffIds);
     }
 
     async function saveEmployeePermissions() {
@@ -3412,6 +3473,12 @@ function initMenuPermissionCheckboxes() {
         const warehouseBranchIds = getPermissionWarehouseSelection('general');
         const quantityBranchIds = getPermissionWarehouseSelection('quantity');
         const transferBranchIds = getPermissionWarehouseSelection('transfer');
+        const productionStaffAccessIds = getPermissionProductionStaffSelection();
+        const validProductionStaffIds = new Set(getAllStaff().filter(item => isPieceworkStaff(item) && item.active !== false).map(item => String(item.id)));
+        if (productionStaffAccessIds.some(id => !validProductionStaffIds.has(String(id)))) {
+            showToast('اختيار الموظفين غير صالح؛ حدّث الصفحة ثم حاول مرة أخرى');
+            return;
+        }
         const branchNames = getAllBranches().filter(branch => warehouseBranchIds.includes(branch.id)).map(branch => branch.name);
         const patch = {
             canEdit: document.getElementById('permissionCanEdit').checked,
@@ -3424,7 +3491,8 @@ function initMenuPermissionCheckboxes() {
             warehouseBranchIds,
             warehouseBranchName: branchNames.join('، ') || 'لا توجد مخازن',
             quantityBranchIds,
-            transferBranchIds
+            transferBranchIds,
+            productionStaffAccessIds
         };
         isBusy = true;
         const btn = document.getElementById('saveEmployeePermissionsBtn');
@@ -3442,7 +3510,8 @@ function initMenuPermissionCheckboxes() {
                 verifiedAccount.canSetStockQuantity !== patch.canSetStockQuantity ||
                 !same(verifiedAccount.warehouseBranchIds, warehouseBranchIds) ||
                 !same(verifiedAccount.quantityBranchIds, quantityBranchIds) ||
-                !same(verifiedAccount.transferBranchIds, transferBranchIds)) {
+                !same(verifiedAccount.transferBranchIds, transferBranchIds) ||
+                !same(verifiedAccount.productionStaffAccessIds, productionStaffAccessIds)) {
                 throw new Error('PERMISSIONS_NOT_VERIFIED');
             }
 
@@ -7235,10 +7304,13 @@ function initMenuPermissionCheckboxes() {
         const sel = document.getElementById('productionStaffSelect');
         if (!sel) return;
         const previous = sel.value;
-        const staff = getVisiblePayrollStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
-        sel.innerHTML = '<option value="">اختر موظفاً يعمل بالقطعة</option>' + staff.map(item =>
-            `<option value="${item.id}">${item.fullName} — ${getStaffSalaryCurrency(item)}</option>`
+        const staff = getProductionVisibleStaff();
+        sel.innerHTML = (staff.length
+            ? '<option value="">اختر الموظف الذي سمح به المشرف</option>'
+            : '<option value="">لم يحدد المشرف موظفين لهذا الحساب</option>') + staff.map(item =>
+            `<option value="${escapeUiText(item.id)}">${escapeUiText(item.fullName)} — ${getStaffSalaryCurrency(item)}</option>`
         ).join('');
+        sel.disabled = staff.length === 0;
         if (previous && staff.some(item => item.id === previous)) sel.value = previous;
         else if (staff.length === 1) sel.value = staff[0].id;
         populateProductionRateOptions();
@@ -7284,7 +7356,7 @@ function initMenuPermissionCheckboxes() {
         const date = document.getElementById('productionDate').value || getLocalDateKey();
         const note = document.getElementById('productionNote').value.trim();
         const btn = document.getElementById('saveProductionBtn');
-        if (!staff || !isPieceworkStaff(staff) || !getVisiblePayrollStaff().some(item => item.id === staff.id)) { showToast('يمكنك تسجيل الإنتاج لملفك المرتبط فقط، أو اختر موظفاً ضمن صلاحياتك'); return; }
+        if (!staff || !isPieceworkStaff(staff) || !getProductionVisibleStaff().some(item => item.id === staff.id)) { showToast('هذا الموظف غير موجود ضمن قائمة الموظفين التي سمح لك المشرف بتسجيل إنتاجهم'); return; }
         if (!rate) { showToast('اختر نوع العمل أو القطعة'); return; }
         if (!Number.isFinite(quantity) || quantity <= 0) { showToast('أدخل كمية صحيحة أكبر من صفر'); return; }
         const amount = quantity * Number(rate.rate || 0);
@@ -7335,7 +7407,7 @@ function initMenuPermissionCheckboxes() {
     async function deleteEmployeeProduction(productionId) {
         if (isBusy) return;
         const item = (state.employeeProduction || []).find(record => record.id === productionId);
-        const ownIds = new Set(getVisiblePayrollStaff().map(staff => staff.id));
+        const ownIds = new Set(getProductionVisibleStaff().map(staff => staff.id));
         if (!canManageUsers() && (!canDeleteRecord() || !item || !ownIds.has(item.staffId))) { showToast('ليس لديك صلاحية حذف هذا السجل'); return; }
         if (!item) return;
         if (!confirm(`حذف إنتاج ${item.staffName || 'الموظف'} (${item.quantity} ${item.unit}) بقيمة ${formatMoney(item.amount)} ${item.currency || 'YER'}؟`)) return;
@@ -7402,11 +7474,11 @@ function initMenuPermissionCheckboxes() {
         if (!canAccessMenu('employeeProductionTab')) return;
         const period = getCurrentPayrollPeriod();
         const label = document.getElementById('employeeProductionPeriodLabel');
-        if (label) label.textContent = `الفترة الحالية: ${period}. أدخل كمية العمل التي أنجزتها؛ وسيُحسب المستحق وفق السعر الذي حدده المدير.`;
+        if (label) label.textContent = `الفترة الحالية: ${period}. اختر أحد الموظفين الذين سمح لك المشرف بتسجيل إنتاجهم؛ وسيُحسب المستحق وفق تسعيرة العمل المحددة له.`;
         const dateInput = document.getElementById('productionDate');
         if (dateInput && !dateInput.value) dateInput.value = getLocalDateKey();
         populateProductionStaffOptions();
-        const staff = getVisiblePayrollStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
+        const staff = getProductionVisibleStaff();
         const summaryBody = document.getElementById('employeeProductionSummaryBody');
         if (summaryBody) {
             summaryBody.innerHTML = staff.length ? staff.map(item => {
@@ -7420,7 +7492,7 @@ function initMenuPermissionCheckboxes() {
                     <td><span class="mono">${formatMoney(paid)} ${currency}</span></td>
                     <td><strong class="mono" style="color:${balance < 0 ? 'var(--danger)' : 'var(--success)'}">${formatMoney(balance)} ${currency}</strong></td>
                 </tr>`;
-            }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا يوجد ملف موظف مرتبط بحسابك، أو لا يوجد موظف يعمل بالقطعة</td></tr>';
+            }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لم يحدد المشرف موظفين لهذا الحساب. اطلب من المدير فتح «حسابات الدخول والصلاحيات» واختيار الموظفين المسموح بتسجيل إنتاجهم.</td></tr>';
         }
         const visibleIds = new Set(staff.map(item => item.id));
         const rows = (state.employeeProduction || []).filter(item => hasFullAccess(currentUser) || visibleIds.has(item.staffId)).slice()
