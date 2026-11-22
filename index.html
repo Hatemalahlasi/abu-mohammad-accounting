@@ -2380,8 +2380,12 @@
             <div id="employeePermissionsPanel">
                 <div class="card-box">
                     <div class="card-title"><span><i class="fa-solid fa-shield-halved"></i> حسابات الدخول والأمان</span></div>
-                    <div class="employee-permission-note">هذه الصفحة مخصصة لاسم الدخول وكلمة المرور ونوع الحساب والصلاحيات فقط. لا تُعرّف الموظفين أو الرواتب هنا؛ تعريف الموظف وربط حسابه يتمان في صفحة الموظفون بشكل منفصل.</div>
+                    <div class="employee-permission-note">أدخل الاسم الكامل ليظهر بوضوح في قوائم الحسابات والصلاحيات. هذا الاسم للتعريف بحساب الدخول فقط؛ أما تعريف الموظف وراتبه وتسعيراته وربط الحساب بملفه فتظل من صفحة الموظفون.</div>
                     <div class="grid-2">
+                        <div class="form-group">
+                            <label>الاسم الكامل</label>
+                            <input type="text" id="newUserFullName" class="form-control" placeholder="اكتب الاسم الكامل لصاحب الحساب" autocomplete="name">
+                        </div>
                         <div class="form-group">
                             <label>اسم المستخدم</label>
                             <input type="text" id="newUserUsername" class="form-control" placeholder="اسم الدخول" autocomplete="off">
@@ -3081,7 +3085,7 @@
         );
         if (accountSel) {
             accountSel.innerHTML = '<option value="">اختر حساباً غير مرتبط</option>' + unlinkedAccounts.map(account =>
-                `<option value="${account.id}">${account.username} — ${roleLabel(account.role)}</option>`
+                `<option value="${account.id}">${escapeUiText(account.fullName || 'اسم غير مسجل')} — ${escapeUiText(account.username || account.id)} — ${roleLabel(account.role)}</option>`
             ).join('');
             if (previousAccount && unlinkedAccounts.some(account => account.id === previousAccount)) accountSel.value = previousAccount;
         }
@@ -3266,7 +3270,7 @@ function initMenuPermissionCheckboxes() {
             const element = document.getElementById(elementId);
             if (element) element.textContent = value;
         };
-        setText('permissionSelectedStaffName', staffName);
+        setText('permissionSelectedStaffName', staff?.fullName || account.fullName || 'غير مرتبط بملف موظف');
         setText('permissionSelectedUsername', account.username || account.id);
         setText('permissionSelectedRole', roleLabel(account.role));
         setText('permissionSelectedStatus', status);
@@ -3281,8 +3285,8 @@ function initMenuPermissionCheckboxes() {
         const eligible = state.employees.filter(account => account.id !== 'emp_admin' && account.username !== ADMIN_USER);
         sel.innerHTML = '<option value="">اختر اسم الموظف</option>' + eligible.map(account => {
             const staff = getStaffLinkedToAccount(account);
-            const staffName = staff?.fullName || 'غير مرتبط بموظف';
-            const label = `${staffName} — اسم الدخول: ${account.username || account.id} — ${roleLabel(account.role)}`;
+            const displayName = staff?.fullName || account.fullName || 'اسم غير مسجل';
+            const label = `${displayName} — اسم الدخول: ${account.username || account.id} — ${roleLabel(account.role)}`;
             return `<option value="${escapeUiText(account.id)}">${escapeUiText(label)}</option>`;
         }).join('');
         if (previous && eligible.some(account => account.id === previous)) sel.value = previous;
@@ -6481,6 +6485,7 @@ function initMenuPermissionCheckboxes() {
 
     async function createEmployeeUser() {
         if (isBusy || !canManageUsers()) return;
+        const fullName = document.getElementById('newUserFullName')?.value.trim() || '';
         const username = document.getElementById('newUserUsername').value.trim();
         const password = document.getElementById('newUserPassword').value.trim();
         const role = document.getElementById('newUserRole').value || 'cashier';
@@ -6490,6 +6495,7 @@ function initMenuPermissionCheckboxes() {
         const branch = selectedBranches[0] || null;
         const branchNames = selectedBranches.map(item => item.name);
         const btn = document.getElementById('createEmployeeUserBtn');
+        if (!fullName) { showToast('اكتب الاسم الكامل لصاحب الحساب'); document.getElementById('newUserFullName')?.focus(); return; }
         if (!username || !password) { showToast('أدخل اسم المستخدم وكلمة المرور'); return; }
         if (username.length < 3 || password.length < 4) { showToast('اسم المستخدم 3 أحرف على الأقل وكلمة المرور 4 أحرف على الأقل'); return; }
         if (state.employees.some(account => String(account.username || '').trim().toLowerCase() === username.toLowerCase())) { showToast('اسم المستخدم موجود مسبقاً'); return; }
@@ -6498,6 +6504,7 @@ function initMenuPermissionCheckboxes() {
         btn.disabled = true;
         try {
             const account = {
+                fullName,
                 username, password, role,
                 securityOnly: true,
                 warehouseBranchId: role === 'supervisor' ? '' : branchId,
@@ -6516,6 +6523,7 @@ function initMenuPermissionCheckboxes() {
             if (!saved.created) { showToast('اسم المستخدم موجود أو الحساب أُنشئ مسبقاً؛ لم تتم إضافة نسخة أخرى.'); return; }
             account.id = saved.id;
             state.employees.push(account);
+            document.getElementById('newUserFullName').value = '';
             document.getElementById('newUserUsername').value = '';
             document.getElementById('newUserPassword').value = '';
             if (document.getElementById('newUserWarehouseSelect')) {
@@ -7032,7 +7040,7 @@ function initMenuPermissionCheckboxes() {
             return `<tr>
                 <td><strong>${escapeUiText(account.username || account.id)}</strong></td>
                 <td>${roleLabel(account.role)}</td>
-                <td>${escapeUiText(staff?.fullName || 'غير مرتبط')}</td>
+                <td>${escapeUiText(staff?.fullName || account.fullName || 'غير مرتبط')}</td>
                 <td>${escapeUiText(branchNames)}</td>
                 <td>${account.active === false ? '<span class="badge badge-expense">موقوف</span>' : '<span class="badge badge-cash">نشط</span>'}</td>
                 <td>${self ? '<span class="badge badge-unit">الحساب الحالي</span>' : `<button type="button" class="btn btn-danger btn-sm" data-delete-user="${escapeUiText(account.id)}"><i class="fa-solid fa-trash"></i> حذف الحساب</button>`}</td>
@@ -7055,7 +7063,7 @@ function initMenuPermissionCheckboxes() {
                 : 'لم تُحدد أقسام بعد');
             return `
                 <tr>
-                    <td><strong>${emp.username || emp.id}</strong><br><small>${roleLabel(emp.role)}</small></td>
+                    <td><strong>${escapeUiText(emp.fullName || getStaffLinkedToAccount(emp)?.fullName || 'اسم غير مسجل')}</strong><br><small>الدخول: ${escapeUiText(emp.username || emp.id)} — ${roleLabel(emp.role)}</small></td>
                     <td style="max-width:260px; font-size:12px;">${labels}</td>
                     <td>${full || emp.canEdit ? '<span class="badge badge-cash">مسموح</span>' : '<span class="badge badge-unit">غير مسموح</span>'}</td>
                     <td>${full || emp.canDelete ? '<span class="badge badge-cash">مسموح</span>' : '<span class="badge badge-unit">غير مسموح</span>'}</td>
