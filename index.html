@@ -3214,29 +3214,51 @@ function initMenuPermissionCheckboxes() {
 
     async function saveEmployeePermissions() {
         if (isBusy || !canManageUsers()) return;
-        const empId = document.getElementById('permissionEmployeeSelect').value;
+        const empId = document.getElementById('permissionEmployeeSelect')?.value || '';
         const emp = state.employees.find(e => e.id === empId);
         if (!emp || hasFullAccess(emp)) {
             showToast('اختر حساب دخول موظف عادي لتعديل صلاحياته');
             return;
         }
         const allowedMenus = Array.from(document.querySelectorAll('#permissionMenusGrid .emp-menu-cb:checked')).map(cb => cb.value);
+        const patch = {
+            canEdit: document.getElementById('permissionCanEdit').checked,
+            canDelete: document.getElementById('permissionCanDelete').checked,
+            allowedMenus,
+            dashboardWidgets: Object.fromEntries(Array.from(document.querySelectorAll('.emp-dashboard-cb')).map(cb => [cb.value, cb.checked]))
+        };
         isBusy = true;
         const btn = document.getElementById('saveEmployeePermissionsBtn');
-        btn.disabled = true;
+        if (btn) btn.disabled = true;
         try {
-            await db.collection('employees').doc(empId).update({
-                canEdit: document.getElementById('permissionCanEdit').checked,
-                canDelete: document.getElementById('permissionCanDelete').checked,
-                allowedMenus,
-                dashboardWidgets: Object.fromEntries(Array.from(document.querySelectorAll('.emp-dashboard-cb')).map(cb => [cb.value, cb.checked]))
-            });
-            showToast('تم حفظ صلاحيات حساب الدخول');
+            if (!db || isDemoMode) throw new Error('FIRESTORE_UNAVAILABLE');
+            const accountRef = db.collection('employees').doc(empId);
+            await accountRef.update(patch);
+            const verifiedSnap = await accountRef.get();
+            if (!verifiedSnap.exists) throw new Error('ACCOUNT_NOT_FOUND_AFTER_SAVE');
+            const verifiedAccount = { ...verifiedSnap.data(), id: verifiedSnap.id };
+            if (!Array.isArray(verifiedAccount.allowedMenus) || allowedMenus.some(key => !verifiedAccount.allowedMenus.includes(key))) {
+                throw new Error('PERMISSIONS_NOT_VERIFIED');
+            }
+
+            const index = state.employees.findIndex(item => item.id === verifiedSnap.id || item.username === emp.username);
+            if (index >= 0) state.employees[index] = verifiedAccount;
+            if (currentUser && (currentUser.id === verifiedSnap.id || currentUser.username === emp.username)) {
+                currentUser = verifiedAccount;
+            }
+            populateEmployeePermissionOptions();
+            const permissionSelect = document.getElementById('permissionEmployeeSelect');
+            if (permissionSelect) permissionSelect.value = verifiedSnap.id;
+            loadEmployeePermissions();
+            renderEmployeePermissionsTable();
+            applyHomeMenuPermissions();
+            showToast(`تم حفظ ${allowedMenus.length} صلاحية والتحقق منها. سجّل خروج الموظف ثم دخوله لتحديث قائمته.`);
         } catch (e) {
-            showToast('تعذر حفظ الصلاحيات');
+            console.warn('Save employee permissions error:', e);
+            showToast('لم يتم تأكيد حفظ الصلاحيات. تحقق من اتصال Firebase ومعرّف الحساب ثم أعد المحاولة.');
         } finally {
             isBusy = false;
-            btn.disabled = false;
+            if (btn) btn.disabled = false;
         }
     }
 
@@ -3321,9 +3343,22 @@ function initMenuPermissionCheckboxes() {
     function getAllowedMenusForUser(user = currentUser) {
         if (!user) return [];
         if (hasFullAccess(user)) return MAIN_MENU_ITEMS.map(m => m.key);
-        // الموظف لا يحصل على أي قسم افتراضياً؛ المدير/المشرف يفعّل الأقسام المطلوبة صراحةً.
-        if (Array.isArray(user.allowedMenus)) return user.allowedMenus.filter(key => !['employeesTab', 'employeePermissionsTab', 'backupTab'].includes(key));
-        return [];
+
+        // قبول مفاتيح الأقسام الحالية أو أسمائها العربية أو صيغ التخزين الأقدم.
+        // هذا يمنع اختفاء الصلاحيات القديمة بسبب اختلاف طريقة حفظ القيمة.
+        let stored = Array.isArray(user.allowedMenus) ? user.allowedMenus :
+            (Array.isArray(user.menuPermissions) ? user.menuPermissions :
+            (Array.isArray(user.permissions?.menus) ? user.permissions.menus : []));
+        if (!stored.length && user.permissions && typeof user.permissions === 'object' && !Array.isArray(user.permissions)) {
+            stored = Object.entries(user.permissions).filter(([, enabled]) => enabled === true).map(([key]) => key);
+        }
+        const resolved = stored.map(entry => {
+            const value = typeof entry === 'string' ? entry : (entry?.key || entry?.id || entry?.menu || entry?.label || '');
+            const match = MAIN_MENU_ITEMS.find(item => item.key === value || item.label === value);
+            return match?.key || '';
+        }).filter(Boolean);
+        const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab'];
+        return [...new Set(resolved)].filter(key => !adminOnly.includes(key));
     }
 
     function canAccessMenu(menuKey, user = currentUser) {
@@ -3529,7 +3564,7 @@ function initMenuPermissionCheckboxes() {
             const unsub = db.collection(colName).onSnapshot(
                 snap => {
                     const list = [];
-                    snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                    snap.forEach(doc => list.push({ ...doc.data(), id: doc.id }));
                     state[colName] = list;
                     isDemoMode = false;
                     const badge = document.getElementById('connectionStatusBadge');
@@ -3710,7 +3745,7 @@ function initMenuPermissionCheckboxes() {
     async function loadCollection(name) {
         const snap = await db.collection(name).get();
         const list = [];
-        snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+        snap.forEach(doc => list.push({ ...doc.data(), id: doc.id }));
         return list;
     }
 
