@@ -2423,6 +2423,12 @@
                         <select id="permissionEmployeeSelect" class="form-control" onchange="loadEmployeePermissions()">
                             <option value="">اختر حساب الدخول</option>
                         </select>
+                        <div id="permissionSelectedAccountInfo" class="employee-permission-note hidden" style="margin-top:8px;background:#f7fafc;border:1px solid var(--border);border-radius:12px;padding:12px;line-height:1.9;">
+                            <div><strong>الموظف المرتبط:</strong> <span id="permissionSelectedStaffName">—</span></div>
+                            <div><strong>اسم الدخول:</strong> <span id="permissionSelectedUsername">—</span></div>
+                            <div><strong>نوع الحساب:</strong> <span id="permissionSelectedRole">—</span></div>
+                            <div><strong>الحالة:</strong> <span id="permissionSelectedStatus">—</span></div>
+                        </div>
                     </div>
                     <div id="permissionEditorBox" class="hidden">
                         <div class="perm-box">
@@ -3224,15 +3230,63 @@ function initMenuPermissionCheckboxes() {
         }
     }
 
+    function getStaffLinkedToAccount(account) {
+        if (!account) return null;
+        const staffList = Array.isArray(state.staff) ? state.staff : [];
+        let linked = staffList.find(staff =>
+            staff.id === account.staffId ||
+            staff.userAccountId === account.id ||
+            staff.legacyUserId === account.id
+        );
+        if (linked) return linked;
+        // دعم الحسابات القديمة التي كانت بيانات الموظف مخزنة داخل سجل الدخول نفسه.
+        if (account.securityOnly !== true && (account.fullName || account.salary !== undefined || account.payType)) {
+            return {
+                id: `legacy_${account.id}`,
+                fullName: account.fullName || account.username || 'موظف قديم',
+                legacy: true
+            };
+        }
+        return null;
+    }
+
+    function refreshPermissionAccountIdentity() {
+        const info = document.getElementById('permissionSelectedAccountInfo');
+        const id = document.getElementById('permissionEmployeeSelect')?.value || '';
+        const account = state.employees.find(item => item.id === id);
+        if (!info) return;
+        if (!account) {
+            info.classList.add('hidden');
+            return;
+        }
+        const staff = getStaffLinkedToAccount(account);
+        const staffName = staff?.fullName || 'غير مرتبط بملف موظف';
+        const status = account.active === false ? 'موقوف' : 'نشط';
+        const setText = (elementId, value) => {
+            const element = document.getElementById(elementId);
+            if (element) element.textContent = value;
+        };
+        setText('permissionSelectedStaffName', staffName);
+        setText('permissionSelectedUsername', account.username || account.id);
+        setText('permissionSelectedRole', roleLabel(account.role));
+        setText('permissionSelectedStatus', status);
+        info.classList.remove('hidden');
+        info.style.borderColor = staff ? 'var(--border)' : '#f0c36d';
+    }
+
     function populateEmployeePermissionOptions() {
         const sel = document.getElementById('permissionEmployeeSelect');
         if (!sel) return;
         const previous = sel.value;
         const eligible = state.employees.filter(account => account.id !== 'emp_admin' && account.username !== ADMIN_USER);
-        sel.innerHTML = '<option value="">اختر حساب الدخول</option>' + eligible.map(account =>
-            `<option value="${account.id}">${account.username || account.id} — ${roleLabel(account.role)}</option>`
-        ).join('');
+        sel.innerHTML = '<option value="">اختر حساب الدخول</option>' + eligible.map(account => {
+            const staff = getStaffLinkedToAccount(account);
+            const staffName = staff?.fullName || 'غير مرتبط بموظف';
+            const label = `${account.username || account.id} — ${staffName} — ${roleLabel(account.role)}`;
+            return `<option value="${escapeUiText(account.id)}">${escapeUiText(label)}</option>`;
+        }).join('');
         if (previous && eligible.some(account => account.id === previous)) sel.value = previous;
+        refreshPermissionAccountIdentity();
     }
 
     function renderPermissionWarehouseChoices(scope, selectedIds = []) {
@@ -3276,6 +3330,7 @@ function initMenuPermissionCheckboxes() {
     function loadEmployeePermissions() {
         const empId = document.getElementById('permissionEmployeeSelect')?.value || '';
         const emp = state.employees.find(e => e.id === empId);
+        refreshPermissionAccountIdentity();
         const editor = document.getElementById('permissionEditorBox');
         const fullNote = document.getElementById('permissionFullAccessNote');
         const passwordBox = document.getElementById('permissionPasswordBox');
