@@ -1020,7 +1020,7 @@
                 </button>
                 <button class="nav-tab expense-tab" data-menu-key="purchasesTab" onclick="openFullPage('purchasesTab')">
                     <i class="fa-solid fa-cart-shopping"></i>
-                    <span>المشتروات والمصروفات</span>
+                    <span>الموردون والمصروفات</span>
                 </button>
                 <button class="nav-tab" data-menu-key="vouchersTab" onclick="openFullPage('vouchersTab')">
                     <i class="fa-solid fa-file-signature"></i>
@@ -1060,7 +1060,7 @@
                 </button>
                 <button class="nav-tab" data-menu-key="employeePermissionsTab" onclick="openFullPage('employeePermissionsTab')">
                     <i class="fa-solid fa-user-shield"></i>
-                    <span>الصلاحيات</span>
+                    <span>الأمان وحسابات الدخول</span>
                 </button>
                 <button class="nav-tab expense-tab" data-menu-key="employeeExpensesTab" onclick="openFullPage('employeeExpensesTab')">
                     <i class="fa-solid fa-money-bill-transfer"></i>
@@ -1217,10 +1217,10 @@
             </div>
         </section>
 
-        <!-- قسم المشتروات أو المصروفات -->
+        <!-- صفحة الموردين والمصروفات فقط -->
         <section id="purchasesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title" style="color:var(--danger);"><i class="fa-solid fa-cart-shopping"></i> المشتروات والمصروفات</div>
+                <div class="fullpage-title" style="color:var(--danger);"><i class="fa-solid fa-file-invoice-dollar"></i> الموردون والمصروفات</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
@@ -1251,11 +1251,11 @@
                     </div>
                 </div>
                 <div id="supplierBalancesCard" class="employee-permission-note" style="margin-top:12px;">
-                    تظهر هنا مشتريات الموردين النقدية والآجلة وأرصدة المشتريات الآجلة.
+                    سجل الموردين وأرقام التواصل فقط. تسجّل المصروفات في القسم التالي، ولا تُسجل مشتريات أو كميات مخزون من هذه الصفحة.
                 </div>
                 <div class="table-responsive" style="margin-top:10px;">
                     <table>
-                        <thead><tr><th>المورد</th><th>مشتريات نقدية</th><th>مشتريات آجلة</th><th>عدد العمليات</th></tr></thead>
+                        <thead><tr><th>اسم المورد</th><th>رقم الهاتف</th><th>مصروفات مرتبطة</th></tr></thead>
                         <tbody id="supplierBalancesBody"></tbody>
                     </table>
                 </div>
@@ -1263,110 +1263,69 @@
 
             <div class="card-box">
                 <div class="card-title" style="color:var(--danger);">
-                    <span>تسجيل مشترى أو مصروف</span>
-                    <span class="badge badge-expense">الإجمالي: <span class="mono" id="purchasesTabTotal" style="margin-right:4px;">0.00</span></span>
+                    <span><i class="fa-solid fa-money-bill-transfer"></i> تسجيل مصروف جديد</span>
+                    <span class="badge badge-expense">إجمالي المصروفات: <span class="mono" id="purchasesTabTotal" style="margin-right:4px;">0.00</span></span>
                 </div>
-
-                <div class="grid-4">
-                    <div class="form-group">
-                        <label>النوع</label>
-                        <select id="purKind" class="form-control" onchange="togglePurchasePaymentFields()">
-                            <option value="purchase">مشتروات</option>
-                            <option value="expense">مصروفات</option>
-                        </select>
-                    </div>
+                <div class="grid-3">
                     <div class="form-group">
                         <label>الفرع</label>
                         <select id="purBranchSelect" class="form-control"></select>
                     </div>
                     <div class="form-group" id="purCashboxGroup">
-                        <label>الصندوق</label>
+                        <label>الصندوق الذي صُرف منه</label>
                         <select id="purCashboxSelect" class="form-control"></select>
                     </div>
                     <div class="form-group">
-                        <label>المبلغ الإجمالي</label>
-                        <input type="number" step="0.01" inputmode="decimal" id="purAmount" class="form-control num-input" min="0" placeholder="0.00">
+                        <label>المبلغ</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="purAmount" class="form-control num-input" min="0.01" placeholder="0.00">
                     </div>
                     <div class="form-group">
                         <label>العملة</label>
                         <select id="purCurrency" class="form-control" onchange="filterPurchaseCashboxes()">
-                            <option value="YER">ريال يمني</option><option value="SAR">ريال سعودي</option><option value="USD">دولار أمريكي</option>
+                            <option value="YER">ريال يمني (YER)</option>
+                            <option value="SAR">ريال سعودي (SAR)</option>
+                            <option value="USD">دولار أمريكي (USD)</option>
                         </select>
                     </div>
-                 </div>
-                <div id="purchaseSupplierFields" class="grid-2" style="margin-top:8px;">
                     <div class="form-group">
-                        <label>المورد</label>
-                        <select id="purSupplierSelect" class="form-control"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>طريقة السداد</label>
-                        <select id="purPaymentType" class="form-control" onchange="togglePurchasePaymentFields()">
-                            <option value="cash">نقداً</option>
-                            <option value="credit">آجل على المورد</option>
+                        <label>المورد (اختياري)</label>
+                        <select id="purSupplierSelect" class="form-control">
+                            <option value="">بدون مورد</option>
                         </select>
                     </div>
-                 </div>
-
-                <div class="grid-4">
                     <div class="form-group">
-                        <label>البيان / الصنف</label>
-                        <input type="text" id="purTitle" class="form-control" placeholder="مثال: مواد خام / كهرباء / صيانة">
-                    </div>
-                    <div class="form-group">
-                        <label>إضافة كمية للمخزن (اختياري)</label>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                            <input type="number" step="0.01" inputmode="decimal" id="purAddQty" class="form-control num-input" value="0" min="0" placeholder="الكمية">
-                            <select id="purUnit" class="form-control">
-                                <option value="حبة">حبة</option>
-                                <option value="شدة">شدة</option>
-                                <option value="وار">وار</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>سعر تكلفة الوحدة للمخزن</label>
-                        <input type="number" step="0.01" min="0" id="purUnitCost" class="form-control num-input" placeholder="اتركه فارغاً ليحسب من الإجمالي">
-                    </div>
-                    <div class="form-group">
-                        <label>ملاحظة</label>
-                        <input type="text" id="purNotes" class="form-control" placeholder="اختياري">
+                        <label>بيان المصروف</label>
+                        <input type="text" id="purTitle" class="form-control" placeholder="مثال: كهرباء، إيجار، صيانة">
                     </div>
                 </div>
-
-                <div class="perm-box" style="margin-top:0; margin-bottom:12px;">
-                    <label class="perm-check">
-                        <input type="checkbox" id="purAddToWarehouseCheck" checked>
-                        <span>إدخال الصنف إلى المخزن (مفعّل دائماً ما لم تُلغِ الصح)</span>
-                    </label>
+                <div class="form-group">
+                    <label>ملاحظة (اختياري)</label>
+                    <input type="text" id="purNotes" class="form-control" placeholder="تفاصيل إضافية عن المصروف">
                 </div>
-
                 <button id="savePurchaseBtn" class="btn btn-danger btn-full" onclick="createPurchaseExpense()">
-                    <i class="fa-solid fa-check"></i> حفظ المشتروات / المصروفات
+                    <i class="fa-solid fa-check"></i> حفظ المصروف
                 </button>
+                <div class="employee-permission-note" style="margin-top:9px;">هذه الصفحة لإدارة الموردين وتسجيل المصروفات فقط. إدخال الأصناف والكميات يتم من صفحات المخازن المخصصة.</div>
             </div>
 
             <div class="card-box">
                 <div class="card-title">
-                    <span><i class="fa-solid fa-list-check"></i> سجل المشتروات والمصروفات</span>
-                    <input type="text" id="purchaseSearchInput" class="form-control" style="max-width:220px; padding:7px 10px;" placeholder="بحث بالبيان أو الفرع..." oninput="renderPurchasesTable()">
+                    <span><i class="fa-solid fa-list-check"></i> سجل المصروفات</span>
+                    <input type="text" id="purchaseSearchInput" class="form-control" style="max-width:220px; padding:7px 10px;" placeholder="بحث ببيان المصروف أو المورد..." oninput="renderPurchasesTable()">
                 </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
                                 <th>التاريخ</th>
-                                <th>النوع</th>
-                                <th>الفرع</th>
-                                <th>البيان</th>
+                                <th>بيان المصروف</th>
                                 <th>المورد</th>
-                                <th>طريقة السداد</th>
+                                <th>الفرع</th>
                                 <th>الصندوق</th>
-                                <th>للمخزن</th>
                                 <th>العملة</th>
                                 <th>المبلغ</th>
-                                <th>الموظف</th>
-                                <th>إجراءات</th>
+                                <th>المسجل بواسطة</th>
+                                <th>إجراء</th>
                             </tr>
                         </thead>
                         <tbody id="purchasesTableBody"></tbody>
@@ -1915,14 +1874,17 @@
                         <i class="fa-solid fa-user-check"></i> حفظ تعريف الموظف
                     </button>
                     <div class="employee-permission-note" style="margin-top:10px; margin-bottom:0;">
-                        عرّف الموظف هنا واختر نظام أجره. يمنع النظام تكرار اسم الموظف؛ عند وجوده استخدم أزرار التعديل. يسجل المشرف الكميات من زر «إضافة شغل للموظفين»، أما اسم المستخدم وكلمة المرور فمن صفحة «الصلاحيات».
+                        عرّف الموظف هنا واختر نظام أجره. يمنع النظام تكرار اسم الموظف؛ عند وجوده استخدم أزرار التعديل. يسجل المشرف الكميات من زر «إضافة شغل للموظفين»، أما بيانات الدخول والصلاحيات فتُدار من قسم الأمان في صفحة «الصلاحيات»، ثم يُربط الحساب هنا بشكل مستقل.
                     </div>
                 </div>
 
                 <div class="card-box">
                     <div class="card-title">
                         <span><i class="fa-solid fa-users"></i> الموظفون والرواتب والحسابات المرتبطة</span>
-                        <button type="button" class="btn btn-warning btn-sm" onclick="removeDuplicateStaffProfiles()"><i class="fa-solid fa-filter-circle-xmark"></i> فحص وإزالة التكرار المتطابق</button>
+                        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+                            <button type="button" class="btn btn-outline btn-sm" onclick="migrateLegacyEmployeeAccountsToStaff()"><i class="fa-solid fa-shield-halved"></i> فصل بيانات الموظفين عن حسابات الدخول</button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="removeDuplicateStaffProfiles()"><i class="fa-solid fa-filter-circle-xmark"></i> فحص وإزالة التكرار المتطابق</button>
+                        </div>
                     </div>
                     <div class="table-responsive">
                         <table>
@@ -1940,6 +1902,22 @@
                             <tbody id="employeesTableBody"></tbody>
                         </table>
                     </div>
+                </div>
+
+                <div class="card-box">
+                    <div class="card-title"><span><i class="fa-solid fa-link"></i> ربط حساب الدخول بملف الموظف</span></div>
+                    <div class="employee-permission-note">هذا ربط داخلي فقط: لا يتم إدخال الاسم أو الراتب أو التسعيرات في بيانات الدخول. يحتفظ حساب الأمان باسم المستخدم وكلمة المرور والدور والصلاحيات فقط، بينما تبقى بيانات الموظف في ملفه المستقل. بعد الربط يمكن للموظف تسجيل إنتاجه لنفسه إذا سمح المشرف بذلك.</div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>ملف الموظف</label>
+                            <select id="linkStaffSelect" class="form-control"><option value="">اختر الموظف</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label>حساب الدخول (الأمان)</label>
+                            <select id="linkAccountSelect" class="form-control"><option value="">اختر حساباً غير مرتبط</option></select>
+                        </div>
+                    </div>
+                    <button type="button" id="linkStaffAccountBtn" class="btn btn-accent btn-full" onclick="linkStaffToSecurityAccount()"><i class="fa-solid fa-link"></i> ربط الحساب بالموظف</button>
                 </div>
             </div>
         </section>
@@ -2152,7 +2130,7 @@
 
         <section id="employeePermissionsTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-user-shield"></i> صلاحيات الموظفين</div>
+                <div class="fullpage-title"><i class="fa-solid fa-user-shield"></i> حسابات الدخول والصلاحيات</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
@@ -2160,25 +2138,17 @@
 
             <div id="employeePermissionsPanel">
                 <div class="card-box">
-                    <div class="card-title"><span><i class="fa-solid fa-user-plus"></i> إضافة مستخدم وربطه بموظف</span></div>
-                    <div class="employee-permission-note">اختر موظفاً تم تعريفه مسبقاً من صفحة «الموظفون»، ثم أنشئ له اسم دخول وكلمة مرور. لن يتم إنشاء تعريف موظف جديد من هنا.</div>
-                    <div class="grid-3">
-                        <div class="form-group">
-                            <label>الموظف المراد إنشاء حساب له</label>
-                            <select id="newUserStaffSelect" class="form-control" onchange="updateNewUserWarehouseInfo()">
-                                <option value="">اختر الموظف</option>
-                            </select>
-                        </div>
+                    <div class="card-title"><span><i class="fa-solid fa-shield-halved"></i> حسابات الدخول والأمان</span></div>
+                    <div class="employee-permission-note">هذه الصفحة مخصصة لاسم الدخول وكلمة المرور ونوع الحساب والصلاحيات فقط. لا تُعرّف الموظفين أو الرواتب هنا؛ تعريف الموظف وربط حسابه يتمان في صفحة الموظفون بشكل منفصل.</div>
+                    <div class="grid-2">
                         <div class="form-group">
                             <label>اسم المستخدم</label>
-                            <input type="text" id="newUserUsername" class="form-control num-input" placeholder="اسم الدخول" autocomplete="off">
+                            <input type="text" id="newUserUsername" class="form-control" placeholder="اسم الدخول" autocomplete="off">
                         </div>
                         <div class="form-group">
                             <label>كلمة المرور</label>
-                            <input type="password" id="newUserPassword" class="form-control num-input" placeholder="كلمة المرور" autocomplete="new-password">
+                            <input type="password" id="newUserPassword" class="form-control" placeholder="كلمة المرور" autocomplete="new-password">
                         </div>
-                    </div>
-                    <div class="grid-2">
                         <div class="form-group">
                             <label>نوع الحساب</label>
                             <select id="newUserRole" class="form-control" onchange="updateNewUserWarehouseInfo()">
@@ -2186,22 +2156,24 @@
                                 <option value="supervisor">مشرف عام (كل الأقسام والمخازن)</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>المخزن المرتبط بالموظف</label>
-                            <div id="newUserWarehouseInfo" class="form-control" style="background:var(--bg-surface);">يظهر حسب تعريف الموظف</div>
+                        <div class="form-group" id="newUserWarehouseGroup">
+                            <label>المخزن المسموح للحساب</label>
+                            <select id="newUserWarehouseSelect" class="form-control" onchange="updateNewUserWarehouseInfo()"><option value="">اختر المخزن</option></select>
+                            <div id="newUserWarehouseInfo" class="employee-permission-note" style="margin-top:5px;">اختر المخزن الذي يسمح لهذا الحساب بالعمل فيه.</div>
                         </div>
                     </div>
+                    <div class="employee-permission-note">بعد إنشاء الحساب، افتح صفحة الموظفون لربطه بملف الموظف عند الحاجة إلى تسجيل إنتاجه أو عرض حسابه الشخصي.</div>
                     <button id="createEmployeeUserBtn" type="button" class="btn btn-accent btn-full" onclick="createEmployeeUser()">
-                        <i class="fa-solid fa-user-plus"></i> إضافة مستخدم
+                        <i class="fa-solid fa-user-plus"></i> إضافة حساب دخول
                     </button>
                 </div>
 
                 <div class="card-box">
                     <div class="card-title"><span><i class="fa-solid fa-user-shield"></i> تحديد صلاحيات مستخدم</span></div>
                     <div class="form-group">
-                        <label>اختر الموظف</label>
+                        <label>اختر حساب الدخول</label>
                         <select id="permissionEmployeeSelect" class="form-control" onchange="loadEmployeePermissions()">
-                            <option value="">اختر الموظف</option>
+                            <option value="">اختر حساب الدخول</option>
                         </select>
                     </div>
                     <div id="permissionEditorBox" class="hidden">
@@ -2218,9 +2190,10 @@
                             <button type="button" class="btn btn-outline btn-sm" onclick="setAllPermissionMenus(false)">إلغاء كل الأقسام</button>
                         </div>
                         <div style="margin-top:10px; font-size:12.5px; font-weight:800; color:var(--primary);">
-                            حدد الأقسام التي يمكن للموظف فتحها:
+                            حدد الأقسام التي يمكن لهذا الحساب فتحها:
                         </div>
                         <div id="permissionMenusGrid" class="menu-perms-grid"></div>
+                        <div class="employee-permission-note" style="margin-top:8px;">مهم: لإظهار زر «إضافة شغل للموظفين» لهذا الحساب، فعّل هذا القسم ثم احفظ الصلاحيات. يجب ربط الحساب بملف الموظف من صفحة «الموظفون»؛ بعدها يستطيع الموظف تسجيل إنتاجه لنفسه فقط، ولا تظهر له ملفات بقية الموظفين.</div>
                         <div class="card-box" style="margin-top:12px; margin-bottom:0;">
                             <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> صلاحيات مؤشرات الشاشة الرئيسية</span></div>
                             <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">حدد المؤشرات التي تريد إظهارها لهذا الموظف في الشاشة الرئيسية:</div>
@@ -2236,7 +2209,7 @@
                             </div>
                         </div>
                         <button id="saveEmployeePermissionsBtn" type="button" class="btn btn-primary btn-full" onclick="saveEmployeePermissions()" style="margin-top:12px;">
-                            <i class="fa-solid fa-floppy-disk"></i> حفظ صلاحيات الموظف
+                            <i class="fa-solid fa-floppy-disk"></i> حفظ صلاحيات الحساب
                         </button>
                     </div>
                     <div id="permissionFullAccessNote" class="employee-permission-note hidden">
@@ -2245,12 +2218,12 @@
                 </div>
 
                 <div class="card-box">
-                    <div class="card-title"><span><i class="fa-solid fa-list-check"></i> ملخص صلاحيات الموظفين</span></div>
+                    <div class="card-title"><span><i class="fa-solid fa-list-check"></i> ملخص حسابات الدخول والصلاحيات</span></div>
                     <div class="table-responsive">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>الموظف</th>
+                                    <th>حساب الدخول</th>
                                     <th>الأقسام المسموحة</th>
                                     <th>التعديل</th>
                                     <th>الحذف</th>
@@ -2338,7 +2311,7 @@
 
     const MAIN_MENU_ITEMS = [
         { key: 'salesTab', label: 'المبيعات والفواتير' },
-        { key: 'purchasesTab', label: 'المشتروات والمصروفات' },
+        { key: 'purchasesTab', label: 'الموردون والمصروفات' },
         { key: 'vouchersTab', label: 'الأسناد' },
         { key: 'cashboxTab', label: 'الصندوق' },
         { key: 'warehouseTab', label: 'المخازن والفروع' },
@@ -2348,7 +2321,7 @@
         { key: 'transferTab', label: 'نقل مخازن' },
         { key: 'profitsTab', label: 'الأرباح' },
         { key: 'employeesTab', label: 'الموظفون' },
-        { key: 'employeePermissionsTab', label: 'الصلاحيات' },
+        { key: 'employeePermissionsTab', label: 'الأمان وحسابات الدخول' },
         { key: 'employeeExpensesTab', label: 'مصروفات الموظفين' },
         { key: 'employeeProductionTab', label: 'إضافة شغل للموظفين' },
         { key: 'employeeDuesTab', label: 'مستحقات الموظفين وكشوف الحساب' }
@@ -2479,11 +2452,19 @@
         };
     }
 
+    function getAccountDisplayName(account = currentUser) {
+        if (!account) return 'مستخدم';
+        const linkedStaff = account.staffId
+            ? state.staff.find(item => item.id === account.staffId)
+            : state.staff.find(item => item.userAccountId === account.id);
+        return linkedStaff?.fullName || account.fullName || account.username || 'مستخدم';
+    }
+
     function getAllStaff() {
         const staff = Array.isArray(state.staff) ? state.staff.slice() : [];
         const knownLegacyIds = new Set(staff.map(item => item.legacyUserId).filter(Boolean));
         state.employees.forEach(account => {
-            if (account.staffId) return;
+            if (account.securityOnly === true || account.staffId) return;
             if (staff.some(item => item.id === account.id) || knownLegacyIds.has(account.id)) return;
             if (account.id === 'emp_admin' || account.username === ADMIN_USER) return;
             staff.push(getLegacyStaffFromAccount(account));
@@ -2598,31 +2579,199 @@
         return staff.filter(item => item.id === ownStaffId || item.userAccountId === currentUser?.id || item.legacyUserId === currentUser?.id);
     }
 
+    async function migrateLegacyEmployeeAccountsToStaff() {
+        if (isBusy || !canManageUsers()) return;
+        const accounts = state.employees.filter(account => {
+            if (account.id === 'emp_admin' || account.username === ADMIN_USER || account.role === 'supervisor') return false;
+            const alreadySeparated = state.staff.some(item =>
+                item.id === account.staffId || item.userAccountId === account.id || item.legacyUserId === account.id
+            );
+            const carriesStaffData = ['fullName', 'salary', 'salaryCurrency', 'payType', 'pieceRates']
+                .some(field => Object.prototype.hasOwnProperty.call(account, field));
+            return carriesStaffData || (Boolean(account.staffId) && alreadySeparated);
+        });
+        if (!accounts.length) {
+            showToast('لا توجد بيانات موظفين قديمة تحتاج إلى فصل عن حسابات الدخول');
+            return;
+        }
+        if (!confirm(`سيتم فصل بيانات ${accounts.length} حساب/حسابات قديمة. ستُنقل الأسماء والرواتب والتسعيرات إلى ملفات الموظفين، وتبقى أسماء الدخول وكلمات المرور والصلاحيات فقط في حسابات الأمان. كما ستُنقل روابط سجلات الإنتاج والمصروفات إلى ملف الموظف. متابعة؟`)) return;
+        isBusy = true;
+        let migrated = 0;
+        try {
+            const deleteField = firebase.firestore.FieldValue.delete();
+            for (const account of accounts) {
+                const existingStaff = state.staff.find(item =>
+                    item.userAccountId === account.id || item.legacyUserId === account.id || item.id === account.staffId
+                );
+                const legacyId = `legacy_${account.id}`;
+                const staffId = existingStaff?.id || account.staffId || `staff_acc_${dedupeHash(account.id)}`;
+                const fullName = existingStaff?.fullName || account.fullName || account.username || 'موظف';
+                const profile = {
+                    ...(existingStaff || {}),
+                    id: staffId,
+                    fullName,
+                    salary: Number(existingStaff?.salary ?? account.salary ?? 0),
+                    salaryCurrency: getStaffSalaryCurrency(existingStaff || account),
+                    payType: existingStaff?.payType || account.payType || 'monthly',
+                    pieceRates: Array.isArray(existingStaff?.pieceRates) ? existingStaff.pieceRates : (Array.isArray(account.pieceRates) ? account.pieceRates : []),
+                    warehouseBranchId: existingStaff?.warehouseBranchId || account.warehouseBranchId || '',
+                    warehouseBranchName: existingStaff?.warehouseBranchName || account.warehouseBranchName || '',
+                    active: existingStaff?.active !== undefined ? existingStaff.active : account.active !== false,
+                    userAccountId: account.id,
+                    username: account.username || '',
+                    createdAt: existingStaff?.createdAt || account.createdAt || new Date().toISOString()
+                };
+                await db.collection('staff').doc(staffId).set(profile, { merge: true });
+
+                const relatedProduction = (state.employeeProduction || []).filter(item => item.staffId === legacyId || item.staffId === existingStaff?.id && item.staffId !== staffId);
+                const relatedExpenses = (state.employeeExpenses || []).filter(item => item.staffId === legacyId || item.staffId === existingStaff?.id && item.staffId !== staffId);
+                const references = [
+                    ...relatedProduction.map(item => ({ collection: 'employeeProduction', record: item })),
+                    ...relatedExpenses.map(item => ({ collection: 'employeeExpenses', record: item }))
+                ];
+                for (let offset = 0; offset < references.length; offset += 400) {
+                    const batch = db.batch();
+                    references.slice(offset, offset + 400).forEach(ref => {
+                        batch.update(db.collection(ref.collection).doc(ref.record.id), { staffId, staffName: fullName });
+                    });
+                    await batch.commit();
+                }
+                const accountRef = db.collection('employees').doc(account.id);
+                await accountRef.update({
+                    staffId,
+                    securityOnly: true,
+                    fullName: deleteField,
+                    salary: deleteField,
+                    salaryCurrency: deleteField,
+                    payType: deleteField,
+                    pieceRates: deleteField
+                });
+
+                const cleanAccount = { ...account, staffId, securityOnly: true };
+                ['fullName', 'salary', 'salaryCurrency', 'payType', 'pieceRates'].forEach(field => delete cleanAccount[field]);
+                Object.assign(account, cleanAccount);
+                ['fullName', 'salary', 'salaryCurrency', 'payType', 'pieceRates'].forEach(field => delete account[field]);
+                const index = state.staff.findIndex(item => item.id === staffId);
+                if (index >= 0) state.staff[index] = profile;
+                else state.staff.push(profile);
+                relatedProduction.forEach(item => { item.staffId = staffId; item.staffName = fullName; });
+                relatedExpenses.forEach(item => { item.staffId = staffId; item.staffName = fullName; });
+                migrated++;
+            }
+            renderEmployeesTable();
+            renderEmployeePermissionsTable();
+            renderEmployeeProduction();
+            renderEmployeeExpenses();
+            populateNewUserStaffOptions();
+            showToast(`تم فصل بيانات ${migrated} حسابات. بقيت بيانات الدخول والصلاحيات في حسابات الأمان فقط.`);
+        } catch (error) {
+            console.warn('Migrate legacy employee accounts error:', error);
+            try { await reloadAllData(false); } catch (_) {}
+            showToast('تعذر إكمال فصل بعض الحسابات. تم تحديث البيانات؛ راجع ملفات الموظفين قبل إعادة المحاولة.');
+        } finally {
+            isBusy = false;
+        }
+    }
+
     function populateNewUserStaffOptions() {
-        const sel = document.getElementById('newUserStaffSelect');
-        if (!sel) return;
-        const previous = sel.value || window.pendingNewUserStaffId || '';
-        const available = getAllStaff().filter(staff => !getStaffLoginAccount(staff));
-        sel.innerHTML = '<option value="">اختر الموظف</option>' + available.map(staff =>
-            `<option value="${staff.id}">${staff.fullName} — ${isPieceworkStaff(staff) ? 'نظام القطعة' : `راتب ${formatMoney(staff.salary || 0)} ${getStaffSalaryCurrency(staff)}`}</option>`
+        // هذه القوائم خاصة بربط حساب أمان موجود بملف موظف، وليست جزءاً من إنشاء اسم الدخول.
+        const staffSel = document.getElementById('linkStaffSelect');
+        const accountSel = document.getElementById('linkAccountSelect');
+        const previousStaff = staffSel?.value || '';
+        const previousAccount = accountSel?.value || '';
+        const unlinkedStaff = getAllStaff().filter(staff => !getStaffLoginAccount(staff));
+        if (staffSel) {
+            staffSel.innerHTML = '<option value="">اختر الموظف</option>' + unlinkedStaff.map(staff =>
+                `<option value="${staff.id}">${staff.fullName} — ${isPieceworkStaff(staff) ? 'نظام القطعة' : 'راتب شهري'}</option>`
+            ).join('');
+            if (previousStaff && unlinkedStaff.some(staff => staff.id === previousStaff)) staffSel.value = previousStaff;
+        }
+        const unlinkedAccounts = state.employees.filter(account =>
+            account.id !== 'emp_admin' && account.username !== ADMIN_USER && account.role !== 'supervisor' && !account.staffId && account.securityOnly === true
+        );
+        if (accountSel) {
+            accountSel.innerHTML = '<option value="">اختر حساباً غير مرتبط</option>' + unlinkedAccounts.map(account =>
+                `<option value="${account.id}">${account.username} — ${roleLabel(account.role)}</option>`
+            ).join('');
+            if (previousAccount && unlinkedAccounts.some(account => account.id === previousAccount)) accountSel.value = previousAccount;
+        }
+    }
+
+    function populateNewUserWarehouseOptions() {
+        const select = document.getElementById('newUserWarehouseSelect');
+        if (!select) return;
+        const previous = select.value;
+        const branches = getAllBranches();
+        select.innerHTML = '<option value="">اختر المخزن المسموح</option>' + branches.map(branch =>
+            `<option value="${branch.id}">${branch.name}</option>`
         ).join('');
-        if (previous && available.some(staff => staff.id === previous)) sel.value = previous;
+        if (previous && branches.some(branch => branch.id === previous)) select.value = previous;
         updateNewUserWarehouseInfo();
-        window.pendingNewUserStaffId = '';
+    }
+
+    async function linkStaffToSecurityAccount() {
+        if (isBusy || !canManageUsers()) return;
+        const staffId = document.getElementById('linkStaffSelect')?.value || '';
+        const accountId = document.getElementById('linkAccountSelect')?.value || '';
+        const staff = getStaffById(staffId);
+        const account = state.employees.find(item => item.id === accountId);
+        if (!staff || !account) { showToast('اختر ملف موظف وحساب دخول غير مرتبط'); return; }
+        if (getStaffLoginAccount(staff)) { showToast('هذا الموظف لديه حساب مرتبط بالفعل'); return; }
+        if (account.staffId) { showToast('حساب الدخول مرتبط بملف آخر'); return; }
+        if (!staff.warehouseBranchId) { showToast('حدد مخزن الموظف أولاً من تعريف الموظفين'); return; }
+        const branch = getAllBranches().find(item => item.id === staff.warehouseBranchId);
+        isBusy = true;
+        const btn = document.getElementById('linkStaffAccountBtn');
+        if (btn) btn.disabled = true;
+        try {
+            await db.runTransaction(async transaction => {
+                const staffRef = db.collection('staff').doc(staff.id);
+                const accountRef = db.collection('employees').doc(account.id);
+                const [staffSnap, accountSnap] = await Promise.all([transaction.get(staffRef), transaction.get(accountRef)]);
+                if (!staffSnap.exists || !accountSnap.exists) throw new Error('STAFF_OR_ACCOUNT_MISSING');
+                const savedStaff = staffSnap.data() || {};
+                const savedAccount = accountSnap.data() || {};
+                if (savedStaff.userAccountId || savedAccount.staffId) throw new Error('ALREADY_LINKED');
+                transaction.update(staffRef, { userAccountId: account.id, username: account.username || '' });
+                transaction.update(accountRef, {
+                    staffId: staff.id,
+                    warehouseBranchId: staff.warehouseBranchId || '',
+                    warehouseBranchName: branch?.name || staff.warehouseBranchName || '',
+                    securityOnly: true
+                });
+            });
+            staff.userAccountId = account.id;
+            staff.username = account.username || '';
+            account.staffId = staff.id;
+            account.warehouseBranchId = staff.warehouseBranchId || '';
+            account.warehouseBranchName = branch?.name || staff.warehouseBranchName || '';
+            populateNewUserStaffOptions();
+            renderEmployeesTable();
+            renderEmployeePermissionsTable();
+            showToast('تم ربط حساب الأمان بملف الموظف دون نسخ الراتب أو بيانات الإنتاج');
+        } catch (error) {
+            console.warn('Link staff security account error:', error);
+            showToast(error?.message === 'ALREADY_LINKED' ? 'تم ربط الموظف أو الحساب مسبقاً' : 'تعذر ربط الحساب بالموظف');
+        } finally {
+            isBusy = false;
+            if (btn) btn.disabled = false;
+        }
     }
 
     function updateNewUserWarehouseInfo() {
-        const staff = getStaffById(document.getElementById('newUserStaffSelect')?.value || '');
         const info = document.getElementById('newUserWarehouseInfo');
-        if (!info) return;
-        if (document.getElementById('newUserRole')?.value === 'supervisor') {
-            info.textContent = 'كل المخازن (مشرف عام)';
-            return;
-        }
-        info.textContent = staff?.warehouseBranchName || getAllBranches().find(branch => branch.id === staff?.warehouseBranchId)?.name || 'لم يحدد مخزن';
+        const group = document.getElementById('newUserWarehouseGroup');
+        const select = document.getElementById('newUserWarehouseSelect');
+        if (!info || !select) return;
+        const supervisor = document.getElementById('newUserRole')?.value === 'supervisor';
+        if (group) group.classList.toggle('hidden', supervisor);
+        select.disabled = supervisor;
+        info.textContent = supervisor
+            ? 'المشرف العام لديه وصول لجميع المخازن.'
+            : (getAllBranches().find(branch => branch.id === select.value)?.name || 'اختر المخزن المسموح لهذا الحساب.');
     }
 
-    function initMenuPermissionCheckboxes() {
+function initMenuPermissionCheckboxes() {
         const grid = document.getElementById('permissionMenusGrid');
         if (!grid) return;
         const employeeAssignableMenus = MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab', 'quantitiesTab'].includes(m.key));
@@ -2665,11 +2814,11 @@
         const sel = document.getElementById('permissionEmployeeSelect');
         if (!sel) return;
         const previous = sel.value;
-        const eligible = state.employees.filter(e => e.role !== 'admin' && e.role !== 'supervisor');
-        sel.innerHTML = '<option value="">اختر الموظف</option>' + eligible.map(e =>
-            `<option value="${e.id}">${e.fullName} — ${e.username || 'بدون اسم دخول'}</option>`
+        const eligible = state.employees.filter(account => account.id !== 'emp_admin' && account.username !== ADMIN_USER);
+        sel.innerHTML = '<option value="">اختر حساب الدخول</option>' + eligible.map(account =>
+            `<option value="${account.id}">${account.username || account.id} — ${roleLabel(account.role)}</option>`
         ).join('');
-        if (previous && eligible.some(e => e.id === previous)) sel.value = previous;
+        if (previous && eligible.some(account => account.id === previous)) sel.value = previous;
     }
 
     function loadEmployeePermissions() {
@@ -2706,7 +2855,7 @@
         const empId = document.getElementById('permissionEmployeeSelect').value;
         const emp = state.employees.find(e => e.id === empId);
         if (!emp || hasFullAccess(emp)) {
-            showToast('اختر موظفاً عادياً لتعديل صلاحياته');
+            showToast('اختر حساب دخول موظف عادي لتعديل صلاحياته');
             return;
         }
         const allowedMenus = Array.from(document.querySelectorAll('#permissionMenusGrid .emp-menu-cb:checked')).map(cb => cb.value);
@@ -2720,7 +2869,7 @@
                 allowedMenus,
                 dashboardWidgets: Object.fromEntries(Array.from(document.querySelectorAll('.emp-dashboard-cb')).map(cb => [cb.value, cb.checked]))
             });
-            showToast('تم حفظ صلاحيات الموظف');
+            showToast('تم حفظ صلاحيات حساب الدخول');
         } catch (e) {
             showToast('تعذر حفظ الصلاحيات');
         } finally {
@@ -2807,14 +2956,14 @@
     function applyHomeMenuPermissions() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-menu-key]').forEach(btn => {
             const key = btn.getAttribute('data-menu-key');
-            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'employeeProductionTab', 'quantitiesTab'].includes(key);
+            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'quantitiesTab'].includes(key);
             btn.classList.toggle('hidden', (adminOnly && !canManageUsers(currentUser)) || !canAccessMenu(key, currentUser));
         });
         applyDashboardWidgetPermissions();
     }
 
     function openFullPage(tabId) {
-        if (['employeesTab', 'employeePermissionsTab', 'employeeProductionTab', 'quantitiesTab'].includes(tabId) && !canManageUsers(currentUser)) {
+        if (['employeesTab', 'employeePermissionsTab', 'quantitiesTab'].includes(tabId) && !canManageUsers(currentUser)) {
             showToast('إدارة الموظفين والصلاحيات للمشرف العام والمدير فقط');
             return;
         }
@@ -2844,8 +2993,12 @@
         if (tabId === 'profitsTab') {
             renderProfitsSection();
         }
+        if (tabId === 'employeesTab') {
+            populateNewUserStaffOptions();
+        }
         if (tabId === 'employeePermissionsTab') {
             populateNewUserStaffOptions();
+            populateNewUserWarehouseOptions();
             populateEmployeePermissionOptions();
             loadEmployeePermissions();
         }
@@ -2895,9 +3048,13 @@
                 name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-', actor: dedupeActorId()
             }, record, `sup_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-' })}`);
             if (!result.created) { showToast('هذا المورد مسجل مسبقاً أو تمت إضافته للتو؛ لم تتم إضافة نسخة أخرى.'); return; }
+            record.id = result.id;
+            state.suppliers = (state.suppliers || []).concat(record);
             document.getElementById('newSupplierName').value = '';
             document.getElementById('newSupplierPhone').value = '';
             document.getElementById('supplierFormContainer').classList.add('hidden');
+            renderSupplierBalances();
+            populateDropdowns();
             showToast('تم حفظ المورد');
         } catch (e) {
             console.warn('Create supplier error:', e);
@@ -2930,7 +3087,8 @@
                 const updatedMe = state.employees.find(e => e.id === currentUser.id);
                 if (updatedMe) {
                     currentUser = updatedMe;
-                    document.getElementById('headerWelcome').textContent = `${currentUser.fullName}`;
+                    currentUser.fullName = getAccountDisplayName(currentUser);
+                    document.getElementById('headerWelcome').textContent = currentUser.fullName;
                     const roleBadge = document.getElementById('currentUserRoleBadge');
                     roleBadge.textContent = roleLabel(currentUser.role);
                     roleBadge.className = `badge ${roleBadgeClass(currentUser.role)}`;
@@ -3147,6 +3305,8 @@
             if (currentUser && currentUser.id) {
                 const updatedMe = state.employees.find(e => e.id === currentUser.id);
                 if (updatedMe) currentUser = updatedMe;
+                currentUser.fullName = getAccountDisplayName(currentUser);
+                document.getElementById('headerWelcome').textContent = currentUser.fullName;
             }
             isDemoMode = false;
             if (showMsg) showToast('تم التحديث');
@@ -3215,7 +3375,8 @@
             }
 
             currentUser = found;
-            document.getElementById('headerWelcome').textContent = `${currentUser.fullName}`;
+            currentUser.fullName = getAccountDisplayName(currentUser);
+            document.getElementById('headerWelcome').textContent = currentUser.fullName;
             const roleBadge = document.getElementById('currentUserRoleBadge');
             roleBadge.textContent = roleLabel(currentUser.role);
             roleBadge.className = `badge ${roleBadgeClass(currentUser.role)}`;
@@ -3337,6 +3498,7 @@
         populateTransferItems();
         populateEmployeePermissionOptions();
         populateNewUserStaffOptions();
+        populateNewUserWarehouseOptions();
         populateEmployeeExpenseStaffOptions();
 
         const cbSelInv = document.getElementById('invCashboxSelect');
@@ -3668,108 +3830,63 @@
     async function createPurchaseExpense() {
         if (isBusy) return;
         const btn = document.getElementById('savePurchaseBtn');
-        const kind = document.getElementById('purKind').value || 'purchase';
-        const branchId = document.getElementById('purBranchSelect').value || '';
-        if (!branchId || !isBranchAllowed(branchId)) { showToast('لم يحدد المشرف مخزناً لهذا الموظف'); return; }
-        const branchObj = state.branches.find(b => b.id === branchId);
-        const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
+        const branchId = document.getElementById('purBranchSelect')?.value || '';
+        if (!branchId || !isBranchAllowed(branchId)) { showToast('اختر الفرع أو المخزن المسموح لحسابك'); return; }
+        const branchObj = state.branches.find(branch => branch.id === branchId);
+        const branchName = branchObj?.name || 'الفرع الرئيسي';
         const currency = document.getElementById('purCurrency')?.value || 'YER';
-        const amount = Number(document.getElementById('purAmount').value || 0);
-        const title = document.getElementById('purTitle').value.trim();
-        const addQty = Number(document.getElementById('purAddQty').value || 0);
-        const unit = document.getElementById('purUnit').value || 'حبة';
-        const shouldAddToWarehouse = kind === 'purchase' && (document.getElementById('purAddToWarehouseCheck')?.checked ?? true) && addQty > 0;
-        const notes = document.getElementById('purNotes').value.trim();
-        const paymentType = kind === 'purchase' ? (document.getElementById('purPaymentType')?.value || 'cash') : 'cash';
-        const supplierId = kind === 'purchase' ? (document.getElementById('purSupplierSelect')?.value || '') : '';
+        const amount = Number(document.getElementById('purAmount')?.value || 0);
+        const title = (document.getElementById('purTitle')?.value || '').trim();
+        const notes = (document.getElementById('purNotes')?.value || '').trim();
+        const supplierId = document.getElementById('purSupplierSelect')?.value || '';
         const supplier = supplierId ? state.suppliers.find(item => item.id === supplierId) : null;
-        const cashboxId = (paymentType === 'cash' || kind === 'expense') ? (document.getElementById('purCashboxSelect').value || '') : '';
-        const cashbox = cashboxId ? state.cashboxes.find(c => c.id === cashboxId) : null;
-        const rawUnitCost = document.getElementById('purUnitCost')?.value?.trim() || '';
-        const unitCost = rawUnitCost === '' ? (addQty > 0 ? Number((amount / addQty).toFixed(4)) : 0) : Number(rawUnitCost);
-
-        if (!title || !Number.isFinite(amount) || amount <= 0) { showToast('أدخل البيان والمبلغ الصحيح'); return; }
-        if (kind === 'purchase' && !supplier) { showToast('اختر المورد للمشتريات'); return; }
-        if (shouldAddToWarehouse && (!Number.isFinite(addQty) || addQty <= 0 || !Number.isFinite(unitCost) || unitCost < 0)) { showToast('أدخل كمية وسعر تكلفة صحيحين لإدخال الصنف للمخزن'); return; }
-        if ((paymentType === 'cash' || kind === 'expense') && !cashbox) { showToast('اختر صندوقاً مطابقاً لعملة العملية'); return; }
-        if (cashbox && (cashbox.currency || 'YER') !== currency) { showToast('اختر صندوقاً بعملة العملية نفسها، أو أنشئ صندوقاً بهذه العملة'); return; }
-        if (cashbox && computeSystemCashboxBalance(cashbox) < amount) { showToast('رصيد الصندوق غير كافٍ لهذه العملية'); return; }
+        const cashboxId = document.getElementById('purCashboxSelect')?.value || '';
+        const cashbox = cashboxId ? state.cashboxes.find(item => item.id === cashboxId) : null;
+        if (!title || !Number.isFinite(amount) || amount <= 0) { showToast('أدخل بيان المصروف والمبلغ الصحيح'); return; }
+        if (!cashbox) { showToast('اختر الصندوق الذي صُرف منه المبلغ'); return; }
+        if ((cashbox.currency || 'YER') !== currency) { showToast('عملة الصندوق لا تطابق عملة المصروف'); return; }
+        if (computeSystemCashboxBalance(cashbox) < amount) { showToast('رصيد الصندوق غير كافٍ لهذا المصروف'); return; }
 
         const date = getLocalDateKey();
-        const existingStock = shouldAddToWarehouse ? state.warehouse.find(w =>
-            (w.branchId || 'main_branch') === branchId &&
-            String(w.name || '').trim().toLowerCase() === title.toLowerCase() && (w.unit || 'حبة') === unit
-        ) : null;
-        const purchaseRecord = {
-            kind, date, branchId, branchName,
-            cashboxId: cashbox ? cashbox.id : '', cashboxName: cashbox ? cashbox.name : (paymentType === 'credit' ? 'آجل على المورد' : ''),
-            paymentType, supplierId: supplier ? supplier.id : '', supplierName: supplier ? supplier.name : '',
-            currency, currencyName: CURRENCY_NAMES[currency], title, amount,
-            addQty: shouldAddToWarehouse ? addQty : 0, unit,
-            unitCost: shouldAddToWarehouse ? unitCost : 0,
-            addedToWarehouse: shouldAddToWarehouse, notes, employee: currentUser.fullName
+        const record = {
+            kind: 'expense', date, branchId, branchName,
+            cashboxId: cashbox.id, cashboxName: cashbox.name,
+            paymentType: 'cash', supplierId: supplier?.id || '', supplierName: supplier?.name || '',
+            currency, currencyName: CURRENCY_NAMES[currency] || CURRENCY_NAMES.YER,
+            title, amount, addQty: 0, unit: '', unitCost: 0, addedToWarehouse: false,
+            notes, employee: getAccountDisplayName(currentUser), createdByUserId: currentUser?.id || ''
         };
         const signature = {
-            kind, date, branchId, paymentType, supplierId: purchaseRecord.supplierId, cashboxId: purchaseRecord.cashboxId,
-            currency, title: title.toLowerCase(), amount, addQty: purchaseRecord.addQty, unit,
-            unitCost: purchaseRecord.unitCost, notes, actor: dedupeActorId()
+            kind: 'expense', date, branchId, cashboxId, supplierId: record.supplierId,
+            currency, title: title.toLowerCase(), amount, notes, actor: dedupeActorId()
         };
         const bucket = Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS);
-        const purchaseDocId = `PUR_${dedupeHash(signature)}_${bucket}`;
-        const purchaseRef = db.collection('purchases').doc(purchaseDocId);
-        const newStockDocId = `wh_purchase_${dedupeHash(purchaseDocId)}`;
-        const stockRef = shouldAddToWarehouse
-            ? db.collection('warehouse').doc(existingStock ? existingStock.id : newStockDocId)
-            : null;
-
+        const docId = `EXP_${dedupeHash(signature)}_${bucket}`;
+        const recordRef = db.collection('purchases').doc(docId);
         isBusy = true;
-        btn.disabled = true;
+        if (btn) btn.disabled = true;
         try {
             const result = await db.runTransaction(async transaction => {
-                const purchaseSnapshot = await transaction.get(purchaseRef);
-                if (purchaseSnapshot.exists) return { created: false };
-                let stockSnapshot = null;
-                if (stockRef) stockSnapshot = await transaction.get(stockRef);
-                transaction.set(purchaseRef, { ...purchaseRecord, id: purchaseDocId });
-                if (stockRef) {
-                    if (stockSnapshot?.exists) {
-                        const current = stockSnapshot.data() || {};
-                        const oldQty = Number(current.qty || 0);
-                        const oldCost = Number(current.costPrice ?? current.price ?? 0);
-                        const nextQty = oldQty + addQty;
-                        const weightedCost = nextQty > 0 ? ((oldQty * oldCost) + (addQty * unitCost)) / nextQty : unitCost;
-                        transaction.update(stockRef, { qty: nextQty, costPrice: Number(weightedCost.toFixed(4)) });
-                    } else {
-                        transaction.set(stockRef, {
-                            id: stockRef.id, branchId, branchName, name: title, unit,
-                            qty: addQty, costPrice: unitCost, price: 0
-                        });
-                    }
-                }
+                const snapshot = await transaction.get(recordRef);
+                if (snapshot.exists) return { created: false };
+                transaction.set(recordRef, { ...record, id: docId });
                 return { created: true };
             });
-            if (!result.created) { showToast('تم منع تكرار عملية الشراء أو المصروف نفسها'); return; }
-            purchaseRecord.id = purchaseDocId;
-            state.purchases = (state.purchases || []).concat(purchaseRecord);
-            if (shouldAddToWarehouse) {
-                if (existingStock) {
-                    const oldQty = Number(existingStock.qty || 0);
-                    const oldCost = Number(existingStock.costPrice ?? existingStock.price ?? 0);
-                    existingStock.qty = oldQty + addQty;
-                    existingStock.costPrice = Number((((oldQty * oldCost) + (addQty * unitCost)) / existingStock.qty).toFixed(4));
-                } else {
-                    state.warehouse.push({ id: newStockDocId, branchId, branchName, name: title, unit, qty: addQty, costPrice: unitCost, price: 0 });
-                }
-            }
+            if (!result.created) { showToast('تم منع تكرار هذا المصروف؛ لم يُسجل مرة ثانية'); return; }
+            record.id = docId;
+            state.purchases = (state.purchases || []).concat(record);
             document.getElementById('purTitle').value = '';
             document.getElementById('purAmount').value = '';
-            document.getElementById('purAddQty').value = '0';
-            document.getElementById('purUnitCost').value = '';
             document.getElementById('purNotes').value = '';
-            renderSupplierBalances(); renderPurchasesTable(); renderWarehouseTable(); renderStats(); renderCashboxesList();
-            showToast(paymentType === 'credit' && kind === 'purchase' ? 'تم حفظ المشتريات الآجلة على المورد وتحديث المخزون' : 'تم حفظ العملية وتحديث المخزون والصندوق');
-        } catch (e) { console.warn('Create purchase error:', e); showToast('تعذر حفظ العملية؛ لم يتم تسجيلها أو تحديث المخزون'); }
-        finally { isBusy = false; btn.disabled = false; }
+            renderSupplierBalances(); renderPurchasesTable(); renderStats(); renderCashboxesList();
+            showToast('تم حفظ المصروف وتحديث رصيد الصندوق');
+        } catch (error) {
+            console.warn('Create expense error:', error);
+            showToast('تعذر حفظ المصروف؛ لم يتم تحديث الصندوق');
+        } finally {
+            isBusy = false;
+            if (btn) btn.disabled = false;
+        }
     }
 
     async function deletePurchaseRecord(purId) {
@@ -3796,54 +3913,46 @@
         if (!tbody) return;
         const suppliers = state.suppliers || [];
         tbody.innerHTML = suppliers.length ? suppliers.map(supplier => {
-            const purchases = state.purchases.filter(p => p.kind === 'purchase' && p.supplierId === supplier.id);
-            const cash = purchases.filter(p => p.paymentType !== 'credit').map(p => ({ amount: p.amount, currency: p.currency || 'YER' }));
-            const credit = purchases.filter(p => p.paymentType === 'credit').map(p => ({ amount: p.amount, currency: p.currency || 'YER' }));
-            const totals = records => CURRENCY_CODES.map(code => {
-                const total = records.filter(item => item.currency === code).reduce((sum, item) => sum + Number(item.amount || 0), 0);
-                return total ? `${formatMoney(total)} ${code}` : '';
-            }).filter(Boolean).join(' | ') || '0.00';
-            return `<tr><td><strong>${supplier.name}</strong><br><small>${supplier.phone || ''}</small></td><td>${totals(cash)}</td><td><strong style="color:var(--warning);">${totals(credit)}</strong></td><td>${purchases.length}</td></tr>`;
-        }).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">أضف الموردين لعرض حركة مشترياتهم</td></tr>';
+            const relatedExpenses = (state.purchases || []).filter(record => record.kind === 'expense' && record.supplierId === supplier.id).length;
+            return `<tr>
+                <td><strong>${supplier.name || '-'}</strong></td>
+                <td>${supplier.phone || '-'}</td>
+                <td><span class="badge badge-unit">${relatedExpenses} مصروف</span></td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">لا يوجد موردون بعد. أضف المورد من الزر أعلاه.</td></tr>';
+        const hint = document.getElementById('supplierBalancesCard');
+        if (hint) hint.textContent = 'قائمة الموردين وأرقامهم فقط. يمكنك اختيار مورد عند تسجيل مصروف مرتبط به.';
     }
 
     function renderPurchasesTable() {
         const tbody = document.getElementById('purchasesTableBody');
         if (!tbody) return;
         const q = (document.getElementById('purchaseSearchInput')?.value || '').toLowerCase().trim();
-        const list = state.purchases
-            .filter(p => recordIsInUserBranch(p))
+        const list = (state.purchases || [])
+            .filter(p => p.kind === 'expense' && recordIsInUserBranch(p))
             .filter(p =>
                 (p.title || '').toLowerCase().includes(q) ||
                 (p.branchName || '').toLowerCase().includes(q) ||
                 (p.supplierName || '').toLowerCase().includes(q) ||
                 (p.notes || '').toLowerCase().includes(q)
-            )
-            .slice().reverse();
-
-        tbody.innerHTML = list.length
-            ? list.map(p => `
-                <tr>
-                    <td><span class="mono">${p.date || '-'}</span></td>
-                    <td>${p.kind === 'expense' ? '<span class="badge badge-expense">مصروف</span>' : '<span class="badge badge-credit">مشتروات</span>'}</td>
-                    <td>${p.branchName || 'الفرع الرئيسي'}</td>
-                    <td>
-                        <strong>${p.title}</strong>
-                        ${p.notes ? `<div style="font-size:11px; color:var(--text-muted);">${p.notes}</div>` : ''}
-                    </td>
-                    <td>${p.supplierName || '-'}</td>
-                    <td>${p.kind === 'purchase' ? (p.paymentType === 'credit' ? '<span class="badge badge-credit">آجل</span>' : '<span class="badge badge-cash">نقداً</span>') : '-'}</td>
-                    <td>${p.cashboxName || '-'}</td>
-                    <td>${Number(p.addQty || 0) > 0 ? `<span class="badge badge-cash mono">${formatQty(p.addQty)}</span> ${p.unit || 'حبة'}<div style="font-size:11px;color:var(--text-muted);">تكلفة الوحدة: ${formatMoney(p.unitCost || 0)}</div>` : '<span style="color:var(--text-muted);">-</span>'}</td>
-                    <td>${CURRENCY_NAMES[p.currency || 'YER'] || CURRENCY_NAMES.YER}</td>
-                    <td><span class="mono" style="color:var(--danger);">${formatCurrency(p.amount, p.currency || 'YER')}</span></td>
-                    <td>${p.employee || '-'}</td>
-                    <td>
-                        ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deletePurchaseRecord('${p.id}')"><i class="fa-solid fa-trash"></i></button>` : '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>'}
-                    </td>
-                </tr>
-            `).join('')
-            : '<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">لا توجد مشتروات أو مصروفات مسجلة</td></tr>';
+            ).slice().reverse();
+        const totalByCurrency = {};
+        list.forEach(item => { const code = item.currency || 'YER'; totalByCurrency[code] = (totalByCurrency[code] || 0) + Number(item.amount || 0); });
+        const totalEl = document.getElementById('purchasesTabTotal');
+        if (totalEl) totalEl.textContent = CURRENCY_CODES.filter(code => totalByCurrency[code]).map(code => `${formatMoney(totalByCurrency[code])} ${code}`).join(' | ') || '0.00 YER';
+        tbody.innerHTML = list.length ? list.map(p => `
+            <tr>
+                <td><span class="mono">${p.date || '-'}</span></td>
+                <td><strong>${p.title || '-'}</strong>${p.notes ? `<div style="font-size:11px;color:var(--text-muted);">${p.notes}</div>` : ''}</td>
+                <td>${p.supplierName || '-'}</td>
+                <td>${p.branchName || 'الفرع الرئيسي'}</td>
+                <td>${p.cashboxName || '-'}</td>
+                <td>${CURRENCY_NAMES[p.currency || 'YER'] || CURRENCY_NAMES.YER}</td>
+                <td><span class="mono" style="color:var(--danger);">${formatCurrency(p.amount, p.currency || 'YER')}</span></td>
+                <td>${p.employee || '-'}</td>
+                <td>${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deletePurchaseRecord('${p.id}')"><i class="fa-solid fa-trash"></i> حذف</button>` : '<span style="color:var(--text-muted);font-size:11px;">عرض فقط</span>'}</td>
+            </tr>
+        `).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">لا توجد مصروفات مسجلة</td></tr>';
     }
 
     function toggleInvoicePaymentFields() {
@@ -3923,11 +4032,7 @@
     }
 
     function togglePurchasePaymentFields() {
-        const isPurchase = (document.getElementById('purKind')?.value || 'purchase') === 'purchase';
-        const isCash = (document.getElementById('purPaymentType')?.value || 'cash') === 'cash';
-        document.getElementById('purchaseSupplierFields')?.classList.toggle('hidden', !isPurchase);
-        document.getElementById('purCashboxGroup')?.classList.toggle('hidden', isPurchase && !isCash);
-        if (!isPurchase || isCash) filterPurchaseCashboxes();
+        filterPurchaseCashboxes();
     }
 
     function filterPurchaseCashboxes() {
@@ -5126,53 +5231,46 @@
 
     async function createEmployeeUser() {
         if (isBusy || !canManageUsers()) return;
-        const staffId = document.getElementById('newUserStaffSelect').value;
         const username = document.getElementById('newUserUsername').value.trim();
         const password = document.getElementById('newUserPassword').value.trim();
         const role = document.getElementById('newUserRole').value || 'cashier';
-        const staff = getStaffById(staffId);
+        const branchId = role === 'supervisor' ? '' : (document.getElementById('newUserWarehouseSelect')?.value || '');
+        const branch = branchId ? getAllBranches().find(item => item.id === branchId) : null;
         const btn = document.getElementById('createEmployeeUserBtn');
-        if (!staff) { showToast('اختر موظفاً معرفاً مسبقاً'); return; }
-        if (getStaffLoginAccount(staff)) { showToast('هذا الموظف لديه حساب دخول بالفعل'); return; }
         if (!username || !password) { showToast('أدخل اسم المستخدم وكلمة المرور'); return; }
+        if (username.length < 3 || password.length < 4) { showToast('اسم المستخدم 3 أحرف على الأقل وكلمة المرور 4 أحرف على الأقل'); return; }
         if (state.employees.some(account => String(account.username || '').trim().toLowerCase() === username.toLowerCase())) { showToast('اسم المستخدم موجود مسبقاً'); return; }
-        if (role === 'cashier' && !staff.warehouseBranchId) { showToast('حدد مخزن الموظف من صفحة تعريف الموظفين أولاً'); return; }
+        if (role === 'cashier' && !branch) { showToast('اختر المخزن المسموح لهذا الحساب'); return; }
         isBusy = true;
         btn.disabled = true;
         try {
             const account = {
-                staffId: staff.legacy ? '' : staff.id, fullName: staff.fullName, username, password, role,
-                salary: Number(staff.salary || 0), salaryCurrency: getStaffSalaryCurrency(staff),
-                payType: staff.payType || 'monthly', pieceRates: Array.isArray(staff.pieceRates) ? staff.pieceRates : [],
-                warehouseBranchId: role === 'supervisor' ? '' : (staff.warehouseBranchId || ''),
-                warehouseBranchName: role === 'supervisor' ? 'كل المخازن' : (staff.warehouseBranchName || ''),
+                username, password, role,
+                securityOnly: true,
+                warehouseBranchId: role === 'supervisor' ? '' : branch.id,
+                warehouseBranchName: role === 'supervisor' ? 'كل المخازن' : branch.name,
                 canEdit: false, canDelete: false, allowedMenus: [],
                 dashboardWidgets: { sales: false, cash: false, receivables: false, stock: false },
-                active: staff.active !== false, createdAt: new Date().toISOString()
+                active: true, createdAt: new Date().toISOString()
             };
             const preferredId = `user_${dedupeHash(username.toLowerCase())}`;
             const saved = await createRecordOnce('employees', 'user', {
-                username: username.toLowerCase(), staffId: staff.id, role
+                username: username.toLowerCase(), role
             }, account, preferredId);
-            if (!saved.created) { showToast('تم منع تكرار حساب الدخول؛ اسم المستخدم أو الحساب مسجل مسبقاً.'); return; }
+            if (!saved.created) { showToast('اسم المستخدم موجود أو الحساب أُنشئ مسبقاً؛ لم تتم إضافة نسخة أخرى.'); return; }
             account.id = saved.id;
-            if (!staff.legacy) {
-                await db.collection('staff').doc(staff.id).update({ userAccountId: saved.id, username });
-                staff.userAccountId = saved.id;
-                staff.username = username;
-            }
             state.employees.push(account);
             document.getElementById('newUserUsername').value = '';
             document.getElementById('newUserPassword').value = '';
-            document.getElementById('newUserStaffSelect').value = '';
-            populateNewUserStaffOptions();
+            if (document.getElementById('newUserWarehouseSelect')) document.getElementById('newUserWarehouseSelect').value = '';
             populateEmployeePermissionOptions();
-            document.getElementById('permissionEmployeeSelect').value = saved.id;
+            populateNewUserStaffOptions();
+            const permissionSelect = document.getElementById('permissionEmployeeSelect');
+            if (permissionSelect) permissionSelect.value = saved.id;
             loadEmployeePermissions();
-            renderEmployeesTable();
             renderEmployeePermissionsTable();
-            showToast('تم إنشاء حساب المستخدم. حدد صلاحياته من نفس الصفحة');
-        } catch (e) { console.warn('Create user error:', e); showToast('تعذر إنشاء حساب المستخدم'); }
+            showToast('تم إنشاء حساب الدخول. اربطه بملف الموظف من صفحة الموظفون عند الحاجة.');
+        } catch (e) { console.warn('Create security account error:', e); showToast('تعذر إنشاء حساب الدخول'); }
         finally { isBusy = false; btn.disabled = false; }
     }
 
@@ -5240,7 +5338,7 @@
             await db.collection('staff').doc(staffId).update({ pieceRates: rates });
             staff.pieceRates = rates;
             const linked = getStaffLoginAccount(staff);
-            if (linked) await db.collection('employees').doc(linked.id).update({ pieceRates: rates });
+            // التسعيرات محفوظة حصراً في سجل الموظف داخل مجموعة staff وليس في حساب الدخول.
             renderEmployeesTable();
             populateProductionRateOptions();
             showToast('تم تحديث تسعيرات الموظف. سجلات الإنتاج السابقة لا تتغير');
@@ -5270,7 +5368,7 @@
             } else {
                 await db.collection('staff').doc(staffId).update({ salary: parsed });
                 const linked = getStaffLoginAccount(staff);
-                if (linked) await db.collection('employees').doc(linked.id).update({ salary: parsed });
+                // الراتب محفوظ حصراً في سجل الموظف داخل مجموعة staff وليس في حساب الدخول.
             }
             showToast('تم تحديث الراتب');
         } catch (e) {
@@ -5330,7 +5428,7 @@
             showToast('لا يمكنك حذف حسابك الحالي أثناء الدخول');
             return;
         }
-        if (!confirm(`هل أنت متأكد من حذف المستخدم (${emp.fullName})؟`)) return;
+        if (!confirm(`هل أنت متأكد من حذف حساب الدخول (${emp.username || emp.id})؟ سيبقى تعريف الموظف وبيانات راتبه محفوظة.`)) return;
 
         isBusy = true;
         try {
@@ -5392,7 +5490,7 @@
                         transaction.update(db.collection('staff').doc(oldId), { fullName: nextName, nameKey: nextKey });
                     }
                     if (linked) {
-                        transaction.update(db.collection('employees').doc(linked.id), { staffId: nextId, fullName: nextName });
+                        transaction.update(db.collection('employees').doc(linked.id), { staffId: nextId });
                     }
                     // Preserve all historical payroll and production links if the document ID changes.
                     if (nextId !== oldId) {
@@ -5407,7 +5505,6 @@
                 state.staff = state.staff.map(item => item.id === oldId ? nextRecord : item);
                 if (linked) {
                     linked.staffId = nextId;
-                    linked.fullName = nextName;
                     staff.userAccountId = linked.id;
                     nextRecord.userAccountId = linked.id;
                 }
@@ -5440,42 +5537,40 @@
         const staff = getStaffById(staffId);
         if (!staff) return;
         const account = getStaffLoginAccount(staff);
-        if (account && (account.id === 'emp_admin' || account.username === ADMIN_USER)) {
-            showToast('لا يمكن حذف حساب المدير العام الأساسي');
-            return;
-        }
         if (account && currentUser?.id === account.id) {
-            showToast('لا يمكنك حذف حساب الدخول الذي تستخدمه حالياً');
+            showToast('لا يمكن حذف ملف الموظف المرتبط بحسابك الحالي أثناء الدخول');
             return;
         }
-        const accountText = account ? ' وسيُحذف حساب الدخول المرتبط به' : '';
+        if (staff.legacy) {
+            showToast('هذا سجل موظف قديم مدمج مع حساب الدخول؛ لا يمكن حذفه من هنا حتى لا تُحذف بيانات الأمان القديمة.');
+            return;
+        }
         const relatedProduction = (state.employeeProduction || []).filter(item => item.staffId === staff.id).length;
         const relatedExpenses = (state.employeeExpenses || []).filter(item => item.staffId === staff.id).length;
-        const confirmed = confirm(
-            `هل تريد حذف تعريف الموظف «${staff.fullName}»؟${accountText}\n\n` +
-            `سيتم الاحتفاظ بسجلات الإنتاج (${relatedProduction}) والمصروفات (${relatedExpenses}) كسجلات تاريخية، ولن تُحذف المبالغ القديمة.`
-        );
-        if (!confirmed) return;
+        const message = account
+            ? `سيُحذف ملف الموظف «${staff.fullName}» فقط، وسيبقى حساب الدخول (${account.username}) موجوداً دون ربط. `
+            : `سيُحذف ملف الموظف «${staff.fullName}». `;
+        if (!confirm(`${message}
+
+سيتم الاحتفاظ بسجلات الإنتاج (${relatedProduction}) والمصروفات (${relatedExpenses}) كسجلات تاريخية.`)) return;
         isBusy = true;
         try {
             const batch = db.batch();
-            if (!staff.legacy) batch.delete(db.collection('staff').doc(staff.id));
-            if (account) batch.delete(db.collection('employees').doc(account.id));
+            batch.delete(db.collection('staff').doc(staff.id));
+            if (account) batch.update(db.collection('employees').doc(account.id), { staffId: firebase.firestore.FieldValue.delete() });
             await batch.commit();
             state.staff = state.staff.filter(item => item.id !== staff.id);
-            if (account) state.employees = state.employees.filter(item => item.id !== account.id);
+            if (account) delete account.staffId;
             renderEmployeesTable();
             renderEmployeeProduction();
             renderEmployeeExpenses();
             populateNewUserStaffOptions();
             renderEmployeePermissionsTable();
-            showToast('تم حذف تعريف الموظف وحساب دخوله إن وجد، مع الاحتفاظ بالسجلات التاريخية');
-        } catch (e) {
-            console.warn('Delete staff definition error:', e);
+            showToast(account ? 'تم حذف ملف الموظف مع الاحتفاظ بحساب الدخول وسجلاته التاريخية' : 'تم حذف ملف الموظف مع الاحتفاظ بالسجلات التاريخية');
+        } catch (error) {
+            console.warn('Delete staff definition error:', error);
             showToast('تعذر حذف الموظف. لم يتم حذف السجلات المالية');
-        } finally {
-            isBusy = false;
-        }
+        } finally { isBusy = false; }
     }
 
     async function removeDuplicateStaffProfiles() {
@@ -5616,7 +5711,7 @@
                 : 'لم تُحدد أقسام بعد');
             return `
                 <tr>
-                    <td><strong>${emp.fullName || '-'}</strong></td>
+                    <td><strong>${emp.username || emp.id}</strong><br><small>${roleLabel(emp.role)}</small></td>
                     <td style="max-width:260px; font-size:12px;">${labels}</td>
                     <td>${full || emp.canEdit ? '<span class="badge badge-cash">مسموح</span>' : '<span class="badge badge-unit">غير مسموح</span>'}</td>
                     <td>${full || emp.canDelete ? '<span class="badge badge-cash">مسموح</span>' : '<span class="badge badge-unit">غير مسموح</span>'}</td>
@@ -5624,7 +5719,7 @@
                     <td>${full ? '<span class="badge badge-sup">كامل</span>' : `<button class="btn btn-outline btn-sm" onclick="editEmployeeMenus('${emp.id}')">إدارة الصلاحيات</button>`}</td>
                 </tr>
             `;
-        }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون</td></tr>';
+        }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد حسابات دخول</td></tr>';
     }
 
     function populateEmployeeExpenseStaffOptions() {
@@ -5694,7 +5789,7 @@
                 cashboxName: state.cashboxes.find(c => c.id === (document.getElementById('employeeExpenseCashboxSelect')?.value || ''))?.name || '',
                 note: note || (isPieceworkStaff(staff) ? 'دفعة من مستحق الإنتاج' : 'مصروف من الراتب'),
                 period, date, createdAt: new Date().toISOString(),
-                createdBy: currentUser?.fullName || 'الإدارة', createdByUserId: currentUser?.id || ''
+                createdBy: getAccountDisplayName(currentUser) || 'الإدارة', createdByUserId: currentUser?.id || ''
             };
             const saved = await createRecordOnce('employeeExpenses', 'emp_exp', {
                 staffId: staff.id, amount, currency: record.currency, note: record.note, period, date,
@@ -5724,7 +5819,7 @@
         const sel = document.getElementById('productionStaffSelect');
         if (!sel) return;
         const previous = sel.value;
-        const staff = getAllStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
+        const staff = getVisiblePayrollStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
         sel.innerHTML = '<option value="">اختر موظفاً يعمل بالقطعة</option>' + staff.map(item =>
             `<option value="${item.id}">${item.fullName} — ${getStaffSalaryCurrency(item)}</option>`
         ).join('');
@@ -5766,14 +5861,14 @@
     }
 
     async function recordEmployeeProduction() {
-        if (isBusy || !canManageUsers()) return;
+        if (isBusy || !canAccessMenu('employeeProductionTab')) { showToast('ليس لديك صلاحية تسجيل الإنتاج'); return; }
         const staff = getStaffById(document.getElementById('productionStaffSelect').value);
         const rate = getSelectedProductionRate();
         const quantity = Number(document.getElementById('productionQuantity').value || 0);
         const date = document.getElementById('productionDate').value || getLocalDateKey();
         const note = document.getElementById('productionNote').value.trim();
         const btn = document.getElementById('saveProductionBtn');
-        if (!staff || !isPieceworkStaff(staff)) { showToast('اختر موظفاً معرفاً بنظام القطعة'); return; }
+        if (!staff || !isPieceworkStaff(staff) || !getVisiblePayrollStaff().some(item => item.id === staff.id)) { showToast('يمكنك تسجيل الإنتاج لملفك المرتبط فقط، أو اختر موظفاً ضمن صلاحياتك'); return; }
         if (!rate) { showToast('اختر نوع العمل أو القطعة'); return; }
         if (!Number.isFinite(quantity) || quantity <= 0) { showToast('أدخل كمية صحيحة أكبر من صفر'); return; }
         const amount = quantity * Number(rate.rate || 0);
@@ -5798,7 +5893,7 @@
                 staffId: staff.id, staffName: staff.fullName, rateId: rate.id, workName: rate.name, unit: rate.unit,
                 quantity, unitRate: Number(rate.rate), amount, currency: getStaffSalaryCurrency(staff),
                 period: date.slice(0, 7), date, note: normalizedNote,
-                createdAt: new Date().toISOString(), createdBy: currentUser?.fullName || 'المشرف',
+                createdAt: new Date().toISOString(), createdBy: getAccountDisplayName(currentUser) || 'المشرف',
                 createdByUserId: currentUser?.id || ''
             };
             const saved = await createRecordOnce('employeeProduction', 'emp_prod', {
@@ -5822,8 +5917,10 @@
     }
 
     async function deleteEmployeeProduction(productionId) {
-        if (isBusy || !canManageUsers()) return;
+        if (isBusy) return;
         const item = (state.employeeProduction || []).find(record => record.id === productionId);
+        const ownIds = new Set(getVisiblePayrollStaff().map(staff => staff.id));
+        if (!canManageUsers() && (!canDeleteRecord() || !item || !ownIds.has(item.staffId))) { showToast('ليس لديك صلاحية حذف هذا السجل'); return; }
         if (!item) return;
         if (!confirm(`حذف إنتاج ${item.staffName || 'الموظف'} (${item.quantity} ${item.unit}) بقيمة ${formatMoney(item.amount)} ${item.currency || 'YER'}؟`)) return;
         isBusy = true;
@@ -5886,14 +5983,14 @@
     }
 
     function renderEmployeeProduction() {
-        if (!canManageUsers()) return;
+        if (!canAccessMenu('employeeProductionTab')) return;
         const period = getCurrentPayrollPeriod();
         const label = document.getElementById('employeeProductionPeriodLabel');
-        if (label) label.textContent = `الفترة الحالية: ${period}. أدخل كمية كل نوع عمل، وسيحسب النظام المستحق وفق السعر المحدد عند تعريف الموظف.`;
+        if (label) label.textContent = `الفترة الحالية: ${period}. أدخل كمية العمل التي أنجزتها؛ وسيُحسب المستحق وفق السعر الذي حدده المدير.`;
         const dateInput = document.getElementById('productionDate');
         if (dateInput && !dateInput.value) dateInput.value = getLocalDateKey();
         populateProductionStaffOptions();
-        const staff = getAllStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
+        const staff = getVisiblePayrollStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
         const summaryBody = document.getElementById('employeeProductionSummaryBody');
         if (summaryBody) {
             summaryBody.innerHTML = staff.length ? staff.map(item => {
@@ -5907,9 +6004,10 @@
                     <td><span class="mono">${formatMoney(paid)} ${currency}</span></td>
                     <td><strong class="mono" style="color:${balance < 0 ? 'var(--danger)' : 'var(--success)'}">${formatMoney(balance)} ${currency}</strong></td>
                 </tr>`;
-            }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون بنظام القطعة</td></tr>';
+            }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا يوجد ملف موظف مرتبط بحسابك، أو لا يوجد موظف يعمل بالقطعة</td></tr>';
         }
-        const rows = (state.employeeProduction || []).slice()
+        const visibleIds = new Set(staff.map(item => item.id));
+        const rows = (state.employeeProduction || []).filter(item => hasFullAccess(currentUser) || visibleIds.has(item.staffId)).slice()
             .sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
         const tbody = document.getElementById('employeeProductionTableBody');
         if (tbody) {
@@ -5922,9 +6020,9 @@
                     <td><span class="mono">${formatMoney(item.unitRate || 0)} ${item.currency || 'YER'}</span></td>
                     <td><strong class="mono">${formatMoney(item.amount || 0)} ${item.currency || 'YER'}</strong></td>
                     <td>${item.createdBy || '-'}</td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteEmployeeProduction('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button></td>
+                    <td>${canManageUsers() || (canDeleteRecord() && visibleIds.has(item.staffId)) ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeProduction('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button>` : '<span style="color:var(--text-muted);">—</span>'}</td>
                 </tr>
-            `).join('') : '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا يوجد إنتاج مسجل حتى الآن</td></tr>';
+            `).join('') : '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا يوجد إنتاج مسجل في الحساب المسموح لك</td></tr>';
         }
         updateProductionPreview();
     }
