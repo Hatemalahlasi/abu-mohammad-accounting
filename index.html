@@ -1923,6 +1923,7 @@
                     </div>
                 </div>
                 <div id="employeeExpensePreview" class="employee-permission-note">اختر الموظف لعرض راتبه أو مستحق إنتاجه والمتبقي له.</div>
+                <div id="employeeExpenseEntryHint" class="employee-permission-note">يمكنك تسجيل المبالغ المسموح لك بها.</div>
                 <button id="saveEmployeeExpenseBtn" class="btn btn-primary btn-full" onclick="recordEmployeeExpense()">
                     <i class="fa-solid fa-floppy-disk"></i> تسجيل المصروف / الدفعة وتحديث المتبقي
                 </button>
@@ -2041,7 +2042,7 @@
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
-            <div class="employee-permission-note" id="employeeDuesPeriodLabel">اختر الشهر والموظف. سيظهر لك المستحق وما استلمه والمتبقي، ويمكنك حفظ الكشف PDF.</div>
+            <div class="employee-permission-note" id="employeeDuesPeriodLabel">اختر الشهر والموظف. سيظهر لك المستحق وما استلمه والمتبقي، ويمكنك طباعة الكشف أو حفظه PDF.</div>
 
             <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-filter"></i> اختر الكشف المطلوب</span></div>
@@ -2059,16 +2060,16 @@
                 </div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
                     <button type="button" class="btn btn-primary" onclick="exportEmployeeDuesPdf(false)">
-                        <i class="fa-solid fa-file-pdf"></i> حفظ كشف الموظف PDF
+                        <i class="fa-solid fa-file-pdf"></i> طباعة كشف الموظف / حفظ PDF
                     </button>
                     <button type="button" class="btn btn-accent" onclick="exportEmployeeDuesPdf(true)">
-                        <i class="fa-solid fa-files"></i> حفظ كل الكشوف PDF
+                        <i class="fa-solid fa-files"></i> طباعة جميع الكشوف / حفظ PDF
                     </button>
                     <button type="button" class="btn btn-outline" onclick="renderEmployeeDues()">
                         <i class="fa-solid fa-rotate"></i> تحديث
                     </button>
                 </div>
-                <div class="employee-permission-note" style="margin-top:10px;">اختر موظفًا لعرض كشفه، أو احفظ كل الكشوف في ملف واحد. المبالغ تظهر حسب عملة كل موظف.</div>
+                <div class="employee-permission-note" style="margin-top:10px;">اختر موظفًا لعرض كشفه، أو اطبع كل الكشوف في ملف واحد.  المبالغ تظهر حسب عملة كل موظف.</div>
             </div>
 
             <div class="card-box">
@@ -2932,6 +2933,13 @@
     function canManageUsers(user = currentUser) {
         if (!user) return false;
         return user.role === 'admin' || user.role === 'supervisor';
+    }
+
+    // من لديه صلاحية فتح صفحة المصروفات يستطيع تسجيل المبالغ للموظفين الظاهرين له.
+    // الموظف العادي لا يرى إلا ملفه المرتبط بحسابه، أما المشرف والمدير فيريان الجميع.
+    function canRecordEmployeePayment(user = currentUser) {
+        if (!user) return false;
+        return hasFullAccess(user) || canAccessMenu('employeeExpensesTab', user);
     }
 
     function canEditRecord() {
@@ -5170,7 +5178,11 @@
         if (previous && staff.some(item => item.id === previous)) sel.value = previous;
         else if (staff.length === 1) sel.value = staff[0].id;
         const entryCard = document.getElementById('employeeExpenseEntryCard');
-        if (entryCard) entryCard.classList.toggle('hidden', !canManageUsers());
+        if (entryCard) entryCard.classList.toggle('hidden', !canRecordEmployeePayment());
+        const entryHint = document.getElementById('employeeExpenseEntryHint');
+        if (entryHint) entryHint.textContent = canManageUsers()
+            ? 'يمكنك تسجيل دفعة لأي موظف. ويمكنك تعديل السجلات السابقة من جدول المصروفات.'
+            : 'يمكنك تسجيل المبلغ الذي استلمته. سيظهر لك حسابك أنت فقط.';
         updateEmployeeExpensePreview();
     }
 
@@ -5191,9 +5203,12 @@
     }
 
     async function recordEmployeeExpense() {
-        if (isBusy || !canManageUsers()) return;
+        if (isBusy || !canRecordEmployeePayment()) {
+            showToast('لا تملك صلاحية تسجيل دفعات الموظفين');
+            return;
+        }
         const staffId = document.getElementById('employeeExpenseStaffSelect').value;
-        const staff = getStaffById(staffId);
+        const staff = getVisiblePayrollStaff().find(item => item.id === staffId);
         const amount = Number(document.getElementById('employeeExpenseAmount').value || 0);
         const note = document.getElementById('employeeExpenseNote').value.trim();
         const btn = document.getElementById('saveEmployeeExpenseBtn');
@@ -5664,12 +5679,8 @@
 
     let employeeDuesPdfBusy = false;
 
-    async function exportEmployeeDuesPdf(allStaff = false) {
+    function exportEmployeeDuesPdf(allStaff = false) {
         if (employeeDuesPdfBusy) return;
-        if (typeof html2pdf === 'undefined') {
-            showToast('مكتبة PDF لم تُحمّل. تحقق من الإنترنت ثم أعد المحاولة.');
-            return;
-        }
         const period = getSelectedEmployeeDuesPeriod();
         const available = getVisiblePayrollStaff();
         const selectedId = document.getElementById('employeeDuesStaffSelect')?.value || '';
@@ -5679,94 +5690,130 @@
             showToast(allStaff ? 'لا يوجد موظفون لاستخراج كشوفهم' : 'اختر الموظف أولاً');
             return;
         }
-        const area = document.getElementById('employeeDuesPdfArea');
-        if (!area) { showToast('تعذر تجهيز مساحة كشف PDF'); return; }
 
+        // افتح النافذة مباشرة من ضغطة المستخدم حتى لا يمنعها المتصفح كنافذة منبثقة.
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            showToast('المتصفح منع نافذة الطباعة. اسمح بالنوافذ المنبثقة لهذا الموقع ثم أعد المحاولة.');
+            return;
+        }
         employeeDuesPdfBusy = true;
-        const overlay = document.createElement('div');
-        overlay.className = 'employee-dues-export-overlay';
-        overlay.innerHTML = '<span><i class="fa-solid fa-file-pdf"></i> جاري تجهيز الكشف PDF...<br><small style="font-weight:400;color:#64748b;">لا تغلق الصفحة حتى يبدأ التنزيل</small></span>';
-        document.body.appendChild(overlay);
-
-        const oldStyle = area.getAttribute('style');
-        const oldAriaHidden = area.getAttribute('aria-hidden');
         try {
-            area.innerHTML = staffList.map((staff, index) =>
+            const sheets = staffList.map((staff, index) =>
                 buildEmployeeDuesPdfSheet(staff, period, index === staffList.length - 1)
             ).join('');
-            area.classList.add('pdf-exporting');
-            area.removeAttribute('aria-hidden');
-
-            // انتظر الخطوط والصور حتى لا يلتقط html2canvas ورقة فارغة أو شعاراً غير مكتمل.
-            if (document.fonts?.ready) await document.fonts.ready;
-            const images = Array.from(area.querySelectorAll('img'));
-            await Promise.all(images.map(img => {
-                if (img.complete) return Promise.resolve();
-                return new Promise(resolve => {
-                    const finish = () => resolve();
-                    img.addEventListener('load', finish, { once: true });
-                    img.addEventListener('error', finish, { once: true });
-                    setTimeout(finish, 3500);
-                });
-            }));
-            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-            const rect = area.getBoundingClientRect();
-            const contentHeight = Math.max(area.scrollHeight, area.offsetHeight, Math.ceil(rect.height));
-            if (area.querySelectorAll('.employee-dues-pdf-sheet').length !== staffList.length || rect.width < 700 || contentHeight < 250) {
-                throw new Error('PDF report area is empty or has invalid dimensions');
-            }
-
-            const filePart = allStaff ? 'جميع_الموظفين' :
-                (staffList[0].fullName || 'موظف').replace(/[^\u0600-\u06FF\w-]+/g, '_');
-            const options = {
-                margin: [8, 7, 8, 7],
-                filename: `كشف_مستحقات_${filePart}_${period}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: false,
-                    backgroundColor: '#ffffff',
-                    scrollX: 0,
-                    scrollY: 0,
-                    windowWidth: 1100,
-                    logging: false
-                },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'] }
-            };
-
-            const worker = html2pdf().set(options).from(area);
-            await worker.toCanvas();
-            const canvas = await worker.get('canvas');
-            if (!canvas || canvas.width < 500 || canvas.height < 250) {
-                throw new Error('PDF capture returned an empty canvas');
-            }
-            const context = canvas.getContext('2d');
-            if (context) {
-                const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-                let visiblePixels = 0;
-                for (let i = 0; i < pixels.length; i += 64) {
-                    if (pixels[i] < 238 || pixels[i + 1] < 238 || pixels[i + 2] < 238) visiblePixels++;
-                    if (visiblePixels > 30) break;
-                }
-                if (visiblePixels < 8) throw new Error('PDF capture appears blank');
-            }
-            await worker.toPdf().save();
-            showToast('تم تنزيل كشف المستحقات بنجاح');
+            const logoUrl = new URL('logo.png', window.location.href).href;
+            const safeSheets = sheets.replace(/src=["']logo\.png["']/g, `src="${logoUrl}"`);
+            const title = allStaff ? `كشف جميع الموظفين ${period}` : `كشف ${staffList[0].fullName || 'الموظف'} ${period}`;
+            const printHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeEmployeeDuesHtml(title)}</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff;color:#111827;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{padding:0}
+.employee-dues-pdf-sheet{direction:rtl;font-family:Tahoma,Arial,sans-serif;width:100%;padding:8mm;background:#fff;color:#111827;page-break-after:always;break-after:page}
+.employee-dues-pdf-sheet:last-child{page-break-after:auto;break-after:auto}
+.employee-dues-pdf-header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #1d7045;margin-bottom:16px}
+.employee-dues-pdf-header h2{color:#174d32;font-size:21px;margin:0 0 5px}
+.employee-dues-pdf-header p{color:#64748b;font-size:11px;margin:0}
+.employee-dues-pdf-brand{width:62px;height:62px;object-fit:contain;border:1px solid #e1ebe4;border-radius:12px;padding:4px}
+.employee-dues-pdf-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;padding:12px;background:#f8fbf9;border:1px solid #e2ece5;border-radius:10px;margin-bottom:13px;font-size:12px}
+.employee-dues-pdf-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:15px}
+.employee-dues-pdf-kpi{border:1px solid #e2e8f0;border-radius:9px;padding:10px}
+.employee-dues-pdf-kpi small{display:block;color:#64748b;font-size:10px;margin-bottom:5px}
+.employee-dues-pdf-kpi b{font-size:14px;direction:ltr;display:block}
+.employee-dues-pdf-sheet h3{color:#174d32;font-size:14px;margin:14px 0 8px}
+.employee-dues-pdf-sheet table{width:100%;border-collapse:collapse;font-size:10px;table-layout:auto}
+.employee-dues-pdf-sheet th{background:#edf5ef;color:#244b35;font-weight:800}
+.employee-dues-pdf-sheet th,.employee-dues-pdf-sheet td{border:1px solid #dce5df;padding:7px 6px;text-align:right;vertical-align:top;overflow-wrap:anywhere}
+.employee-dues-pdf-sheet .pdf-positive{color:#166534;font-weight:800}
+.employee-dues-pdf-sheet .pdf-negative{color:#b91c1c;font-weight:800}
+.employee-dues-pdf-footer{margin-top:17px;padding-top:8px;border-top:1px solid #e5e7eb;color:#64748b;font-size:9px;text-align:center}
+thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avoid}
+@page{size:A4 portrait;margin:9mm}
+@media print{html,body{width:100%;height:auto}.employee-dues-pdf-sheet{width:100%;padding:3mm}.employee-dues-pdf-sheet:not(:last-child){break-after:page;page-break-after:always}}
+</style>
+</head>
+<body>${safeSheets}
+<script>
+window.addEventListener('load',function(){
+  var imgs=Array.from(document.images);
+  Promise.all(imgs.map(function(img){if(img.complete)return Promise.resolve();return new Promise(function(resolve){img.onload=resolve;img.onerror=resolve;setTimeout(resolve,3000);});}))
+  .then(function(){setTimeout(function(){window.focus();window.print();},500);});
+});
+<\/script>
+</body>
+</html>`;
+            printWindow.document.open();
+            printWindow.document.write(printHtml);
+            printWindow.document.close();
+            // نافذة الطباعة تُترك مفتوحة ليختار المستخدم الطابعة أو "حفظ كملف PDF".
+            const resetBusy = () => { employeeDuesPdfBusy = false; };
+            printWindow.addEventListener('afterprint', resetBusy, { once: true });
+            setTimeout(resetBusy, 15000);
+            showToast('تم تجهيز الكشف. اختر «حفظ كملف PDF» من نافذة الطباعة.');
         } catch (error) {
-            console.warn('Employee dues PDF error:', error);
-            showToast('لم يتم إنشاء PDF. تحقق من اتصال الإنترنت ثم أعد المحاولة.');
-        } finally {
-            area.classList.remove('pdf-exporting');
-            if (oldStyle === null) area.removeAttribute('style');
-            else area.setAttribute('style', oldStyle);
-            if (oldAriaHidden === null) area.removeAttribute('aria-hidden');
-            else area.setAttribute('aria-hidden', oldAriaHidden);
-            area.innerHTML = '';
-            overlay.remove();
+            console.warn('Employee dues print error:', error);
+            try { printWindow.close(); } catch (_) {}
             employeeDuesPdfBusy = false;
+            showToast('تعذر تجهيز الكشف للطباعة');
+        }
+    }
+
+    async function editEmployeeExpense(expenseId) {
+        if (isBusy || !canManageUsers()) {
+            showToast('تعديل مصروفات الموظفين متاح للمشرف والمدير فقط');
+            return;
+        }
+        const item = (state.employeeExpenses || []).find(expense => expense.id === expenseId);
+        if (!item) { showToast('لم يتم العثور على سجل المصروف'); return; }
+        const staff = getStaffById(item.staffId);
+        if (!staff) { showToast('تعذر العثور على الموظف المرتبط بالسجل'); return; }
+
+        const amountText = prompt(`المبلغ الجديد للموظف ${item.staffName || staff.fullName} (${item.currency || 'YER'}):`, String(item.amount || ''));
+        if (amountText === null) return;
+        const newAmount = Number(String(amountText).replace(/,/g, '').trim());
+        if (!Number.isFinite(newAmount) || newAmount <= 0) {
+            showToast('أدخل مبلغاً صحيحاً أكبر من صفر');
+            return;
+        }
+        const noteText = prompt('البيان / سبب الصرف:', item.note || '');
+        if (noteText === null) return;
+        const period = item.period || String(item.date || '').slice(0, 7) || getCurrentPayrollPeriod();
+        const entitlement = getEmployeePeriodEntitlement(staff, period);
+        const totalSpent = getEmployeePeriodSpent(staff.id, period);
+        const availableBeforeThisRecord = entitlement - (totalSpent - Number(item.amount || 0));
+        if (newAmount > availableBeforeThisRecord) {
+            showToast(`المبلغ يتجاوز المتاح لهذا الموظف (${formatMoney(Math.max(0, availableBeforeThisRecord))} ${item.currency || getStaffSalaryCurrency(staff)})`);
+            return;
+        }
+        if (!confirm(`تأكيد تعديل المبلغ من ${formatMoney(item.amount || 0)} إلى ${formatMoney(newAmount)} ${item.currency || 'YER'}؟`)) return;
+
+        isBusy = true;
+        try {
+            const updated = {
+                amount: newAmount,
+                note: String(noteText).trim() || 'دفعة من المستحق',
+                updatedAt: new Date().toISOString(),
+                updatedBy: currentUser?.fullName || 'المشرف',
+                updatedByUserId: currentUser?.id || ''
+            };
+            await db.collection('employeeExpenses').doc(expenseId).update(updated);
+            state.employeeExpenses = (state.employeeExpenses || []).map(expense =>
+                expense.id === expenseId ? { ...expense, ...updated } : expense
+            );
+            renderEmployeeExpenses();
+            if (!document.getElementById('employeeDuesTab')?.classList.contains('hidden')) renderEmployeeDues();
+            showToast('تم تعديل الدفعة وتحديث مستحق الموظف');
+        } catch (error) {
+            console.warn('Edit employee expense error:', error);
+            showToast('تعذر تعديل الدفعة؛ تحقق من اتصال قاعدة البيانات');
+        } finally {
+            isBusy = false;
         }
     }
 
@@ -5823,7 +5870,7 @@
                     <td>${item.note || '-'}</td>
                     <td><strong class="mono">${formatMoney(item.amount || 0)} ${item.currency || 'YER'}</strong></td>
                     <td>${item.createdBy || '-'}</td>
-                    <td>${canManageUsers() ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeExpense('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button>` : '-'}</td>
+                    <td>${canManageUsers() ? `<div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="editEmployeeExpense('${item.id}')"><i class="fa-solid fa-pen"></i> تعديل</button><button class="btn btn-danger btn-sm" onclick="deleteEmployeeExpense('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button></div>` : '-'}</td>
                 </tr>
             `).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد مصروفات مسجلة في هذه القائمة</td></tr>';
         }
