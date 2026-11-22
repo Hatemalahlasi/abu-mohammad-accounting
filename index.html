@@ -945,7 +945,9 @@
         .sales-product-search>i{color:var(--muted)}
         .sales-product-search input{border:0!important;box-shadow:none!important;padding:8px!important;min-width:0}
         .invoice-product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;max-height:430px;overflow:auto;padding:2px}
-        .invoice-product-card{background:#fff;border:1px solid var(--border);border-radius:13px;padding:10px;display:flex;flex-direction:column;gap:7px;min-width:0;box-shadow:0 2px 7px rgba(15,76,129,.035)}
+        .invoice-product-card{background:#fff;border:1px solid var(--border);border-radius:13px;padding:10px;display:flex;flex-direction:column;gap:7px;min-width:0;box-shadow:0 2px 7px rgba(15,76,129,.035);width:100%;text-align:right;font-family:inherit;cursor:pointer}
+        .invoice-product-card:disabled{opacity:.5;cursor:not-allowed}
+        .invoice-product-add-label{margin-top:auto;font-size:11px;color:var(--success);font-weight:800}
         .invoice-product-card strong{font-size:12.5px;color:var(--text-main);line-height:1.5;min-height:36px;word-break:break-word}
         .invoice-product-meta{font-size:10.5px;color:var(--text-muted);display:flex;justify-content:space-between;gap:5px;flex-wrap:wrap}
         .invoice-product-price{font-weight:800;color:var(--primary);font-size:12px}
@@ -975,6 +977,61 @@
         .supplier-invoice-totals strong{font-size:17px;color:var(--primary);font-weight:900}
         @media(max-width:850px){.sales-workspace-grid{grid-template-columns:1fr}.invoice-product-grid{max-height:330px}.supplier-invoice-row{grid-template-columns:1fr 1fr}.supplier-invoice-row .supplier-item-name{grid-column:1/-1}.supplier-invoice-row .supplier-item-total{grid-column:span 1}}
         @media(max-width:520px){.invoice-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.invoice-line-fields{grid-template-columns:1fr 1fr}.invoice-line-top{grid-template-columns:minmax(0,1fr) auto}.supplier-invoice-row{grid-template-columns:1fr 1fr}.supplier-invoice-row .supplier-item-name{grid-column:1/-1}.supplier-invoice-row .supplier-item-total{grid-column:span 1}}
+
+        /* وضع نقطة البيع السريع للهاتف */
+        .sales-quick-title{display:flex;align-items:center;gap:6px;color:var(--primary);font-size:11px;font-weight:800;margin:2px 0 7px}
+        .sales-quick-title i{color:#d99a23}
+        .invoice-quick-products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:10px}
+        .quick-product-chip{min-width:0;border:1px solid #d8e5ef;background:#fff;border-radius:11px;padding:8px 7px;text-align:right;display:flex;flex-direction:column;gap:3px;cursor:pointer;box-shadow:0 2px 6px rgba(15,76,129,.04);font-family:inherit;min-height:58px}
+        .quick-product-chip strong{font-size:10.5px;line-height:1.4;color:#1f2937;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:29px}
+        .quick-product-chip span{font-size:9.5px;color:var(--success);font-weight:800}
+        .quick-products-hint{grid-column:1/-1;color:var(--text-muted);font-size:10px;padding:5px 2px}
+        .sales-cart-heading-actions{display:flex;align-items:center;gap:6px}
+        .sales-cart-close{display:none}
+        .sales-cart-extra-fields{margin-top:12px}
+        .sales-cart-summary{margin-top:12px}
+        .mobile-cart-backdrop,.mobile-cart-dock{display:none}
+        .invoice-product-card{padding:8px;gap:5px}
+        .invoice-product-card strong{min-height:30px;font-size:11.5px}
+        .invoice-product-card .btn{padding:7px 5px;font-size:10px}
+        .sales-product-search{position:relative}
+        .sales-product-search input{font-size:16px!important}
+        @media(max-width:700px){
+            body.sales-page-active{padding-bottom:88px}
+            .sales-workspace-grid{display:block;margin:9px 0 14px}
+            .sales-invoice-meta-grid{grid-template-columns:1fr 1fr;gap:8px}
+            .sales-invoice-meta-grid .form-group{margin-bottom:4px}
+            .sales-products-panel{padding:10px;border-radius:15px}
+            .sales-panel-heading{margin-bottom:9px}
+            .sales-product-search{position:sticky;top:4px;z-index:5;background:#fff;box-shadow:0 3px 10px rgba(15,76,129,.07)}
+            .invoice-quick-products{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+            .invoice-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:30vh;overflow:auto;overscroll-behavior:contain}
+            .invoice-product-card{padding:8px;border-radius:11px}
+            .invoice-product-card .invoice-product-price{font-size:11px}
+            .sales-cart-panel{display:none}
+            .sales-cart-panel.mobile-cart-open{display:block;position:fixed;z-index:1211;left:0;right:0;bottom:0;top:auto;max-height:82dvh;overflow:auto;overscroll-behavior:contain;border-radius:20px 20px 0 0;padding:14px 13px calc(18px + env(safe-area-inset-bottom));background:#f8fafc;box-shadow:0 -12px 40px rgba(15,23,42,.22);animation:salesCartSlideUp .18s ease-out}
+            .sales-cart-close{display:inline-flex}
+            .mobile-cart-backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.48);z-index:1210}
+            .mobile-cart-backdrop.show{display:block}
+            .mobile-cart-dock{display:flex;align-items:center;justify-content:space-between;gap:12px;position:fixed;z-index:1205;bottom:0;left:0;right:0;padding:10px 13px calc(10px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid #dbe3ec;box-shadow:0 -5px 20px rgba(15,23,42,.09);backdrop-filter:blur(12px)}
+            .mobile-cart-dock-total{display:flex;flex-direction:column;gap:2px;min-width:0}
+            .mobile-cart-dock-total small{font-size:10px;color:var(--text-muted)}
+            .mobile-cart-dock-total strong{font-size:15px;color:var(--primary);direction:ltr;white-space:nowrap}
+            .mobile-cart-dock .btn{min-width:145px;padding:11px 12px}
+            .sales-cart-extra-fields{grid-template-columns:1fr 1fr}
+            .sales-cart-summary{position:sticky;bottom:-18px;background:#fff;z-index:2;padding:10px;border:1px solid var(--primary);box-shadow:0 -4px 12px rgba(15,76,129,.07)}
+            .sales-cart-summary #saveInvoiceBtn{width:100%;}
+            .sales-cart-summary{align-items:stretch}
+            .sales-cart-summary>div{display:flex;align-items:center;justify-content:space-between;gap:8px}
+            .invoice-line-fields{gap:6px}
+            .invoice-item-row{padding:9px!important}
+        }
+        @media(max-width:390px){
+            .invoice-quick-products{grid-template-columns:repeat(2,minmax(0,1fr))}
+            .sales-cart-extra-fields{grid-template-columns:1fr}
+            .mobile-cart-dock .btn{min-width:128px}
+        }
+        @keyframes salesCartSlideUp{from{transform:translateY(24px);opacity:.7}to{transform:translateY(0);opacity:1}}
 
     </style>
 </head>
@@ -1135,7 +1192,7 @@
             <div class="card-box">
                 <div class="card-title"><span>إصدار فاتورة مبيعات سريعة</span></div>
 
-                <div class="grid-4">
+                <div class="grid-4 sales-invoice-meta-grid">
                     <div class="form-group">
                         <label>الفرع</label>
                         <select id="invBranchSelect" class="form-control" onchange="renderWarehouseCatalogDropdown()"></select>
@@ -1176,54 +1233,62 @@
                     </div>
                 </div>
 
-                <!-- واجهة اختيار الأصناف السهلة -->
+                <!-- شاشة بيع سريعة مناسبة للهاتف -->
                 <div class="sales-workspace-grid">
                     <div class="sales-products-panel">
                         <div class="sales-panel-heading">
-                            <div><strong><i class="fa-solid fa-boxes-stacked"></i> اختر الأصناف من المخزن</strong><small>اضغط على الصنف لإضافته مباشرة إلى الفاتورة</small></div>
+                            <div><strong><i class="fa-solid fa-boxes-stacked"></i> اختر الصنف</strong><small>ابحث بالاسم أو اختر من الأصناف السريعة؛ لن تحتاج لتصفح المخزن كله</small></div>
                             <span class="badge badge-sup" id="invoiceProductsCount">0 صنف</span>
                         </div>
                         <div class="sales-product-search">
                             <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="search" id="warehouseItemSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderWarehouseCatalogDropdown()">
+                            <input type="search" id="warehouseItemSearch" class="form-control" placeholder="اكتب اسم الصنف للعثور عليه فوراً..." oninput="renderWarehouseCatalogDropdown()" autocomplete="off">
                             <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('warehouseItemSearch').value=''; renderWarehouseCatalogDropdown();" title="مسح البحث"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                        <div id="invoiceProductGrid" class="invoice-product-grid"><div class="empty-products">اختر المخزن لعرض الأصناف</div></div>
+                        <div class="sales-quick-title"><i class="fa-solid fa-bolt"></i> الأصناف الأكثر استخداماً</div>
+                        <div id="invoiceQuickProducts" class="invoice-quick-products"><span class="quick-products-hint">تظهر هنا الأصناف التي تستخدمها كثيراً</span></div>
+                        <div id="invoiceProductGrid" class="invoice-product-grid"><div class="empty-products">اكتب جزءاً من اسم الصنف للبحث، أو اختر صنفاً سريعاً بالأعلى</div></div>
                         <select id="warehouseCatalogSelect" class="hidden" aria-hidden="true"><option value="">اختر صنفاً</option></select>
                     </div>
-                    <div class="sales-cart-panel">
+                    <div class="sales-cart-panel" id="salesCartPanel">
                         <div class="sales-panel-heading">
-                            <div><strong><i class="fa-solid fa-cart-shopping"></i> أصناف الفاتورة</strong><small>عدّل الكمية والسعر قبل الحفظ</small></div>
-                            <button type="button" class="btn btn-outline btn-sm" onclick="addInvoiceItemRow()"><i class="fa-solid fa-plus"></i> صنف يدوي</button>
+                            <div><strong><i class="fa-solid fa-cart-shopping"></i> سلة الفاتورة</strong><small id="salesCartSubheading">عدّل الكمية والسعر قبل الحفظ</small></div>
+                            <div class="sales-cart-heading-actions">
+                                <button type="button" class="btn btn-outline btn-sm sales-cart-close" onclick="closeMobileInvoiceCart()" aria-label="إغلاق السلة"><i class="fa-solid fa-xmark"></i></button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="addInvoiceItemRow()"><i class="fa-solid fa-plus"></i> صنف يدوي</button>
+                            </div>
                         </div>
                         <div id="invoiceItemsContainer" class="invoice-items-list"></div>
                         <div class="sales-cart-note"><i class="fa-solid fa-circle-info"></i> يتم التحقق من رصيد المخزون قبل اعتماد الفاتورة، ولن تُحفظ كمية تتجاوز المتاح.</div>
-                    </div>
-                </div>
-
-                <div class="grid-2">
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>الخصم</label>
-                        <input type="number" step="0.01" inputmode="decimal" id="invDiscount" class="form-control num-input" value="0.00" min="0" oninput="recalculateInvoiceTotal()">
-                    </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>البيان لكشف الحساب (رقم الفاتورة)</label>
-                        <div class="statement-builder">
-                            <span class="statement-prefix">عليكم فاتورة مبيعات برقم</span>
-                            <input type="text" id="invRefNumber" class="form-control num-input statement-num-box" inputmode="numeric" placeholder="رقم الفاتورة" oninput="updateInvoiceStatementPreview()">
+                        <div class="grid-2 sales-cart-extra-fields">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>الخصم</label>
+                                <input type="number" step="0.01" inputmode="decimal" id="invDiscount" class="form-control num-input" value="0.00" min="0" oninput="recalculateInvoiceTotal()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>رقم الفاتورة / البيان</label>
+                                <div class="statement-builder">
+                                    <span class="statement-prefix">عليكم فاتورة مبيعات برقم</span>
+                                    <input type="text" id="invRefNumber" class="form-control num-input statement-num-box" inputmode="numeric" placeholder="رقم الفاتورة" oninput="updateInvoiceStatementPreview()">
+                                </div>
+                                <div id="invStatementPreview" class="statement-preview">النص في الكشف: عليكم فاتورة مبيعات برقم —</div>
+                            </div>
                         </div>
-                        <div id="invStatementPreview" class="statement-preview">النص في الكشف: عليكم فاتورة مبيعات برقم —</div>
+                        <div class="summary-bar sales-cart-summary">
+                            <div>
+                                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">الإجمالي الصافي:</span>
+                                <div class="mono" id="invNetTotalDisplay" style="font-size:20px; color:var(--primary);">0.00 YER</div>
+                            </div>
+                            <button id="saveInvoiceBtn" class="btn btn-primary" onclick="saveSalesInvoice()">
+                                <i class="fa-solid fa-print"></i> حفظ وطباعة الفاتورة
+                            </button>
+                        </div>
                     </div>
                 </div>
-
-                <div class="summary-bar">
-                    <div>
-                        <span style="font-size:12px; color:var(--text-muted); font-weight:700;">الإجمالي الصافي:</span>
-                        <div class="mono" id="invNetTotalDisplay" style="font-size:20px; color:var(--primary);">0.00</div>
-                    </div>
-                    <button id="saveInvoiceBtn" class="btn btn-primary" onclick="saveSalesInvoice()">
-                        <i class="fa-solid fa-print"></i> حفظ وطباعة الفاتورة
-                    </button>
+                <div id="mobileCartBackdrop" class="mobile-cart-backdrop" onclick="closeMobileInvoiceCart()"></div>
+                <div id="mobileCartDock" class="mobile-cart-dock">
+                    <div class="mobile-cart-dock-total"><small id="mobileCartItemsCount">0 صنف</small><strong id="mobileCartTotal">0.00 YER</strong></div>
+                    <button type="button" class="btn btn-primary" onclick="openMobileInvoiceCart()"><i class="fa-solid fa-cart-shopping"></i> مراجعة الفاتورة</button>
                 </div>
             </div>
 
@@ -3122,10 +3187,13 @@ function initMenuPermissionCheckboxes() {
         document.getElementById('homeMenuContainer').classList.add('hidden');
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
         document.getElementById(tabId).classList.remove('hidden');
+        closeMobileInvoiceCart();
+        document.body.classList.toggle('sales-page-active', tabId === 'salesTab');
         if (tabId === 'salesTab') {
             renderWarehouseCatalogDropdown();
             updateInvoiceStatementPreview();
             if (!document.querySelector('#invoiceItemsContainer .invoice-item-row')) addInvoiceItemRow();
+            updateMobileCartDock();
             recalculateInvoiceTotal();
         }
         if (tabId === 'purchasesTab') {
@@ -3174,6 +3242,8 @@ function initMenuPermissionCheckboxes() {
     }
 
     function goBackHome() {
+        closeMobileInvoiceCart();
+        document.body.classList.remove('sales-page-active');
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
         document.getElementById('homeMenuContainer').classList.remove('hidden');
         applyHomeMenuPermissions();
@@ -3703,23 +3773,70 @@ function initMenuPermissionCheckboxes() {
         if (prevCustVch) custSelVch.value = prevCustVch;
     }
 
+    function getQuickInvoiceProducts(branchItems) {
+        const salesCount = new Map();
+        (state.invoices || []).forEach(inv => {
+            (inv.items || []).forEach(line => {
+                const key = line.stockItemId || `${String(line.name || '').trim().toLowerCase()}|${line.unit || 'حبة'}`;
+                const old = salesCount.get(key) || 0;
+                salesCount.set(key, old + Number(line.qty || 1));
+            });
+        });
+        return [...branchItems]
+            .filter(item => Number(item.qty || 0) > 0)
+            .sort((a, b) => {
+                const ak = salesCount.get(a.id) || salesCount.get(`${String(a.name || '').trim().toLowerCase()}|${a.unit || 'حبة'}`) || 0;
+                const bk = salesCount.get(b.id) || salesCount.get(`${String(b.name || '').trim().toLowerCase()}|${b.unit || 'حبة'}`) || 0;
+                return bk - ak;
+            })
+            .slice(0, 6);
+    }
+
+    function bindInvoiceProductButtons(root) {
+        root.querySelectorAll('[data-add-stock]').forEach(button => {
+            button.addEventListener('click', () => addStockProductToInvoice(button.getAttribute('data-add-stock')));
+        });
+    }
+
     function renderWarehouseCatalogDropdown() {
         const sel = document.getElementById('warehouseCatalogSelect');
         const grid = document.getElementById('invoiceProductGrid');
+        const quick = document.getElementById('invoiceQuickProducts');
         if (!sel || !grid) return;
         const branchId = document.getElementById('invBranchSelect')?.value || '';
         const q = (document.getElementById('warehouseItemSearch')?.value || '').trim().toLowerCase();
         if (!branchId || !isBranchAllowed(branchId)) {
             sel.innerHTML = '<option value="">لم يحدد المشرف مخزناً</option>';
             grid.innerHTML = '<div class="empty-products">لم يتم تحديد مخزن مسموح لهذا الحساب</div>';
+            if (quick) quick.innerHTML = '<span class="quick-products-hint">لم يتم تحديد مخزن لهذا الحساب</span>';
             const count = document.getElementById('invoiceProductsCount'); if (count) count.textContent = '0 صنف';
             return;
         }
-        const items = (state.warehouse || []).filter(w => (w.branchId || 'main_branch') === branchId && String(w.name || '').toLowerCase().includes(q));
-        sel.innerHTML = items.length ? items.map(w => `<option value="${w.id}">${w.name}</option>`).join('') : '<option value="">لا توجد أصناف</option>';
-        const count = document.getElementById('invoiceProductsCount'); if (count) count.textContent = `${items.length} صنف`;
+        const branchItems = (state.warehouse || []).filter(w => (w.branchId || 'main_branch') === branchId);
+        const count = document.getElementById('invoiceProductsCount');
+        if (count) count.textContent = `${branchItems.length} صنف بالمخزن`;
+
+        // Shortcuts: show only the most-used six items when search is empty.
+        if (quick) {
+            const quickItems = getQuickInvoiceProducts(branchItems);
+            quick.innerHTML = quickItems.length ? quickItems.map(item => {
+                const currency = item.priceCurrency || 'YER';
+                const price = Number(item.price || 0) > 0 ? `${formatMoney(item.price)} ${currency}` : 'أدخل السعر';
+                return `<button type="button" class="quick-product-chip" data-add-stock="${escapeUiText(item.id)}"><strong>${escapeUiText(item.name || 'صنف')}</strong><span>${price}</span></button>`;
+            }).join('') : '<span class="quick-products-hint">لا توجد أصناف متاحة في هذا المخزن</span>';
+            bindInvoiceProductButtons(quick);
+        }
+
+        if (!q) {
+            sel.innerHTML = '<option value="">اكتب اسم الصنف للبحث</option>';
+            grid.innerHTML = '<div class="empty-products"><i class="fa-solid fa-magnifying-glass"></i><br>اكتب جزءاً من اسم الصنف في خانة البحث، أو اضغط على أحد الأصناف السريعة بالأعلى.<br><small>لن نعرض قائمة المخزن الطويلة حتى لا تتعب في النزول.</small></div>';
+            return;
+        }
+
+        const items = branchItems.filter(w => String(w.name || '').toLowerCase().includes(q)).slice(0, 16);
+        sel.innerHTML = items.length ? items.map(w => `<option value="${escapeUiText(w.id)}">${escapeUiText(w.name)}</option>`).join('') : '<option value="">لا توجد أصناف</option>';
         if (!items.length) {
-            grid.innerHTML = '<div class="empty-products">لا توجد أصناف مطابقة. جرّب كلمة بحث أخرى أو راجع المخزن.</div>';
+            grid.innerHTML = '<div class="empty-products">لا توجد أصناف مطابقة. جرّب كتابة جزء آخر من الاسم.</div>';
             return;
         }
         grid.innerHTML = items.map(item => {
@@ -3727,13 +3844,14 @@ function initMenuPermissionCheckboxes() {
             const priceCurrency = item.priceCurrency || 'YER';
             const priceLabel = Number(item.price || 0) > 0 ? `${formatMoney(item.price)} ${priceCurrency}` : 'أدخل سعر البيع';
             const safeName = escapeUiText(item.name || 'صنف');
-            return `<div class="invoice-product-card">
+            return `<button type="button" class="invoice-product-card" data-add-stock="${escapeUiText(item.id)}" ${available <= 0 ? 'disabled' : ''}>
                 <strong>${safeName}</strong>
                 <div class="invoice-product-meta"><span>${escapeUiText(item.unit || 'حبة')}</span><span>المتاح: ${formatQty(available)}</span></div>
                 <div class="invoice-product-price">${priceLabel}</div>
-                <button type="button" class="btn btn-accent btn-sm" ${available <= 0 ? 'disabled' : ''} onclick="addStockProductToInvoice('${item.id}')"><i class="fa-solid fa-plus"></i> ${available > 0 ? 'إضافة للفاتورة' : 'نفد المخزون'}</button>
-            </div>`;
+                <span class="invoice-product-add-label"><i class="fa-solid fa-plus"></i> ${available > 0 ? 'إضافة' : 'نفد المخزون'}</span>
+            </button>`;
         }).join('');
+        bindInvoiceProductButtons(grid);
     }
 
     function escapeUiText(value) {
@@ -3748,11 +3866,34 @@ function initMenuPermissionCheckboxes() {
         const invoiceCurrency = document.getElementById('invCurrency')?.value || 'YER';
         const storedPriceCurrency = item.priceCurrency || 'YER';
         const canUseStoredPrice = storedPriceCurrency === invoiceCurrency;
-        addInvoiceItemRow({
-            name: item.name, unit: item.unit || 'حبة', qty: 1,
-            price: canUseStoredPrice ? Number(item.price || 0) : 0
-        });
-        showToast(canUseStoredPrice ? `أضيف ${item.name} إلى الفاتورة` : `أضيف ${item.name}. أدخل سعر البيع بعملة ${invoiceCurrency}`);
+        const container = document.getElementById('invoiceItemsContainer');
+        const existing = [...(container?.querySelectorAll('.invoice-item-row') || [])].find(row =>
+            row.dataset.stockId === String(item.id) || (
+                row.querySelector('.item-name')?.value.trim().toLowerCase() === String(item.name || '').trim().toLowerCase() &&
+                (row.querySelector('.item-unit')?.value || 'حبة') === (item.unit || 'حبة')
+            )
+        );
+        if (existing) {
+            const qtyInput = existing.querySelector('.item-qty');
+            const nextQty = Number(qtyInput?.value || 0) + 1;
+            if (nextQty > available) { showToast(`المتاح من ${item.name} هو ${formatQty(available)} فقط`); return; }
+            if (qtyInput) qtyInput.value = nextQty;
+            existing.dataset.stockId = String(item.id);
+            recalculateInvoiceTotal();
+        } else {
+            addInvoiceItemRow({
+                name: item.name, unit: item.unit || 'حبة', qty: 1,
+                price: canUseStoredPrice ? Number(item.price || 0) : 0,
+                stockItemId: item.id
+            });
+        }
+        updateMobileCartDock();
+        if (!canUseStoredPrice) showToast(`أضيف ${item.name}. أدخل سعر البيع بعملة ${invoiceCurrency}`);
+        else showToast(`تمت إضافة ${item.name} إلى السلة`);
+        // Stay on the product chooser; the cart is opened only when the cashier asks for it.
+        const search = document.getElementById('warehouseItemSearch');
+        if (search) search.value = '';
+        renderWarehouseCatalogDropdown();
     }
 
     function addSelectedWarehouseItemToInvoice() {
@@ -4547,11 +4688,13 @@ function initMenuPermissionCheckboxes() {
             rows[0].querySelector('.item-unit').value = unitVal;
             rows[0].querySelector('.item-qty').value = qtyVal;
             rows[0].querySelector('.item-price').value = priceVal;
+            if (prefill.stockItemId) rows[0].dataset.stockId = String(prefill.stockItemId);
             recalculateInvoiceTotal();
             return;
         }
         const row = document.createElement('div');
         row.className = 'invoice-item-row';
+        if (prefill?.stockItemId) row.dataset.stockId = String(prefill.stockItemId);
         row.innerHTML = `
             <div class="invoice-line-top">
                 <input type="text" class="form-control item-name" placeholder="اسم الصنف" value="${escapeUiText(nameVal)}">
@@ -4580,7 +4723,45 @@ function initMenuPermissionCheckboxes() {
         const discount = Number(document.getElementById('invDiscount').value || 0);
         const net = Math.max(0, subtotal - discount);
         document.getElementById('invNetTotalDisplay').textContent = `${formatMoney(net)} ${document.getElementById('invCurrency')?.value || 'YER'}`;
+        updateMobileCartDock();
         return net;
+    }
+
+    function updateMobileCartDock() {
+        const rows = [...document.querySelectorAll('#invoiceItemsContainer .invoice-item-row')];
+        const count = rows.reduce((sum, row) => sum + (row.querySelector('.item-name')?.value.trim() && Number(row.querySelector('.item-qty')?.value || 0) > 0 ? 1 : 0), 0);
+        const total = recalculateInvoiceTotalValueOnly();
+        const currency = document.getElementById('invCurrency')?.value || 'YER';
+        const countEl = document.getElementById('mobileCartItemsCount');
+        const totalEl = document.getElementById('mobileCartTotal');
+        const sub = document.getElementById('salesCartSubheading');
+        if (countEl) countEl.textContent = `${count} صنف في السلة`;
+        if (totalEl) totalEl.textContent = `${formatMoney(total)} ${currency}`;
+        if (sub) sub.textContent = `${count} صنف — عدّل الكمية والسعر قبل الحفظ`;
+    }
+
+    function recalculateInvoiceTotalValueOnly() {
+        let subtotal = 0;
+        document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(row => {
+            subtotal += Number(row.querySelector('.item-qty')?.value || 0) * Number(row.querySelector('.item-price')?.value || 0);
+        });
+        const discount = Number(document.getElementById('invDiscount')?.value || 0);
+        return Math.max(0, subtotal - discount);
+    }
+
+    function openMobileInvoiceCart() {
+        const panel = document.getElementById('salesCartPanel');
+        const backdrop = document.getElementById('mobileCartBackdrop');
+        if (!panel || !backdrop) return;
+        panel.classList.add('mobile-cart-open');
+        backdrop.classList.add('show');
+        document.body.classList.add('mobile-cart-visible');
+    }
+
+    function closeMobileInvoiceCart() {
+        document.getElementById('salesCartPanel')?.classList.remove('mobile-cart-open');
+        document.getElementById('mobileCartBackdrop')?.classList.remove('show');
+        document.body.classList.remove('mobile-cart-visible');
     }
 
     function openPrintModal(inv) {
@@ -4750,6 +4931,7 @@ function initMenuPermissionCheckboxes() {
                 const local = state.warehouse.find(item => item.id === requirement.item.id);
                 if (local) local.qty = Number(local.qty || 0) - requirement.qty;
             }
+            closeMobileInvoiceCart();
             document.getElementById('invoiceItemsContainer').innerHTML = '';
             addInvoiceItemRow();
             document.getElementById('invDiscount').value = '0.00';
