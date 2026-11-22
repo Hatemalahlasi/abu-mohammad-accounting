@@ -62,7 +62,7 @@
             .app-shell { padding: 24px 30px; }
         }
 
-        /* تصميم صفحة الدخول فقط: أحمر وأخضر بطابع مميز */
+        /* صفحة الدخول: خلفية بيضاء ولمسات خضراء وحمراء خفيفة جداً */
         .login-wrapper {
             position: relative;
             isolation: isolate;
@@ -71,12 +71,12 @@
             margin: 36px auto;
             padding: 30px 22px 26px;
             background:
-                radial-gradient(circle at 100% 0%, rgba(22, 163, 74, .16), transparent 34%),
-                radial-gradient(circle at 0% 100%, rgba(220, 38, 38, .15), transparent 36%),
-                linear-gradient(145deg, #f0fdf4 0%, #ffffff 48%, #fff1f2 100%);
-            border: 2px solid #166534;
+                radial-gradient(circle at 100% 0%, rgba(22, 163, 74, .045), transparent 34%),
+                radial-gradient(circle at 0% 100%, rgba(220, 38, 38, .035), transparent 36%),
+                #ffffff;
+            border: 1px solid #e5eee7;
             border-radius: 26px;
-            box-shadow: 0 24px 60px rgba(21, 128, 61, .15), 0 12px 34px rgba(185, 28, 28, .10);
+            box-shadow: 0 18px 46px rgba(25, 60, 40, .07), 0 8px 22px rgba(120, 30, 30, .025);
         }
 
         .login-wrapper::before {
@@ -86,19 +86,19 @@
             top: 0;
             right: 0;
             left: 0;
-            height: 7px;
-            background: linear-gradient(90deg, #b91c1c 0%, #ef4444 38%, #16a34a 62%, #14532d 100%);
+            height: 4px;
+            background: linear-gradient(90deg, rgba(22, 163, 74, .72) 0%, rgba(22, 163, 74, .72) 72%, rgba(220, 38, 38, .58) 100%);
         }
 
         .login-wrapper::after {
             content: "";
             position: absolute;
             z-index: -1;
-            width: 190px;
-            height: 190px;
-            left: -100px;
+            width: 170px;
+            height: 170px;
+            left: -105px;
             bottom: -115px;
-            border: 24px solid rgba(185, 28, 28, .055);
+            border: 18px solid rgba(22, 163, 74, .035);
             border-radius: 50%;
             pointer-events: none;
         }
@@ -107,53 +107,53 @@
             text-align: center;
             font-size: 23px;
             font-weight: 900;
-            color: #14532d;
+            color: #1f5135;
             margin-bottom: 5px;
-            text-shadow: 0 1px 0 #ffffff;
         }
 
         .login-wrapper p {
             text-align: center;
-            color: #b91c1c;
-            font-weight: 800;
+            color: #a34a4a;
+            font-weight: 700;
             font-size: 13px;
             margin-bottom: 22px;
         }
 
         .login-wrapper .form-group label {
-            color: #14532d;
+            color: #355b44;
             font-weight: 800;
         }
 
         .login-wrapper .form-control {
-            border: 1.5px solid #bbf7d0;
-            background: rgba(255, 255, 255, .96);
+            border: 1.5px solid #e2ebe5;
+            background: #ffffff;
             transition: border-color .18s ease, box-shadow .18s ease;
         }
 
         .login-wrapper .form-control:focus {
-            border-color: #16a34a;
-            box-shadow: 0 0 0 3px rgba(22, 163, 74, .15), 0 0 0 5px rgba(220, 38, 38, .055);
+            border-color: #76b58b;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, .075), 0 0 0 5px rgba(220, 38, 38, .025);
         }
 
         .login-btn-color {
-            background: linear-gradient(105deg, #166534 0%, #16a34a 46%, #dc2626 54%, #991b1b 100%);
+            background: linear-gradient(100deg, #23864e 0%, #176b3d 100%);
             color: #fff;
-            border: 1px solid rgba(255,255,255,.45);
-            box-shadow: 0 9px 22px rgba(21, 128, 61, .20), 0 5px 16px rgba(185, 28, 28, .16);
+            border: 1px solid rgba(22, 101, 52, .12);
+            border-bottom: 3px solid rgba(185, 28, 28, .48);
+            box-shadow: 0 7px 17px rgba(21, 128, 61, .12);
             transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
         }
 
         .login-btn-color:hover {
-            filter: saturate(1.12) brightness(1.04);
+            filter: brightness(1.035);
             transform: translateY(-1px);
-            box-shadow: 0 12px 26px rgba(21, 128, 61, .24), 0 7px 18px rgba(185, 28, 28, .19);
+            box-shadow: 0 9px 20px rgba(21, 128, 61, .16);
         }
 
         .login-wrapper .brand-logo {
-            border: 3px solid #16a34a;
-            outline: 3px solid rgba(185, 28, 28, .13);
-            box-shadow: 0 8px 25px rgba(21, 128, 61, .16), 0 5px 16px rgba(185, 28, 28, .10);
+            border: 1.5px solid #cfe5d5;
+            outline: 2px solid rgba(185, 28, 28, .055);
+            box-shadow: 0 7px 18px rgba(21, 128, 61, .07);
         }
 
         .brand-logo {
@@ -762,6 +762,135 @@
                 display: none !important;
             }
         }
+
+        .employee-dues-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .employee-dues-currency-card {
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            background: #fff;
+            padding: 12px;
+            min-width: 0;
+        }
+        .employee-dues-currency-card .currency-title {
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .employee-dues-currency-card .currency-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 11.5px;
+            margin-top: 5px;
+            color: var(--text-muted);
+        }
+        .employee-dues-currency-card .currency-line strong {
+            color: var(--text-main);
+            direction: ltr;
+            white-space: nowrap;
+        }
+        .employee-dues-detail-head {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 13px 15px;
+            border: 1px solid #d9e9df;
+            border-radius: 14px;
+            background: linear-gradient(120deg, #fbfefc 0%, #ffffff 78%, #fffdfd 100%);
+            margin-bottom: 12px;
+        }
+        .employee-dues-kpis {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 9px;
+            margin-bottom: 13px;
+        }
+        .employee-dues-kpi {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 11px;
+        }
+        .employee-dues-kpi span { display: block; color: var(--text-muted); font-size: 11px; font-weight: 700; }
+        .employee-dues-kpi strong { display: block; margin-top: 4px; font-size: 16px; font-weight: 900; direction: ltr; text-align: right; }
+        .employee-dues-pdf-area {
+            position: absolute;
+            left: -12000px;
+            top: 0;
+            width: 794px;
+            background: #fff;
+            color: #111827;
+            z-index: -1000;
+        }
+        .employee-dues-pdf-sheet {
+            direction: rtl;
+            font-family: Tahoma, Arial, sans-serif;
+            width: 100%;
+            padding: 26px;
+            background: #fff;
+            color: #111827;
+            page-break-after: always;
+            break-after: page;
+        }
+        .employee-dues-pdf-sheet:last-child { page-break-after: auto; break-after: auto; }
+        .employee-dues-pdf-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid #1d7045;
+            margin-bottom: 16px;
+        }
+        .employee-dues-pdf-header h2 { color: #174d32; font-size: 21px; margin-bottom: 5px; }
+        .employee-dues-pdf-header p { color: #64748b; font-size: 11px; }
+        .employee-dues-pdf-brand {
+            width: 62px; height: 62px; object-fit: contain;
+            border: 1px solid #e1ebe4; border-radius: 12px; padding: 4px;
+        }
+        .employee-dues-pdf-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            padding: 12px;
+            background: #f8fbf9;
+            border: 1px solid #e2ece5;
+            border-radius: 10px;
+            margin-bottom: 13px;
+            font-size: 12px;
+        }
+        .employee-dues-pdf-kpis {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .employee-dues-pdf-kpi {
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            padding: 10px;
+        }
+        .employee-dues-pdf-kpi small { display: block; color: #64748b; font-size: 10px; margin-bottom: 5px; }
+        .employee-dues-pdf-kpi b { font-size: 14px; direction: ltr; display: block; }
+        .employee-dues-pdf-sheet h3 { color: #174d32; font-size: 14px; margin: 14px 0 8px; }
+        .employee-dues-pdf-sheet table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        .employee-dues-pdf-sheet th { background: #edf5ef; color: #244b35; font-weight: 800; }
+        .employee-dues-pdf-sheet th, .employee-dues-pdf-sheet td { border: 1px solid #dce5df; padding: 7px 6px; text-align: right; }
+        .employee-dues-pdf-sheet .pdf-positive { color: #166534; font-weight: 800; }
+        .employee-dues-pdf-sheet .pdf-negative { color: #b91c1c; font-weight: 800; }
+        .employee-dues-pdf-footer { margin-top: 17px; padding-top: 8px; border-top: 1px solid #e5e7eb; color: #64748b; font-size: 9px; text-align: center; }
+        @media (max-width: 700px) {
+            .employee-dues-overview-grid { grid-template-columns: 1fr; }
+            .employee-dues-kpis { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -897,6 +1026,10 @@
                 <button class="nav-tab profit-tab" data-menu-key="employeeProductionTab" onclick="openFullPage('employeeProductionTab')">
                     <i class="fa-solid fa-people-carry-box"></i>
                     <span>إضافة شغل للموظفين</span>
+                </button>
+                <button class="nav-tab" data-menu-key="employeeDuesTab" onclick="openFullPage('employeeDuesTab')">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>مستحقات الموظفين وكشوف الحساب</span>
                 </button>
             </div>
         </div>
@@ -1857,6 +1990,69 @@
             </div>
         </section>
 
+        <!-- مستحقات الموظفين وكشوف الحساب -->
+        <section id="employeeDuesTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-file-invoice-dollar"></i> مستحقات الموظفين وكشوف الحساب</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+            <div class="employee-permission-note" id="employeeDuesPeriodLabel">حدد الشهر والموظف لعرض الإنتاج والمبالغ المصروفة والمتبقي، ويمكنك استخراج كشف PDF.</div>
+
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-filter"></i> تحديد كشف الحساب</span></div>
+                <div class="grid-3">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>الفترة / الشهر</label>
+                        <input type="month" id="employeeDuesPeriod" class="form-control" onchange="renderEmployeeDues()">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>الموظف</label>
+                        <select id="employeeDuesStaffSelect" class="form-control" onchange="renderEmployeeDuesDetail()">
+                            <option value="">اختر الموظف</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0; display:flex; align-items:flex-end; gap:7px;">
+                        <button type="button" class="btn btn-primary btn-full" onclick="exportEmployeeDuesPdf(false)">
+                            <i class="fa-solid fa-file-pdf"></i> PDF للموظف المحدد
+                        </button>
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+                    <button type="button" class="btn btn-accent" onclick="exportEmployeeDuesPdf(true)">
+                        <i class="fa-solid fa-file-pdf"></i> PDF شامل لجميع الموظفين
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="renderEmployeeDues()">
+                        <i class="fa-solid fa-rotate"></i> تحديث الكشف
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> إجمالي المستحقات حسب العملة</span></div>
+                <div id="employeeDuesCurrencyTotals" class="employee-dues-overview-grid"></div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-users"></i> ملخص مستحقات كل الموظفين</span></div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>الموظف</th><th>نظام الأجر</th><th>الإنتاج / الراتب المستحق</th><th>المبالغ التي استلمها</th><th>المتبقي له</th><th>التفاصيل</th></tr></thead>
+                        <tbody id="employeeDuesSummaryBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-box" id="employeeDuesDetailCard">
+                <div class="card-title"><span><i class="fa-solid fa-address-card"></i> كشف حساب الموظف التفصيلي</span></div>
+                <div id="employeeDuesSelectedDetail">
+                    <div class="employee-permission-note">اختر الموظف لعرض تفاصيل إنتاجه ومستحقاته والمبالغ التي استلمها.</div>
+                </div>
+            </div>
+            <div id="employeeDuesPdfArea" class="employee-dues-pdf-area" aria-hidden="true"></div>
+        </section>
+
         <section id="employeePermissionsTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-user-shield"></i> صلاحيات الموظفين</div>
@@ -2057,7 +2253,8 @@
         { key: 'employeesTab', label: 'الموظفون' },
         { key: 'employeePermissionsTab', label: 'الصلاحيات' },
         { key: 'employeeExpensesTab', label: 'مصروفات الموظفين' },
-        { key: 'employeeProductionTab', label: 'إضافة شغل للموظفين' }
+        { key: 'employeeProductionTab', label: 'إضافة شغل للموظفين' },
+        { key: 'employeeDuesTab', label: 'مستحقات الموظفين وكشوف الحساب' }
     ];
 
     const firebaseConfig = {
@@ -2561,6 +2758,9 @@
         if (tabId === 'employeeProductionTab') {
             renderEmployeeProduction();
         }
+        if (tabId === 'employeeDuesTab') {
+            renderEmployeeDues();
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -2974,6 +3174,7 @@
         }
         if (!document.getElementById('employeeExpensesTab')?.classList.contains('hidden')) renderEmployeeExpenses();
         if (!document.getElementById('employeeProductionTab')?.classList.contains('hidden')) renderEmployeeProduction();
+        if (!document.getElementById('employeeDuesTab')?.classList.contains('hidden')) renderEmployeeDues();
     }
 
     function populateDropdowns() {
@@ -5201,6 +5402,252 @@
             `).join('') : '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا يوجد إنتاج مسجل حتى الآن</td></tr>';
         }
         updateProductionPreview();
+    }
+
+    function getSelectedEmployeeDuesPeriod() {
+        const value = document.getElementById('employeeDuesPeriod')?.value || '';
+        return /^\d{4}-\d{2}$/.test(value) ? value : getCurrentPayrollPeriod();
+    }
+
+    function getEmployeeDuesData(staff, period) {
+        const production = (state.employeeProduction || []).filter(item =>
+            item.staffId === staff.id && (item.period || String(item.date || '').slice(0, 7)) === period
+        ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+        const expenses = (state.employeeExpenses || []).filter(item =>
+            item.staffId === staff.id && (item.period || String(item.date || '').slice(0, 7)) === period
+        ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+        const currency = getStaffSalaryCurrency(staff);
+        const productionTotal = isPieceworkStaff(staff)
+            ? production.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+            : 0;
+        const entitlement = isPieceworkStaff(staff) ? productionTotal : Number(staff.salary || 0);
+        const paid = expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+        const remaining = entitlement - paid;
+        const byWork = new Map();
+        production.forEach(item => {
+            const key = [item.rateId || '', item.workName || 'عمل', item.unit || ''].join('|');
+            if (!byWork.has(key)) byWork.set(key, {
+                name: item.workName || 'عمل', unit: item.unit || '-',
+                unitRate: Number(item.unitRate || 0), quantity: 0, amount: 0, records: 0
+            });
+            const group = byWork.get(key);
+            group.quantity += Number(item.quantity || 0);
+            group.amount += Number(item.amount || 0);
+            group.records++;
+        });
+        return { staff, period, currency, production, expenses, entitlement, paid, remaining, byWork: [...byWork.values()] };
+    }
+
+    function populateEmployeeDuesStaffOptions() {
+        const select = document.getElementById('employeeDuesStaffSelect');
+        if (!select) return [];
+        const previous = select.value;
+        const staff = getVisiblePayrollStaff();
+        select.innerHTML = '<option value="">اختر الموظف</option>' + staff.map(item =>
+            `<option value="${escapeEmployeeDuesHtml(item.id)}">${escapeEmployeeDuesHtml(item.fullName || 'موظف')} — ${isPieceworkStaff(item) ? 'بالقطعة' : 'راتب شهري'}</option>`
+        ).join('');
+        if (previous && staff.some(item => item.id === previous)) select.value = previous;
+        else if (staff.length) select.value = staff[0].id;
+        return staff;
+    }
+
+    function escapeEmployeeDuesHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+    }
+
+    function renderEmployeeDues() {
+        const periodInput = document.getElementById('employeeDuesPeriod');
+        if (periodInput && !periodInput.value) periodInput.value = getCurrentPayrollPeriod();
+        const period = getSelectedEmployeeDuesPeriod();
+        const staff = populateEmployeeDuesStaffOptions();
+        const label = document.getElementById('employeeDuesPeriodLabel');
+        if (label) label.textContent = `كشف الفترة ${period}: يظهر إجمالي ما أنجزه كل موظف، وما استلمه، والمتبقي له. لا يتم جمع العملات المختلفة معاً.`;
+
+        const totals = {};
+        staff.forEach(item => {
+            const data = getEmployeeDuesData(item, period);
+            if (!totals[data.currency]) totals[data.currency] = { earned: 0, paid: 0, remaining: 0, staffCount: 0 };
+            totals[data.currency].earned += data.entitlement;
+            totals[data.currency].paid += data.paid;
+            totals[data.currency].remaining += data.remaining;
+            totals[data.currency].staffCount++;
+        });
+        const totalsBox = document.getElementById('employeeDuesCurrencyTotals');
+        if (totalsBox) {
+            const codes = CURRENCY_CODES.filter(code => totals[code]);
+            totalsBox.innerHTML = codes.length ? codes.map(code => `
+                <div class="employee-dues-currency-card">
+                    <div class="currency-title">${CURRENCY_NAMES[code]} (${code})</div>
+                    <div class="currency-line"><span>إجمالي المستحق</span><strong>${formatMoney(totals[code].earned)}</strong></div>
+                    <div class="currency-line"><span>إجمالي المستلم</span><strong>${formatMoney(totals[code].paid)}</strong></div>
+                    <div class="currency-line"><span>إجمالي المتبقي</span><strong style="color:${totals[code].remaining < 0 ? 'var(--danger)' : 'var(--success)'}">${formatMoney(totals[code].remaining)}</strong></div>
+                    <div class="currency-line"><span>عدد الموظفين</span><strong>${totals[code].staffCount}</strong></div>
+                </div>
+            `).join('') : '<div class="employee-permission-note">لا توجد مستحقات مسجلة لهذه الفترة.</div>';
+        }
+
+        const tbody = document.getElementById('employeeDuesSummaryBody');
+        if (tbody) {
+            tbody.innerHTML = staff.length ? staff.map(item => {
+                const data = getEmployeeDuesData(item, period);
+                const system = isPieceworkStaff(item) ? 'بالقطعة' : 'راتب شهري';
+                const detail = isPieceworkStaff(item)
+                    ? `${data.production.length} سجل إنتاج`
+                    : 'استحقاق الراتب الشهري';
+                return `<tr>
+                    <td><strong>${escapeEmployeeDuesHtml(item.fullName || '-')}</strong><br><small>${detail}</small></td>
+                    <td>${system}</td>
+                    <td><strong class="mono">${formatMoney(data.entitlement)} ${data.currency}</strong></td>
+                    <td><span class="mono">${formatMoney(data.paid)} ${data.currency}</span></td>
+                    <td><strong class="mono" style="color:${data.remaining < 0 ? 'var(--danger)' : 'var(--success)'}">${formatMoney(data.remaining)} ${data.currency}</strong></td>
+                    <td><button type="button" class="btn btn-outline btn-sm" onclick="selectEmployeeDuesStaff('${escapeEmployeeDuesHtml(item.id)}')"><i class="fa-solid fa-eye"></i> كشف الحساب</button></td>
+                </tr>`;
+            }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد بيانات موظفين لعرضها</td></tr>';
+        }
+        renderEmployeeDuesDetail();
+    }
+
+    function selectEmployeeDuesStaff(staffId) {
+        const select = document.getElementById('employeeDuesStaffSelect');
+        if (select) select.value = staffId;
+        renderEmployeeDuesDetail();
+        document.getElementById('employeeDuesDetailCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderEmployeeDuesDetail() {
+        const target = document.getElementById('employeeDuesSelectedDetail');
+        if (!target) return;
+        const staffId = document.getElementById('employeeDuesStaffSelect')?.value || '';
+        const staff = getVisiblePayrollStaff().find(item => item.id === staffId);
+        if (!staff) {
+            target.innerHTML = '<div class="employee-permission-note">اختر الموظف لعرض تفاصيل إنتاجه ومستحقاته والمبالغ التي استلمها.</div>';
+            return;
+        }
+        const data = getEmployeeDuesData(staff, getSelectedEmployeeDuesPeriod());
+        const title = escapeEmployeeDuesHtml(staff.fullName || 'الموظف');
+        const earnedLabel = isPieceworkStaff(staff) ? 'إجمالي قيمة الإنتاج' : 'الراتب الشهري المستحق';
+        const workRows = data.byWork.length ? data.byWork.map(item => `
+            <tr><td>${escapeEmployeeDuesHtml(item.name)}</td><td>${escapeEmployeeDuesHtml(item.unit)}</td><td><span class="mono">${formatQty(item.quantity)}</span></td><td><span class="mono">${formatMoney(item.unitRate)} ${data.currency}</span></td><td><strong class="mono">${formatMoney(item.amount)} ${data.currency}</strong></td><td>${item.records}</td></tr>
+        `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا يوجد إنتاج مسجل في هذه الفترة</td></tr>';
+        const ledgerRows = [];
+        if (!isPieceworkStaff(staff)) {
+            ledgerRows.push({ date: `${data.period}-01`, order: '0', type: 'استحقاق راتب', details: 'الراتب الشهري', quantity: '-', rate: '-', earned: data.entitlement, paid: 0, actor: 'النظام' });
+        }
+        data.production.forEach(item => ledgerRows.push({
+            date: item.date || '-', order: item.createdAt || '', type: 'إنتاج',
+            details: `${item.workName || 'عمل'} (${item.unit || '-'})${item.note ? ` — ${item.note}` : ''}`,
+            quantity: `${formatQty(item.quantity)} ${item.unit || ''}`,
+            rate: `${formatMoney(item.unitRate || 0)} ${data.currency}`,
+            earned: Number(item.amount || 0), paid: 0, actor: item.createdBy || '-'
+        }));
+        data.expenses.forEach(item => ledgerRows.push({
+            date: item.date || '-', order: item.createdAt || '', type: 'استلام / دفعة',
+            details: item.note || 'مبلغ مستلم', quantity: '-', rate: '-',
+            earned: 0, paid: Number(item.amount || 0), actor: item.createdBy || '-'
+        }));
+        ledgerRows.sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.order).localeCompare(String(b.order)));
+        const historyRows = ledgerRows.length ? ledgerRows.map(item => `
+            <tr><td>${escapeEmployeeDuesHtml(item.date)}</td><td>${escapeEmployeeDuesHtml(item.type)}</td><td>${escapeEmployeeDuesHtml(item.details)}</td><td>${escapeEmployeeDuesHtml(item.quantity)}</td><td>${escapeEmployeeDuesHtml(item.rate)}</td><td class="pdf-positive">${item.earned ? `${formatMoney(item.earned)} ${data.currency}` : '—'}</td><td class="pdf-negative">${item.paid ? `${formatMoney(item.paid)} ${data.currency}` : '—'}</td><td>${escapeEmployeeDuesHtml(item.actor)}</td></tr>
+        `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد حركة مسجلة خلال هذه الفترة</td></tr>';
+        target.innerHTML = `
+            <div class="employee-dues-detail-head">
+                <div><strong style="font-size:16px;color:var(--primary);">${title}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${isPieceworkStaff(staff) ? 'موظف بنظام الأجر بالقطعة' : 'موظف براتب شهري'} — الفترة ${data.period}</div></div>
+                <span class="badge ${data.remaining < 0 ? 'badge-expense' : 'badge-cash'}">${data.remaining < 0 ? 'رصيد سالب' : 'مستحق للموظف'}</span>
+            </div>
+            <div class="employee-dues-kpis">
+                <div class="employee-dues-kpi"><span>${earnedLabel}</span><strong>${formatMoney(data.entitlement)} ${data.currency}</strong></div>
+                <div class="employee-dues-kpi"><span>إجمالي ما استلمه</span><strong>${formatMoney(data.paid)} ${data.currency}</strong></div>
+                <div class="employee-dues-kpi"><span>المتبقي له</span><strong style="color:${data.remaining < 0 ? 'var(--danger)' : 'var(--success)'}">${formatMoney(data.remaining)} ${data.currency}</strong></div>
+            </div>
+            ${isPieceworkStaff(staff) ? `
+                <div class="card-box" style="padding:12px;">
+                    <div class="card-title"><span>تفصيل ما أنجزه حسب نوع العمل</span></div>
+                    <div class="table-responsive"><table><thead><tr><th>نوع العمل</th><th>الوحدة</th><th>إجمالي الكمية</th><th>سعر الوحدة</th><th>قيمة الإنتاج</th><th>عدد العمليات</th></tr></thead><tbody>${workRows}</tbody></table></div>
+                </div>` : ''}
+            <div class="card-box" style="padding:12px;">
+                <div class="card-title"><span>كشف الحركة التفصيلي</span></div>
+                <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>البيان</th><th>الكمية</th><th>سعر الوحدة</th><th>مستحق</th><th>مستلم</th><th>سجل بواسطة</th></tr></thead><tbody>${historyRows}</tbody></table></div>
+            </div>
+        `;
+    }
+
+    function buildEmployeeDuesPdfSheet(staff, period, isLast = false) {
+        const data = getEmployeeDuesData(staff, period);
+        const name = escapeEmployeeDuesHtml(staff.fullName || 'الموظف');
+        const type = isPieceworkStaff(staff) ? 'أجر بالقطعة' : 'راتب شهري';
+        const productionRows = data.production.length ? data.production.map(item => `
+            <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.workName || 'عمل')} (${escapeEmployeeDuesHtml(item.unit || '-')})</td><td>${formatQty(item.quantity || 0)}</td><td>${formatMoney(item.unitRate || 0)} ${data.currency}</td><td>${formatMoney(item.amount || 0)} ${data.currency}</td><td>${escapeEmployeeDuesHtml(item.createdBy || '-')}</td></tr>
+        `).join('') : '<tr><td colspan="6" style="text-align:center;">لا يوجد إنتاج مسجل لهذه الفترة</td></tr>';
+        const workSummaryRows = data.byWork.length ? data.byWork.map(item => `
+            <tr><td>${escapeEmployeeDuesHtml(item.name)}</td><td>${escapeEmployeeDuesHtml(item.unit)}</td><td>${formatQty(item.quantity)}</td><td>${formatMoney(item.unitRate)} ${data.currency}</td><td>${formatMoney(item.amount)} ${data.currency}</td><td>${item.records}</td></tr>
+        `).join('') : '<tr><td colspan="6" style="text-align:center;">لا يوجد تفصيل إنتاج</td></tr>';
+        const expenseRows = data.expenses.length ? data.expenses.map(item => `
+            <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.note || 'مبلغ مستلم')}</td><td>${formatMoney(item.amount || 0)} ${data.currency}</td><td>${escapeEmployeeDuesHtml(item.createdBy || '-')}</td></tr>
+        `).join('') : '<tr><td colspan="4" style="text-align:center;">لا توجد مبالغ مصروفة / مستلمة</td></tr>';
+        const salaryRow = !isPieceworkStaff(staff) ? `<tr><td>${period}-01</td><td>الراتب الشهري المستحق</td><td>${formatMoney(data.entitlement)} ${data.currency}</td><td>النظام</td></tr>` : '';
+        return `
+            <div class="employee-dues-pdf-sheet">
+                <div class="employee-dues-pdf-header">
+                    <div><h2>معمل أبو محمد</h2><p>كشف حساب ومستحقات موظف — ${period}</p></div>
+                    <img class="employee-dues-pdf-brand" src="logo.png" alt="شعار المعمل" onerror="this.style.display='none'">
+                </div>
+                <div class="employee-dues-pdf-meta">
+                    <div><b>اسم الموظف:</b> ${name}</div><div><b>نظام الأجر:</b> ${type}</div>
+                    <div><b>المخزن:</b> ${escapeEmployeeDuesHtml(staff.warehouseBranchName || getAllBranches().find(branch => branch.id === staff.warehouseBranchId)?.name || 'غير محدد')}</div>
+                    <div><b>عملة الحساب:</b> ${data.currency}</div>
+                    <div><b>الفترة:</b> ${period}</div><div><b>تاريخ استخراج الكشف:</b> ${getLocalDateKey()}</div>
+                </div>
+                <div class="employee-dues-pdf-kpis">
+                    <div class="employee-dues-pdf-kpi"><small>إجمالي المستحق / الإنتاج</small><b>${formatMoney(data.entitlement)} ${data.currency}</b></div>
+                    <div class="employee-dues-pdf-kpi"><small>إجمالي المبالغ المستلمة</small><b>${formatMoney(data.paid)} ${data.currency}</b></div>
+                    <div class="employee-dues-pdf-kpi"><small>المتبقي للموظف</small><b style="color:${data.remaining < 0 ? '#b91c1c' : '#166534'}">${formatMoney(data.remaining)} ${data.currency}</b></div>
+                </div>
+                ${isPieceworkStaff(staff) ? `
+                    <h3>ملخص الإنتاج حسب نوع العمل</h3>
+                    <table><thead><tr><th>نوع العمل</th><th>الوحدة</th><th>إجمالي الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th><th>عدد السجلات</th></tr></thead><tbody>${workSummaryRows}</tbody></table>
+                    <h3>سجل الإنتاج التفصيلي</h3>
+                    <table><thead><tr><th>التاريخ</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th><th>سجل بواسطة</th></tr></thead><tbody>${productionRows}</tbody></table>
+                ` : `
+                    <h3>استحقاق الراتب الشهري</h3>
+                    <table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>المصدر</th></tr></thead><tbody>${salaryRow}</tbody></table>
+                `}
+                <h3>سجل المبالغ المصروفة / المستلمة</h3>
+                <table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>سجل بواسطة</th></tr></thead><tbody>${expenseRows}</tbody></table>
+                <div class="employee-dues-pdf-footer">تم استخراج هذا الكشف من نظام معمل أبو محمد — جميع المبالغ بعملة ${data.currency} ولا يوجد تحويل تلقائي للعملات.</div>
+            </div>
+        `;
+    }
+
+    async function exportEmployeeDuesPdf(allStaff = false) {
+        if (typeof html2pdf === 'undefined') { showToast('مكتبة PDF غير محملة؛ تحقق من اتصال الإنترنت ثم أعد المحاولة'); return; }
+        const period = getSelectedEmployeeDuesPeriod();
+        const available = getVisiblePayrollStaff();
+        const selectedId = document.getElementById('employeeDuesStaffSelect')?.value || '';
+        const selected = available.find(item => item.id === selectedId);
+        const staffList = allStaff ? available : (selected ? [selected] : []);
+        if (!staffList.length) { showToast(allStaff ? 'لا يوجد موظفون لاستخراج كشفهم' : 'اختر الموظف أولاً'); return; }
+        const area = document.getElementById('employeeDuesPdfArea');
+        if (!area) { showToast('تعذر تجهيز مساحة كشف PDF'); return; }
+        area.innerHTML = staffList.map((staff, index) => buildEmployeeDuesPdfSheet(staff, period, index === staffList.length - 1)).join('');
+        const filePart = allStaff ? 'جميع_الموظفين' : (staffList[0].fullName || 'موظف').replace(/[^\u0600-\u06FF\w-]+/g, '_');
+        const options = {
+            margin: [8, 7, 8, 7],
+            filename: `كشف_مستحقات_${filePart}_${period}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: '#ffffff' },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'] }
+        };
+        showToast('جاري تجهيز كشف المستحقات بصيغة PDF');
+        try {
+            await html2pdf().set(options).from(area).save();
+            showToast('تم تجهيز ملف كشف المستحقات');
+        } catch (error) {
+            console.warn('Employee dues PDF error:', error);
+            showToast('تعذر إنشاء PDF؛ حاول مرة أخرى بعد تحديث الصفحة');
+        }
     }
 
     async function deleteEmployeeExpense(expenseId) {
