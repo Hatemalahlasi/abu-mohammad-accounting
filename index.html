@@ -1834,7 +1834,7 @@
                 </button>
             </div>
 
-            <div class="card-box">
+            <div id="quantitiesPreviewCard" class="card-box hidden">
                 <div class="card-title"><span><i class="fa-solid fa-table"></i> الكميات المسجلة حالياً في المخازن</span></div>
                 <div class="table-responsive">
                     <table>
@@ -2479,6 +2479,14 @@
                                 </div>
                                 <div id="permissionTransferWarehouseChoices" class="perm-box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));"></div>
                             </div>
+                        </div>
+                        <div class="card-box" style="margin-top:12px; margin-bottom:0;">
+                            <div class="card-title"><span><i class="fa-solid fa-eye"></i> صلاحية عرض جدول أرصدة المخزون</span></div>
+                            <label class="perm-check" style="align-items:flex-start;">
+                                <input type="checkbox" id="permissionCanViewQuantitiesPreview">
+                                <span>السماح بعرض جدول «الكميات المسجلة حالياً في المخازن» للموظف، بما فيه الأرصدة وأسعار التكلفة والبيع</span>
+                            </label>
+                            <div class="employee-permission-note" style="margin-top:8px;">عند إيقاف هذا الخيار يستطيع الموظف إدخال الكميات حسب صلاحياته، لكن لن يظهر له جدول الكميات المسجلة أو تفاصيل الأسعار. المدير والمشرف العام يريان الجدول دائماً.</div>
                         </div>
                         <div class="card-box" style="margin-top:12px; margin-bottom:0;">
                             <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> صلاحيات مؤشرات الشاشة الرئيسية</span></div>
@@ -3358,6 +3366,8 @@ function initMenuPermissionCheckboxes() {
         editor?.classList.remove('hidden');
         document.getElementById('permissionCanEdit').checked = Boolean(emp.canEdit);
         document.getElementById('permissionCanDelete').checked = Boolean(emp.canDelete);
+        const viewQuantitiesPreview = document.getElementById('permissionCanViewQuantitiesPreview');
+        if (viewQuantitiesPreview) viewQuantitiesPreview.checked = emp.canViewQuantitiesPreview === true;
         const allowed = getAllowedMenusForUser(emp);
         document.querySelectorAll('#permissionMenusGrid .emp-menu-cb').forEach(cb => {
             cb.checked = allowed.includes(cb.value);
@@ -3390,6 +3400,7 @@ function initMenuPermissionCheckboxes() {
         const patch = {
             canEdit: document.getElementById('permissionCanEdit').checked,
             canDelete: document.getElementById('permissionCanDelete').checked,
+            canViewQuantitiesPreview: Boolean(document.getElementById('permissionCanViewQuantitiesPreview')?.checked),
             allowedMenus,
             dashboardWidgets: Object.fromEntries(Array.from(document.querySelectorAll('.emp-dashboard-cb')).map(cb => [cb.value, cb.checked])),
             warehouseBranchId: warehouseBranchIds[0] || '',
@@ -3410,6 +3421,7 @@ function initMenuPermissionCheckboxes() {
             const verifiedAccount = { ...verifiedSnap.data(), id: verifiedSnap.id };
             const same = (a, b) => JSON.stringify(normalizeBranchIds(a)) === JSON.stringify(normalizeBranchIds(b));
             if (!Array.isArray(verifiedAccount.allowedMenus) || allowedMenus.some(key => !verifiedAccount.allowedMenus.includes(key)) ||
+                verifiedAccount.canViewQuantitiesPreview !== patch.canViewQuantitiesPreview ||
                 !same(verifiedAccount.warehouseBranchIds, warehouseBranchIds) ||
                 !same(verifiedAccount.quantityBranchIds, quantityBranchIds) ||
                 !same(verifiedAccount.transferBranchIds, transferBranchIds)) {
@@ -4525,9 +4537,22 @@ function initMenuPermissionCheckboxes() {
         } finally { isBusy = false; btn.disabled = false; }
     }
 
+    function canViewQuantitiesPreviewTable(user = currentUser) {
+        if (!user) return false;
+        return hasFullAccess(user) || user.canViewQuantitiesPreview === true;
+    }
+
     function renderQuantitiesPreviewTable() {
+        const card = document.getElementById('quantitiesPreviewCard');
         const tbody = document.getElementById('quantitiesPreviewBody');
-        if (!tbody) return;
+        if (!card || !tbody) return;
+        const allowedToView = canViewQuantitiesPreviewTable(currentUser);
+        card.classList.toggle('hidden', !allowedToView);
+        if (!allowedToView) {
+            // لا نترك بيانات الأرصدة أو الأسعار ظاهرة في الصفحة عند عدم السماح.
+            tbody.innerHTML = '';
+            return;
+        }
         const selectedBranchId = document.getElementById('qtyBranchSelect')?.value || '';
         const visibleWarehouse = (state.warehouse || []).filter(item =>
             (!selectedBranchId || (item.branchId || 'main_branch') === selectedBranchId) &&
