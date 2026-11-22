@@ -2170,13 +2170,21 @@
                             <option value="">اختر العامل</option>
                         </select>
                     </div>
+                    <div class="form-group" style="grid-column:1/-1;">
+                        <label>نوع الصرفة</label>
+                        <select id="employeeDailyDisbursementMode" class="form-control" onchange="onEmployeeDisbursementModeChange()">
+                            <option value="daily">صرف يومي — لا يُخصم من الراتب أو المستحق</option>
+                            <option value="advance">سلفة / دفعة — تُخصم من راتب الموظف أو مستحق إنتاجه</option>
+                        </select>
+                        <small class="employee-permission-note">اختر «صرف يومي» للمبلغ المستقل، أو «سلفة / دفعة» إذا تريد احتساب المبلغ ضمن ما استلمه العامل وخصمه من مستحقه.</small>
+                    </div>
                     <div class="form-group">
                         <label>المبلغ المصروف</label>
                         <input type="number" step="0.01" min="0.01" id="employeeExpenseAmount" class="form-control num-input" placeholder="0.00" oninput="updateEmployeeExpensePreview()">
                     </div>
                     <div class="form-group">
                         <label>العملة</label>
-                        <select id="employeeDailyDisbursementCurrency" class="form-control" onchange="filterEmployeeExpenseCashboxes()">
+                        <select id="employeeDailyDisbursementCurrency" class="form-control" onchange="filterEmployeeExpenseCashboxes(); updateEmployeeExpensePreview();">
                             <option value="YER">ريال يمني (YER)</option>
                             <option value="SAR">ريال سعودي (SAR)</option>
                             <option value="USD">دولار أمريكي (USD)</option>
@@ -2184,7 +2192,7 @@
                     </div>
                     <div class="form-group">
                         <label>تاريخ الصرفة</label>
-                        <input type="date" id="employeeDailyDisbursementDate" class="form-control">
+                        <input type="date" id="employeeDailyDisbursementDate" class="form-control" onchange="updateEmployeeExpensePreview()">
                     </div>
                     <div class="form-group" style="grid-column:1/-1;">
                         <label>بيان الصرفة اليومية / ماذا استلم العامل؟</label>
@@ -2203,7 +2211,7 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-chart-column"></i> إجمالي الصرف اليومي لهذا الشهر</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-chart-column"></i> إجمالي الصرف والسلف لهذا الشهر</span></div>
                 <div id="employeeDailyDisbursementSummary" class="summary-strip"></div>
             </div>
 
@@ -2215,6 +2223,7 @@
                             <tr>
                                 <th>التاريخ</th>
                                 <th>العامل</th>
+                                <th>نوع الصرف</th>
                                 <th>البيان</th>
                                 <th>المبلغ</th>
                                 <th>الصندوق</th>
@@ -2226,7 +2235,7 @@
                     </table>
                 </div>
             </div>
-            <div class="employee-permission-note">تنبيه: الصرف اليومي هنا ليس سلفة من الراتب ولا دفعة من مستحق الإنتاج. لا يتغير به رصيد العامل المستحق؛ وإذا ربطت الصرفة بصندوق فسيُخصم المبلغ من رصيد الصندوق فقط.</div>
+            <div class="employee-permission-note">يوجد نوعان: «صرف يومي» لا يخصم من حق العامل، و«سلفة / دفعة» تُسجل ضمن المبالغ التي استلمها وتُخصم من راتبه الشهري أو مستحق إنتاجه. في الحالتين، إذا رُبطت الحركة بصندوق فسيُخصم المبلغ من رصيد الصندوق.</div>
         </section>
 
         <!-- تسجيل إنتاج الموظفين الذين يعملون بنظام القطعة -->
@@ -2984,7 +2993,13 @@
     }
 
     function getEmployeeExpensesForPeriod(staffId, period = getCurrentPayrollPeriod()) {
-        return state.employeeExpenses.filter(item => item.staffId === staffId && item.period === period);
+        const staff = getStaffById(staffId);
+        const currency = staff ? getStaffSalaryCurrency(staff) : 'YER';
+        return (state.employeeExpenses || []).filter(item =>
+            item.staffId === staffId &&
+            (item.period || String(item.date || '').slice(0, 7)) === period &&
+            (item.currency || currency) === currency
+        );
     }
 
     function getEmployeePeriodSpent(staffId, period = getCurrentPayrollPeriod()) {
@@ -5947,7 +5962,7 @@ function initMenuPermissionCheckboxes() {
         state.vouchers.filter(item => item.cashboxId === cashbox.id && (item.currency || currency) === currency)
             .forEach(item => movements.push({ date: item.date || '', type: item.type === 'receipt' ? 'سند قبض' : 'سند صرف', note: item.note || `سند ${item.refNumber || item.id}`, incoming: item.type === 'receipt' ? Number(item.amount || 0) : 0, outgoing: item.type === 'payment' ? Number(item.amount || 0) : 0, actor: item.employee || '' }));
         (state.employeeExpenses || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
-            .forEach(item => movements.push({ date: item.date || '', type: 'دفعة من مستحق موظف', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
+            .forEach(item => movements.push({ date: item.date || '', type: item.source === 'dailyDisbursementAdvance' ? 'سلفة مخصومة من مستحق موظف' : 'دفعة من مستحق موظف', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
         (state.employeeDailyDisbursements || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
             .forEach(item => movements.push({ date: item.date || '', type: 'صرفة يومية لعامل', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
         return movements.filter(item => item.date).sort((a,b) => String(a.date).localeCompare(String(b.date)));
@@ -7329,15 +7344,52 @@ function initMenuPermissionCheckboxes() {
         const canSeeCashboxes = hasFullAccess() || canAccessMenu('cashboxTab');
         if (cashboxGroup) cashboxGroup.classList.toggle('hidden', !canSeeCashboxes);
         filterEmployeeExpenseCashboxes();
+        onEmployeeDisbursementModeChange();
+    }
+
+    function getEmployeeDisbursementMode() {
+        return document.getElementById('employeeDailyDisbursementMode')?.value === 'advance' ? 'advance' : 'daily';
+    }
+
+    function onEmployeeDisbursementModeChange() {
+        const mode = getEmployeeDisbursementMode();
+        const staff = getDailyDisbursementStaff().find(item => item.id === (document.getElementById('employeeExpenseStaffSelect')?.value || ''));
+        const currencySelect = document.getElementById('employeeDailyDisbursementCurrency');
+        const btn = document.getElementById('saveEmployeeExpenseBtn');
+        const hint = document.getElementById('employeeExpenseEntryHint');
+        if (mode === 'advance' && staff && currencySelect) {
+            currencySelect.value = getStaffSalaryCurrency(staff);
+            currencySelect.disabled = true;
+        } else if (currencySelect) {
+            currencySelect.disabled = false;
+        }
+        if (btn) btn.innerHTML = mode === 'advance'
+            ? '<i class="fa-solid fa-hand-holding-dollar"></i> حفظ السلفة وخصمها من مستحق العامل'
+            : '<i class="fa-solid fa-floppy-disk"></i> حفظ الصرفة اليومية دون خصمها من مستحق العامل';
+        if (hint) {
+            if (mode === 'advance') {
+                hint.textContent = staff
+                    ? (isPieceworkStaff(staff)
+                        ? 'هذه سلفة تُضاف إلى المبالغ التي استلمها العامل وتُخصم من مستحق إنتاجه لهذا الشهر. العملة مرتبطة بعملة أجره.'
+                        : 'هذه سلفة تُضاف إلى المبالغ التي استلمها العامل وتُخصم من راتبه الشهري. العملة مرتبطة بعملة راتبه.')
+                    : 'اختر العامل لتحديد هل تُخصم السلفة من راتبه الشهري أو من مستحق إنتاجه.';
+            } else {
+                hint.textContent = 'الصرفة اليومية تُحفظ مستقلة ولا تُخصم من الراتب أو مستحق الإنتاج.';
+            }
+        }
+        filterEmployeeExpenseCashboxes();
         updateEmployeeExpensePreview();
     }
 
     function setEmployeeDailyCurrencyFromStaff() {
         const staff = getStaffById(document.getElementById('employeeExpenseStaffSelect')?.value || '');
         const currencySelect = document.getElementById('employeeDailyDisbursementCurrency');
-        if (staff && currencySelect) currencySelect.value = getStaffSalaryCurrency(staff);
-        filterEmployeeExpenseCashboxes();
-        updateEmployeeExpensePreview();
+        if (staff && currencySelect && getEmployeeDisbursementMode() === 'advance') {
+            currencySelect.value = getStaffSalaryCurrency(staff);
+        } else if (staff && currencySelect && getEmployeeDisbursementMode() === 'daily') {
+            currencySelect.value = getStaffSalaryCurrency(staff);
+        }
+        onEmployeeDisbursementModeChange();
     }
 
     function filterEmployeeExpenseCashboxes() {
@@ -7358,11 +7410,23 @@ function initMenuPermissionCheckboxes() {
         const preview = document.getElementById('employeeExpensePreview');
         if (!preview) return;
         if (!staff) {
-            preview.textContent = 'اختر العامل، ثم أدخل المبلغ وسبب الصرفة. لن يتم خصم هذا المبلغ من راتبه أو مستحق إنتاجه.';
+            preview.textContent = 'اختر العامل، ثم أدخل المبلغ وسبب الصرفة.';
             return;
         }
+        const mode = getEmployeeDisbursementMode();
         const currency = document.getElementById('employeeDailyDisbursementCurrency')?.value || 'YER';
         const amount = Number(document.getElementById('employeeExpenseAmount')?.value || 0);
+        if (mode === 'advance') {
+            const date = document.getElementById('employeeDailyDisbursementDate')?.value || getLocalDateKey();
+            const period = String(date).slice(0, 7);
+            const dues = getEmployeeDuesData(staff, period);
+            const after = dues.remaining - (amount > 0 ? amount : 0);
+            const sourceLabel = isPieceworkStaff(staff) ? 'مستحق الإنتاج' : 'الراتب الشهري';
+            preview.textContent = amount > 0
+                ? `سلفة للعامل ${staff.fullName}: ${formatMoney(amount)} ${dues.currency}. ستُخصم من ${sourceLabel}. المتبقي بعد التسجيل: ${formatMoney(after)} ${dues.currency}.`
+                : `سيتم خصم السلفة من ${sourceLabel} (${dues.currency})، ولن تُخلط مع الصرف اليومي غير المخصوم.`;
+            return;
+        }
         preview.textContent = amount > 0
             ? `صرفة يومية للعامل ${staff.fullName}: ${formatMoney(amount)} ${currency}. تُسجل كمصروف مستقل ولا تغيّر رصيده المستحق.`
             : `العامل المحدد: ${staff.fullName}. هذا التسجيل مستقل عن الراتب ومستحق الإنتاج.`;
@@ -7375,9 +7439,11 @@ function initMenuPermissionCheckboxes() {
         }
         const staffId = document.getElementById('employeeExpenseStaffSelect')?.value || '';
         const staff = getDailyDisbursementStaff().find(item => item.id === staffId);
+        const mode = getEmployeeDisbursementMode();
         const amount = Number(document.getElementById('employeeExpenseAmount')?.value || 0);
-        const currency = document.getElementById('employeeDailyDisbursementCurrency')?.value || 'YER';
-        const note = document.getElementById('employeeExpenseNote')?.value.trim() || 'صرفة يومية للعامل';
+        const selectedCurrency = document.getElementById('employeeDailyDisbursementCurrency')?.value || 'YER';
+        const currency = mode === 'advance' && staff ? getStaffSalaryCurrency(staff) : selectedCurrency;
+        const note = document.getElementById('employeeExpenseNote')?.value.trim() || (mode === 'advance' ? 'سلفة تخصم من مستحق العامل' : 'صرفة يومية للعامل');
         const date = document.getElementById('employeeDailyDisbursementDate')?.value || getLocalDateKey();
         const cashboxId = (hasFullAccess() || canAccessMenu('cashboxTab')) ? (document.getElementById('employeeExpenseCashboxSelect')?.value || '') : '';
         const cashbox = cashboxId ? state.cashboxes.find(box => box.id === cashboxId) : null;
@@ -7407,16 +7473,29 @@ function initMenuPermissionCheckboxes() {
                 createdBy: getAccountDisplayName(currentUser) || currentUser?.username || 'مستخدم',
                 createdByUserId: currentUser?.id || ''
             };
-            // Every intentional daily payout receives a fresh operation token: the same amount
-            // may legitimately be paid more than once to the same worker on the same day.
-            const saved = await createRecordOnce('employeeDailyDisbursements', 'emp_daily_out', {
-                staffId: record.staffId, amount: record.amount, currency: record.currency,
-                note: record.note, date: record.date, cashboxId: record.cashboxId,
-                actor: dedupeActorId(), operationToken: `${Date.now()}_${Math.random().toString(36).slice(2)}`
-            }, record);
-            if (!saved.created) { showToast('تم منع تكرار الصرفة نفسها؛ يبدو أنها سُجلت قبل قليل.'); return; }
-            record.id = saved.id;
-            state.employeeDailyDisbursements = (state.employeeDailyDisbursements || []).filter(item => item.id !== saved.id).concat(record);
+            if (mode === 'advance') {
+                // السلفة تُحفظ ضمن الدفعات المستلمة، فتُخصم من راتب الموظف أو مستحق إنتاجه.
+                record.source = 'dailyDisbursementAdvance';
+                record.deductionSource = isPieceworkStaff(staff) ? 'production' : 'salary';
+                record.paymentType = 'advance';
+                const saved = await createRecordOnce('employeeExpenses', 'emp_advance', {
+                    staffId: record.staffId, amount: record.amount, currency: record.currency,
+                    note: record.note, date: record.date, cashboxId: record.cashboxId,
+                    source: record.source, actor: dedupeActorId(), operationToken: `${Date.now()}_${Math.random().toString(36).slice(2)}`
+                }, record);
+                if (!saved.created) { showToast('تم منع تكرار السلفة نفسها؛ يبدو أنها سُجلت قبل قليل.'); return; }
+                record.id = saved.id;
+                state.employeeExpenses = (state.employeeExpenses || []).filter(item => item.id !== saved.id).concat(record);
+            } else {
+                const saved = await createRecordOnce('employeeDailyDisbursements', 'emp_daily_out', {
+                    staffId: record.staffId, amount: record.amount, currency: record.currency,
+                    note: record.note, date: record.date, cashboxId: record.cashboxId,
+                    actor: dedupeActorId(), operationToken: `${Date.now()}_${Math.random().toString(36).slice(2)}`
+                }, record);
+                if (!saved.created) { showToast('تم منع تكرار الصرفة نفسها؛ يبدو أنها سُجلت قبل قليل.'); return; }
+                record.id = saved.id;
+                state.employeeDailyDisbursements = (state.employeeDailyDisbursements || []).filter(item => item.id !== saved.id).concat(record);
+            }
             const amountInput = document.getElementById('employeeExpenseAmount');
             const noteInput = document.getElementById('employeeExpenseNote');
             if (amountInput) amountInput.value = '';
@@ -7424,14 +7503,71 @@ function initMenuPermissionCheckboxes() {
             renderEmployeeExpenses();
             renderCashboxesList();
             if (document.getElementById('cashboxStatementBody')) renderCashboxStatement();
-            showToast('تم حفظ الصرفة اليومية. لم يتم خصمها من راتب العامل أو مستحق إنتاجه.');
+            if (document.getElementById('employeeDuesSummaryBody')) renderEmployeeDues();
+            showToast(mode === 'advance'
+                ? `تم حفظ السلفة وخصمها من ${isPieceworkStaff(staff) ? 'مستحق إنتاج' : 'راتب'} العامل.`
+                : 'تم حفظ الصرفة اليومية دون خصمها من مستحق العامل.');
         } catch (error) {
-            console.warn('Record daily employee disbursement error:', error);
-            showToast('تعذر حفظ الصرفة اليومية؛ تحقق من اتصال قاعدة البيانات');
+            console.warn('Record employee disbursement error:', error);
+            showToast('تعذر حفظ الصرفة؛ تحقق من اتصال قاعدة البيانات');
         } finally {
             isBusy = false;
             if (btn) btn.disabled = false;
+            onEmployeeDisbursementModeChange();
         }
+    }
+
+    async function editEmployeeDisbursementRecord(recordId, recordKind) {
+        const isAdvance = recordKind === 'advance';
+        if (isAdvance) {
+            if (isBusy || !canManageUsers()) { showToast('تعديل السلف المخصومة متاح للمدير والمشرف فقط'); return; }
+            const item = (state.employeeExpenses || []).find(record => record.id === recordId && record.source === 'dailyDisbursementAdvance');
+            if (!item) return;
+            const amountText = prompt(`المبلغ الجديد لسلفة ${item.staffName || 'العامل'} (${item.currency || 'YER'}):`, String(item.amount || ''));
+            if (amountText === null) return;
+            const amount = Number(String(amountText).replace(/,/g, '').trim());
+            if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
+            if (item.cashboxId) {
+                const box = state.cashboxes.find(cashbox => cashbox.id === item.cashboxId);
+                if (box && amount > computeSystemCashboxBalance(box) + Number(item.amount || 0)) { showToast('رصيد الصندوق لا يكفي للمبلغ الجديد'); return; }
+            }
+            const note = prompt('بيان السلفة:', item.note || 'سلفة تخصم من مستحق العامل');
+            if (note === null) return;
+            if (!confirm('تأكيد تعديل السلفة؟ سيُعاد احتساب المبلغ المخصوم من راتب العامل أو مستحق إنتاجه.')) return;
+            isBusy = true;
+            try {
+                const patch = { amount, note: String(note).trim() || 'سلفة تخصم من مستحق العامل', updatedAt: new Date().toISOString(), updatedBy: getAccountDisplayName(currentUser) };
+                await db.collection('employeeExpenses').doc(recordId).update(patch);
+                state.employeeExpenses = state.employeeExpenses.map(record => record.id === recordId ? { ...record, ...patch } : record);
+                renderEmployeeExpenses(); renderCashboxesList();
+                if (document.getElementById('employeeDuesSummaryBody')) renderEmployeeDues();
+                showToast('تم تعديل السلفة وإعادة احتساب المتبقي');
+            } catch (error) { console.warn('Edit employee advance error:', error); showToast('تعذر تعديل السلفة'); }
+            finally { isBusy = false; }
+            return;
+        }
+        return editDailyEmployeeDisbursement(recordId);
+    }
+
+    async function deleteEmployeeDisbursementRecord(recordId, recordKind) {
+        const isAdvance = recordKind === 'advance';
+        if (isAdvance) {
+            if (isBusy || !canManageUsers()) { showToast('حذف السلف المخصومة متاح للمدير والمشرف فقط'); return; }
+            const item = (state.employeeExpenses || []).find(record => record.id === recordId && record.source === 'dailyDisbursementAdvance');
+            if (!item) return;
+            if (!confirm(`حذف سلفة ${item.staffName || 'العامل'} بمبلغ ${formatMoney(item.amount)} ${item.currency || 'YER'}؟ سيُعاد المبلغ إلى رصيد الصندوق إن كانت السلفة مرتبطة بصندوق، وسيُعاد احتساب مستحق العامل.`)) return;
+            isBusy = true;
+            try {
+                await db.collection('employeeExpenses').doc(recordId).delete();
+                state.employeeExpenses = state.employeeExpenses.filter(record => record.id !== recordId);
+                renderEmployeeExpenses(); renderCashboxesList();
+                if (document.getElementById('employeeDuesSummaryBody')) renderEmployeeDues();
+                showToast('تم حذف السلفة وإعادة احتساب مستحق العامل');
+            } catch (error) { console.warn('Delete employee advance error:', error); showToast('تعذر حذف السلفة'); }
+            finally { isBusy = false; }
+            return;
+        }
+        return deleteDailyEmployeeDisbursement(recordId);
     }
 
     async function editDailyEmployeeDisbursement(recordId) {
@@ -7486,18 +7622,24 @@ function initMenuPermissionCheckboxes() {
     function renderEmployeeExpenses() {
         const period = getCurrentPayrollPeriod();
         const label = document.getElementById('employeeExpensesPeriodLabel');
-        if (label) label.textContent = `الفترة الحالية: ${period}. هذا سجل للصرف اليومي الذي تسلّمه الإدارة للعمال؛ لا يُخصم من الراتب أو مستحق الإنتاج.`;
+        if (label) label.textContent = `الفترة الحالية: ${period}. اختر «صرف يومي» إذا لا تريد الخصم، أو «سلفة / دفعة» لخصم المبلغ من راتب العامل أو مستحق إنتاجه.`;
         populateEmployeeExpenseStaffOptions();
 
         const allowedStaffIds = new Set(getDailyDisbursementStaff().map(item => String(item.id)));
-        const records = (state.employeeDailyDisbursements || []).filter(item =>
-            (canManageUsers() || allowedStaffIds.has(String(item.staffId))) && (item.period || String(item.date || '').slice(0, 7)) === period
-        );
+        const allowedRecord = item => canManageUsers() || allowedStaffIds.has(String(item.staffId));
+        const dailyRecords = (state.employeeDailyDisbursements || [])
+            .filter(item => allowedRecord(item) && (item.period || String(item.date || '').slice(0, 7)) === period)
+            .map(item => ({ ...item, recordKind: 'daily' }));
+        const advanceRecords = (state.employeeExpenses || [])
+            .filter(item => item.source === 'dailyDisbursementAdvance' && allowedRecord(item) && (item.period || String(item.date || '').slice(0, 7)) === period)
+            .map(item => ({ ...item, recordKind: 'advance' }));
+        const records = [...dailyRecords, ...advanceRecords];
         const summary = document.getElementById('employeeDailyDisbursementSummary');
         if (summary) {
             summary.innerHTML = CURRENCY_CODES.map(currency => {
-                const total = records.filter(item => (item.currency || 'YER') === currency).reduce((sum, item) => sum + Number(item.amount || 0), 0);
-                return `<div class="mini-stat"><div class="mini-stat-label">إجمالي الصرف اليومي (${currency})</div><div class="mini-stat-val mono">${formatMoney(total)} ${currency}</div></div>`;
+                const dailyTotal = dailyRecords.filter(item => (item.currency || 'YER') === currency).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+                const advanceTotal = advanceRecords.filter(item => (item.currency || 'YER') === currency).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+                return `<div class="mini-stat"><div class="mini-stat-label">صرف يومي غير مخصوم (${currency})</div><div class="mini-stat-val mono">${formatMoney(dailyTotal)} ${currency}</div></div><div class="mini-stat"><div class="mini-stat-label">سلف مخصومة من المستحق (${currency})</div><div class="mini-stat-val mono">${formatMoney(advanceTotal)} ${currency}</div></div>`;
             }).join('');
         }
         const expenseBody = document.getElementById('employeeExpensesTableBody');
@@ -7507,13 +7649,14 @@ function initMenuPermissionCheckboxes() {
                 <tr>
                     <td>${escapeUiText(item.date || '-')}</td>
                     <td><strong>${escapeUiText(item.staffName || getStaffById(item.staffId)?.fullName || '-')}</strong></td>
+                    <td>${item.recordKind === 'advance' ? `<span class="badge badge-credit">${item.deductionSource === 'salary' ? 'سلفة تخصم من الراتب' : 'سلفة تخصم من مستحق الإنتاج'}</span>` : '<span class="badge badge-unit">صرف يومي غير مخصوم</span>'}</td>
                     <td>${escapeUiText(item.note || '-')}</td>
                     <td><strong class="mono">${formatMoney(item.amount || 0)} ${escapeUiText(item.currency || 'YER')}</strong></td>
                     <td>${escapeUiText(item.cashboxName || 'غير مربوط بصندوق')}</td>
                     <td>${escapeUiText(item.createdBy || '-')}</td>
-                    <td>${canManageUsers() ? `<div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="editDailyEmployeeDisbursement('${item.id}')"><i class="fa-solid fa-pen"></i> تعديل</button><button class="btn btn-danger btn-sm" onclick="deleteDailyEmployeeDisbursement('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button></div>` : '—'}</td>
+                    <td>${canManageUsers() ? `<div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="editEmployeeDisbursementRecord('${item.id}','${item.recordKind}')"><i class="fa-solid fa-pen"></i> تعديل</button><button class="btn btn-danger btn-sm" onclick="deleteEmployeeDisbursementRecord('${item.id}','${item.recordKind}')"><i class="fa-solid fa-trash"></i> حذف</button></div>` : '—'}</td>
                 </tr>
-            `).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">لا توجد صرفيات يومية مسجلة للعمال المسموح بهم خلال هذه الفترة</td></tr>';
+            `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد صرفيات أو سلف مسجلة للعمال المسموح بهم خلال هذه الفترة</td></tr>';
         }
     }
 
@@ -7771,10 +7914,12 @@ function initMenuPermissionCheckboxes() {
         const production = (state.employeeProduction || []).filter(item =>
             item.staffId === staff.id && (item.period || String(item.date || '').slice(0, 7)) === period
         ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
-        const expenses = (state.employeeExpenses || []).filter(item =>
-            item.staffId === staff.id && (item.period || String(item.date || '').slice(0, 7)) === period
-        ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
         const currency = getStaffSalaryCurrency(staff);
+        const expenses = (state.employeeExpenses || []).filter(item =>
+            item.staffId === staff.id &&
+            (item.period || String(item.date || '').slice(0, 7)) === period &&
+            (item.currency || currency) === currency
+        ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
         const productionTotal = isPieceworkStaff(staff)
             ? production.reduce((sum, item) => sum + Number(item.amount || 0), 0)
             : 0;
@@ -7901,7 +8046,8 @@ function initMenuPermissionCheckboxes() {
             earned: Number(item.amount || 0), paid: 0, actor: item.createdBy || '-'
         }));
         data.expenses.forEach(item => ledgerRows.push({
-            date: item.date || '-', order: item.createdAt || '', type: 'استلام / دفعة',
+            date: item.date || '-', order: item.createdAt || '',
+            type: item.source === 'dailyDisbursementAdvance' ? (isPieceworkStaff(staff) ? 'سلفة مخصومة من مستحق الإنتاج' : 'سلفة مخصومة من الراتب') : 'استلام / دفعة',
             details: item.note || 'مبلغ مستلم', quantity: '-', rate: '-',
             earned: 0, paid: Number(item.amount || 0), actor: item.createdBy || '-'
         }));
