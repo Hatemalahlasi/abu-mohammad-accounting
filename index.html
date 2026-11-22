@@ -579,6 +579,44 @@
             }
         }
 
+        /* شاشة إدخال الكميات على الهاتف: اسم الصنف كامل مع قائمة اختيار قابلة للبحث */
+        .qty-entry-empty { padding:14px; text-align:center; color:var(--text-muted); font-size:12px; }
+        .qty-item-picker { min-width:210px; }
+        .qty-item-search {
+            width:100%; min-height:46px; resize:vertical; white-space:pre-wrap;
+            line-height:1.5; overflow-wrap:anywhere; font-family:'Cairo',sans-serif;
+        }
+        .qty-item-suggestions {
+            display:grid; gap:6px; margin-top:6px; max-height:230px; overflow-y:auto;
+            padding:6px; background:#fff; border:1px solid var(--border); border-radius:10px;
+        }
+        .qty-item-suggestion {
+            display:block; width:100%; text-align:right; white-space:normal; overflow-wrap:anywhere;
+            line-height:1.5; padding:9px 10px; background:#f8fafc; color:var(--text-main);
+            border:1px solid var(--border); border-radius:9px; font-family:'Cairo',sans-serif;
+        }
+        .qty-item-suggestion small { display:block; color:var(--text-muted); margin-top:2px; }
+        @media (max-width: 600px) {
+            #quantitiesTab .card-box { padding:11px; }
+            .qty-entry-table-wrap { overflow:visible; border:0; background:transparent; }
+            #qtyAdjustmentRows { display:grid; gap:10px; }
+            #qtyAdjustmentRows .batch-qty-row {
+                display:grid; grid-template-columns:minmax(0,1fr) minmax(92px,.55fr);
+                gap:9px; padding:11px; border:1px solid var(--border); border-radius:13px;
+                background:#fff; box-shadow:0 3px 12px rgba(15,23,42,.04);
+            }
+            #qtyAdjustmentRows .batch-qty-row td { display:block; padding:0; border:0; min-width:0; }
+            #qtyAdjustmentRows .batch-qty-row td:first-child { grid-column:1 / -1; }
+            #qtyAdjustmentRows .batch-qty-row td:nth-child(2)::before { content:'الكمية'; display:block; font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px; }
+            #qtyAdjustmentRows .batch-qty-row td:nth-child(3)::before { content:'المتاح حالياً'; display:block; font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px; }
+            #qtyAdjustmentRows .batch-qty-row td:nth-child(4) { grid-column:1 / -1; text-align:left; }
+            .qty-item-picker { min-width:0; }
+            .qty-item-search { min-height:54px; font-size:14px; }
+            #qtyAdjustmentRows .form-control { min-width:0; }
+            #myQuantityHistoryCard .table-responsive { overflow-x:auto; }
+            #myQuantityHistoryCard table { min-width:560px; }
+        }
+
         .summary-bar {
             background: #fff;
             border: 1.5px solid var(--primary);
@@ -1824,15 +1862,26 @@
                     </div>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0;">
-                    <strong>أصناف الكميات (أضف عدة صفوف ثم احفظها مرة واحدة)</strong>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="addStockQuantityRow()"><i class="fa-solid fa-plus"></i> إضافة صف</button>
+                    <strong>أصناف الكميات</strong>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="addStockQuantityRow()"><i class="fa-solid fa-plus"></i> إضافة صنف</button>
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive qty-entry-table-wrap">
                     <table><thead><tr><th>الصنف</th><th>الكمية</th><th>المتاح حالياً</th><th>حذف</th></tr></thead><tbody id="qtyAdjustmentRows"></tbody></table>
+                    <div id="qtyEntryEmptyState" class="qty-entry-empty">اضغط «إضافة صنف» لإضافة صف جديد. بعد الحفظ تختفي صفوف الإدخال الفارغة وتظهر عملياتك المسجلة أسفل الصفحة.</div>
                 </div>
                 <button id="saveQtyBtn" class="btn btn-accent btn-full" style="margin-top:12px;" onclick="saveStockQuantity()">
-                    <i class="fa-solid fa-floppy-disk"></i> حفظ جميع صفوف الكميات
+                    <i class="fa-solid fa-floppy-disk"></i> حفظ الكميات المدخلة
                 </button>
+            </div>
+
+            <div id="myQuantityHistoryCard" class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> الكميات التي أدخلتها</span><span class="badge badge-unit" id="myQuantityHistoryCount">0 عملية</span></div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>التاريخ</th><th>الصنف</th><th>العملية</th><th>الكمية المسجلة</th><th>الرصيد بعد الحفظ</th></tr></thead>
+                        <tbody id="myQuantityHistoryBody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);">لا توجد عمليات مسجلة منك بعد</td></tr></tbody>
+                    </table>
+                </div>
             </div>
 
             <div id="quantitiesPreviewCard" class="card-box hidden">
@@ -3852,6 +3901,7 @@ function initMenuPermissionCheckboxes() {
         if (tabId === 'quantitiesTab') {
             applyQuantityUpdateModePermission();
             populateQuantityItems();
+            renderMyQuantityHistory();
             renderQuantitiesPreviewTable();
         }
         if (tabId === 'profitsTab') {
@@ -4324,6 +4374,7 @@ function initMenuPermissionCheckboxes() {
         renderBranchesChips();
         renderWarehouseTable();
         renderQuantitiesPreviewTable();
+        renderMyQuantityHistory();
         renderCustomersTable();
         if (activeStatementCustomerId) {
             renderCustomerStatement(activeStatementCustomerId, false);
@@ -4591,20 +4642,31 @@ function initMenuPermissionCheckboxes() {
         const branchId = document.getElementById('qtyBranchSelect')?.value || '';
         const container = document.getElementById('qtyAdjustmentRows');
         if (!container) return;
-        if (!container.querySelector('.batch-qty-row')) addStockQuantityRow();
         const items = isBranchAllowedForOperation(branchId, 'quantitiesTab')
             ? state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId)
             : [];
         container.querySelectorAll('.batch-qty-row').forEach(row => {
             const select = row.querySelector('.batch-qty-item');
+            const search = row.querySelector('.qty-item-search');
+            if (!select) return;
             const previous = select.value;
             select.innerHTML = '<option value="">اختر الصنف</option>' + items.map(item =>
-                `<option value="${item.id}">${item.name} (${item.unit || 'حبة'}) — متاح ${formatQty(item.qty || 0)}</option>`
+                `<option value="${escapeUiText(item.id)}">${escapeUiText(item.name)} (${escapeUiText(item.unit || 'حبة')}) — متاح ${formatQty(item.qty || 0)}</option>`
             ).join('');
-            if (previous && items.some(item => item.id === previous)) select.value = previous;
+            if (previous && items.some(item => item.id === previous)) {
+                select.value = previous;
+                const chosen = items.find(item => item.id === previous);
+                if (search && !search.value.trim()) search.value = `${chosen.name} (${chosen.unit || 'حبة'})`;
+            } else if (previous) {
+                select.value = '';
+                if (search) search.value = '';
+            }
             updateStockQuantityRowInfo(select);
         });
+        const emptyState = document.getElementById('qtyEntryEmptyState');
+        if (emptyState) emptyState.classList.toggle('hidden', container.querySelectorAll('.batch-qty-row').length > 0);
         renderQuantitiesPreviewTable();
+        renderMyQuantityHistory();
     }
 
     function addStockQuantityRow() {
@@ -4613,12 +4675,73 @@ function initMenuPermissionCheckboxes() {
         const row = document.createElement('tr');
         row.className = 'batch-qty-row';
         row.innerHTML = `
-            <td><select class="form-control batch-qty-item" onchange="updateStockQuantityRowInfo(this)"><option value="">اختر الصنف</option></select></td>
-            <td><input type="number" step="0.01" min="0.01" class="form-control num-input batch-qty-value" placeholder="الكمية"></td>
+            <td>
+                <div class="qty-item-picker">
+                    <textarea rows="2" class="form-control qty-item-search" placeholder="اكتب اسم الصنف أو اضغط هنا للاختيار" autocomplete="off" onfocus="renderStockQuantityItemSuggestions(this)" oninput="renderStockQuantityItemSuggestions(this)"></textarea>
+                    <select class="batch-qty-item hidden" tabindex="-1" aria-hidden="true"><option value="">اختر الصنف</option></select>
+                    <div class="qty-item-suggestions hidden"></div>
+                </div>
+            </td>
+            <td><input type="number" step="0.01" min="0.01" class="form-control num-input batch-qty-value" placeholder="أدخل الكمية"></td>
             <td><span class="batch-qty-current mono">-</span></td>
-            <td><button type="button" class="btn btn-danger btn-sm" title="حذف الصف" onclick="this.closest('tr').remove(); if(!document.querySelector('#qtyAdjustmentRows .batch-qty-row')) addStockQuantityRow();"><i class="fa-solid fa-trash"></i></button></td>`;
+            <td><button type="button" class="btn btn-danger btn-sm" title="حذف الصف" onclick="removeStockQuantityRow(this)"><i class="fa-solid fa-trash"></i> حذف</button></td>`;
         container.appendChild(row);
+        const emptyState = document.getElementById('qtyEntryEmptyState');
+        if (emptyState) emptyState.classList.add('hidden');
         populateQuantityItems();
+    }
+
+    function removeStockQuantityRow(button) {
+        const row = button?.closest('.batch-qty-row');
+        if (row) row.remove();
+        const container = document.getElementById('qtyAdjustmentRows');
+        const emptyState = document.getElementById('qtyEntryEmptyState');
+        if (emptyState) emptyState.classList.toggle('hidden', Boolean(container?.querySelector('.batch-qty-row')));
+    }
+
+    function renderStockQuantityItemSuggestions(input) {
+        const row = input?.closest('.batch-qty-row');
+        const box = row?.querySelector('.qty-item-suggestions');
+        const branchId = document.getElementById('qtyBranchSelect')?.value || '';
+        if (!row || !box) return;
+        const query = String(input.value || '').trim().toLocaleLowerCase('ar');
+        const items = isBranchAllowedForOperation(branchId, 'quantitiesTab')
+            ? state.warehouse.filter(item => (item.branchId || 'main_branch') === branchId)
+            : [];
+        const filtered = query
+            ? items.filter(item => String(item.name || '').toLocaleLowerCase('ar').includes(query))
+            : items;
+        const shown = filtered.slice(0, 40);
+        const selectedId = row.querySelector('.batch-qty-item')?.value || '';
+        const selectedItem = items.find(item => item.id === selectedId);
+        const selectedLabel = selectedItem ? `${selectedItem.name} (${selectedItem.unit || 'حبة'})`.toLocaleLowerCase('ar') : '';
+        const effectiveQuery = selectedLabel && query === selectedLabel ? '' : query;
+        const effectiveFiltered = effectiveQuery
+            ? items.filter(item => String(item.name || '').toLocaleLowerCase('ar').includes(effectiveQuery))
+            : items;
+        const effectiveShown = effectiveFiltered.slice(0, 40);
+        box.innerHTML = effectiveShown.length ? effectiveShown.map(item => `
+            <button type="button" class="qty-item-suggestion" data-item-id="${escapeUiText(item.id)}" onclick="selectStockQuantityItem(this)">
+                <strong>${escapeUiText(item.name)}</strong>
+                <small>${escapeUiText(item.unit || 'حبة')} · المتاح: ${formatQty(item.qty || 0)}</small>
+            </button>`).join('') : '<div class="qty-entry-empty">لا توجد أصناف مطابقة في هذا المخزن</div>';
+        box.classList.remove('hidden');
+    }
+
+    function selectStockQuantityItem(button) {
+        const row = button?.closest('.batch-qty-row');
+        const itemId = button?.dataset?.itemId || '';
+        if (!row || !itemId) return;
+        const item = state.warehouse.find(w => w.id === itemId);
+        const select = row.querySelector('.batch-qty-item');
+        const search = row.querySelector('.qty-item-search');
+        const box = row.querySelector('.qty-item-suggestions');
+        if (!item || !select) return;
+        select.value = itemId;
+        if (search) search.value = `${item.name} (${item.unit || 'حبة'})`;
+        box?.classList.add('hidden');
+        updateStockQuantityRowInfo(select);
+        row.querySelector('.batch-qty-value')?.focus();
     }
 
     function updateStockQuantityRowInfo(select) {
@@ -4627,6 +4750,32 @@ function initMenuPermissionCheckboxes() {
         const item = state.warehouse.find(w => w.id === select.value);
         const current = row.querySelector('.batch-qty-current');
         if (current) current.textContent = item ? `${formatQty(item.qty || 0)} ${item.unit || 'حبة'}` : '-';
+    }
+
+    function renderMyQuantityHistory() {
+        const tbody = document.getElementById('myQuantityHistoryBody');
+        const count = document.getElementById('myQuantityHistoryCount');
+        if (!tbody) return;
+        const actorId = String(currentUser?.id || '');
+        const actorName = normalizeStaffName(getAccountDisplayName(currentUser));
+        const logs = (state.warehouse || []).flatMap(item =>
+            (Array.isArray(item.quantityAdjustmentHistory) ? item.quantityAdjustmentHistory : []).map(log => ({
+                ...log, itemName: log.itemName || item.name || '', itemId: log.itemId || item.id,
+                branchName: log.branchName || item.branchName || '', branchId: log.branchId || item.branchId || 'main_branch'
+            }))
+        ).filter(log => {
+            if (log.actorId && actorId) return String(log.actorId) === actorId;
+            return normalizeStaffName(log.actorName || '') === actorName;
+        }).sort((a,b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || ''))).slice(0, 60);
+        if (count) count.textContent = `${logs.length} عملية`;
+        tbody.innerHTML = logs.length ? logs.map(log => `
+            <tr>
+                <td>${escapeUiText(log.date || '-')}</td>
+                <td><strong>${escapeUiText(log.itemName || '-')}</strong><small style="display:block;color:var(--text-muted);">${escapeUiText(log.branchName || '')}</small></td>
+                <td><span class="badge ${log.mode === 'set' ? 'badge-warning' : 'badge-cash'}">${log.mode === 'set' ? 'تعيين رصيد' : 'إضافة'}</span></td>
+                <td><strong class="mono">${formatQty(log.qty || 0)}</strong></td>
+                <td><strong class="mono">${formatQty(log.quantityAfter ?? 0)}</strong></td>
+            </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:16px;">لا توجد عمليات إدخال كميات مسجلة منك بعد</td></tr>';
     }
 
     function fillSelectedItemCurrentQty() {
@@ -4705,6 +4854,11 @@ function initMenuPermissionCheckboxes() {
                     if (markers.some(marker => marker?.key === markerKey)) return { duplicate: true };
                 }
                 const newQuantities = {};
+                const newLogs = {};
+                const nowIso = new Date().toISOString();
+                const todayKey = getLocalDateKey();
+                const actorId = String(currentUser?.id || currentUser?.username || 'unknown-user');
+                const actorName = getAccountDisplayName(currentUser) || currentUser?.username || 'مستخدم';
                 for (const data of snapshots) {
                     const current = data.snapshot.data() || {};
                     const currentQty = Number(current.qty || 0);
@@ -4713,21 +4867,49 @@ function initMenuPermissionCheckboxes() {
                     const markers = Array.isArray(current.__recentOperationMarkers) ? current.__recentOperationMarkers : [];
                     const recent = markers.filter(marker => marker && Number(marker.at || 0) > Date.now() - 10 * 60 * 1000);
                     recent.push({ key: markerKey, at: Date.now() });
-                    transaction.update(data.ref, { qty: nextQty, __recentOperationMarkers: recent.slice(-30) });
+                    const branch = state.branches.find(b => b.id === branchId);
+                    const log = {
+                        id: `${markerKey}_${data.entry.itemId}`,
+                        operationId: markerKey,
+                        itemId: data.entry.itemId,
+                        itemName: current.name || state.warehouse.find(w => w.id === data.entry.itemId)?.name || '',
+                        branchId,
+                        branchName: current.branchName || branch?.name || '',
+                        qty: data.entry.qty,
+                        previousQty: currentQty,
+                        quantityAfter: nextQty,
+                        mode,
+                        actorId,
+                        actorName,
+                        date: todayKey,
+                        createdAt: nowIso
+                    };
+                    const priorHistory = Array.isArray(current.quantityAdjustmentHistory) ? current.quantityAdjustmentHistory : [];
+                    const history = [...priorHistory, log].slice(-200);
+                    newLogs[data.entry.itemId] = log;
+                    transaction.update(data.ref, { qty: nextQty, __recentOperationMarkers: recent.slice(-30), quantityAdjustmentHistory: history });
                 }
-                return { duplicate: false, newQuantities };
+                return { duplicate: false, newQuantities, newLogs };
             });
             if (result.duplicate) { showToast('تم منع تكرار نفس عملية تحديث الكميات'); return; }
             Object.entries(result.newQuantities || {}).forEach(([itemId, qty]) => {
                 const localItem = state.warehouse.find(item => item.id === itemId);
-                if (localItem) localItem.qty = qty;
+                if (localItem) {
+                    localItem.qty = qty;
+                    localItem.quantityAdjustmentHistory = [...(localItem.quantityAdjustmentHistory || []), result.newLogs?.[itemId]].filter(Boolean).slice(-200);
+                }
             });
-            document.querySelectorAll('#qtyAdjustmentRows .batch-qty-value').forEach(input => input.value = '');
+            // بعد الحفظ أفرغ نموذج الإدخال بالكامل؛ لا يظهر صف فارغ تلقائياً.
+            const rowsContainer = document.getElementById('qtyAdjustmentRows');
+            if (rowsContainer) rowsContainer.innerHTML = '';
+            const emptyState = document.getElementById('qtyEntryEmptyState');
+            if (emptyState) emptyState.classList.remove('hidden');
             populateQuantityItems();
+            renderMyQuantityHistory();
             renderQuantitiesPreviewTable();
             renderWarehouseTable();
             renderStats();
-            showToast(`تم حفظ ${entries.length} صفوف كميات بنجاح`);
+            showToast(`تم حفظ ${entries.length} صنفاً. تظهر عملياتك المسجلة أسفل النموذج`);
         } catch (e) {
             console.warn('Bulk stock quantity error:', e);
             showToast(e?.message?.startsWith('STOCK_') ? 'تغير المخزن أثناء الحفظ؛ حدّث الصفحة وحاول مجدداً' : 'تعذر حفظ صفوف الكميات');
@@ -8385,7 +8567,6 @@ window.addEventListener('load',function(){
     toggleEmployeePayTypeFields();
     initMenuPermissionCheckboxes();
     if (document.getElementById('cashboxStatementPeriod')) document.getElementById('cashboxStatementPeriod').value = getCurrentPayrollPeriod();
-    if (document.getElementById('qtyAdjustmentRows')) addStockQuantityRow();
     toggleInvoicePaymentFields();
     togglePurchasePaymentFields();
 </script>
