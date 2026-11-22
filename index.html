@@ -651,6 +651,32 @@
             font-weight: 700;
             margin-bottom: 12px;
         }
+        .piece-rate-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 8px;
+            align-items: end;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .piece-rate-row .form-group { margin-bottom: 0; }
+        .piece-rate-row label { font-size: 11px; }
+        .production-preview {
+            padding: 12px;
+            border: 1px dashed var(--primary);
+            border-radius: 12px;
+            background: var(--primary-soft);
+            font-weight: 800;
+            color: var(--primary);
+            margin: 10px 0 12px;
+        }
+        @media (max-width: 650px) {
+            .piece-rate-row { grid-template-columns: 1fr 1fr; }
+            .piece-rate-row .piece-rate-name { grid-column: span 2; }
+        }
 
         .hidden { display: none !important; }
 
@@ -809,6 +835,10 @@
                 <button class="nav-tab expense-tab" data-menu-key="employeeExpensesTab" onclick="openFullPage('employeeExpensesTab')">
                     <i class="fa-solid fa-money-bill-transfer"></i>
                     <span>مصروفات الموظفين</span>
+                </button>
+                <button class="nav-tab profit-tab" data-menu-key="employeeProductionTab" onclick="openFullPage('employeeProductionTab')">
+                    <i class="fa-solid fa-people-carry-box"></i>
+                    <span>إنتاج الموظفين بالقطعة</span>
                 </button>
             </div>
         </div>
@@ -1551,7 +1581,7 @@
                         <div class="mini-stat-val mono" id="empCountStat">0</div>
                     </div>
                     <div class="mini-stat">
-                        <div class="mini-stat-label">إجمالي الرواتب الشهرية حسب العملة</div>
+                        <div class="mini-stat-label">إجمالي الرواتب الشهرية الثابتة حسب العملة</div>
                         <div class="mini-stat-val" id="empTotalSalariesStat" style="font-size:12px; color:var(--success); line-height:1.8;">0.00 YER</div>
                     </div>
                 </div>
@@ -1564,11 +1594,18 @@
                             <input type="text" id="newEmpFullName" class="form-control" placeholder="اسم الموظف">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
+                            <label>نظام الأجر</label>
+                            <select id="newEmpPayType" class="form-control" onchange="toggleEmployeePayTypeFields()">
+                                <option value="monthly">راتب شهري ثابت</option>
+                                <option value="piecework">بالقطعة / حسب الإنتاج</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="newEmpSalaryGroup" style="margin-bottom:0;">
                             <label>الراتب الشهري</label>
                             <input type="number" step="0.01" inputmode="decimal" id="newEmpSalary" class="form-control num-input" value="0.00" min="0" placeholder="0.00">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
-                            <label>عملة الراتب</label>
+                            <label id="newEmpCurrencyLabel">عملة الراتب / المستحقات</label>
                             <select id="newEmpSalaryCurrency" class="form-control">
                                 <option value="YER">ريال يمني (YER)</option>
                                 <option value="SAR">ريال سعودي (SAR)</option>
@@ -1582,11 +1619,19 @@
                             </select>
                         </div>
                     </div>
+                    <div id="newEmpPieceRatesPanel" class="card-box hidden" style="margin-top:12px; margin-bottom:0; padding:12px;">
+                        <div class="card-title">
+                            <span><i class="fa-solid fa-tags"></i> تسعيرة كل نوع قطعة / عمل</span>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="addEmployeePieceRateRow()"><i class="fa-solid fa-plus"></i> إضافة تسعيرة</button>
+                        </div>
+                        <div id="newEmpPieceRatesContainer"></div>
+                        <div class="employee-permission-note" style="margin:8px 0 0;">حدد اسم العمل والوحدة وسعر الوحدة الواحدة. يمكن إضافة أكثر من نوع، ولكل نوع سعر مستقل يحدده المدير.</div>
+                    </div>
                     <button id="saveEmployeeBtn" class="btn btn-primary btn-full" onclick="createEmployee()" style="margin-top:12px;">
                         <i class="fa-solid fa-user-check"></i> حفظ تعريف الموظف
                     </button>
                     <div class="employee-permission-note" style="margin-top:10px; margin-bottom:0;">
-                        هذه الصفحة لتعريف اسم الموظف وراتبه ومخزنه فقط. إنشاء اسم المستخدم وكلمة المرور يتم من زر «إضافة مستخدم» داخل صفحة «الصلاحيات».
+                        عرّف الموظف هنا واختر نظام أجره: راتب شهري ثابت، أو أجر بالقطعة مع تحديد سعر كل نوع عمل ووحدته. يسجل المشرف الكميات من زر «إنتاج الموظفين بالقطعة»، أما اسم المستخدم وكلمة المرور فمن صفحة «الصلاحيات».
                     </div>
                 </div>
 
@@ -1597,7 +1642,8 @@
                             <thead>
                                 <tr>
                                     <th>اسم الموظف</th>
-                                    <th>الراتب الشهري</th>
+                                    <th>نظام الأجر</th>
+                                    <th>الراتب / تسعيرة القطعة</th>
                                     <th>المخزن المحدد</th>
                                     <th>حساب الدخول</th>
                                     <th>الحالة</th>
@@ -1631,30 +1677,30 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>المبلغ المصروف</label>
+                        <label>المبلغ المصروف / المدفوع للموظف</label>
                         <input type="number" step="0.01" min="0.01" id="employeeExpenseAmount" class="form-control num-input" placeholder="0.00" oninput="updateEmployeeExpensePreview()">
                     </div>
                     <div class="form-group">
                         <label>البيان / سبب المصروف</label>
-                        <input type="text" id="employeeExpenseNote" class="form-control" placeholder="مثال: سلفة أو مصروف شخصي">
+                        <input type="text" id="employeeExpenseNote" class="form-control" placeholder="مثال: سلفة أو دفعة من المستحق">
                     </div>
                 </div>
-                <div id="employeeExpensePreview" class="employee-permission-note">اختر الموظف لعرض راتبه والمتبقي له.</div>
+                <div id="employeeExpensePreview" class="employee-permission-note">اختر الموظف لعرض راتبه أو مستحق إنتاجه والمتبقي له.</div>
                 <button id="saveEmployeeExpenseBtn" class="btn btn-primary btn-full" onclick="recordEmployeeExpense()">
-                    <i class="fa-solid fa-floppy-disk"></i> تسجيل المصروف وخصمه من الراتب
+                    <i class="fa-solid fa-floppy-disk"></i> تسجيل المصروف / الدفعة وتحديث المتبقي
                 </button>
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-wallet"></i> ملخص رواتب الموظفين والمتبقي لهذا الشهر</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-wallet"></i> ملخص مستحقات الموظفين والمتبقي لهذا الشهر</span></div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
                                 <th>الموظف</th>
-                                <th>الراتب</th>
-                                <th>المصروف / السلف</th>
-                                <th>المتبقي من الراتب</th>
+                                <th>الراتب / مستحق الإنتاج</th>
+                                <th>المصروف / المدفوع</th>
+                                <th>المتبقي للموظف</th>
                             </tr>
                         </thead>
                         <tbody id="employeeSalaryBalanceBody"></tbody>
@@ -1677,6 +1723,71 @@
                             </tr>
                         </thead>
                         <tbody id="employeeExpensesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- تسجيل إنتاج الموظفين الذين يعملون بنظام القطعة -->
+        <section id="employeeProductionTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-people-carry-box"></i> تسجيل إنتاج الموظفين بالقطعة</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+            <div class="employee-permission-note" id="employeeProductionPeriodLabel">يسجل المشرف عدد القطع التي أنجزها كل موظف، ويحسب النظام مستحقه حسب التسعيرة المحددة مسبقاً.</div>
+
+            <div class="card-box" id="employeeProductionEntryCard">
+                <div class="card-title"><span><i class="fa-solid fa-calculator"></i> تسجيل كمية عمل جديدة</span></div>
+                <div class="grid-4">
+                    <div class="form-group">
+                        <label>اختر الموظف</label>
+                        <select id="productionStaffSelect" class="form-control" onchange="populateProductionRateOptions()">
+                            <option value="">اختر موظفاً يعمل بالقطعة</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>نوع القطعة / العمل</label>
+                        <select id="productionRateSelect" class="form-control" onchange="updateProductionPreview()">
+                            <option value="">اختر نوع العمل</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>الكمية المنجزة</label>
+                        <input type="number" step="0.01" min="0.01" id="productionQuantity" class="form-control num-input" placeholder="مثال: 50" oninput="updateProductionPreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>تاريخ العمل</label>
+                        <input type="date" id="productionDate" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>ملاحظة (اختياري)</label>
+                    <input type="text" id="productionNote" class="form-control" placeholder="مثال: إنتاج الوردية الصباحية">
+                </div>
+                <div id="productionCalculationPreview" class="production-preview">اختر الموظف ونوع العمل وأدخل الكمية لاحتساب المستحق.</div>
+                <button id="saveProductionBtn" class="btn btn-primary btn-full" onclick="recordEmployeeProduction()">
+                    <i class="fa-solid fa-floppy-disk"></i> حفظ الإنتاج وإضافته إلى مستحق الموظف
+                </button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-wallet"></i> مستحقات عمال القطعة لهذا الشهر</span></div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>الموظف</th><th>قيمة الإنتاج</th><th>المبالغ المصروفة</th><th>المتبقي له</th></tr></thead>
+                        <tbody id="employeeProductionSummaryBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-list-check"></i> سجل الإنتاج المسجل</span></div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>التاريخ</th><th>الموظف</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th><th>سجل بواسطة</th><th>إجراء</th></tr></thead>
+                        <tbody id="employeeProductionTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -1881,7 +1992,8 @@
         { key: 'profitsTab', label: 'الأرباح' },
         { key: 'employeesTab', label: 'الموظفون' },
         { key: 'employeePermissionsTab', label: 'الصلاحيات' },
-        { key: 'employeeExpensesTab', label: 'مصروفات الموظفين' }
+        { key: 'employeeExpensesTab', label: 'مصروفات الموظفين' },
+        { key: 'employeeProductionTab', label: 'إنتاج الموظفين بالقطعة' }
     ];
 
     const firebaseConfig = {
@@ -1914,6 +2026,7 @@
         employees: [],
         staff: [],
         employeeExpenses: [],
+        employeeProduction: [],
         warehouse: []
     };
 
@@ -1988,6 +2101,25 @@
         return getEmployeeExpensesForPeriod(staffId, period).reduce((sum, item) => sum + Number(item.amount || 0), 0);
     }
 
+    function isPieceworkStaff(staff) {
+        return staff?.payType === 'piecework';
+    }
+
+    function getEmployeeProductionForPeriod(staffId, period = getCurrentPayrollPeriod()) {
+        return (state.employeeProduction || []).filter(item => item.staffId === staffId && item.period === period);
+    }
+
+    function getEmployeePeriodProductionEarnings(staffId, period = getCurrentPayrollPeriod()) {
+        return getEmployeeProductionForPeriod(staffId, period).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    }
+
+    function getEmployeePeriodEntitlement(staff, period = getCurrentPayrollPeriod()) {
+        if (!staff) return 0;
+        return isPieceworkStaff(staff)
+            ? getEmployeePeriodProductionEarnings(staff.id, period)
+            : Number(staff.salary || 0);
+    }
+
     function getVisiblePayrollStaff() {
         const staff = getAllStaff();
         if (canManageUsers()) return staff;
@@ -2001,7 +2133,7 @@
         const previous = sel.value || window.pendingNewUserStaffId || '';
         const available = getAllStaff().filter(staff => !getStaffLoginAccount(staff));
         sel.innerHTML = '<option value="">اختر الموظف</option>' + available.map(staff =>
-            `<option value="${staff.id}">${staff.fullName} — الراتب ${formatMoney(staff.salary || 0)} ${getStaffSalaryCurrency(staff)}</option>`
+            `<option value="${staff.id}">${staff.fullName} — ${isPieceworkStaff(staff) ? 'نظام القطعة' : `راتب ${formatMoney(staff.salary || 0)} ${getStaffSalaryCurrency(staff)}`}</option>`
         ).join('');
         if (previous && available.some(staff => staff.id === previous)) sel.value = previous;
         updateNewUserWarehouseInfo();
@@ -2204,14 +2336,14 @@
     function applyHomeMenuPermissions() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-menu-key]').forEach(btn => {
             const key = btn.getAttribute('data-menu-key');
-            const adminOnly = ['employeesTab', 'employeePermissionsTab'].includes(key);
+            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'employeeProductionTab'].includes(key);
             btn.classList.toggle('hidden', (adminOnly && !canManageUsers(currentUser)) || !canAccessMenu(key, currentUser));
         });
         applyDashboardWidgetPermissions();
     }
 
     function openFullPage(tabId) {
-        if (['employeesTab', 'employeePermissionsTab'].includes(tabId) && !canManageUsers(currentUser)) {
+        if (['employeesTab', 'employeePermissionsTab', 'employeeProductionTab'].includes(tabId) && !canManageUsers(currentUser)) {
             showToast('إدارة الموظفين والصلاحيات للمشرف العام والمدير فقط');
             return;
         }
@@ -2248,6 +2380,9 @@
         }
         if (tabId === 'employeeExpensesTab') {
             renderEmployeeExpenses();
+        }
+        if (tabId === 'employeeProductionTab') {
+            renderEmployeeProduction();
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -2330,7 +2465,7 @@
 
     function startRealtimeListeners() {
         stopRealtimeListeners();
-        const cols = ['branches', 'cashboxes', 'customers', 'suppliers', 'invoices', 'purchases', 'vouchers', 'employees', 'staff', 'employeeExpenses', 'warehouse'];
+        const cols = ['branches', 'cashboxes', 'customers', 'suppliers', 'invoices', 'purchases', 'vouchers', 'employees', 'staff', 'employeeExpenses', 'employeeProduction', 'warehouse'];
         cols.forEach(colName => {
             const unsub = db.collection(colName).onSnapshot(
                 snap => {
@@ -2506,7 +2641,7 @@
 
     async function reloadAllData(showMsg = false) {
         try {
-            const [branches, cashboxes, customers, suppliers, invoices, purchases, vouchers, employees, staff, employeeExpenses, warehouse] = await Promise.all([
+            const [branches, cashboxes, customers, suppliers, invoices, purchases, vouchers, employees, staff, employeeExpenses, employeeProduction, warehouse] = await Promise.all([
                 loadCollection('branches'),
                 loadCollection('cashboxes'),
                 loadCollection('customers'),
@@ -2517,9 +2652,10 @@
                 loadCollection('employees'),
                 loadCollection('staff'),
                 loadCollection('employeeExpenses'),
+                loadCollection('employeeProduction'),
                 loadCollection('warehouse')
             ]);
-            state = { branches, cashboxes, customers, suppliers, invoices, purchases, vouchers, employees, staff, employeeExpenses, warehouse };
+            state = { branches, cashboxes, customers, suppliers, invoices, purchases, vouchers, employees, staff, employeeExpenses, employeeProduction, warehouse };
             if (currentUser && currentUser.id) {
                 const updatedMe = state.employees.find(e => e.id === currentUser.id);
                 if (updatedMe) currentUser = updatedMe;
@@ -2656,6 +2792,7 @@
             loadEmployeePermissions();
         }
         if (!document.getElementById('employeeExpensesTab')?.classList.contains('hidden')) renderEmployeeExpenses();
+        if (!document.getElementById('employeeProductionTab')?.classList.contains('hidden')) renderEmployeeProduction();
     }
 
     function populateDropdowns() {
@@ -4100,12 +4237,64 @@
         document.getElementById('profitsTableBody').innerHTML = rowsHtml;
     }
 
+    let employeePieceRateRowCounter = 0;
+
+    function toggleEmployeePayTypeFields() {
+        const isPiecework = document.getElementById('newEmpPayType')?.value === 'piecework';
+        document.getElementById('newEmpSalaryGroup')?.classList.toggle('hidden', isPiecework);
+        document.getElementById('newEmpPieceRatesPanel')?.classList.toggle('hidden', !isPiecework);
+        const label = document.getElementById('newEmpCurrencyLabel');
+        if (label) label.textContent = isPiecework ? 'عملة أجر القطعة' : 'عملة الراتب';
+        const container = document.getElementById('newEmpPieceRatesContainer');
+        if (isPiecework && container && !container.children.length) addEmployeePieceRateRow();
+    }
+
+    function addEmployeePieceRateRow(rate = {}) {
+        const container = document.getElementById('newEmpPieceRatesContainer');
+        if (!container) return;
+        const rowId = `piece_rate_${++employeePieceRateRowCounter}`;
+        const row = document.createElement('div');
+        row.className = 'piece-rate-row';
+        row.id = rowId;
+        row.innerHTML = `
+            <div class="form-group piece-rate-name">
+                <label>اسم القطعة / نوع العمل</label>
+                <input type="text" class="form-control piece-rate-title" placeholder="مثال: تعبئة العبوة أو تركيب القطعة" value="${String(rate.name || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" />
+            </div>
+            <div class="form-group">
+                <label>الوحدة</label>
+                <select class="form-control piece-rate-unit">
+                    ${['حبة','شدة','وار','قطعة','كيلو','متر'].map(unit => `<option value="${unit}" ${rate.unit === unit ? 'selected' : ''}>${unit}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>سعر الوحدة</label>
+                <input type="number" min="0.01" step="0.01" class="form-control num-input piece-rate-price" placeholder="مثال: 10" value="${Number(rate.rate || 0) || ''}" />
+            </div>
+            <button type="button" class="btn btn-danger btn-sm" onclick="document.getElementById('${rowId}')?.remove()" title="حذف هذه التسعيرة"><i class="fa-solid fa-trash"></i></button>
+        `;
+        container.appendChild(row);
+    }
+
+    function collectEmployeePieceRates() {
+        const container = document.getElementById('newEmpPieceRatesContainer');
+        if (!container) return [];
+        return Array.from(container.querySelectorAll('.piece-rate-row')).map((row, index) => ({
+            id: `rate_${Date.now()}_${index}`,
+            name: row.querySelector('.piece-rate-title')?.value.trim() || '',
+            unit: row.querySelector('.piece-rate-unit')?.value || 'حبة',
+            rate: Number(row.querySelector('.piece-rate-price')?.value || 0)
+        })).filter(rate => rate.name && Number.isFinite(rate.rate) && rate.rate > 0);
+    }
+
     async function createEmployee() {
         if (isBusy || !canManageUsers()) return;
         const btn = document.getElementById('saveEmployeeBtn');
         const fullName = document.getElementById('newEmpFullName').value.trim();
-        const salary = Number(document.getElementById('newEmpSalary').value || 0);
+        const payType = document.getElementById('newEmpPayType')?.value || 'monthly';
+        const salary = payType === 'piecework' ? 0 : Number(document.getElementById('newEmpSalary').value || 0);
         const salaryCurrency = document.getElementById('newEmpSalaryCurrency').value || 'YER';
+        const pieceRates = payType === 'piecework' ? collectEmployeePieceRates() : [];
         const warehouseBranchId = document.getElementById('newEmpWarehouseBranch').value;
         const branch = getAllBranches().find(item => item.id === warehouseBranchId);
 
@@ -4113,12 +4302,16 @@
             showToast('أدخل اسم الموظف');
             return;
         }
-        if (!Number.isFinite(salary) || salary < 0) {
-            showToast('أدخل راتباً صحيحاً');
+        if (payType === 'monthly' && (!Number.isFinite(salary) || salary < 0)) {
+            showToast('أدخل راتباً شهرياً صحيحاً');
+            return;
+        }
+        if (payType === 'piecework' && !pieceRates.length) {
+            showToast('أضف نوع عمل واحداً على الأقل وحدد سعر الوحدة');
             return;
         }
         if (!CURRENCY_CODES.includes(salaryCurrency)) {
-            showToast('اختر عملة صحيحة للراتب');
+            showToast('اختر عملة صحيحة للأجر');
             return;
         }
         if (!warehouseBranchId || !branch) {
@@ -4133,8 +4326,10 @@
             const record = {
                 id,
                 fullName,
+                payType,
                 salary,
                 salaryCurrency,
+                pieceRates,
                 warehouseBranchId,
                 warehouseBranchName: branch.name,
                 active: true,
@@ -4147,9 +4342,14 @@
             document.getElementById('newEmpSalary').value = '0.00';
             document.getElementById('newEmpSalaryCurrency').value = 'YER';
             document.getElementById('newEmpWarehouseBranch').value = '';
+            document.getElementById('newEmpPayType').value = 'monthly';
+            document.getElementById('newEmpPieceRatesContainer').innerHTML = '';
+            toggleEmployeePayTypeFields();
             renderEmployeesTable();
             populateNewUserStaffOptions();
-            showToast('تم تعريف الموظف. لإضافة حساب دخول افتح «الصلاحيات» ثم «إضافة مستخدم»');
+            showToast(payType === 'piecework'
+                ? 'تم تعريف موظف القطعة وحفظ تسعيراته. سجل إنتاجه من زر «إنتاج الموظفين بالقطعة»'
+                : 'تم تعريف الموظف براتب شهري. لإضافة حساب دخول افتح «الصلاحيات»');
         } catch (e) {
             console.warn('Create staff error:', e);
             showToast('تعذر حفظ تعريف الموظف');
@@ -4202,6 +4402,8 @@
                 role,
                 salary: Number(staff.salary || 0),
                 salaryCurrency: getStaffSalaryCurrency(staff),
+                payType: staff.payType || 'monthly',
+                pieceRates: Array.isArray(staff.pieceRates) ? staff.pieceRates : [],
                 warehouseBranchId: role === 'supervisor' ? '' : (staff.warehouseBranchId || ''),
                 warehouseBranchName: role === 'supervisor' ? 'كل المخازن' : (staff.warehouseBranchName || ''),
                 canEdit: false,
@@ -4266,6 +4468,48 @@
         } catch (e) {
             console.warn('Update staff warehouse error:', e);
             showToast('تعذر تحديث مخزن الموظف');
+        } finally {
+            isBusy = false;
+        }
+    }
+
+    async function editEmployeePaySettings(staffId) {
+        const staff = getStaffById(staffId);
+        if (!staff) return;
+        if (!isPieceworkStaff(staff)) return editEmployeeSalary(staffId);
+        const current = (staff.pieceRates || []).map(rate => `${rate.name} | ${rate.unit} | ${rate.rate}`).join('\n');
+        const answer = prompt(
+            `تعديل تسعيرات (${staff.fullName})\nاكتب كل نوع عمل في سطر بهذا الترتيب:
+اسم العمل | الوحدة | سعر الوحدة\nالوحدات المسموحة: حبة، شدة، وار، قطعة، كيلو، متر`,
+            current
+        );
+        if (answer === null) return;
+        const allowedUnits = ['حبة', 'شدة', 'وار', 'قطعة', 'كيلو', 'متر'];
+        const rates = answer.split(/\r?\n/).map((line, index) => {
+            const parts = line.split('|').map(part => part.trim());
+            const name = parts[0] || '';
+            const unit = parts[1] || 'حبة';
+            const rate = Number(parts[2] || 0);
+            if (!name || !Number.isFinite(rate) || rate <= 0 || !allowedUnits.includes(unit)) return null;
+            return { id: `rate_${Date.now()}_${index}`, name, unit, rate };
+        }).filter(Boolean);
+        if (!rates.length) {
+            showToast('لم تُحفظ التسعيرة: أدخل سطراً صحيحاً واحداً على الأقل');
+            return;
+        }
+        if (isBusy || !canManageUsers()) return;
+        isBusy = true;
+        try {
+            await db.collection('staff').doc(staffId).update({ pieceRates: rates });
+            staff.pieceRates = rates;
+            const linked = getStaffLoginAccount(staff);
+            if (linked) await db.collection('employees').doc(linked.id).update({ pieceRates: rates });
+            renderEmployeesTable();
+            populateProductionRateOptions();
+            showToast('تم تحديث تسعيرات الموظف. سجلات الإنتاج السابقة لا تتغير');
+        } catch (e) {
+            console.warn('Update piece rates error:', e);
+            showToast('تعذر تحديث التسعيرات');
         } finally {
             isBusy = false;
         }
@@ -4378,7 +4622,7 @@
         if (countEl) countEl.textContent = String(staff.length);
         if (salaryEl) {
             const totals = { YER: 0, SAR: 0, USD: 0 };
-            staff.forEach(item => { totals[getStaffSalaryCurrency(item)] += Number(item.salary || 0); });
+            staff.filter(item => !isPieceworkStaff(item)).forEach(item => { totals[getStaffSalaryCurrency(item)] += Number(item.salary || 0); });
             salaryEl.textContent = CURRENCY_CODES.filter(code => totals[code] !== 0).map(code => `${formatMoney(totals[code])} ${code}`).join(' | ') || '0.00 YER';
         }
 
@@ -4390,17 +4634,20 @@
             return `
                 <tr>
                     <td><strong>${item.fullName || '-'}</strong></td>
-                    <td><span class="mono">${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}</span></td>
+                    <td>${isPieceworkStaff(item) ? '<span class="badge badge-sup">بالقطعة</span>' : '<span class="badge badge-cash">راتب شهري</span>'}</td>
+                    <td>${isPieceworkStaff(item)
+                        ? (item.pieceRates || []).map(rate => `${rate.name}: ${formatMoney(rate.rate)} ${getStaffSalaryCurrency(item)} / ${rate.unit}`).join('<br>') || '-'
+                        : `<span class="mono">${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}</span>`}</td>
                     <td>${branchName}</td>
                     <td>${account ? `<span class="badge badge-cash">${accountLabel}</span>` : `<span class="badge badge-unit">${accountLabel}</span>`}</td>
                     <td>${active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
                     <td style="white-space:nowrap;">
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeWarehouse('${item.id}')" title="تحديد المخزن"><i class="fa-solid fa-warehouse"></i> المخزن</button>` : ''}
-                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeSalary('${item.id}')" title="تعديل الراتب"><i class="fa-solid fa-pen"></i> الراتب</button>` : ''}
+                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeePaySettings('${item.id}')" title="تعديل الراتب أو التسعيرة"><i class="fa-solid fa-pen"></i> ${isPieceworkStaff(item) ? 'التسعيرة' : 'الراتب'}</button>` : ''}
                     </td>
                 </tr>
             `;
-        }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون معرفون</td></tr>';
+        }).join('') : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون معرفون</td></tr>';
         populateEmployeePermissionOptions();
         populateNewUserStaffOptions();
     }
@@ -4434,7 +4681,7 @@
         const previous = sel.value;
         const staff = getVisiblePayrollStaff();
         sel.innerHTML = '<option value="">اختر الموظف</option>' + staff.map(item =>
-            `<option value="${item.id}">${item.fullName} — ${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}</option>`
+            `<option value="${item.id}">${item.fullName} — ${isPieceworkStaff(item) ? 'عامل بالقطعة' : `${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}`}</option>`
         ).join('');
         if (previous && staff.some(item => item.id === previous)) sel.value = previous;
         else if (staff.length === 1) sel.value = staff[0].id;
@@ -4452,10 +4699,11 @@
             return;
         }
         const currency = getStaffSalaryCurrency(staff);
-        const salary = Number(staff.salary || 0);
+        const entitlement = getEmployeePeriodEntitlement(staff);
         const spent = getEmployeePeriodSpent(staff.id);
-        const remaining = salary - spent;
-        preview.textContent = `راتب ${staff.fullName}: ${formatMoney(salary)} ${currency} | المصروف هذا الشهر: ${formatMoney(spent)} ${currency} | المتبقي: ${formatMoney(remaining)} ${currency}`;
+        const remaining = entitlement - spent;
+        const label = isPieceworkStaff(staff) ? 'مستحق الإنتاج' : 'الراتب الشهري';
+        preview.textContent = `${label} لـ ${staff.fullName}: ${formatMoney(entitlement)} ${currency} | المصروف / المدفوع هذا الشهر: ${formatMoney(spent)} ${currency} | المتبقي له: ${formatMoney(remaining)} ${currency}`;
     }
 
     async function recordEmployeeExpense() {
@@ -4474,11 +4722,11 @@
             return;
         }
         const period = getCurrentPayrollPeriod();
-        const salary = Number(staff.salary || 0);
+        const entitlement = getEmployeePeriodEntitlement(staff, period);
         const spent = getEmployeePeriodSpent(staff.id, period);
-        const remaining = salary - spent;
+        const remaining = entitlement - spent;
         if (amount > remaining) {
-            showToast(`المبلغ أكبر من المتبقي من الراتب (${formatMoney(Math.max(0, remaining))} ${getStaffSalaryCurrency(staff)})`);
+            showToast(`المبلغ أكبر من المستحق المتبقي (${formatMoney(Math.max(0, remaining))} ${getStaffSalaryCurrency(staff)})`);
             return;
         }
 
@@ -4492,7 +4740,7 @@
                 staffName: staff.fullName,
                 amount,
                 currency: getStaffSalaryCurrency(staff),
-                note: note || 'مصروف من الراتب',
+                note: note || (isPieceworkStaff(staff) ? 'دفعة من مستحق الإنتاج' : 'مصروف من الراتب'),
                 period,
                 date: getLocalDateKey(),
                 createdAt: new Date().toISOString(),
@@ -4504,7 +4752,7 @@
             document.getElementById('employeeExpenseAmount').value = '';
             document.getElementById('employeeExpenseNote').value = '';
             renderEmployeeExpenses();
-            showToast('تم تسجيل المصروف وخصمه من راتب الموظف');
+            showToast('تم تسجيل المبلغ وتحديث المستحق المتبقي للموظف');
         } catch (e) {
             console.warn('Record employee expense error:', e);
             showToast('تعذر تسجيل مصروف الموظف');
@@ -4514,17 +4762,197 @@
         }
     }
 
+    function getSelectedProductionRate() {
+        const staff = getStaffById(document.getElementById('productionStaffSelect')?.value || '');
+        const rateId = document.getElementById('productionRateSelect')?.value || '';
+        return staff && Array.isArray(staff.pieceRates)
+            ? staff.pieceRates.find(rate => rate.id === rateId) || null
+            : null;
+    }
+
+    function populateProductionStaffOptions() {
+        const sel = document.getElementById('productionStaffSelect');
+        if (!sel) return;
+        const previous = sel.value;
+        const staff = getAllStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
+        sel.innerHTML = '<option value="">اختر موظفاً يعمل بالقطعة</option>' + staff.map(item =>
+            `<option value="${item.id}">${item.fullName} — ${getStaffSalaryCurrency(item)}</option>`
+        ).join('');
+        if (previous && staff.some(item => item.id === previous)) sel.value = previous;
+        else if (staff.length === 1) sel.value = staff[0].id;
+        populateProductionRateOptions();
+    }
+
+    function populateProductionRateOptions() {
+        const staff = getStaffById(document.getElementById('productionStaffSelect')?.value || '');
+        const sel = document.getElementById('productionRateSelect');
+        if (!sel) return;
+        const previous = sel.value;
+        const rates = staff && Array.isArray(staff.pieceRates) ? staff.pieceRates : [];
+        sel.innerHTML = '<option value="">اختر نوع العمل</option>' + rates.map(rate =>
+            `<option value="${rate.id}">${rate.name} — ${formatMoney(rate.rate)} ${getStaffSalaryCurrency(staff)} / ${rate.unit}</option>`
+        ).join('');
+        if (previous && rates.some(rate => rate.id === previous)) sel.value = previous;
+        else if (rates.length === 1) sel.value = rates[0].id;
+        updateProductionPreview();
+    }
+
+    function updateProductionPreview() {
+        const staff = getStaffById(document.getElementById('productionStaffSelect')?.value || '');
+        const rate = getSelectedProductionRate();
+        const quantity = Number(document.getElementById('productionQuantity')?.value || 0);
+        const preview = document.getElementById('productionCalculationPreview');
+        if (!preview) return;
+        if (!staff || !rate) {
+            preview.textContent = 'اختر الموظف ونوع العمل وأدخل الكمية لاحتساب المستحق.';
+            return;
+        }
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+            preview.textContent = `سعر ${rate.name}: ${formatMoney(rate.rate)} ${getStaffSalaryCurrency(staff)} لكل ${rate.unit}. أدخل الكمية لحساب الإجمالي.`;
+            return;
+        }
+        const amount = quantity * Number(rate.rate || 0);
+        preview.textContent = `${formatQty(quantity)} ${rate.unit} × ${formatMoney(rate.rate)} ${getStaffSalaryCurrency(staff)} = ${formatMoney(amount)} ${getStaffSalaryCurrency(staff)} مستحق لـ ${staff.fullName}`;
+    }
+
+    async function recordEmployeeProduction() {
+        if (isBusy || !canManageUsers()) return;
+        const staff = getStaffById(document.getElementById('productionStaffSelect').value);
+        const rate = getSelectedProductionRate();
+        const quantity = Number(document.getElementById('productionQuantity').value || 0);
+        const date = document.getElementById('productionDate').value || getLocalDateKey();
+        const note = document.getElementById('productionNote').value.trim();
+        const btn = document.getElementById('saveProductionBtn');
+        if (!staff || !isPieceworkStaff(staff)) {
+            showToast('اختر موظفاً معرفاً بنظام القطعة');
+            return;
+        }
+        if (!rate) {
+            showToast('اختر نوع العمل أو القطعة');
+            return;
+        }
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+            showToast('أدخل كمية صحيحة أكبر من صفر');
+            return;
+        }
+        const amount = quantity * Number(rate.rate || 0);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            showToast('تعذر احتساب مستحق الإنتاج؛ راجع التسعيرة');
+            return;
+        }
+        isBusy = true;
+        btn.disabled = true;
+        try {
+            const id = `emp_prod_${Date.now()}`;
+            const record = {
+                id,
+                staffId: staff.id,
+                staffName: staff.fullName,
+                rateId: rate.id,
+                workName: rate.name,
+                unit: rate.unit,
+                quantity,
+                unitRate: Number(rate.rate),
+                amount,
+                currency: getStaffSalaryCurrency(staff),
+                period: date.slice(0, 7),
+                date,
+                note,
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser?.fullName || 'المشرف',
+                createdByUserId: currentUser?.id || ''
+            };
+            await db.collection('employeeProduction').doc(id).set(record);
+            state.employeeProduction.push(record);
+            document.getElementById('productionQuantity').value = '';
+            document.getElementById('productionNote').value = '';
+            renderEmployeeProduction();
+            renderEmployeeExpenses();
+            showToast(`تم تسجيل ${formatQty(quantity)} ${rate.unit} وإضافة ${formatMoney(amount)} ${record.currency} إلى مستحق ${staff.fullName}`);
+        } catch (e) {
+            console.warn('Record employee production error:', e);
+            showToast('تعذر حفظ إنتاج الموظف');
+        } finally {
+            isBusy = false;
+            btn.disabled = false;
+        }
+    }
+
+    async function deleteEmployeeProduction(productionId) {
+        if (isBusy || !canManageUsers()) return;
+        const item = (state.employeeProduction || []).find(record => record.id === productionId);
+        if (!item) return;
+        if (!confirm(`حذف إنتاج ${item.staffName || 'الموظف'} (${item.quantity} ${item.unit}) بقيمة ${formatMoney(item.amount)} ${item.currency || 'YER'}؟`)) return;
+        isBusy = true;
+        try {
+            await db.collection('employeeProduction').doc(productionId).delete();
+            state.employeeProduction = state.employeeProduction.filter(record => record.id !== productionId);
+            renderEmployeeProduction();
+            renderEmployeeExpenses();
+            showToast('تم حذف سجل الإنتاج وتحديث مستحق الموظف');
+        } catch (e) {
+            showToast('تعذر حذف سجل الإنتاج');
+        } finally {
+            isBusy = false;
+        }
+    }
+
+    function renderEmployeeProduction() {
+        if (!canManageUsers()) return;
+        const period = getCurrentPayrollPeriod();
+        const label = document.getElementById('employeeProductionPeriodLabel');
+        if (label) label.textContent = `الفترة الحالية: ${period}. أدخل كمية كل نوع عمل، وسيحسب النظام المستحق وفق السعر المحدد عند تعريف الموظف.`;
+        const dateInput = document.getElementById('productionDate');
+        if (dateInput && !dateInput.value) dateInput.value = getLocalDateKey();
+        populateProductionStaffOptions();
+        const staff = getAllStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
+        const summaryBody = document.getElementById('employeeProductionSummaryBody');
+        if (summaryBody) {
+            summaryBody.innerHTML = staff.length ? staff.map(item => {
+                const earned = getEmployeePeriodProductionEarnings(item.id, period);
+                const paid = getEmployeePeriodSpent(item.id, period);
+                const balance = earned - paid;
+                const currency = getStaffSalaryCurrency(item);
+                return `<tr>
+                    <td><strong>${item.fullName || '-'}</strong></td>
+                    <td><span class="mono">${formatMoney(earned)} ${currency}</span></td>
+                    <td><span class="mono">${formatMoney(paid)} ${currency}</span></td>
+                    <td><strong class="mono" style="color:${balance < 0 ? 'var(--danger)' : 'var(--success)'}">${formatMoney(balance)} ${currency}</strong></td>
+                </tr>`;
+            }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون بنظام القطعة</td></tr>';
+        }
+        const staffIds = new Set(staff.map(item => item.id));
+        const rows = (state.employeeProduction || []).filter(item => staffIds.has(item.staffId)).slice()
+            .sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
+        const tbody = document.getElementById('employeeProductionTableBody');
+        if (tbody) {
+            tbody.innerHTML = rows.length ? rows.map(item => `
+                <tr>
+                    <td>${item.date || '-'}</td>
+                    <td>${item.staffName || getStaffById(item.staffId)?.fullName || '-'}</td>
+                    <td>${item.workName || '-'} (${item.unit || '-'})</td>
+                    <td><span class="mono">${formatQty(item.quantity || 0)}</span></td>
+                    <td><span class="mono">${formatMoney(item.unitRate || 0)} ${item.currency || 'YER'}</span></td>
+                    <td><strong class="mono">${formatMoney(item.amount || 0)} ${item.currency || 'YER'}</strong></td>
+                    <td>${item.createdBy || '-'}</td>
+                    <td><button class="btn btn-danger btn-sm" onclick="deleteEmployeeProduction('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button></td>
+                </tr>
+            `).join('') : '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا يوجد إنتاج مسجل حتى الآن</td></tr>';
+        }
+        updateProductionPreview();
+    }
+
     async function deleteEmployeeExpense(expenseId) {
         if (isBusy || !canManageUsers()) return;
         const item = state.employeeExpenses.find(expense => expense.id === expenseId);
         if (!item) return;
-        if (!confirm(`حذف مصروف ${item.staffName || 'الموظف'} بمبلغ ${formatMoney(item.amount)} ${item.currency || 'YER'}؟`)) return;
+        if (!confirm(`حذف مصروف / دفعة ${item.staffName || 'الموظف'} بمبلغ ${formatMoney(item.amount)} ${item.currency || 'YER'}؟`)) return;
         isBusy = true;
         try {
             await db.collection('employeeExpenses').doc(expenseId).delete();
             state.employeeExpenses = state.employeeExpenses.filter(expense => expense.id !== expenseId);
             renderEmployeeExpenses();
-            showToast('تم حذف المصروف وإرجاعه إلى المتبقي من الراتب');
+            showToast('تم حذف المبلغ وإرجاعه إلى مستحق الموظف المتبقي');
         } catch (e) {
             showToast('تعذر حذف المصروف');
         } finally {
@@ -4535,19 +4963,19 @@
     function renderEmployeeExpenses() {
         const period = getCurrentPayrollPeriod();
         const label = document.getElementById('employeeExpensesPeriodLabel');
-        if (label) label.textContent = `الفترة الحالية: ${period}. يتم خصم مصروفات هذا الشهر من الراتب الشهري، ويبدأ الاحتساب من جديد تلقائياً مع الشهر التالي.`;
+        if (label) label.textContent = `الفترة الحالية: ${period}. يتم خصم المدفوعات من راتب الموظف الشهري أو من مستحق إنتاجه بالقطعة، حسب نظام الأجر.`;
         populateEmployeeExpenseStaffOptions();
         const staff = getVisiblePayrollStaff();
         const balanceBody = document.getElementById('employeeSalaryBalanceBody');
         if (balanceBody) {
             balanceBody.innerHTML = staff.length ? staff.map(item => {
                 const currency = getStaffSalaryCurrency(item);
-                const salary = Number(item.salary || 0);
+                const entitlement = getEmployeePeriodEntitlement(item, period);
                 const spent = getEmployeePeriodSpent(item.id, period);
-                const remaining = salary - spent;
+                const remaining = entitlement - spent;
                 return `<tr>
-                    <td><strong>${item.fullName || '-'}</strong></td>
-                    <td><span class="mono">${formatMoney(salary)} ${currency}</span></td>
+                    <td><strong>${item.fullName || '-'}</strong><br><small>${isPieceworkStaff(item) ? 'أجر حسب الإنتاج' : 'راتب شهري'}</small></td>
+                    <td><span class="mono">${formatMoney(entitlement)} ${currency}</span></td>
                     <td><span class="mono">${formatMoney(spent)} ${currency}</span></td>
                     <td><strong class="mono" style="color:${remaining < 0 ? 'var(--danger)' : 'var(--success)'};">${formatMoney(remaining)} ${currency}</strong></td>
                 </tr>`;
@@ -4574,6 +5002,7 @@
         updateEmployeeExpensePreview();
     }
 
+    toggleEmployeePayTypeFields();
     initMenuPermissionCheckboxes();
 </script>
 </body>
