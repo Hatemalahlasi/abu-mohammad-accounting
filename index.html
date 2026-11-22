@@ -1038,13 +1038,13 @@
                     <i class="fa-solid fa-users"></i>
                     <span>العملاء</span>
                 </button>
-                <button class="nav-tab accent-tab" data-menu-key="addItemTab" onclick="openFullPage('addItemTab')">
-                    <i class="fa-solid fa-box-open"></i>
-                    <span>إضافة أصناف</span>
-                </button>
                 <button class="nav-tab accent-tab" data-menu-key="quantitiesTab" onclick="openFullPage('quantitiesTab')">
                     <i class="fa-solid fa-cubes-stacked"></i>
                     <span>إدخال كميات الأصناف</span>
+                </button>
+                <button class="nav-tab accent-tab" data-menu-key="addItemTab" onclick="openFullPage('addItemTab')">
+                    <i class="fa-solid fa-box-open"></i>
+                    <span>إضافة أصناف</span>
                 </button>
                 <button class="nav-tab accent-tab" data-menu-key="transferTab" onclick="openFullPage('transferTab')">
                     <i class="fa-solid fa-right-left"></i>
@@ -1102,19 +1102,27 @@
                         </select>
                     </div>
                     <div class="form-group" id="invCashboxGroup">
-                        <label>الصندوق</label>
+                        <label>الصندوق المطابق لعملة الفاتورة</label>
                         <select id="invCashboxSelect" class="form-control"></select>
+                        <div id="invCashboxCreateHint" class="employee-permission-note hidden" style="margin-top:7px;">
+                            لا يوجد صندوق بهذه العملة. يمكن للمدير أو المشرف إنشاء صندوق مبيعات بهذه العملة مباشرة.
+                            <button type="button" class="btn btn-outline btn-sm" style="margin-top:7px;" onclick="createInvoiceCurrencyCashbox()">إنشاء صندوق لهذه العملة</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>العميل</label>
                         <select id="invCustomerSelect" class="form-control"></select>
                     </div>
                 </div>
+                <div class="form-group" id="invCashCustomerNameGroup" style="margin-top:8px;">
+                    <label>اسم العميل النقدي (يمكن كتابة اسم جديد)</label>
+                    <input type="text" id="invCashCustomerName" class="form-control" placeholder="اسم العميل الذي اشترى نقداً">
+                </div>
 
                 <div class="grid-2" style="margin-top:8px;">
                     <div class="form-group">
                         <label>عملة الفاتورة</label>
-                        <select id="invCurrency" class="form-control" onchange="recalculateInvoiceTotal()">
+                        <select id="invCurrency" class="form-control" onchange="handleInvoiceCurrencyChange()">
                             <option value="YER">ريال يمني</option>
                             <option value="SAR">ريال سعودي</option>
                             <option value="USD">دولار أمريكي</option>
@@ -1242,6 +1250,15 @@
                         </div>
                     </div>
                 </div>
+                <div id="supplierBalancesCard" class="employee-permission-note" style="margin-top:12px;">
+                    تظهر هنا مشتريات الموردين النقدية والآجلة وأرصدة المشتريات الآجلة.
+                </div>
+                <div class="table-responsive" style="margin-top:10px;">
+                    <table>
+                        <thead><tr><th>المورد</th><th>مشتريات نقدية</th><th>مشتريات آجلة</th><th>عدد العمليات</th></tr></thead>
+                        <tbody id="supplierBalancesBody"></tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="card-box">
@@ -1253,7 +1270,7 @@
                 <div class="grid-4">
                     <div class="form-group">
                         <label>النوع</label>
-                        <select id="purKind" class="form-control">
+                        <select id="purKind" class="form-control" onchange="togglePurchasePaymentFields()">
                             <option value="purchase">مشتروات</option>
                             <option value="expense">مصروفات</option>
                         </select>
@@ -1262,25 +1279,36 @@
                         <label>الفرع</label>
                         <select id="purBranchSelect" class="form-control"></select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="purCashboxGroup">
                         <label>الصندوق</label>
                         <select id="purCashboxSelect" class="form-control"></select>
                     </div>
                     <div class="form-group">
-                        <label>المبلغ</label>
+                        <label>المبلغ الإجمالي</label>
                         <input type="number" step="0.01" inputmode="decimal" id="purAmount" class="form-control num-input" min="0" placeholder="0.00">
                     </div>
                     <div class="form-group">
                         <label>العملة</label>
-                        <select id="purCurrency" class="form-control">
-                            <option value="YER">ريال يمني</option>
-                            <option value="SAR">ريال سعودي</option>
-                            <option value="USD">دولار أمريكي</option>
+                        <select id="purCurrency" class="form-control" onchange="filterPurchaseCashboxes()">
+                            <option value="YER">ريال يمني</option><option value="SAR">ريال سعودي</option><option value="USD">دولار أمريكي</option>
                         </select>
                     </div>
-                </div>
+                 </div>
+                <div id="purchaseSupplierFields" class="grid-2" style="margin-top:8px;">
+                    <div class="form-group">
+                        <label>المورد</label>
+                        <select id="purSupplierSelect" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>طريقة السداد</label>
+                        <select id="purPaymentType" class="form-control" onchange="togglePurchasePaymentFields()">
+                            <option value="cash">نقداً</option>
+                            <option value="credit">آجل على المورد</option>
+                        </select>
+                    </div>
+                 </div>
 
-                <div class="grid-3">
+                <div class="grid-4">
                     <div class="form-group">
                         <label>البيان / الصنف</label>
                         <input type="text" id="purTitle" class="form-control" placeholder="مثال: مواد خام / كهرباء / صيانة">
@@ -1295,6 +1323,10 @@
                                 <option value="وار">وار</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label>سعر تكلفة الوحدة للمخزن</label>
+                        <input type="number" step="0.01" min="0" id="purUnitCost" class="form-control num-input" placeholder="اتركه فارغاً ليحسب من الإجمالي">
                     </div>
                     <div class="form-group">
                         <label>ملاحظة</label>
@@ -1327,6 +1359,8 @@
                                 <th>النوع</th>
                                 <th>الفرع</th>
                                 <th>البيان</th>
+                                <th>المورد</th>
+                                <th>طريقة السداد</th>
                                 <th>الصندوق</th>
                                 <th>للمخزن</th>
                                 <th>العملة</th>
@@ -1443,6 +1477,19 @@
                     <i class="fa-solid fa-plus"></i> إضافة صندوق
                 </button>
             </div>
+            <div class="card-box">
+                <div class="card-title"><span id="cashboxStatementTitle"><i class="fa-solid fa-file-invoice"></i> كشف حساب الصندوق</span></div>
+                <div class="grid-3">
+                    <div class="form-group"><label>الصندوق</label><select id="cashboxStatementSelect" class="form-control"></select></div>
+                    <div class="form-group"><label>الشهر</label><input type="month" id="cashboxStatementPeriod" class="form-control"></div>
+                    <div class="form-group" style="display:flex;align-items:flex-end;"><button class="btn btn-primary btn-full" onclick="renderCashboxStatement()"><i class="fa-solid fa-magnifying-glass"></i> عرض الكشف</button></div>
+                </div>
+                <div id="cashboxStatementSummary" class="summary-strip"></div>
+                <div class="table-responsive">
+                    <table><thead><tr><th>التاريخ</th><th>الحركة</th><th>البيان</th><th>داخل</th><th>خارج</th><th>الرصيد بعد الحركة</th></tr></thead><tbody id="cashboxStatementBody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted);">اختر الصندوق والشهر لعرض الكشف</td></tr></tbody></table>
+                </div>
+                <button type="button" class="btn btn-outline btn-full" style="margin-top:10px;" onclick="printCashboxStatement()"><i class="fa-solid fa-print"></i> طباعة / حفظ PDF</button>
+            </div>
         </section>
 
         <!-- 4. صفحة المخازن والفروع -->
@@ -1453,7 +1500,7 @@
                     <button type="button" class="btn btn-accent btn-sm" onclick="openFullPage('addItemTab')">
                         <i class="fa-solid fa-plus"></i> إضافة صنف
                     </button>
-                    <button type="button" class="btn btn-accent btn-sm" onclick="openFullPage('quantitiesTab')">
+                    <button id="warehouseQuantitiesShortcut" type="button" class="btn btn-accent btn-sm" onclick="openFullPage('quantitiesTab')">
                         <i class="fa-solid fa-cubes-stacked"></i> إدخال كميات
                     </button>
                     <button type="button" class="btn btn-accent btn-sm" onclick="openFullPage('transferTab')">
@@ -1498,8 +1545,9 @@
                                 <th>الصنف</th>
                                 <th>الوحدة</th>
                                 <th>الكمية الموجودة</th>
-                                <th>السعر</th>
-                                <th>الإجمالي</th>
+                                <th>سعر التكلفة</th>
+                                <th>سعر البيع</th>
+                                <th>قيمة المخزون بالتكلفة</th>
                                 <th>إجراءات</th>
                             </tr>
                         </thead>
@@ -1528,7 +1576,7 @@
                     <label>اسم الصنف</label>
                     <input type="text" id="newItemName" class="form-control" placeholder="اسم المادة أو المنتج">
                 </div>
-                <div class="grid-3">
+                <div class="grid-4">
                     <div class="form-group">
                         <label>الوحدة</label>
                         <select id="newItemUnit" class="form-control">
@@ -1542,7 +1590,11 @@
                         <input type="number" step="0.01" inputmode="decimal" id="newItemQty" class="form-control num-input" value="1" min="0">
                     </div>
                     <div class="form-group">
-                        <label>السعر</label>
+                        <label>سعر التكلفة</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="newItemCostPrice" class="form-control num-input" value="0.00" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>سعر البيع</label>
                         <input type="number" step="0.01" inputmode="decimal" id="newItemPrice" class="form-control num-input" value="0.00" min="0">
                     </div>
                 </div>
@@ -1563,31 +1615,28 @@
 
             <div class="card-box">
                 <div class="card-title"><span>إدخال وتحديث الكميات الموجودة في المخازن</span></div>
-                <div class="grid-3">
+                <div class="grid-2">
                     <div class="form-group">
                         <label>الفرع / المخزن</label>
                         <select id="qtyBranchSelect" class="form-control" onchange="populateQuantityItems()"></select>
                     </div>
                     <div class="form-group">
-                        <label>الصنف</label>
-                        <select id="qtyItemSelect" class="form-control" onchange="fillSelectedItemCurrentQty()"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>طريقة تحديث الكمية</label>
+                        <label>طريقة تحديث الكميات لكل الصفوف</label>
                         <select id="qtyUpdateMode" class="form-control">
                             <option value="add">إضافة إلى الرصيد الحالي (+)</option>
                             <option value="set">تعيين الرصيد الفعلي الموجود (=)</option>
                         </select>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label>الكمية</label>
-                    <input type="number" step="0.01" inputmode="decimal" id="qtyInputValue" class="form-control num-input" value="1" min="0">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0;">
+                    <strong>أصناف الكميات (أضف عدة صفوف ثم احفظها مرة واحدة)</strong>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="addStockQuantityRow()"><i class="fa-solid fa-plus"></i> إضافة صف</button>
                 </div>
-
-                <button id="saveQtyBtn" class="btn btn-accent btn-full" onclick="saveStockQuantity()">
-                    <i class="fa-solid fa-floppy-disk"></i> تسجيل الكمية في المخزن
+                <div class="table-responsive">
+                    <table><thead><tr><th>الصنف</th><th>الكمية</th><th>المتاح حالياً</th><th>حذف</th></tr></thead><tbody id="qtyAdjustmentRows"></tbody></table>
+                </div>
+                <button id="saveQtyBtn" class="btn btn-accent btn-full" style="margin-top:12px;" onclick="saveStockQuantity()">
+                    <i class="fa-solid fa-floppy-disk"></i> حفظ جميع صفوف الكميات
                 </button>
             </div>
 
@@ -1601,7 +1650,8 @@
                                 <th>الصنف</th>
                                 <th>الوحدة</th>
                                 <th>الكمية المسجلة</th>
-                                <th>السعر</th>
+                                <th>سعر التكلفة</th>
+                                <th>سعر البيع</th>
                             </tr>
                         </thead>
                         <tbody id="quantitiesPreviewBody"></tbody>
@@ -1920,6 +1970,10 @@
                     <div class="form-group">
                         <label>البيان / سبب المصروف</label>
                         <input type="text" id="employeeExpenseNote" class="form-control" placeholder="مثال: سلفة أو دفعة من المستحق">
+                    </div>
+                    <div class="form-group">
+                        <label>الصندوق الذي تم الصرف منه (اختياري)</label>
+                        <select id="employeeExpenseCashboxSelect" class="form-control"><option value="">بدون ربط بصندوق</option></select>
                     </div>
                 </div>
                 <div id="employeeExpensePreview" class="employee-permission-note">اختر الموظف لعرض راتبه أو مستحق إنتاجه والمتبقي له.</div>
@@ -2289,8 +2343,8 @@
         { key: 'cashboxTab', label: 'الصندوق' },
         { key: 'warehouseTab', label: 'المخازن والفروع' },
         { key: 'customersTab', label: 'العملاء' },
-        { key: 'addItemTab', label: 'إضافة أصناف' },
         { key: 'quantitiesTab', label: 'إدخال كميات الأصناف' },
+        { key: 'addItemTab', label: 'إضافة أصناف' },
         { key: 'transferTab', label: 'نقل مخازن' },
         { key: 'profitsTab', label: 'الأرباح' },
         { key: 'employeesTab', label: 'الموظفون' },
@@ -2541,7 +2595,7 @@
         const staff = getAllStaff();
         if (canManageUsers()) return staff;
         const ownStaffId = currentUser?.staffId || `legacy_${currentUser?.id || ''}`;
-        return staff.filter(item => item.id === ownStaffId);
+        return staff.filter(item => item.id === ownStaffId || item.userAccountId === currentUser?.id || item.legacyUserId === currentUser?.id);
     }
 
     function populateNewUserStaffOptions() {
@@ -2571,7 +2625,7 @@
     function initMenuPermissionCheckboxes() {
         const grid = document.getElementById('permissionMenusGrid');
         if (!grid) return;
-        const employeeAssignableMenus = MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab'].includes(m.key));
+        const employeeAssignableMenus = MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab', 'quantitiesTab'].includes(m.key));
         grid.innerHTML = employeeAssignableMenus.map(m => `
             <label class="perm-check">
                 <input type="checkbox" class="emp-menu-cb" value="${m.key}">
@@ -2725,8 +2779,8 @@
     function getAllowedMenusForUser(user = currentUser) {
         if (!user) return [];
         if (hasFullAccess(user)) return MAIN_MENU_ITEMS.map(m => m.key);
-        if (Array.isArray(user.allowedMenus)) return user.allowedMenus;
-        return MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab'].includes(m.key)).map(m => m.key);
+        if (Array.isArray(user.allowedMenus)) return user.allowedMenus.filter(key => key !== 'quantitiesTab');
+        return MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab', 'quantitiesTab'].includes(m.key)).map(m => m.key);
     }
 
     function canAccessMenu(menuKey, user = currentUser) {
@@ -2753,14 +2807,14 @@
     function applyHomeMenuPermissions() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-menu-key]').forEach(btn => {
             const key = btn.getAttribute('data-menu-key');
-            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'employeeProductionTab'].includes(key);
+            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'employeeProductionTab', 'quantitiesTab'].includes(key);
             btn.classList.toggle('hidden', (adminOnly && !canManageUsers(currentUser)) || !canAccessMenu(key, currentUser));
         });
         applyDashboardWidgetPermissions();
     }
 
     function openFullPage(tabId) {
-        if (['employeesTab', 'employeePermissionsTab', 'employeeProductionTab'].includes(tabId) && !canManageUsers(currentUser)) {
+        if (['employeesTab', 'employeePermissionsTab', 'employeeProductionTab', 'quantitiesTab'].includes(tabId) && !canManageUsers(currentUser)) {
             showToast('إدارة الموظفين والصلاحيات للمشرف العام والمدير فقط');
             return;
         }
@@ -3014,8 +3068,11 @@
         const purchasesOut = state.purchases
             .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
             .reduce((s, p) => s + Number(p.amount || 0), 0);
+        const staffPaymentsOut = (state.employeeExpenses || [])
+            .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
+            .reduce((s, p) => s + Number(p.amount || 0), 0);
 
-        return opening + cashSales + receipts - payments - purchasesOut;
+        return opening + cashSales + receipts - payments - purchasesOut - staffPaymentsOut;
     }
 
     function getVoucherCurrency(voucher) {
@@ -3200,10 +3257,13 @@
 
     function renderAllViews() {
         applyHomeMenuPermissions();
+        const qtyShortcut = document.getElementById('warehouseQuantitiesShortcut');
+        if (qtyShortcut) qtyShortcut.classList.toggle('hidden', !canManageUsers());
         populateDropdowns();
         renderStats();
         renderInvoicesTable();
         renderPurchasesTable();
+        renderSupplierBalances();
         renderVouchersTable();
         renderCashboxesList();
         renderBranchesChips();
@@ -3295,6 +3355,11 @@
         if (prevCbInv && state.cashboxes.some(c => c.id === prevCbInv)) cbSelInv.value = prevCbInv;
         if (prevCbPur && state.cashboxes.some(c => c.id === prevCbPur)) cbSelPur.value = prevCbPur;
         if (prevCbVch && state.cashboxes.some(c => c.id === prevCbVch)) cbSelVch.value = prevCbVch;
+        updateInvoiceCashboxOptions();
+        filterPurchaseCashboxes();
+        populateCashboxStatementOptions();
+        populateEmployeeExpenseCashboxOptions();
+        populatePurchaseSupplierOptions();
 
         const custSelInv = document.getElementById('invCustomerSelect');
         const custSelVch = document.getElementById('voucherCustomerSelect');
@@ -3342,66 +3407,143 @@
             showToast('اختر صنفاً من المخازن أولاً');
             return;
         }
+        const invoiceCurrency = document.getElementById('invCurrency')?.value || 'YER';
+        // سعر البيع القديم في المخزون لا يحمل عملة محددة؛ نعتبره بالريال اليمني.
+        // عند البيع بعملة أخرى نترك السعر صفراً حتى يدخله المستخدم بنفس عملة الفاتورة ولا نخلط العملات.
+        const storedPriceCurrency = item.priceCurrency || 'YER';
+        const canUseStoredPrice = storedPriceCurrency === invoiceCurrency;
         addInvoiceItemRow({
             name: item.name,
             unit: item.unit || 'حبة',
             qty: 1,
-            price: Number(item.price || 0)
+            price: canUseStoredPrice ? Number(item.price || 0) : 0
         });
-        showToast(`تمت إضافة ${item.name}`);
+        showToast(canUseStoredPrice
+            ? `تمت إضافة ${item.name}`
+            : `تمت إضافة ${item.name}. أدخل سعر البيع بعملة ${invoiceCurrency} لأن سعر المخزون مسجل بعملة ${storedPriceCurrency}`);
     }
 
     function populateQuantityItems() {
-        const branchId = document.getElementById('qtyBranchSelect')?.value || 'main_branch';
-        const sel = document.getElementById('qtyItemSelect');
-        if (!sel) return;
-        const prevVal = sel.value;
-
+        const branchId = document.getElementById('qtyBranchSelect')?.value || '';
+        const container = document.getElementById('qtyAdjustmentRows');
+        if (!container) return;
+        if (!container.querySelector('.batch-qty-row')) addStockQuantityRow();
         const items = isBranchAllowed(branchId)
             ? state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId)
             : [];
-        sel.innerHTML = items.length
-            ? items.map(w => `<option value="${w.id}">${w.name} (${w.unit || 'حبة'}) — الحالي: ${formatQty(w.qty || 0)}</option>`).join('')
-            : '<option value="">لا توجد أصناف في هذا الفرع (أضف صنفاً أولاً)</option>';
+        container.querySelectorAll('.batch-qty-row').forEach(row => {
+            const select = row.querySelector('.batch-qty-item');
+            const previous = select.value;
+            select.innerHTML = '<option value="">اختر الصنف</option>' + items.map(item =>
+                `<option value="${item.id}">${item.name} (${item.unit || 'حبة'}) — متاح ${formatQty(item.qty || 0)}</option>`
+            ).join('');
+            if (previous && items.some(item => item.id === previous)) select.value = previous;
+            updateStockQuantityRowInfo(select);
+        });
+    }
 
-        if (prevVal && items.some(w => w.id === prevVal)) {
-            sel.value = prevVal;
-        }
-        fillSelectedItemCurrentQty();
+    function addStockQuantityRow() {
+        const container = document.getElementById('qtyAdjustmentRows');
+        if (!container) return;
+        const row = document.createElement('tr');
+        row.className = 'batch-qty-row';
+        row.innerHTML = `
+            <td><select class="form-control batch-qty-item" onchange="updateStockQuantityRowInfo(this)"><option value="">اختر الصنف</option></select></td>
+            <td><input type="number" step="0.01" min="0.01" class="form-control num-input batch-qty-value" placeholder="الكمية"></td>
+            <td><span class="batch-qty-current mono">-</span></td>
+            <td><button type="button" class="btn btn-danger btn-sm" title="حذف الصف" onclick="this.closest('tr').remove(); if(!document.querySelector('#qtyAdjustmentRows .batch-qty-row')) addStockQuantityRow();"><i class="fa-solid fa-trash"></i></button></td>`;
+        container.appendChild(row);
+        populateQuantityItems();
+    }
+
+    function updateStockQuantityRowInfo(select) {
+        const row = select?.closest('.batch-qty-row');
+        if (!row) return;
+        const item = state.warehouse.find(w => w.id === select.value);
+        const current = row.querySelector('.batch-qty-current');
+        if (current) current.textContent = item ? `${formatQty(item.qty || 0)} ${item.unit || 'حبة'}` : '-';
     }
 
     function fillSelectedItemCurrentQty() {
-        const itemId = document.getElementById('qtyItemSelect')?.value;
-        const item = state.warehouse.find(w => w.id === itemId);
-        if (item) {
-            const branchSelect = document.getElementById('qtyBranchSelect');
-            if (branchSelect && item.branchId) branchSelect.value = item.branchId;
-        }
+        // توافق مع النسخ القديمة من الصفحة التي كانت تستخدم اختيار صنف واحد.
+        populateQuantityItems();
     }
 
     async function saveStockQuantity() {
         if (isBusy) return;
         const btn = document.getElementById('saveQtyBtn');
-        const branchId = document.getElementById('qtyBranchSelect').value || '';
-        const itemId = document.getElementById('qtyItemSelect').value;
-        const mode = document.getElementById('qtyUpdateMode').value;
-        const qtyVal = Number(document.getElementById('qtyInputValue').value);
+        const branchId = document.getElementById('qtyBranchSelect')?.value || '';
+        const mode = document.getElementById('qtyUpdateMode')?.value || 'add';
         if (!branchId || !isBranchAllowed(branchId)) { showToast('لم يحدد المشرف مخزناً لهذا الموظف'); return; }
-        const item = state.warehouse.find(w => w.id === itemId);
-        if (!item) { showToast('اختر صنفاً من المخزن أولاً'); return; }
-        if (isNaN(qtyVal) || qtyVal < 0) { showToast('أدخل كمية صحيحة'); return; }
-        if (!isBranchAllowed(item.branchId || 'main_branch')) { showToast('هذا الصنف خارج المخزن المحدد لك'); return; }
+        const rows = Array.from(document.querySelectorAll('#qtyAdjustmentRows .batch-qty-row'));
+        const entries = rows.map(row => {
+            const quantityInput = row.querySelector('.batch-qty-value');
+            const quantityText = quantityInput?.value?.trim() || '';
+            return { itemId: row.querySelector('.batch-qty-item')?.value || '', qty: Number(quantityText), quantityText };
+        }).filter(entry => entry.itemId || entry.quantityText !== '');
+        if (!entries.length) { showToast('أضف صنفاً وكمية في صف واحد على الأقل'); return; }
+        if (entries.some(entry => !entry.itemId || entry.quantityText === '' || !Number.isFinite(entry.qty) || entry.qty < 0 || (mode === 'add' && entry.qty <= 0))) {
+            showToast(mode === 'set' ? 'أكمل الصنف والكمية في كل صف؛ يمكن تعيين الكمية إلى صفر' : 'أكمل الصنف وأدخل كمية أكبر من صفر في كل صف'); return;
+        }
+        const seen = new Set();
+        for (const entry of entries) {
+            if (seen.has(entry.itemId)) { showToast('الصنف مكرر في أكثر من صف؛ اجمع كميته في صف واحد'); return; }
+            seen.add(entry.itemId);
+            const item = state.warehouse.find(w => w.id === entry.itemId);
+            if (!item || (item.branchId || 'main_branch') !== branchId || !isBranchAllowed(item.branchId || 'main_branch')) {
+                showToast('تأكد أن جميع الأصناف من المخزن المحدد لك'); return;
+            }
+        }
+        const signature = {
+            action: 'bulk-stock-quantity-adjustment', branchId, mode,
+            entries: entries.map(({itemId,qty}) => ({itemId,qty})).sort((a,b) => a.itemId.localeCompare(b.itemId)), actor: dedupeActorId()
+        };
+        const bucket = Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS);
+        const markerKey = `${dedupeHash(signature)}:${bucket}`;
         isBusy = true;
         btn.disabled = true;
         try {
-            const updated = await updateDocumentOnce('warehouse', item.id, {
-                action: 'stock-quantity-adjustment', branchId, mode, qtyVal, actor: dedupeActorId()
-            }, current => ({ qty: mode === 'set' ? qtyVal : Number(current.qty || 0) + qtyVal }));
-            if (!updated) { showToast('تم منع تكرار تسجيل الكمية نفسها خلال وقت قصير.'); return; }
-            document.getElementById('qtyInputValue').value = '1';
-            showToast(`تم تحديث كمية ${item.name}`);
-        } catch (e) { console.warn('Save stock quantity error:', e); showToast('تعذر تحديث الكمية'); }
-        finally { isBusy = false; btn.disabled = false; }
+            const result = await db.runTransaction(async transaction => {
+                const snapshots = [];
+                for (const entry of entries) {
+                    const ref = db.collection('warehouse').doc(entry.itemId);
+                    snapshots.push({ entry, ref, snapshot: await transaction.get(ref) });
+                }
+                for (const data of snapshots) {
+                    if (!data.snapshot.exists) throw new Error(`STOCK_MISSING:${data.entry.itemId}`);
+                    const current = data.snapshot.data() || {};
+                    if ((current.branchId || 'main_branch') !== branchId) throw new Error('STOCK_BRANCH_CHANGED');
+                    const markers = Array.isArray(current.__recentOperationMarkers) ? current.__recentOperationMarkers : [];
+                    if (markers.some(marker => marker?.key === markerKey)) return { duplicate: true };
+                }
+                const newQuantities = {};
+                for (const data of snapshots) {
+                    const current = data.snapshot.data() || {};
+                    const currentQty = Number(current.qty || 0);
+                    const nextQty = mode === 'set' ? data.entry.qty : currentQty + data.entry.qty;
+                    newQuantities[data.entry.itemId] = nextQty;
+                    const markers = Array.isArray(current.__recentOperationMarkers) ? current.__recentOperationMarkers : [];
+                    const recent = markers.filter(marker => marker && Number(marker.at || 0) > Date.now() - 10 * 60 * 1000);
+                    recent.push({ key: markerKey, at: Date.now() });
+                    transaction.update(data.ref, { qty: nextQty, __recentOperationMarkers: recent.slice(-30) });
+                }
+                return { duplicate: false, newQuantities };
+            });
+            if (result.duplicate) { showToast('تم منع تكرار نفس عملية تحديث الكميات'); return; }
+            Object.entries(result.newQuantities || {}).forEach(([itemId, qty]) => {
+                const localItem = state.warehouse.find(item => item.id === itemId);
+                if (localItem) localItem.qty = qty;
+            });
+            document.querySelectorAll('#qtyAdjustmentRows .batch-qty-value').forEach(input => input.value = '');
+            populateQuantityItems();
+            renderQuantitiesPreviewTable();
+            renderWarehouseTable();
+            renderStats();
+            showToast(`تم حفظ ${entries.length} صفوف كميات بنجاح`);
+        } catch (e) {
+            console.warn('Bulk stock quantity error:', e);
+            showToast(e?.message?.startsWith('STOCK_') ? 'تغير المخزن أثناء الحفظ؛ حدّث الصفحة وحاول مجدداً' : 'تعذر حفظ صفوف الكميات');
+        } finally { isBusy = false; btn.disabled = false; }
     }
 
     function renderQuantitiesPreviewTable() {
@@ -3415,10 +3557,11 @@
                     <td><strong>${w.name}</strong></td>
                     <td><span class="badge badge-unit">${w.unit || 'حبة'}</span></td>
                     <td><span class="badge ${Number(w.qty || 0) > 0 ? 'badge-cash' : 'badge-expense'} mono">${formatQty(w.qty || 0)}</span></td>
+                    <td><span class="mono">${formatMoney(w.costPrice ?? w.price ?? 0)}</span></td>
                     <td><span class="mono">${formatMoney(w.price || 0)}</span></td>
                 </tr>
             `).join('')
-            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا توجد أصناف مسجلة في المخزن المحدد</td></tr>';
+            : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد أصناف مسجلة في المخزن المحدد</td></tr>';
     }
 
     function populateTransferItems() {
@@ -3461,6 +3604,7 @@
         const toBranchName = toBranchObj ? toBranchObj.name : 'الفرع المستهدف';
         const unit = sourceItem.unit || 'حبة';
         const price = Number(sourceItem.price || 0);
+        const costPrice = Number(sourceItem.costPrice ?? sourceItem.price ?? 0);
         const transferSignature = { action: 'warehouse-transfer', fromBranchId, toBranchId, sourceItemId: itemId, qty: qtyToMove, actor: dedupeActorId() };
         isBusy = true;
         btn.disabled = true;
@@ -3478,11 +3622,16 @@
                 (w.unit || 'حبة') === unit
             );
             if (targetItem) {
-                await updateDocumentOnce('warehouse', targetItem.id, { ...transferSignature, action: 'warehouse-transfer-in' },
-                    current => ({ qty: Number(current.qty || 0) + qtyToMove }));
+                await updateDocumentOnce('warehouse', targetItem.id, { ...transferSignature, action: 'warehouse-transfer-in' }, current => {
+                    const oldQty = Number(current.qty || 0);
+                    const oldCost = Number(current.costPrice ?? current.price ?? costPrice);
+                    const nextQty = oldQty + qtyToMove;
+                    const nextCost = nextQty > 0 ? ((oldQty * oldCost) + (qtyToMove * costPrice)) / nextQty : costPrice;
+                    return { qty: nextQty, costPrice: Number(nextCost.toFixed(4)) };
+                });
             } else {
                 await createRecordOnce('warehouse', 'wh', { ...transferSignature, action: 'warehouse-transfer-new-target' }, {
-                    branchId: toBranchId, branchName: toBranchName, name: sourceItem.name, unit, qty: qtyToMove, price
+                    branchId: toBranchId, branchName: toBranchName, name: sourceItem.name, unit, qty: qtyToMove, costPrice, price
                 }, `wh_transfer_${dedupeHash(transferSignature)}`);
             }
             document.getElementById('transferQty').value = '1';
@@ -3506,7 +3655,7 @@
         });
         const visibleWarehouse = getScopedWarehouseItems();
         const totalStockQty = visibleWarehouse.reduce((s, w) => s + Number(w.qty || 0), 0);
-        const totalStockVal = visibleWarehouse.reduce((s, w) => s + (Number(w.qty || 0) * Number(w.price || 0)), 0);
+        const totalStockVal = visibleWarehouse.reduce((s, w) => s + (Number(w.qty || 0) * Number(w.costPrice ?? w.price ?? 0)), 0);
 
         document.getElementById('kpiTotalSales').textContent = formatCurrencyBreakdown(visibleInvoices, 'netTotal');
         document.getElementById('kpiTotalCash').textContent = cash;
@@ -3524,54 +3673,102 @@
         if (!branchId || !isBranchAllowed(branchId)) { showToast('لم يحدد المشرف مخزناً لهذا الموظف'); return; }
         const branchObj = state.branches.find(b => b.id === branchId);
         const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
-        const cashboxId = document.getElementById('purCashboxSelect').value;
+        const currency = document.getElementById('purCurrency')?.value || 'YER';
         const amount = Number(document.getElementById('purAmount').value || 0);
-        const currency = document.getElementById('purCurrency').value || 'YER';
         const title = document.getElementById('purTitle').value.trim();
         const addQty = Number(document.getElementById('purAddQty').value || 0);
         const unit = document.getElementById('purUnit').value || 'حبة';
         const shouldAddToWarehouse = kind === 'purchase' && (document.getElementById('purAddToWarehouseCheck')?.checked ?? true) && addQty > 0;
         const notes = document.getElementById('purNotes').value.trim();
-        if (!title || amount <= 0) { showToast('أدخل البيان والمبلغ الصحيح'); return; }
-        const cashbox = state.cashboxes.find(c => c.id === cashboxId);
-        if (!cashbox) { showToast('اختر الصندوق'); return; }
-        if ((cashbox.currency || 'YER') !== currency) { showToast('عملة المشتريات يجب أن تطابق عملة الصندوق المختار'); return; }
+        const paymentType = kind === 'purchase' ? (document.getElementById('purPaymentType')?.value || 'cash') : 'cash';
+        const supplierId = kind === 'purchase' ? (document.getElementById('purSupplierSelect')?.value || '') : '';
+        const supplier = supplierId ? state.suppliers.find(item => item.id === supplierId) : null;
+        const cashboxId = (paymentType === 'cash' || kind === 'expense') ? (document.getElementById('purCashboxSelect').value || '') : '';
+        const cashbox = cashboxId ? state.cashboxes.find(c => c.id === cashboxId) : null;
+        const rawUnitCost = document.getElementById('purUnitCost')?.value?.trim() || '';
+        const unitCost = rawUnitCost === '' ? (addQty > 0 ? Number((amount / addQty).toFixed(4)) : 0) : Number(rawUnitCost);
+
+        if (!title || !Number.isFinite(amount) || amount <= 0) { showToast('أدخل البيان والمبلغ الصحيح'); return; }
+        if (kind === 'purchase' && !supplier) { showToast('اختر المورد للمشتريات'); return; }
+        if (shouldAddToWarehouse && (!Number.isFinite(addQty) || addQty <= 0 || !Number.isFinite(unitCost) || unitCost < 0)) { showToast('أدخل كمية وسعر تكلفة صحيحين لإدخال الصنف للمخزن'); return; }
+        if ((paymentType === 'cash' || kind === 'expense') && !cashbox) { showToast('اختر صندوقاً مطابقاً لعملة العملية'); return; }
+        if (cashbox && (cashbox.currency || 'YER') !== currency) { showToast('اختر صندوقاً بعملة العملية نفسها، أو أنشئ صندوقاً بهذه العملة'); return; }
+        if (cashbox && computeSystemCashboxBalance(cashbox) < amount) { showToast('رصيد الصندوق غير كافٍ لهذه العملية'); return; }
+
+        const date = getLocalDateKey();
+        const existingStock = shouldAddToWarehouse ? state.warehouse.find(w =>
+            (w.branchId || 'main_branch') === branchId &&
+            String(w.name || '').trim().toLowerCase() === title.toLowerCase() && (w.unit || 'حبة') === unit
+        ) : null;
+        const purchaseRecord = {
+            kind, date, branchId, branchName,
+            cashboxId: cashbox ? cashbox.id : '', cashboxName: cashbox ? cashbox.name : (paymentType === 'credit' ? 'آجل على المورد' : ''),
+            paymentType, supplierId: supplier ? supplier.id : '', supplierName: supplier ? supplier.name : '',
+            currency, currencyName: CURRENCY_NAMES[currency], title, amount,
+            addQty: shouldAddToWarehouse ? addQty : 0, unit,
+            unitCost: shouldAddToWarehouse ? unitCost : 0,
+            addedToWarehouse: shouldAddToWarehouse, notes, employee: currentUser.fullName
+        };
+        const signature = {
+            kind, date, branchId, paymentType, supplierId: purchaseRecord.supplierId, cashboxId: purchaseRecord.cashboxId,
+            currency, title: title.toLowerCase(), amount, addQty: purchaseRecord.addQty, unit,
+            unitCost: purchaseRecord.unitCost, notes, actor: dedupeActorId()
+        };
+        const bucket = Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS);
+        const purchaseDocId = `PUR_${dedupeHash(signature)}_${bucket}`;
+        const purchaseRef = db.collection('purchases').doc(purchaseDocId);
+        const newStockDocId = `wh_purchase_${dedupeHash(purchaseDocId)}`;
+        const stockRef = shouldAddToWarehouse
+            ? db.collection('warehouse').doc(existingStock ? existingStock.id : newStockDocId)
+            : null;
+
         isBusy = true;
         btn.disabled = true;
         try {
-            const date = getLocalDateKey();
-            const record = {
-                kind, date, branchId, branchName, cashboxId: cashbox.id, cashboxName: cashbox.name,
-                currency, currencyName: CURRENCY_NAMES[currency], title, amount,
-                addQty: shouldAddToWarehouse ? addQty : 0, unit, addedToWarehouse: shouldAddToWarehouse,
-                notes, employee: currentUser.fullName
-            };
-            const saved = await createRecordOnce('purchases', 'PUR', {
-                kind, date, branchId, cashboxId, currency, title: title.toLowerCase(), amount,
-                addQty: shouldAddToWarehouse ? addQty : 0, unit, notes, actor: dedupeActorId()
-            }, record);
-            if (!saved.created) { showToast('تم منع تكرار المشتريات / المصروفات نفسها خلال وقت قصير.'); return; }
-            const purId = saved.id;
+            const result = await db.runTransaction(async transaction => {
+                const purchaseSnapshot = await transaction.get(purchaseRef);
+                if (purchaseSnapshot.exists) return { created: false };
+                let stockSnapshot = null;
+                if (stockRef) stockSnapshot = await transaction.get(stockRef);
+                transaction.set(purchaseRef, { ...purchaseRecord, id: purchaseDocId });
+                if (stockRef) {
+                    if (stockSnapshot?.exists) {
+                        const current = stockSnapshot.data() || {};
+                        const oldQty = Number(current.qty || 0);
+                        const oldCost = Number(current.costPrice ?? current.price ?? 0);
+                        const nextQty = oldQty + addQty;
+                        const weightedCost = nextQty > 0 ? ((oldQty * oldCost) + (addQty * unitCost)) / nextQty : unitCost;
+                        transaction.update(stockRef, { qty: nextQty, costPrice: Number(weightedCost.toFixed(4)) });
+                    } else {
+                        transaction.set(stockRef, {
+                            id: stockRef.id, branchId, branchName, name: title, unit,
+                            qty: addQty, costPrice: unitCost, price: 0
+                        });
+                    }
+                }
+                return { created: true };
+            });
+            if (!result.created) { showToast('تم منع تكرار عملية الشراء أو المصروف نفسها'); return; }
+            purchaseRecord.id = purchaseDocId;
+            state.purchases = (state.purchases || []).concat(purchaseRecord);
             if (shouldAddToWarehouse) {
-                const existing = state.warehouse.find(w =>
-                    (w.branchId || 'main_branch') === branchId &&
-                    String(w.name || '').toLowerCase() === title.toLowerCase() && (w.unit || 'حبة') === unit
-                );
-                const unitCost = Number((amount / addQty).toFixed(2));
-                if (existing) {
-                    await updateDocumentOnce('warehouse', existing.id, { action: 'purchase-stock', purchaseId: purId }, current => ({ qty: Number(current.qty || 0) + addQty }));
+                if (existingStock) {
+                    const oldQty = Number(existingStock.qty || 0);
+                    const oldCost = Number(existingStock.costPrice ?? existingStock.price ?? 0);
+                    existingStock.qty = oldQty + addQty;
+                    existingStock.costPrice = Number((((oldQty * oldCost) + (addQty * unitCost)) / existingStock.qty).toFixed(4));
                 } else {
-                    await createRecordOnce('warehouse', 'wh', { action: 'purchase-stock-new-item', purchaseId: purId }, {
-                        branchId, branchName, name: title, unit, qty: addQty, price: unitCost
-                    }, `wh_purchase_${dedupeHash(purId)}`);
+                    state.warehouse.push({ id: newStockDocId, branchId, branchName, name: title, unit, qty: addQty, costPrice: unitCost, price: 0 });
                 }
             }
             document.getElementById('purTitle').value = '';
             document.getElementById('purAmount').value = '';
             document.getElementById('purAddQty').value = '0';
+            document.getElementById('purUnitCost').value = '';
             document.getElementById('purNotes').value = '';
-            showToast('تم حفظ المشتروات / المصروفات');
-        } catch (e) { console.warn('Create purchase error:', e); showToast('تعذر حفظ السجل'); }
+            renderSupplierBalances(); renderPurchasesTable(); renderWarehouseTable(); renderStats(); renderCashboxesList();
+            showToast(paymentType === 'credit' && kind === 'purchase' ? 'تم حفظ المشتريات الآجلة على المورد وتحديث المخزون' : 'تم حفظ العملية وتحديث المخزون والصندوق');
+        } catch (e) { console.warn('Create purchase error:', e); showToast('تعذر حفظ العملية؛ لم يتم تسجيلها أو تحديث المخزون'); }
         finally { isBusy = false; btn.disabled = false; }
     }
 
@@ -3594,6 +3791,22 @@
         }
     }
 
+    function renderSupplierBalances() {
+        const tbody = document.getElementById('supplierBalancesBody');
+        if (!tbody) return;
+        const suppliers = state.suppliers || [];
+        tbody.innerHTML = suppliers.length ? suppliers.map(supplier => {
+            const purchases = state.purchases.filter(p => p.kind === 'purchase' && p.supplierId === supplier.id);
+            const cash = purchases.filter(p => p.paymentType !== 'credit').map(p => ({ amount: p.amount, currency: p.currency || 'YER' }));
+            const credit = purchases.filter(p => p.paymentType === 'credit').map(p => ({ amount: p.amount, currency: p.currency || 'YER' }));
+            const totals = records => CURRENCY_CODES.map(code => {
+                const total = records.filter(item => item.currency === code).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+                return total ? `${formatMoney(total)} ${code}` : '';
+            }).filter(Boolean).join(' | ') || '0.00';
+            return `<tr><td><strong>${supplier.name}</strong><br><small>${supplier.phone || ''}</small></td><td>${totals(cash)}</td><td><strong style="color:var(--warning);">${totals(credit)}</strong></td><td>${purchases.length}</td></tr>`;
+        }).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">أضف الموردين لعرض حركة مشترياتهم</td></tr>';
+    }
+
     function renderPurchasesTable() {
         const tbody = document.getElementById('purchasesTableBody');
         if (!tbody) return;
@@ -3603,6 +3816,7 @@
             .filter(p =>
                 (p.title || '').toLowerCase().includes(q) ||
                 (p.branchName || '').toLowerCase().includes(q) ||
+                (p.supplierName || '').toLowerCase().includes(q) ||
                 (p.notes || '').toLowerCase().includes(q)
             )
             .slice().reverse();
@@ -3617,8 +3831,10 @@
                         <strong>${p.title}</strong>
                         ${p.notes ? `<div style="font-size:11px; color:var(--text-muted);">${p.notes}</div>` : ''}
                     </td>
+                    <td>${p.supplierName || '-'}</td>
+                    <td>${p.kind === 'purchase' ? (p.paymentType === 'credit' ? '<span class="badge badge-credit">آجل</span>' : '<span class="badge badge-cash">نقداً</span>') : '-'}</td>
                     <td>${p.cashboxName || '-'}</td>
-                    <td>${Number(p.addQty || 0) > 0 ? `<span class="badge badge-cash mono">${formatQty(p.addQty)}</span> ${p.unit || 'حبة'}` : '<span style="color:var(--text-muted);">-</span>'}</td>
+                    <td>${Number(p.addQty || 0) > 0 ? `<span class="badge badge-cash mono">${formatQty(p.addQty)}</span> ${p.unit || 'حبة'}<div style="font-size:11px;color:var(--text-muted);">تكلفة الوحدة: ${formatMoney(p.unitCost || 0)}</div>` : '<span style="color:var(--text-muted);">-</span>'}</td>
                     <td>${CURRENCY_NAMES[p.currency || 'YER'] || CURRENCY_NAMES.YER}</td>
                     <td><span class="mono" style="color:var(--danger);">${formatCurrency(p.amount, p.currency || 'YER')}</span></td>
                     <td>${p.employee || '-'}</td>
@@ -3627,12 +3843,129 @@
                     </td>
                 </tr>
             `).join('')
-            : '<tr><td colspan="10" style="text-align:center; color:var(--text-muted);">لا توجد مشتروات أو مصروفات مسجلة</td></tr>';
+            : '<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">لا توجد مشتروات أو مصروفات مسجلة</td></tr>';
     }
 
     function toggleInvoicePaymentFields() {
         const isCash = document.getElementById('invPaymentType').value === 'cash';
         document.getElementById('invCashboxGroup').classList.toggle('hidden', !isCash);
+        document.getElementById('invCashCustomerNameGroup')?.classList.toggle('hidden', !isCash);
+        updateInvoiceCashboxOptions();
+    }
+
+    function updateInvoiceCashboxOptions() {
+        const select = document.getElementById('invCashboxSelect');
+        if (!select) return;
+        const currency = document.getElementById('invCurrency')?.value || 'YER';
+        const previous = select.value;
+        const available = state.cashboxes.filter(box => (box.currency || 'YER') === currency);
+        select.innerHTML = available.length
+            ? available.map(box => `<option value="${box.id}">${box.name} — متاح ${formatMoney(computeSystemCashboxBalance(box))} ${currency}</option>`).join('')
+            : `<option value="">لا يوجد صندوق بعملة ${currency}</option>`;
+        if (previous && available.some(box => box.id === previous)) select.value = previous;
+        const hint = document.getElementById('invCashboxCreateHint');
+        const isCash = document.getElementById('invPaymentType')?.value === 'cash';
+        if (hint) {
+            hint.classList.toggle('hidden', !isCash || available.length > 0);
+            const button = hint.querySelector('button');
+            if (button) button.classList.toggle('hidden', !canManageUsers());
+            const text = hint.firstChild;
+            if (text && text.nodeType === Node.TEXT_NODE) text.textContent = canManageUsers()
+                ? 'لا يوجد صندوق بهذه العملة. يمكن للمدير أو المشرف إنشاء صندوق مبيعات بهذه العملة مباشرة. '
+                : 'لا يوجد صندوق بهذه العملة. اطلب من المدير أو المشرف إنشاء صندوق بهذه العملة. ';
+        }
+    }
+
+    async function createInvoiceCurrencyCashbox() {
+        if (isBusy || !canManageUsers()) {
+            showToast('إنشاء الصناديق متاح للمدير والمشرف فقط');
+            return;
+        }
+        const currency = document.getElementById('invCurrency')?.value || 'YER';
+        const existing = state.cashboxes.find(box => (box.currency || 'YER') === currency);
+        if (existing) {
+            updateInvoiceCashboxOptions();
+            document.getElementById('invCashboxSelect').value = existing.id;
+            showToast('يوجد صندوق بهذه العملة وتم اختياره');
+            return;
+        }
+        isBusy = true;
+        try {
+            const name = `صندوق المبيعات - ${currency}`;
+            const saved = await createRecordOnce('cashboxes', 'cb',
+                { name: name.toLowerCase(), currency, opening: 0, actor: dedupeActorId() },
+                { name, currency, openingBalance: 0, balance: 0 },
+                `cb_sales_${currency}`
+            );
+            if (!saved.created) {
+                await reloadAllData(false);
+                showToast('تم العثور على صندوق سابق بهذه العملة؛ تم تحديث القائمة');
+                return;
+            }
+            state.cashboxes.push({ id: saved.id, name, currency, openingBalance: 0, balance: 0 });
+            updateInvoiceCashboxOptions();
+            document.getElementById('invCashboxSelect').value = saved.id;
+            populateCashboxStatementOptions();
+            renderCashboxesList();
+            showToast(`تم إنشاء صندوق ${currency} واختياره للفاتورة`);
+        } catch (error) {
+            console.warn('Create invoice currency cashbox error:', error);
+            showToast('تعذر إنشاء الصندوق؛ تحقق من اتصال قاعدة البيانات');
+        } finally { isBusy = false; }
+    }
+
+    function handleInvoiceCurrencyChange() {
+        updateInvoiceCashboxOptions();
+        document.querySelectorAll('#invoiceItemsContainer .item-price').forEach(input => {
+            input.placeholder = `السعر بعملة ${document.getElementById('invCurrency')?.value || 'YER'}`;
+        });
+        recalculateInvoiceTotal();
+    }
+
+    function togglePurchasePaymentFields() {
+        const isPurchase = (document.getElementById('purKind')?.value || 'purchase') === 'purchase';
+        const isCash = (document.getElementById('purPaymentType')?.value || 'cash') === 'cash';
+        document.getElementById('purchaseSupplierFields')?.classList.toggle('hidden', !isPurchase);
+        document.getElementById('purCashboxGroup')?.classList.toggle('hidden', isPurchase && !isCash);
+        if (!isPurchase || isCash) filterPurchaseCashboxes();
+    }
+
+    function filterPurchaseCashboxes() {
+        const select = document.getElementById('purCashboxSelect');
+        if (!select) return;
+        const currency = document.getElementById('purCurrency')?.value || 'YER';
+        const previous = select.value;
+        const available = state.cashboxes.filter(box => (box.currency || 'YER') === currency);
+        select.innerHTML = available.length
+            ? available.map(box => `<option value="${box.id}">${box.name} — ${formatMoney(computeSystemCashboxBalance(box))} ${currency}</option>`).join('')
+            : `<option value="">لا يوجد صندوق بعملة ${currency}</option>`;
+        if (previous && available.some(box => box.id === previous)) select.value = previous;
+    }
+
+    function populatePurchaseSupplierOptions() {
+        const select = document.getElementById('purSupplierSelect');
+        if (!select) return;
+        const previous = select.value;
+        select.innerHTML = '<option value="">اختر المورد</option>' + (state.suppliers || []).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        if (previous && state.suppliers.some(s => s.id === previous)) select.value = previous;
+    }
+
+    function populateCashboxStatementOptions() {
+        const select = document.getElementById('cashboxStatementSelect');
+        if (!select) return;
+        const previous = select.value;
+        select.innerHTML = '<option value="">اختر الصندوق</option>' + state.cashboxes.map(c => `<option value="${c.id}">${c.name} (${c.currency || 'YER'})</option>`).join('');
+        if (previous && state.cashboxes.some(c => c.id === previous)) select.value = previous;
+        const period = document.getElementById('cashboxStatementPeriod');
+        if (period && !period.value) period.value = getCurrentPayrollPeriod();
+    }
+
+    function populateEmployeeExpenseCashboxOptions() {
+        const select = document.getElementById('employeeExpenseCashboxSelect');
+        if (!select) return;
+        const previous = select.value;
+        select.innerHTML = '<option value="">بدون ربط بصندوق</option>' + state.cashboxes.map(c => `<option value="${c.id}">${c.name} (${c.currency || 'YER'})</option>`).join('');
+        if (previous && state.cashboxes.some(c => c.id === previous)) select.value = previous;
     }
 
     function addInvoiceItemRow(prefill = null) {
@@ -3749,72 +4082,128 @@
         const currency = document.getElementById('invCurrency').value || 'YER';
         if (!branchId || !isBranchAllowed(branchId)) { showToast('لا يمكنك إصدار فاتورة من خارج المخزن المحدد من المشرف'); return; }
         const cashboxId = document.getElementById('invCashboxSelect').value;
-        const customerId = document.getElementById('invCustomerSelect').value;
+        const selectedCustomerId = document.getElementById('invCustomerSelect').value;
+        const directCustomerName = (document.getElementById('invCashCustomerName')?.value || '').trim();
         const discount = Number(document.getElementById('invDiscount').value || 0);
         const refNum = (document.getElementById('invRefNumber')?.value || '').trim();
         const notes = `عليكم فاتورة مبيعات برقم ${refNum || '—'}`;
-        const items = [];
-        document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(r => {
-            const name = r.querySelector('.item-name').value.trim();
-            const unit = r.querySelector('.item-unit').value || 'حبة';
-            const qty = Number(r.querySelector('.item-qty').value || 0);
-            const price = Number(r.querySelector('.item-price').value || 0);
-            if (name && qty > 0) items.push({ name, unit, qty, price });
+        const rawItems = [];
+        document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(row => {
+            const name = row.querySelector('.item-name').value.trim();
+            const unit = row.querySelector('.item-unit').value || 'حبة';
+            const qty = Number(row.querySelector('.item-qty').value || 0);
+            const price = Number(row.querySelector('.item-price').value || 0);
+            if (name || qty || price) rawItems.push({ name, unit, qty, price });
         });
-        if (!items.length) { showToast('أضف صنفاً واحداً على الأقل'); return; }
-        const customer = state.customers.find(c => c.id === customerId);
-        if (!customer) { showToast('اختر العميل'); return; }
+        if (!rawItems.length || rawItems.some(item => !item.name || !Number.isFinite(item.qty) || item.qty <= 0 || !Number.isFinite(item.price) || item.price <= 0)) {
+            showToast('أكمل اسم الصنف والكمية، وأدخل سعر بيع أكبر من صفر بعملة الفاتورة المختارة'); return;
+        }
+        if (!Number.isFinite(discount) || discount < 0) { showToast('أدخل خصماً صحيحاً'); return; }
+        const items = [];
+        const stockRequirements = new Map();
+        for (const row of rawItems) {
+            const stockItem = state.warehouse.find(w =>
+                (w.branchId || 'main_branch') === branchId &&
+                String(w.name || '').trim().toLowerCase() === row.name.toLowerCase() && (w.unit || 'حبة') === row.unit
+            );
+            if (!stockItem) { showToast(`الصنف (${row.name}) غير موجود في مخزون ${branchName}`); return; }
+            const costPrice = Number(stockItem.costPrice ?? stockItem.price ?? 0);
+            items.push({ ...row, stockItemId: stockItem.id, costPrice });
+            const old = stockRequirements.get(stockItem.id) || { item: stockItem, qty: 0 };
+            old.qty += row.qty;
+            stockRequirements.set(stockItem.id, old);
+        }
+        for (const requirement of stockRequirements.values()) {
+            const available = Number(requirement.item.qty || 0);
+            if (requirement.qty > available) {
+                showToast(`الكمية غير كافية للصنف ${requirement.item.name}: المتاح ${formatQty(available)} ${requirement.item.unit || 'حبة'}، والمطلوب ${formatQty(requirement.qty)}`);
+                return;
+            }
+        }
+        const subtotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
+        if (discount > subtotal) { showToast('الخصم لا يمكن أن يكون أكبر من إجمالي الفاتورة'); return; }
+        const netTotal = Math.max(0, subtotal - discount);
         const cashbox = paymentType === 'cash' ? state.cashboxes.find(c => c.id === cashboxId) : null;
-        if (paymentType === 'cash' && !cashbox) { showToast('اختر الصندوق'); return; }
+        if (paymentType === 'cash' && !cashbox) { showToast(`لا يوجد صندوق بعملة ${currency}؛ أضف صندوقاً بهذه العملة أو اختر صندوقاً مطابقاً`); return; }
         if (paymentType === 'cash' && (cashbox.currency || 'YER') !== currency) { showToast('عملة الفاتورة يجب أن تطابق عملة الصندوق المختار'); return; }
+        let customer = null;
+        if (paymentType === 'credit') {
+            customer = state.customers.find(c => c.id === selectedCustomerId);
+            if (!customer) { showToast('في الفاتورة الآجلة اختر عميلاً مسجلاً'); return; }
+        } else if (directCustomerName) {
+            const normalized = directCustomerName.replace(/\s+/g, ' ').toLowerCase();
+            customer = state.customers.find(c => String(c.name || '').replace(/\s+/g, ' ').toLowerCase() === normalized) || null;
+            if (!customer) {
+                const customerSaved = await createRecordOnce('customers', 'cust', {
+                    name: normalized, phone: '-', creditLimit: 0, actor: dedupeActorId()
+                }, { name: directCustomerName, phone: '-', creditLimit: 0, balance: 0 }, `cust_${dedupeHash({ name: normalized, phone: '-' })}`);
+                customer = { id: customerSaved.id, name: directCustomerName, phone: '-', creditLimit: 0, balance: 0 };
+            }
+        } else if (selectedCustomerId) {
+            customer = state.customers.find(c => c.id === selectedCustomerId) || null;
+        }
+        const customerName = customer?.name || 'عميل نقدي';
         isBusy = true;
         btn.disabled = true;
         try {
             const date = getLocalDateKey();
-            const subtotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
-            const netTotal = Math.max(0, subtotal - discount);
             const invoiceDoc = {
-                refNumber: refNum, date, branchId, branchName, customerId: customer.id, customerName: customer.name,
+                refNumber: refNum, date, branchId, branchName,
+                customerId: customer?.id || '', customerName,
                 paymentType, currency, currencyName: CURRENCY_NAMES[currency],
                 cashboxId: cashbox ? cashbox.id : '', cashboxName: cashbox ? cashbox.name : 'آجل',
                 items, discount, netTotal, employee: currentUser.fullName, employeeRole: currentUser.role, notes
             };
-            if (!refNum && (state.invoices || []).some(old =>
-                !old.refNumber && old.date === date && old.branchId === branchId && old.customerId === customer.id &&
-                old.paymentType === paymentType && (old.currency || 'YER') === currency &&
-                Number(old.netTotal || 0) === netTotal && Number(old.discount || 0) === discount &&
-                String(old.employee || '') === String(currentUser.fullName || '') &&
-                JSON.stringify(old.items || []) === JSON.stringify(items)
-            )) {
-                showToast('هذه الفاتورة مطابقة لفاتورة محفوظة اليوم؛ أضف رقم فاتورة مختلفاً إن كانت عملية جديدة.');
-                return;
-            }
-            const saved = await createRecordOnce('invoices', 'INV', {
-                refNum, date, branchId, customerId, paymentType, currency, cashboxId,
-                items, discount, netTotal, actor: dedupeActorId()
-            }, invoiceDoc, refNum ? `INV-${refNum}` : '');
-            if (!saved.created) { showToast('تم منع تكرار الفاتورة؛ هذه الفاتورة مسجلة مسبقاً.'); return; }
-            invoiceDoc.id = saved.id;
-            for (const it of items) {
-                const whItem = state.warehouse.find(w =>
-                    (w.branchId || 'main_branch') === branchId &&
-                    (w.name || '').trim().toLowerCase() === it.name.toLowerCase() && (w.unit || 'حبة') === it.unit
-                );
-                if (whItem) {
-                    await updateDocumentOnce('warehouse', whItem.id, {
-                        action: 'invoice-stock-out', invoiceId: saved.id, item: whItem.id, qty: it.qty
-                    }, current => ({ qty: Math.max(0, Number(current.qty || 0) - Number(it.qty || 0)) }));
+            const signature = { refNum, date, branchId, customerId: invoiceDoc.customerId, customerName, paymentType, currency, cashboxId: invoiceDoc.cashboxId, items, discount, netTotal, actor: dedupeActorId() };
+            const bucket = Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS);
+            const invoiceDocId = refNum
+                ? `INV-${refNum.replace(/[^\w\u0600-\u06FF-]/g, '_').slice(0, 90)}`
+                : `INV_${dedupeHash(signature)}_${bucket}`;
+            const invoiceRef = db.collection('invoices').doc(invoiceDocId);
+            const result = await db.runTransaction(async transaction => {
+                const invSnapshot = await transaction.get(invoiceRef);
+                if (invSnapshot.exists) return { created: false };
+                const stockSnapshots = [];
+                for (const requirement of stockRequirements.values()) {
+                    const ref = db.collection('warehouse').doc(requirement.item.id);
+                    stockSnapshots.push({ requirement, ref, snapshot: await transaction.get(ref) });
                 }
+                for (const entry of stockSnapshots) {
+                    if (!entry.snapshot.exists) throw new Error(`STOCK_MISSING:${entry.requirement.item.name}`);
+                    const current = entry.snapshot.data() || {};
+                    const available = Number(current.qty || 0);
+                    if (entry.requirement.qty > available) throw new Error(`INSUFFICIENT_STOCK:${current.name}:${available}:${entry.requirement.qty}`);
+                }
+                transaction.set(invoiceRef, { ...invoiceDoc, id: invoiceDocId });
+                stockSnapshots.forEach(entry => {
+                    const current = entry.snapshot.data() || {};
+                    transaction.update(entry.ref, { qty: Number(current.qty || 0) - entry.requirement.qty });
+                });
+                return { created: true };
+            });
+            if (!result.created) { showToast('هذه الفاتورة أو رقمها مسجل مسبقاً؛ لم يتم خصم المخزون مرة ثانية'); return; }
+            invoiceDoc.id = invoiceDocId;
+            state.invoices = (state.invoices || []).concat(invoiceDoc);
+            for (const requirement of stockRequirements.values()) {
+                const local = state.warehouse.find(item => item.id === requirement.item.id);
+                if (local) local.qty = Number(local.qty || 0) - requirement.qty;
             }
             document.getElementById('invoiceItemsContainer').innerHTML = '';
             addInvoiceItemRow();
             document.getElementById('invDiscount').value = '0.00';
             document.getElementById('invRefNumber').value = '';
+            document.getElementById('invCashCustomerName').value = '';
             updateInvoiceStatementPreview();
-            showToast('تم حفظ الفاتورة وتحديث المخزون');
+            renderInvoicesTable(); renderWarehouseTable(); renderStats();
+            showToast('تم حفظ الفاتورة وخصم الكميات المتاحة بدقة');
             openPrintModal(invoiceDoc);
-        } catch (e) { console.warn('Save invoice error:', e); showToast('تعذر حفظ الفاتورة'); }
-        finally { isBusy = false; btn.disabled = false; }
+        } catch (e) {
+            console.warn('Save invoice error:', e);
+            if (String(e?.message || '').startsWith('INSUFFICIENT_STOCK:')) {
+                const [, name, available, requested] = String(e.message).split(':');
+                showToast(`المخزون غير كافٍ للصنف ${name}: المتاح ${formatQty(available)} والمطلوب ${formatQty(requested)}`);
+            } else showToast('تعذر حفظ الفاتورة؛ لم يتم خصم المخزون');
+        } finally { isBusy = false; btn.disabled = false; }
     }
 
     async function editInvoiceNote(invId) {
@@ -4064,12 +4453,78 @@
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span class="mono" style="color:var(--success); font-size:15px;">${formatMoney(sysBal)} ${c.currency || 'YER'}</span>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="showCashboxStatement('${c.id}')" title="كشف حساب الصندوق"><i class="fa-solid fa-file-lines"></i> كشف</button>
                             ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editCashboxOpening('${c.id}')" title="تعديل الرصيد الافتتاحي"><i class="fa-solid fa-pen"></i></button>` : ''}
                         </div>
                     </div>
                 `;
             }).join('')
             : '<p style="color:var(--text-muted); font-size:13px;">لا توجد صناديق</p>';
+    }
+
+    function getCashboxStatementMovements(cashbox, period) {
+        const currency = cashbox.currency || 'YER';
+        const movements = [];
+        state.invoices.filter(item => item.paymentType === 'cash' && item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
+            .forEach(item => movements.push({ date: item.date, type: 'مبيعات نقدية', note: `فاتورة ${item.refNumber || item.id} — ${item.customerName || ''}`, incoming: Number(item.netTotal || 0), outgoing: 0, actor: item.employee || '' }));
+        state.purchases.filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
+            .forEach(item => movements.push({ date: item.date, type: item.kind === 'purchase' ? 'مشتريات نقدية' : 'مصروف', note: `${item.title || ''} ${item.supplierName ? ' — المورد: ' + item.supplierName : ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.employee || '' }));
+        state.vouchers.filter(item => item.cashboxId === cashbox.id && (item.currency || currency) === currency)
+            .forEach(item => movements.push({ date: item.date || '', type: item.type === 'receipt' ? 'سند قبض' : 'سند صرف', note: item.note || `سند ${item.refNumber || item.id}`, incoming: item.type === 'receipt' ? Number(item.amount || 0) : 0, outgoing: item.type === 'payment' ? Number(item.amount || 0) : 0, actor: item.employee || '' }));
+        (state.employeeExpenses || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
+            .forEach(item => movements.push({ date: item.date || '', type: 'دفعة موظف', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
+        return movements.filter(item => item.date).sort((a,b) => String(a.date).localeCompare(String(b.date)));
+    }
+
+    function renderCashboxStatement() {
+        const cashboxId = document.getElementById('cashboxStatementSelect')?.value || '';
+        const period = document.getElementById('cashboxStatementPeriod')?.value || getCurrentPayrollPeriod();
+        const cashbox = state.cashboxes.find(item => item.id === cashboxId);
+        const body = document.getElementById('cashboxStatementBody');
+        const summary = document.getElementById('cashboxStatementSummary');
+        if (!body || !summary) return;
+        if (!cashbox) { body.innerHTML = '<tr><td colspan="6">اختر الصندوق أولاً</td></tr>'; summary.innerHTML = ''; return; }
+        const currency = cashbox.currency || 'YER';
+        const startDate = `${period}-01`;
+        const all = getCashboxStatementMovements(cashbox, period);
+        const previousMovements = all.filter(item => item.date < startDate);
+        const periodMovements = all.filter(item => item.date.slice(0,7) === period);
+        let opening = getCashboxOpening(cashbox) + previousMovements.reduce((sum,item) => sum + item.incoming - item.outgoing, 0);
+        let running = opening;
+        const totalIn = periodMovements.reduce((sum,item) => sum + item.incoming, 0);
+        const totalOut = periodMovements.reduce((sum,item) => sum + item.outgoing, 0);
+        const rows = periodMovements.map(item => {
+            running += item.incoming - item.outgoing;
+            return `<tr><td>${item.date}</td><td>${item.type}</td><td>${item.note}</td><td class="mono" style="color:var(--success);">${item.incoming ? formatMoney(item.incoming) : '—'}</td><td class="mono" style="color:var(--danger);">${item.outgoing ? formatMoney(item.outgoing) : '—'}</td><td class="mono"><strong>${formatMoney(running)} ${currency}</strong></td></tr>`;
+        }).join('');
+        summary.innerHTML = `
+            <div class="mini-stat"><div class="mini-stat-label">الرصيد السابق</div><div class="mini-stat-val mono">${formatMoney(opening)} ${currency}</div></div>
+            <div class="mini-stat"><div class="mini-stat-label">إجمالي الداخل</div><div class="mini-stat-val mono" style="color:var(--success);">${formatMoney(totalIn)} ${currency}</div></div>
+            <div class="mini-stat"><div class="mini-stat-label">إجمالي الخارج</div><div class="mini-stat-val mono" style="color:var(--danger);">${formatMoney(totalOut)} ${currency}</div></div>
+            <div class="mini-stat"><div class="mini-stat-label">الرصيد الختامي</div><div class="mini-stat-val mono">${formatMoney(running)} ${currency}</div></div>`;
+        body.innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد حركات لهذا الصندوق خلال الشهر المحدد</td></tr>';
+        const boxTitle = document.getElementById('cashboxStatementTitle');
+        if (boxTitle) boxTitle.textContent = `كشف حساب ${cashbox.name} — ${period}`;
+    }
+
+    function showCashboxStatement(cashboxId) {
+        const select = document.getElementById('cashboxStatementSelect');
+        if (select) select.value = cashboxId;
+        renderCashboxStatement();
+        document.getElementById('cashboxStatementSelect')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function printCashboxStatement() {
+        const cashboxId = document.getElementById('cashboxStatementSelect')?.value || '';
+        const cashbox = state.cashboxes.find(item => item.id === cashboxId);
+        if (!cashbox) { showToast('اختر الصندوق واعرض كشفه أولاً'); return; }
+        const period = document.getElementById('cashboxStatementPeriod')?.value || getCurrentPayrollPeriod();
+        const summary = document.getElementById('cashboxStatementSummary')?.innerHTML || '';
+        const table = document.getElementById('cashboxStatementBody')?.closest('table')?.outerHTML || '';
+        const win = window.open('', '_blank', 'width=1000,height=800');
+        if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لطباعة الكشف'); return; }
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>كشف حساب ${cashbox.name}</title><style>body{font-family:Tahoma,Arial;padding:24px;color:#111}h2{text-align:center;color:#0f4c81}.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}.mini-stat{border:1px solid #ddd;padding:10px;border-radius:8px}.mini-stat-label{font-size:12px;color:#555}.mini-stat-val{font-weight:bold;margin-top:5px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #ccc;padding:8px;text-align:right;font-size:12px}th{background:#eef2f6}@media print{button{display:none}}</style></head><body><h2>معمل أبو محمد — كشف حساب الصندوق</h2><p>الصندوق: ${cashbox.name} | العملة: ${cashbox.currency || 'YER'} | الفترة: ${period}</p><div class="summary-strip">${summary}</div>${table}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+        win.document.close();
     }
 
     async function createBranch() {
@@ -4183,8 +4638,10 @@
         const name = document.getElementById('newItemName').value.trim();
         const unit = document.getElementById('newItemUnit').value || 'حبة';
         const qty = Number(document.getElementById('newItemQty').value || 0);
+        const costPrice = Number(document.getElementById('newItemCostPrice')?.value || 0);
         const price = Number(document.getElementById('newItemPrice').value || 0);
         if (!name) { showToast('أدخل اسم الصنف'); return; }
+        if (![qty, costPrice, price].every(Number.isFinite) || qty < 0 || costPrice < 0 || price < 0) { showToast('تحقق من الكمية وسعر التكلفة وسعر البيع'); return; }
         isBusy = true;
         btn.disabled = true;
         try {
@@ -4196,18 +4653,19 @@
             if (existing) {
                 if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل على المخزون'); return; }
                 const updated = await updateDocumentOnce('warehouse', existing.id, {
-                    action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, price, actor: dedupeActorId()
-                }, () => ({ qty, price, unit, branchId, branchName }));
+                    action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, actor: dedupeActorId()
+                }, () => ({ qty, costPrice, price, unit, branchId, branchName }));
                 if (!updated) { showToast('تم منع تكرار حفظ الصنف نفسه خلال وقت قصير.'); return; }
             } else {
                 const result = await createRecordOnce('warehouse', 'wh', {
-                    action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, price, actor: dedupeActorId()
-                }, { branchId, branchName, name, unit, qty, price }, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
+                    action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, actor: dedupeActorId()
+                }, { branchId, branchName, name, unit, qty, costPrice, price }, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
                 if (!result.created) { showToast('هذا الصنف موجود أو تمت إضافته للتو؛ لن يتكرر في المخزن.'); return; }
             }
             document.getElementById('newItemName').value = '';
             document.getElementById('newItemQty').value = '1';
             document.getElementById('newItemPrice').value = '0.00';
+            if (document.getElementById('newItemCostPrice')) document.getElementById('newItemCostPrice').value = '0.00';
             showToast('تم حفظ الصنف في المخزن');
         } catch (e) { console.warn('Save warehouse item error:', e); showToast('تعذر حفظ الصنف في المخزن'); }
         finally { isBusy = false; btn.disabled = false; }
@@ -4222,12 +4680,13 @@
         if (!item) return;
         const nextQty = prompt(`تعديل كمية (${item.name} - ${item.unit || 'حبة'}):`, item.qty);
         if (nextQty === null) return;
-        const nextPrice = prompt(`تعديل سعر (${item.name}):`, Number(item.price || 0).toFixed(2));
+        const nextCostPrice = prompt(`تعديل سعر التكلفة (${item.name}):`, Number(item.costPrice ?? item.price ?? 0).toFixed(2));
+        if (nextCostPrice === null) return;
+        const nextPrice = prompt(`تعديل سعر البيع (${item.name}):`, Number(item.price || 0).toFixed(2));
         if (nextPrice === null) return;
-        await db.collection('warehouse').doc(itemId).update({
-            qty: Number(nextQty || 0),
-            price: Number(nextPrice || 0)
-        });
+        const parsedQty = Number(nextQty), parsedCost = Number(nextCostPrice), parsedSale = Number(nextPrice);
+        if (![parsedQty, parsedCost, parsedSale].every(Number.isFinite) || parsedQty < 0 || parsedCost < 0 || parsedSale < 0) { showToast('أدخل أرقاماً صحيحة غير سالبة'); return; }
+        await db.collection('warehouse').doc(itemId).update({ qty: parsedQty, costPrice: parsedCost, price: parsedSale });
         showToast('تم تعديل الصنف');
     }
 
@@ -4259,8 +4718,9 @@
                         <td><strong>${w.name}</strong></td>
                         <td><span class="badge badge-unit">${w.unit || 'حبة'}</span></td>
                         <td><span class="badge ${q > 0 ? 'badge-cash' : 'badge-expense'} mono">${formatQty(q)}</span></td>
+                        <td><span class="mono">${formatMoney(w.costPrice ?? p)}</span></td>
                         <td><span class="mono">${formatMoney(p)}</span></td>
-                        <td><span class="mono">${formatMoney(q * p)}</span></td>
+                        <td><span class="mono">${formatMoney(q * Number(w.costPrice ?? p))}</span></td>
                         <td>
                             ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editWarehouseItem('${w.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
                             ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteWarehouseItem('${w.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
@@ -4269,7 +4729,7 @@
                     </tr>
                 `;
             }).join('')
-            : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا توجد أصناف في هذا الفرع</td></tr>';
+            : '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا توجد أصناف في هذا الفرع</td></tr>';
     }
 
     async function createCustomer() {
@@ -4479,7 +4939,7 @@
         const costMap = {};
         state.warehouse.forEach(w => {
             const key = `${(w.name || '').trim().toLowerCase()}|${w.unit || 'حبة'}`;
-            costMap[key] = Number(w.price || 0);
+            costMap[key] = Number(w.costPrice ?? w.price ?? 0);
         });
 
         let estimatedCost = 0;
@@ -4489,7 +4949,7 @@
                 const invCost = Array.isArray(inv.items)
                     ? inv.items.reduce((sum, it) => {
                         const key = `${(it.name || '').trim().toLowerCase()}|${it.unit || 'حبة'}`;
-                        const unitPrice = costMap[key] || 0;
+                        const unitPrice = Number(it.costPrice ?? costMap[key] ?? 0);
                         return sum + (Number(it.qty || 0) * unitPrice);
                     }, 0)
                     : 0;
@@ -5211,6 +5671,8 @@
         const staff = getVisiblePayrollStaff().find(item => item.id === staffId);
         const amount = Number(document.getElementById('employeeExpenseAmount').value || 0);
         const note = document.getElementById('employeeExpenseNote').value.trim();
+        const paymentCashboxId = document.getElementById('employeeExpenseCashboxSelect')?.value || '';
+        const paymentCashbox = paymentCashboxId ? state.cashboxes.find(c => c.id === paymentCashboxId) : null;
         const btn = document.getElementById('saveEmployeeExpenseBtn');
         if (!staff) { showToast('اختر الموظف أولاً'); return; }
         if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً للمصروف'); return; }
@@ -5220,11 +5682,16 @@
         const spent = getEmployeePeriodSpent(staff.id, period);
         const remaining = entitlement - spent;
         if (amount > remaining) { showToast(`المبلغ أكبر من المستحق المتبقي (${formatMoney(Math.max(0, remaining))} ${getStaffSalaryCurrency(staff)})`); return; }
+        if (paymentCashboxId && !paymentCashbox) { showToast('اختر صندوقاً صحيحاً'); return; }
+        if (paymentCashbox && (paymentCashbox.currency || 'YER') !== getStaffSalaryCurrency(staff)) { showToast('عملة الصندوق لا تطابق عملة مستحق الموظف'); return; }
+        if (paymentCashbox && computeSystemCashboxBalance(paymentCashbox) < amount) { showToast('رصيد الصندوق غير كافٍ'); return; }
         isBusy = true;
         btn.disabled = true;
         try {
             const record = {
                 staffId: staff.id, staffName: staff.fullName, amount, currency: getStaffSalaryCurrency(staff),
+                cashboxId: document.getElementById('employeeExpenseCashboxSelect')?.value || '',
+                cashboxName: state.cashboxes.find(c => c.id === (document.getElementById('employeeExpenseCashboxSelect')?.value || ''))?.name || '',
                 note: note || (isPieceworkStaff(staff) ? 'دفعة من مستحق الإنتاج' : 'مصروف من الراتب'),
                 period, date, createdAt: new Date().toISOString(),
                 createdBy: currentUser?.fullName || 'الإدارة', createdByUserId: currentUser?.id || ''
@@ -5239,7 +5706,8 @@
             document.getElementById('employeeExpenseAmount').value = '';
             document.getElementById('employeeExpenseNote').value = '';
             renderEmployeeExpenses();
-            showToast('تم تسجيل المبلغ وتحديث المستحق المتبقي للموظف');
+            renderCashboxesList();
+            showToast('تم تسجيل المبلغ وتحديث مستحق الموظف ورصيد الصندوق');
         } catch (e) { console.warn('Record employee expense error:', e); showToast('تعذر تسجيل مصروف الموظف'); }
         finally { isBusy = false; btn.disabled = false; }
     }
@@ -5879,6 +6347,10 @@ window.addEventListener('load',function(){
 
     toggleEmployeePayTypeFields();
     initMenuPermissionCheckboxes();
+    if (document.getElementById('cashboxStatementPeriod')) document.getElementById('cashboxStatementPeriod').value = getCurrentPayrollPeriod();
+    if (document.getElementById('qtyAdjustmentRows')) addStockQuantityRow();
+    toggleInvoicePaymentFields();
+    togglePurchasePaymentFields();
 </script>
 </body>
 </html>
