@@ -934,6 +934,48 @@
             .employee-dues-overview-grid { grid-template-columns: 1fr; }
             .employee-dues-kpis { grid-template-columns: 1fr; }
         }
+    
+        /* واجهة مبيعات مبسطة وحديثة */
+        .sales-workspace-grid{display:grid;grid-template-columns:minmax(260px,0.95fr) minmax(340px,1.25fr);gap:14px;margin:12px 0 16px;align-items:start}
+        .sales-products-panel,.sales-cart-panel{background:#f8fafc;border:1.5px solid var(--border);border-radius:17px;padding:13px;min-width:0}
+        .sales-panel-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+        .sales-panel-heading strong{display:block;color:var(--primary);font-size:14px}
+        .sales-panel-heading small{display:block;color:var(--text-muted);font-size:11px;margin-top:3px}
+        .sales-product-search{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:5px 8px;margin-bottom:11px}
+        .sales-product-search>i{color:var(--muted)}
+        .sales-product-search input{border:0!important;box-shadow:none!important;padding:8px!important;min-width:0}
+        .invoice-product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;max-height:430px;overflow:auto;padding:2px}
+        .invoice-product-card{background:#fff;border:1px solid var(--border);border-radius:13px;padding:10px;display:flex;flex-direction:column;gap:7px;min-width:0;box-shadow:0 2px 7px rgba(15,76,129,.035)}
+        .invoice-product-card strong{font-size:12.5px;color:var(--text-main);line-height:1.5;min-height:36px;word-break:break-word}
+        .invoice-product-meta{font-size:10.5px;color:var(--text-muted);display:flex;justify-content:space-between;gap:5px;flex-wrap:wrap}
+        .invoice-product-price{font-weight:800;color:var(--primary);font-size:12px}
+        .invoice-product-card .btn{width:100%;padding:7px;font-size:11px}
+        .invoice-product-card .btn:disabled{opacity:.45}
+        .empty-products{grid-column:1/-1;text-align:center;background:#fff;border:1px dashed var(--border);border-radius:12px;padding:22px 10px;color:var(--text-muted);font-size:12px}
+        .invoice-items-list{display:flex;flex-direction:column;gap:9px}
+        .invoice-item-row{display:block!important;background:#fff;border:1.5px solid #dce5ef!important;border-radius:14px;padding:11px!important;margin:0!important;box-shadow:0 3px 10px rgba(15,76,129,.04)}
+        .invoice-line-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;margin-bottom:9px}
+        .invoice-line-top .item-name{font-weight:800;color:var(--primary);min-width:0}
+        .invoice-line-fields{display:grid;grid-template-columns:0.7fr 1fr 1fr 1.1fr;gap:7px;align-items:end}
+        .invoice-line-field label{display:block;font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:4px}
+        .invoice-line-field .form-control{padding:8px 9px;font-size:12px}
+        .invoice-line-total{display:flex;flex-direction:column;gap:3px;background:var(--primary-soft);border:1px solid #d7e4f0;border-radius:10px;padding:8px;min-height:39px;justify-content:center}
+        .invoice-line-total small{font-size:9px;color:var(--text-muted)}
+        .invoice-line-total strong{font-size:12px;color:var(--primary)}
+        .sales-cart-note{font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.7}
+        .sales-cart-note i{color:var(--accent)}
+        .supplier-invoice-lines-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0 10px;color:var(--primary);font-weight:800}
+        .supplier-invoice-row{display:grid;grid-template-columns:2fr .75fr .8fr 1fr 1fr auto;gap:7px;align-items:end;padding:10px;background:#f8fafc;border:1px solid var(--border);border-radius:12px;margin-bottom:8px}
+        .supplier-invoice-row label{display:block;font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:4px}
+        .supplier-invoice-row .form-control{padding:8px;font-size:12px}
+        .supplier-line-total{font-weight:800;color:var(--primary);font-size:12px;padding:10px 5px;text-align:center;background:#fff;border:1px solid var(--border);border-radius:9px;min-width:70px}
+        .supplier-invoice-totals{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;background:var(--primary-soft);border:1px solid #d7e4f0;border-radius:13px;padding:12px}
+        .supplier-invoice-totals div{display:flex;flex-direction:column;gap:3px}
+        .supplier-invoice-totals span{font-size:11px;color:var(--text-muted)}
+        .supplier-invoice-totals strong{font-size:17px;color:var(--primary);font-weight:900}
+        @media(max-width:850px){.sales-workspace-grid{grid-template-columns:1fr}.invoice-product-grid{max-height:330px}.supplier-invoice-row{grid-template-columns:1fr 1fr}.supplier-invoice-row .supplier-item-name{grid-column:1/-1}.supplier-invoice-row .supplier-item-total{grid-column:span 1}}
+        @media(max-width:520px){.invoice-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.invoice-line-fields{grid-template-columns:1fr 1fr}.invoice-line-top{grid-template-columns:minmax(0,1fr) auto}.supplier-invoice-row{grid-template-columns:1fr 1fr}.supplier-invoice-row .supplier-item-name{grid-column:1/-1}.supplier-invoice-row .supplier-item-total{grid-column:span 1}}
+
     </style>
 </head>
 <body>
@@ -1074,6 +1116,10 @@
                     <i class="fa-solid fa-file-invoice-dollar"></i>
                     <span>مستحقات الموظفين وكشوف الحساب</span>
                 </button>
+                <button class="nav-tab expense-tab" data-menu-key="backupTab" onclick="openFullPage('backupTab')">
+                    <i class="fa-solid fa-database"></i>
+                    <span>النسخ الاحتياطي واستعادة البيانات</span>
+                </button>
             </div>
         </div>
 
@@ -1130,39 +1176,30 @@
                     </div>
                 </div>
 
-                <!-- بحث واختيار الأصناف من المخازن -->
-                <div class="stock-picker-box">
-                    <div style="font-size:13px; font-weight:800; color:var(--primary); margin-bottom:8px;">
-                        <i class="fa-solid fa-magnifying-glass"></i> بحث وإضافة صنف من المخزن للفاتورة
+                <!-- واجهة اختيار الأصناف السهلة -->
+                <div class="sales-workspace-grid">
+                    <div class="sales-products-panel">
+                        <div class="sales-panel-heading">
+                            <div><strong><i class="fa-solid fa-boxes-stacked"></i> اختر الأصناف من المخزن</strong><small>اضغط على الصنف لإضافته مباشرة إلى الفاتورة</small></div>
+                            <span class="badge badge-sup" id="invoiceProductsCount">0 صنف</span>
+                        </div>
+                        <div class="sales-product-search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="search" id="warehouseItemSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderWarehouseCatalogDropdown()">
+                            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('warehouseItemSearch').value=''; renderWarehouseCatalogDropdown();" title="مسح البحث"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div id="invoiceProductGrid" class="invoice-product-grid"><div class="empty-products">اختر المخزن لعرض الأصناف</div></div>
+                        <select id="warehouseCatalogSelect" class="hidden" aria-hidden="true"><option value="">اختر صنفاً</option></select>
                     </div>
-                    <div class="grid-2" style="margin-bottom:0;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <div style="display:flex; gap:6px;">
-                                <input type="text" id="warehouseItemSearch" class="form-control" placeholder="اكتب اسم الصنف للبحث..." oninput="renderWarehouseCatalogDropdown()">
-                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('warehouseItemSearch').value=''; renderWarehouseCatalogDropdown();" title="مسح البحث">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-                            </div>
+                    <div class="sales-cart-panel">
+                        <div class="sales-panel-heading">
+                            <div><strong><i class="fa-solid fa-cart-shopping"></i> أصناف الفاتورة</strong><small>عدّل الكمية والسعر قبل الحفظ</small></div>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="addInvoiceItemRow()"><i class="fa-solid fa-plus"></i> صنف يدوي</button>
                         </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <div style="display:flex; gap:6px;">
-                                <select id="warehouseCatalogSelect" class="form-control"></select>
-                                <button type="button" class="btn btn-accent btn-sm" onclick="addSelectedWarehouseItemToInvoice()">
-                                    <i class="fa-solid fa-plus"></i> إضافة
-                                </button>
-                            </div>
-                        </div>
+                        <div id="invoiceItemsContainer" class="invoice-items-list"></div>
+                        <div class="sales-cart-note"><i class="fa-solid fa-circle-info"></i> يتم التحقق من رصيد المخزون قبل اعتماد الفاتورة، ولن تُحفظ كمية تتجاوز المتاح.</div>
                     </div>
                 </div>
-
-                <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                    <strong style="font-size:13px;">أصناف الفاتورة (حبة / شدة):</strong>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="addInvoiceItemRow()">
-                        <i class="fa-solid fa-plus"></i> سطر صنف جديد
-                    </button>
-                </div>
-
-                <div id="invoiceItemsContainer"></div>
 
                 <div class="grid-2">
                     <div class="form-group" style="margin-bottom:0;">
@@ -1255,10 +1292,53 @@
                 </div>
                 <div class="table-responsive" style="margin-top:10px;">
                     <table>
-                        <thead><tr><th>اسم المورد</th><th>رقم الهاتف</th><th>مصروفات مرتبطة</th></tr></thead>
+                        <thead><tr><th>اسم المورد</th><th>رقم الهاتف</th><th>إجمالي التوريدات</th><th>المدفوع</th><th>المتبقي عليه</th><th>كشف الحساب</th></tr></thead>
                         <tbody id="supplierBalancesBody"></tbody>
                     </table>
                 </div>
+            </div>
+
+
+            <div class="card-box supplier-invoice-card">
+                <div class="card-title"><span><i class="fa-solid fa-file-invoice"></i> تسجيل فاتورة توريد من مورد</span><span class="badge badge-sup">تُضاف الأصناف للمخزن تلقائياً</span></div>
+                <div class="grid-3">
+                    <div class="form-group"><label>المورد</label><select id="supplierInvoiceSupplier" class="form-control"></select></div>
+                    <div class="form-group"><label>المخزن المستلم</label><select id="supplierInvoiceBranch" class="form-control"></select></div>
+                    <div class="form-group"><label>العملة</label><select id="supplierInvoiceCurrency" class="form-control" onchange="filterSupplierInvoiceCashboxes(); recalculateSupplierInvoiceTotal();"><option value="YER">ريال يمني (YER)</option><option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option></select></div>
+                </div>
+                <div class="supplier-invoice-lines-head"><strong>أصناف التوريد</strong><button type="button" class="btn btn-outline btn-sm" onclick="addSupplierInvoiceRow()"><i class="fa-solid fa-plus"></i> إضافة صنف</button></div>
+                <div id="supplierInvoiceItemsContainer"></div>
+                <div class="supplier-invoice-totals">
+                    <div><span>إجمالي الفاتورة</span><strong id="supplierInvoiceTotal">0.00 YER</strong></div>
+                    <div><span>المتبقي للمورد</span><strong id="supplierInvoiceRemaining">0.00 YER</strong></div>
+                </div>
+                <div class="grid-3" style="margin-top:12px;">
+                    <div class="form-group"><label>طريقة السداد</label><select id="supplierInvoicePaymentType" class="form-control" onchange="toggleSupplierInvoicePaymentFields()"><option value="credit">آجل بالكامل</option><option value="cash">نقداً بالكامل</option><option value="partial">دفع جزء من المبلغ</option></select></div>
+                    <div class="form-group" id="supplierInvoicePaidGroup"><label>المبلغ المدفوع الآن</label><input id="supplierInvoicePaid" class="form-control num-input" type="number" min="0" step="0.01" value="0" oninput="recalculateSupplierInvoiceTotal()"></div>
+                    <div class="form-group" id="supplierInvoiceCashboxGroup"><label>الصندوق الذي تم الدفع منه</label><select id="supplierInvoiceCashbox" class="form-control"></select></div>
+                </div>
+                <div class="form-group"><label>ملاحظة / رقم فاتورة المورد (اختياري)</label><input type="text" id="supplierInvoiceNote" class="form-control" placeholder="رقم فاتورة المورد أو ملاحظة"></div>
+                <button id="saveSupplierInvoiceBtn" class="btn btn-primary btn-full" onclick="saveSupplierInvoice()"><i class="fa-solid fa-floppy-disk"></i> حفظ فاتورة المورد وإدخال الأصناف للمخزن</button>
+                <div class="employee-permission-note" style="margin-top:9px;">أضف كل صنف في صف مستقل، واكتب الكمية وسعر تكلفة الوحدة. يحسب إجمالي كل صف وإجمالي فاتورة المورد تلقائياً، وتُضاف الكميات للمخزن، ويُسجل المتبقي في كشف حساب المورد. الدفعات النقدية والآجلة والجزئية تظهر منفصلة حسب العملة.</div>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-money-bill-transfer"></i> تسديد مبلغ للمورد</span></div>
+                <div class="grid-4">
+                    <div class="form-group"><label>المورد</label><select id="supplierPaymentSupplier" class="form-control"></select></div>
+                    <div class="form-group"><label>العملة</label><select id="supplierPaymentCurrency" class="form-control" onchange="filterSupplierPaymentCashboxes(); renderSupplierBalances();"><option value="YER">ريال يمني (YER)</option><option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option></select></div>
+                    <div class="form-group"><label>المبلغ المدفوع</label><input id="supplierPaymentAmount" type="number" min="0.01" step="0.01" class="form-control num-input" placeholder="0.00"></div>
+                    <div class="form-group"><label>الصندوق</label><select id="supplierPaymentCashbox" class="form-control"></select></div>
+                </div>
+                <div class="form-group"><label>بيان السداد (اختياري)</label><input id="supplierPaymentNote" class="form-control" placeholder="دفعة من حساب المورد"></div>
+                <button id="saveSupplierPaymentBtn" type="button" class="btn btn-success btn-full" onclick="recordSupplierPayment()"><i class="fa-solid fa-check"></i> تسجيل السداد وخصمه من رصيد المورد</button>
+            </div>
+
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-book-open"></i> كشف حساب المورد</span><button type="button" class="btn btn-outline btn-sm" onclick="printSupplierLedger()"><i class="fa-solid fa-print"></i> طباعة الكشف</button></div>
+                <div class="form-group"><label>اختر المورد لعرض كشفه</label><select id="supplierLedgerSelect" class="form-control" onchange="renderSupplierLedger()"></select></div>
+                <div id="supplierLedgerSummary" class="summary-strip"></div>
+                <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>الأصناف / البيان</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الرصيد بعد الحركة</th></tr></thead><tbody id="supplierLedgerBody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr></tbody></table></div>
             </div>
 
             <div class="card-box">
@@ -1555,6 +1635,14 @@
                     <div class="form-group">
                         <label>سعر البيع</label>
                         <input type="number" step="0.01" inputmode="decimal" id="newItemPrice" class="form-control num-input" value="0.00" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>عملة التكلفة والبيع</label>
+                        <select id="newItemPriceCurrency" class="form-control">
+                            <option value="YER">ريال يمني (YER)</option>
+                            <option value="SAR">ريال سعودي (SAR)</option>
+                            <option value="USD">دولار أمريكي (USD)</option>
+                        </select>
                     </div>
                 </div>
                 <button id="saveWarehouseItemBtn" class="btn btn-primary btn-full" onclick="saveWarehouseItem()">
@@ -2238,6 +2326,42 @@
             </div>
         </section>
 
+        <!-- النسخ الاحتياطي واستعادة البيانات -->
+        <section id="backupTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-database"></i> النسخ الاحتياطي واستعادة البيانات</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-file-export"></i> إنشاء نسخة احتياطية كاملة</span></div>
+                <p style="font-size:13px;color:var(--text-muted);line-height:1.9;margin-bottom:13px;">
+                    ينزّل النظام ملف JSON يحتوي بيانات الفروع والمخازن والأصناف والفواتير والعملاء والموردين والصناديق والسندات والموظفين والإنتاج والمصروفات.
+                </p>
+                <button id="downloadBackupBtn" type="button" class="btn btn-primary btn-full" onclick="downloadSystemBackup()">
+                    <i class="fa-solid fa-download"></i> تنزيل نسخة احتياطية الآن
+                </button>
+                <div id="backupExportStatus" class="employee-permission-note" style="margin-top:10px;">يفضل تنزيل نسخة احتياطية بانتظام وحفظها في مكان آمن خارج الجهاز.</div>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-file-import"></i> استعادة نسخة احتياطية</span></div>
+                <div class="form-group">
+                    <label for="backupFileInput">اختر ملف النسخة الاحتياطية (.json)</label>
+                    <input id="backupFileInput" type="file" class="form-control" accept=".json,application/json" onchange="showSelectedBackupFile()">
+                </div>
+                <div id="backupRestoreStatus" class="employee-permission-note" style="margin-bottom:12px;">اختر ملفاً تم تنزيله من هذا النظام، ثم اضغط استعادة ودمج البيانات.</div>
+                <button id="restoreBackupBtn" type="button" class="btn btn-warning btn-full" onclick="restoreSystemBackup()">
+                    <i class="fa-solid fa-rotate-left"></i> استعادة ودمج النسخة الاحتياطية
+                </button>
+                <p style="font-size:12px;color:var(--text-muted);line-height:1.9;margin-top:12px;">
+                    الاستعادة تستبدل المستندات التي تحمل نفس المعرّفات وتضيف المستندات غير الموجودة، لكنها لا تحذف السجلات الأخرى غير الموجودة في ملف النسخة. خذ نسخة جديدة قبل الاستعادة.
+                </p>
+            </div>
+            <div class="card-box" style="border-color:#f0c5c5;background:#fffafa;">
+                <div class="card-title" style="color:var(--danger);"><span><i class="fa-solid fa-shield-halved"></i> تنبيه حماية البيانات</span></div>
+                <p style="font-size:13px;line-height:1.9;color:#7f1d1d;">ملف النسخة يحتوي بيانات مالية وسجلات حسابات الدخول، وقد يحتوي كلمات مرور الحسابات القديمة. لا ترسله لأحد ولا تحفظه في مكان عام. احتفظ به في جهاز أو وحدة تخزين موثوقة.</p>
+            </div>
+        </section>
+
     </div>
 </div>
 
@@ -2347,7 +2471,8 @@
         { key: 'employeePermissionsTab', label: 'الأمان وحسابات الدخول' },
         { key: 'employeeExpensesTab', label: 'مصروفات الموظفين' },
         { key: 'employeeProductionTab', label: 'إضافة شغل للموظفين' },
-        { key: 'employeeDuesTab', label: 'مستحقات الموظفين وكشوف الحساب' }
+        { key: 'employeeDuesTab', label: 'مستحقات الموظفين وكشوف الحساب' },
+        { key: 'backupTab', label: 'النسخ الاحتياطي واستعادة البيانات' }
     ];
 
     const firebaseConfig = {
@@ -2979,14 +3104,14 @@ function initMenuPermissionCheckboxes() {
     function applyHomeMenuPermissions() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-menu-key]').forEach(btn => {
             const key = btn.getAttribute('data-menu-key');
-            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'quantitiesTab'].includes(key);
+            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'quantitiesTab', 'backupTab'].includes(key);
             btn.classList.toggle('hidden', (adminOnly && !canManageUsers(currentUser)) || !canAccessMenu(key, currentUser));
         });
         applyDashboardWidgetPermissions();
     }
 
     function openFullPage(tabId) {
-        if (['employeesTab', 'employeePermissionsTab', 'quantitiesTab'].includes(tabId) && !canManageUsers(currentUser)) {
+        if (['employeesTab', 'employeePermissionsTab', 'quantitiesTab', 'backupTab'].includes(tabId) && !canManageUsers(currentUser)) {
             showToast('إدارة الموظفين والصلاحيات للمشرف العام والمدير فقط');
             return;
         }
@@ -3000,7 +3125,14 @@ function initMenuPermissionCheckboxes() {
         if (tabId === 'salesTab') {
             renderWarehouseCatalogDropdown();
             updateInvoiceStatementPreview();
+            if (!document.querySelector('#invoiceItemsContainer .invoice-item-row')) addInvoiceItemRow();
             recalculateInvoiceTotal();
+        }
+        if (tabId === 'purchasesTab') {
+            populateSupplierAccountOptions();
+            if (!document.querySelector('#supplierInvoiceItemsContainer .supplier-invoice-row')) addSupplierInvoiceRow();
+            toggleSupplierInvoicePaymentFields();
+            renderSupplierBalances();
         }
         if (tabId === 'vouchersTab') {
             toggleVoucherCustomerField();
@@ -3033,6 +3165,10 @@ function initMenuPermissionCheckboxes() {
         }
         if (tabId === 'employeeDuesTab') {
             renderEmployeeDues();
+        }
+        if (tabId === 'backupTab') {
+            const status = document.getElementById('backupExportStatus');
+            if (status) status.textContent = 'جاهز لإنشاء نسخة احتياطية من جميع بيانات النظام.';
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -3248,7 +3384,13 @@ function initMenuPermissionCheckboxes() {
 
         const purchasesOut = state.purchases
             .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
-            .reduce((s, p) => s + Number(p.amount || 0), 0);
+            .reduce((sum, p) => {
+                // فاتورة التوريد قد تكون آجلة أو مدفوعة جزئياً؛ الصندوق ينقص فقط بالمبلغ المدفوع فعلاً.
+                const cashOut = p.kind === 'supplierPurchase'
+                    ? Number(p.paidAmount || 0)
+                    : Number(p.amount || 0);
+                return sum + cashOut;
+            }, 0);
         const staffPaymentsOut = (state.employeeExpenses || [])
             .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
             .reduce((s, p) => s + Number(p.amount || 0), 0);
@@ -3545,6 +3687,7 @@ function initMenuPermissionCheckboxes() {
         populateCashboxStatementOptions();
         populateEmployeeExpenseCashboxOptions();
         populatePurchaseSupplierOptions();
+        populateSupplierAccountOptions();
 
         const custSelInv = document.getElementById('invCustomerSelect');
         const custSelVch = document.getElementById('voucherCustomerSelect');
@@ -3562,50 +3705,59 @@ function initMenuPermissionCheckboxes() {
 
     function renderWarehouseCatalogDropdown() {
         const sel = document.getElementById('warehouseCatalogSelect');
-        if (!sel) return;
-        const branchId = document.getElementById('invBranchSelect').value || '';
-        const q = (document.getElementById('warehouseItemSearch').value || '').trim().toLowerCase();
+        const grid = document.getElementById('invoiceProductGrid');
+        if (!sel || !grid) return;
+        const branchId = document.getElementById('invBranchSelect')?.value || '';
+        const q = (document.getElementById('warehouseItemSearch')?.value || '').trim().toLowerCase();
         if (!branchId || !isBranchAllowed(branchId)) {
-            sel.innerHTML = '<option value="">لم يحدد المشرف مخزناً لهذا الموظف</option>';
+            sel.innerHTML = '<option value="">لم يحدد المشرف مخزناً</option>';
+            grid.innerHTML = '<div class="empty-products">لم يتم تحديد مخزن مسموح لهذا الحساب</div>';
+            const count = document.getElementById('invoiceProductsCount'); if (count) count.textContent = '0 صنف';
             return;
         }
-        let items = state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId);
-
-        if (q) {
-            items = items.filter(w => (w.name || '').toLowerCase().includes(q));
+        const items = (state.warehouse || []).filter(w => (w.branchId || 'main_branch') === branchId && String(w.name || '').toLowerCase().includes(q));
+        sel.innerHTML = items.length ? items.map(w => `<option value="${w.id}">${w.name}</option>`).join('') : '<option value="">لا توجد أصناف</option>';
+        const count = document.getElementById('invoiceProductsCount'); if (count) count.textContent = `${items.length} صنف`;
+        if (!items.length) {
+            grid.innerHTML = '<div class="empty-products">لا توجد أصناف مطابقة. جرّب كلمة بحث أخرى أو راجع المخزن.</div>';
+            return;
         }
+        grid.innerHTML = items.map(item => {
+            const available = Number(item.qty || 0);
+            const priceCurrency = item.priceCurrency || 'YER';
+            const priceLabel = Number(item.price || 0) > 0 ? `${formatMoney(item.price)} ${priceCurrency}` : 'أدخل سعر البيع';
+            const safeName = escapeUiText(item.name || 'صنف');
+            return `<div class="invoice-product-card">
+                <strong>${safeName}</strong>
+                <div class="invoice-product-meta"><span>${escapeUiText(item.unit || 'حبة')}</span><span>المتاح: ${formatQty(available)}</span></div>
+                <div class="invoice-product-price">${priceLabel}</div>
+                <button type="button" class="btn btn-accent btn-sm" ${available <= 0 ? 'disabled' : ''} onclick="addStockProductToInvoice('${item.id}')"><i class="fa-solid fa-plus"></i> ${available > 0 ? 'إضافة للفاتورة' : 'نفد المخزون'}</button>
+            </div>`;
+        }).join('');
+    }
 
-        const prevVal = sel.value;
-        sel.innerHTML = items.length
-            ? items.map(w => `<option value="${w.id}">${w.name} (${w.unit || 'حبة'}) — متاح: ${formatQty(w.qty || 0)} — سعر: ${formatMoney(w.price)}</option>`).join('')
-            : '<option value="">لا توجد أصناف مطابقة في المخازن</option>';
+    function escapeUiText(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
 
-        if (prevVal && items.some(w => w.id === prevVal)) {
-            sel.value = prevVal;
-        }
+    function addStockProductToInvoice(stockId) {
+        const item = (state.warehouse || []).find(w => w.id === stockId);
+        if (!item) { showToast('لم يتم العثور على الصنف'); return; }
+        const available = Number(item.qty || 0);
+        if (available <= 0) { showToast('هذا الصنف غير متوفر حالياً في المخزن'); return; }
+        const invoiceCurrency = document.getElementById('invCurrency')?.value || 'YER';
+        const storedPriceCurrency = item.priceCurrency || 'YER';
+        const canUseStoredPrice = storedPriceCurrency === invoiceCurrency;
+        addInvoiceItemRow({
+            name: item.name, unit: item.unit || 'حبة', qty: 1,
+            price: canUseStoredPrice ? Number(item.price || 0) : 0
+        });
+        showToast(canUseStoredPrice ? `أضيف ${item.name} إلى الفاتورة` : `أضيف ${item.name}. أدخل سعر البيع بعملة ${invoiceCurrency}`);
     }
 
     function addSelectedWarehouseItemToInvoice() {
         const sel = document.getElementById('warehouseCatalogSelect');
-        const item = state.warehouse.find(w => w.id === sel.value);
-        if (!item) {
-            showToast('اختر صنفاً من المخازن أولاً');
-            return;
-        }
-        const invoiceCurrency = document.getElementById('invCurrency')?.value || 'YER';
-        // سعر البيع القديم في المخزون لا يحمل عملة محددة؛ نعتبره بالريال اليمني.
-        // عند البيع بعملة أخرى نترك السعر صفراً حتى يدخله المستخدم بنفس عملة الفاتورة ولا نخلط العملات.
-        const storedPriceCurrency = item.priceCurrency || 'YER';
-        const canUseStoredPrice = storedPriceCurrency === invoiceCurrency;
-        addInvoiceItemRow({
-            name: item.name,
-            unit: item.unit || 'حبة',
-            qty: 1,
-            price: canUseStoredPrice ? Number(item.price || 0) : 0
-        });
-        showToast(canUseStoredPrice
-            ? `تمت إضافة ${item.name}`
-            : `تمت إضافة ${item.name}. أدخل سعر البيع بعملة ${invoiceCurrency} لأن سعر المخزون مسجل بعملة ${storedPriceCurrency}`);
+        if (sel?.value) addStockProductToInvoice(sel.value);
     }
 
     function populateQuantityItems() {
@@ -3846,7 +3998,7 @@ function initMenuPermissionCheckboxes() {
         document.getElementById('kpiTotalCash').textContent = cash;
         document.getElementById('kpiTotalReceivables').textContent = formatCurrencyTotals(debtTotals);
         document.getElementById('kpiWarehouseStock').textContent = formatQty(totalStockQty);
-        document.getElementById('purchasesTabTotal').textContent = formatCurrencyBreakdown(visiblePurchases, 'amount');
+        document.getElementById('purchasesTabTotal').textContent = formatCurrencyBreakdown(visiblePurchases.filter(record => record.kind === 'expense'), 'amount');
         document.getElementById('warehouseTotalValueBadge').textContent = `قيمة المخزون: ${formatMoney(totalStockVal)}`;
     }
 
@@ -3931,20 +4083,284 @@ function initMenuPermissionCheckboxes() {
         }
     }
 
+    function supplierTotalsFor(supplierId) {
+        const totals = { YER: { purchases: 0, initialPaid: 0, payments: 0, due: 0 }, SAR: { purchases: 0, initialPaid: 0, payments: 0, due: 0 }, USD: { purchases: 0, initialPaid: 0, payments: 0, due: 0 } };
+        (state.purchases || []).filter(p => p.supplierId === supplierId).forEach(p => {
+            const code = CURRENCY_CODES.includes(p.currency) ? p.currency : 'YER';
+            if (p.kind === 'supplierPurchase') {
+                totals[code].purchases += Number(p.amount || p.totalAmount || 0);
+                totals[code].initialPaid += Number(p.paidAmount || 0);
+            } else if (p.kind === 'supplierPayment') {
+                totals[code].payments += Number(p.amount || 0);
+            }
+        });
+        CURRENCY_CODES.forEach(code => { totals[code].due = totals[code].purchases - totals[code].initialPaid - totals[code].payments; });
+        return totals;
+    }
+
+    function supplierCurrencySummary(totals, field) {
+        return CURRENCY_CODES.filter(code => Math.abs(totals[code][field]) > 0.000001).map(code => `${formatMoney(totals[code][field])} ${code}`).join('<br>') || '0.00';
+    }
+
     function renderSupplierBalances() {
         const tbody = document.getElementById('supplierBalancesBody');
         if (!tbody) return;
         const suppliers = state.suppliers || [];
         tbody.innerHTML = suppliers.length ? suppliers.map(supplier => {
-            const relatedExpenses = (state.purchases || []).filter(record => record.kind === 'expense' && record.supplierId === supplier.id).length;
+            const totals = supplierTotalsFor(supplier.id);
             return `<tr>
-                <td><strong>${supplier.name || '-'}</strong></td>
-                <td>${supplier.phone || '-'}</td>
-                <td><span class="badge badge-unit">${relatedExpenses} مصروف</span></td>
+                <td><strong>${escapeUiText(supplier.name || '-')}</strong></td>
+                <td>${escapeUiText(supplier.phone || '-')}</td>
+                <td class="mono">${supplierCurrencySummary(totals, 'purchases')}</td>
+                <td class="mono">${supplierCurrencySummary(totals, 'initialPaid').replaceAll('<br>', '<br>')}${CURRENCY_CODES.some(code => totals[code].payments) ? '<br>' + supplierCurrencySummary(totals, 'payments') : ''}</td>
+                <td class="mono" style="color:var(--danger);font-weight:800;">${supplierCurrencySummary(totals, 'due')}</td>
+                <td><button type="button" class="btn btn-outline btn-sm" onclick="showSupplierLedger('${supplier.id}')"><i class="fa-solid fa-file-lines"></i> كشف الحساب</button></td>
             </tr>`;
-        }).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">لا يوجد موردون بعد. أضف المورد من الزر أعلاه.</td></tr>';
+        }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا يوجد موردون بعد. أضف المورد أولاً.</td></tr>';
         const hint = document.getElementById('supplierBalancesCard');
-        if (hint) hint.textContent = 'قائمة الموردين وأرقامهم فقط. يمكنك اختيار مورد عند تسجيل مصروف مرتبط به.';
+        if (hint) hint.textContent = 'كل فاتورة توريد تزيد حساب المورد وتضيف الكميات للمخزن. الدفعات تقلل الرصيد المستحق، والعملات تظهر منفصلة.';
+        renderSupplierLedger();
+    }
+
+    function filterSupplierInvoiceCashboxes() {
+        const currency = document.getElementById('supplierInvoiceCurrency')?.value || 'YER';
+        const select = document.getElementById('supplierInvoiceCashbox');
+        if (!select) return;
+        const old = select.value;
+        const list = (state.cashboxes || []).filter(box => (box.currency || 'YER') === currency);
+        select.innerHTML = list.map(box => `<option value="${box.id}">${escapeUiText(box.name)} — ${formatMoney(computeSystemCashboxBalance(box))} ${currency}</option>`).join('') || '<option value="">لا يوجد صندوق بهذه العملة</option>';
+        if (old && list.some(box => box.id === old)) select.value = old;
+    }
+
+    function filterSupplierPaymentCashboxes() {
+        const currency = document.getElementById('supplierPaymentCurrency')?.value || 'YER';
+        const select = document.getElementById('supplierPaymentCashbox');
+        if (!select) return;
+        const old = select.value;
+        const list = (state.cashboxes || []).filter(box => (box.currency || 'YER') === currency);
+        select.innerHTML = list.map(box => `<option value="${box.id}">${escapeUiText(box.name)} — متاح ${formatMoney(computeSystemCashboxBalance(box))} ${currency}</option>`).join('') || '<option value="">لا يوجد صندوق بهذه العملة</option>';
+        if (old && list.some(box => box.id === old)) select.value = old;
+    }
+
+    function addSupplierInvoiceRow(prefill = null) {
+        const container = document.getElementById('supplierInvoiceItemsContainer');
+        if (!container) return;
+        const row = document.createElement('div');
+        row.className = 'supplier-invoice-row';
+        row.innerHTML = `
+            <div class="supplier-item-name"><label>اسم الصنف</label><input class="form-control supplier-item-name-input" value="${escapeUiText(prefill?.name || '')}" placeholder="اسم الصنف أو المادة"></div>
+            <div><label>الوحدة</label><select class="form-control supplier-item-unit"><option value="حبة" ${prefill?.unit === 'حبة' || !prefill?.unit ? 'selected' : ''}>حبة</option><option value="شدة" ${prefill?.unit === 'شدة' ? 'selected' : ''}>شدة</option><option value="وار" ${prefill?.unit === 'وار' ? 'selected' : ''}>وار</option></select></div>
+            <div><label>الكمية</label><input class="form-control num-input supplier-item-qty" type="number" min="0.01" step="0.01" value="${prefill?.qty || 1}" oninput="recalculateSupplierInvoiceTotal()"></div>
+            <div><label>سعر التكلفة</label><input class="form-control num-input supplier-item-cost" type="number" min="0.01" step="0.01" value="${prefill?.costPrice || ''}" placeholder="0.00" oninput="recalculateSupplierInvoiceTotal()"></div>
+            <div class="supplier-item-total"><label>الإجمالي</label><div class="supplier-line-total">0.00</div></div>
+            <div><label>&nbsp;</label><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.supplier-invoice-row').remove(); recalculateSupplierInvoiceTotal();"><i class="fa-solid fa-trash"></i></button></div>`;
+        container.appendChild(row);
+        recalculateSupplierInvoiceTotal();
+    }
+
+    function getSupplierInvoiceLines() {
+        return Array.from(document.querySelectorAll('#supplierInvoiceItemsContainer .supplier-invoice-row')).map(row => ({
+            name: row.querySelector('.supplier-item-name-input').value.trim(),
+            unit: row.querySelector('.supplier-item-unit').value || 'حبة',
+            qty: Number(row.querySelector('.supplier-item-qty').value || 0),
+            costPrice: Number(row.querySelector('.supplier-item-cost').value || 0)
+        })).filter(item => item.name || item.qty || item.costPrice);
+    }
+
+    function recalculateSupplierInvoiceTotal() {
+        let total = 0;
+        document.querySelectorAll('#supplierInvoiceItemsContainer .supplier-invoice-row').forEach(row => {
+            const qty = Number(row.querySelector('.supplier-item-qty').value || 0);
+            const cost = Number(row.querySelector('.supplier-item-cost').value || 0);
+            const line = qty * cost; total += line;
+            row.querySelector('.supplier-line-total').textContent = formatMoney(line);
+        });
+        const currency = document.getElementById('supplierInvoiceCurrency')?.value || 'YER';
+        const type = document.getElementById('supplierInvoicePaymentType')?.value || 'credit';
+        const paidInput = document.getElementById('supplierInvoicePaid');
+        if (paidInput && type === 'cash') paidInput.value = total.toFixed(2);
+        if (paidInput && type === 'credit') paidInput.value = '0.00';
+        const paid = Math.max(0, Number(paidInput?.value || 0));
+        const totalEl = document.getElementById('supplierInvoiceTotal');
+        const remainingEl = document.getElementById('supplierInvoiceRemaining');
+        if (totalEl) totalEl.textContent = `${formatMoney(total)} ${currency}`;
+        if (remainingEl) remainingEl.textContent = `${formatMoney(Math.max(0, total - paid))} ${currency}`;
+        return total;
+    }
+
+    function toggleSupplierInvoicePaymentFields() {
+        const type = document.getElementById('supplierInvoicePaymentType')?.value || 'credit';
+        const paidGroup = document.getElementById('supplierInvoicePaidGroup');
+        const cashboxGroup = document.getElementById('supplierInvoiceCashboxGroup');
+        const show = type !== 'credit';
+        paidGroup?.classList.toggle('hidden', !show);
+        cashboxGroup?.classList.toggle('hidden', !show);
+        if (type === 'cash' && document.getElementById('supplierInvoicePaid')) document.getElementById('supplierInvoicePaid').readOnly = true;
+        else if (document.getElementById('supplierInvoicePaid')) document.getElementById('supplierInvoicePaid').readOnly = false;
+        recalculateSupplierInvoiceTotal();
+    }
+
+    async function saveSupplierInvoice() {
+        if (isBusy) return;
+        const btn = document.getElementById('saveSupplierInvoiceBtn');
+        const supplierId = document.getElementById('supplierInvoiceSupplier')?.value || '';
+        const supplier = (state.suppliers || []).find(item => item.id === supplierId);
+        const branchId = document.getElementById('supplierInvoiceBranch')?.value || '';
+        const branch = (state.branches || []).find(item => item.id === branchId);
+        const currency = document.getElementById('supplierInvoiceCurrency')?.value || 'YER';
+        const paymentType = document.getElementById('supplierInvoicePaymentType')?.value || 'credit';
+        const lines = getSupplierInvoiceLines();
+        const total = lines.reduce((sum, item) => sum + item.qty * item.costPrice, 0);
+        let paidAmount = paymentType === 'cash' ? total : paymentType === 'credit' ? 0 : Number(document.getElementById('supplierInvoicePaid')?.value || 0);
+        if (!supplier) { showToast('اختر المورد أولاً'); return; }
+        if (!branch || !isBranchAllowed(branchId)) { showToast('اختر مخزناً مسموحاً لحسابك'); return; }
+        if (!lines.length || lines.some(item => !item.name || !Number.isFinite(item.qty) || item.qty <= 0 || !Number.isFinite(item.costPrice) || item.costPrice <= 0)) { showToast('أدخل اسم كل صنف وكمية وسعر تكلفة صحيح'); return; }
+        if (!Number.isFinite(total) || total <= 0 || paidAmount < 0 || paidAmount > total) { showToast('تحقق من إجمالي الفاتورة والمبلغ المدفوع'); return; }
+        const cashboxId = paidAmount > 0 ? (document.getElementById('supplierInvoiceCashbox')?.value || '') : '';
+        const cashbox = cashboxId ? state.cashboxes.find(box => box.id === cashboxId) : null;
+        if (paidAmount > 0 && !cashbox) { showToast('اختر صندوقاً مطابقاً لعملة الدفعة'); return; }
+        if (cashbox && (cashbox.currency || 'YER') !== currency) { showToast('عملة الصندوق لا تطابق عملة فاتورة المورد'); return; }
+        if (cashbox && computeSystemCashboxBalance(cashbox) < paidAmount) { showToast('رصيد الصندوق غير كافٍ لسداد هذا المبلغ'); return; }
+        const grouped = new Map();
+        lines.forEach(line => {
+            const key = `${line.name.trim().toLowerCase()}|${line.unit}`;
+            const current = grouped.get(key) || { ...line, qty: 0 };
+            current.qty += line.qty;
+            current.costPrice = line.costPrice;
+            grouped.set(key, current);
+        });
+        const stockTargets = Array.from(grouped.values()).map(line => {
+            const existing = (state.warehouse || []).find(w => (w.branchId || 'main_branch') === branchId && String(w.name || '').trim().toLowerCase() === line.name.toLowerCase() && (w.unit || 'حبة') === line.unit);
+            const docId = existing?.id || `wh_item_${dedupeHash({ branchId, name: line.name.toLowerCase(), unit: line.unit })}`;
+            return { ...line, existing, docId };
+        });
+        const date = getLocalDateKey();
+        const note = (document.getElementById('supplierInvoiceNote')?.value || '').trim();
+        const record = {
+            kind: 'supplierPurchase', date, supplierId, supplierName: supplier.name,
+            branchId, branchName: branch.name, currency, currencyName: CURRENCY_NAMES[currency],
+            items: lines, amount: total, totalAmount: total, paidAmount,
+            outstanding: total - paidAmount, paymentType, cashboxId: cashbox?.id || '', cashboxName: cashbox?.name || '',
+            title: note || `فاتورة توريد من ${supplier.name}`, notes: note,
+            employee: getAccountDisplayName(currentUser), createdByUserId: currentUser?.id || ''
+        };
+        const signature = { kind: record.kind, supplierId, branchId, currency, lines, total, paidAmount, note, date, actor: dedupeActorId() };
+        const docId = `SUPPUR_${dedupeHash(signature)}_${Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS)}`;
+        const invoiceRef = db.collection('purchases').doc(docId);
+        isBusy = true; if (btn) btn.disabled = true;
+        try {
+            const result = await db.runTransaction(async transaction => {
+                const invoiceSnapshot = await transaction.get(invoiceRef);
+                if (invoiceSnapshot.exists) return { created: false };
+                const refs = stockTargets.map(target => ({ target, ref: db.collection('warehouse').doc(target.docId) }));
+                const snapshots = [];
+                for (const entry of refs) snapshots.push({ ...entry, snapshot: await transaction.get(entry.ref) });
+                transaction.set(invoiceRef, { ...record, id: docId });
+                snapshots.forEach(entry => {
+                    if (entry.snapshot.exists) {
+                        const current = entry.snapshot.data() || {};
+                        transaction.update(entry.ref, { qty: Number(current.qty || 0) + entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, branchId, branchName: branch.name, name: current.name || entry.target.name, unit: entry.target.unit });
+                    } else {
+                        transaction.set(entry.ref, { id: entry.ref.id, branchId, branchName: branch.name, name: entry.target.name, unit: entry.target.unit, qty: entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency });
+                    }
+                });
+                return { created: true };
+            });
+            if (!result.created) { showToast('فاتورة المورد مسجلة مسبقاً؛ لم تتم إضافتها مرة ثانية'); return; }
+            record.id = docId; state.purchases = (state.purchases || []).concat(record);
+            stockTargets.forEach(target => {
+                const local = state.warehouse.find(w => w.id === target.docId);
+                if (local) { local.qty = Number(local.qty || 0) + target.qty; local.costPrice = target.costPrice; local.costCurrency = currency; }
+                else state.warehouse.push({ id: target.docId, branchId, branchName: branch.name, name: target.name, unit: target.unit, qty: target.qty, costPrice: target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency });
+            });
+            document.getElementById('supplierInvoiceItemsContainer').innerHTML = '';
+            addSupplierInvoiceRow();
+            document.getElementById('supplierInvoiceNote').value = '';
+            renderSupplierBalances(); renderWarehouseTable(); renderStats(); renderCashboxesList();
+            showToast(`تم حفظ فاتورة المورد وإضافة ${lines.length} صنف للمخزن`);
+        } catch (error) {
+            console.warn('Save supplier invoice error:', error);
+            showToast('تعذر حفظ فاتورة المورد؛ لم يتم تحديث المخزون');
+        } finally { isBusy = false; if (btn) btn.disabled = false; }
+    }
+
+    async function recordSupplierPayment() {
+        if (isBusy) return;
+        const btn = document.getElementById('saveSupplierPaymentBtn');
+        const supplierId = document.getElementById('supplierPaymentSupplier')?.value || '';
+        const supplier = (state.suppliers || []).find(item => item.id === supplierId);
+        const currency = document.getElementById('supplierPaymentCurrency')?.value || 'YER';
+        const amount = Number(document.getElementById('supplierPaymentAmount')?.value || 0);
+        const cashboxId = document.getElementById('supplierPaymentCashbox')?.value || '';
+        const cashbox = state.cashboxes.find(box => box.id === cashboxId);
+        const note = (document.getElementById('supplierPaymentNote')?.value || '').trim();
+        if (!supplier || !cashbox || !Number.isFinite(amount) || amount <= 0) { showToast('اختر المورد والصندوق وأدخل مبلغاً صحيحاً'); return; }
+        if ((cashbox.currency || 'YER') !== currency) { showToast('عملة الصندوق لا تطابق عملة السداد'); return; }
+        const totals = supplierTotalsFor(supplierId);
+        if (amount > Math.max(0, totals[currency].due) + 0.000001) { showToast(`المبلغ أكبر من المتبقي للمورد (${formatMoney(Math.max(0, totals[currency].due))} ${currency})`); return; }
+        if (computeSystemCashboxBalance(cashbox) < amount) { showToast('رصيد الصندوق غير كافٍ للسداد'); return; }
+        const date = getLocalDateKey();
+        const record = { kind: 'supplierPayment', date, supplierId, supplierName: supplier.name, currency, amount, title: note || `سداد للمورد ${supplier.name}`, notes: note, cashboxId: cashbox.id, cashboxName: cashbox.name, employee: getAccountDisplayName(currentUser), createdByUserId: currentUser?.id || '' };
+        const signature = { kind: record.kind, date, supplierId, currency, amount, cashboxId, note, actor: dedupeActorId() };
+        const docId = `SUPPAY_${dedupeHash(signature)}_${Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS)}`;
+        isBusy = true; if (btn) btn.disabled = true;
+        try {
+            const ref = db.collection('purchases').doc(docId);
+            const result = await db.runTransaction(async transaction => {
+                const snapshot = await transaction.get(ref);
+                if (snapshot.exists) return { created: false };
+                transaction.set(ref, { ...record, id: docId });
+                return { created: true };
+            });
+            if (!result.created) { showToast('عملية السداد مسجلة مسبقاً؛ لم تُكرر'); return; }
+            record.id = docId; state.purchases = (state.purchases || []).concat(record);
+            document.getElementById('supplierPaymentAmount').value = '';
+            document.getElementById('supplierPaymentNote').value = '';
+            renderSupplierBalances(); renderCashboxesList(); renderStats();
+            showToast('تم تسجيل سداد المورد وتحديث رصيده');
+        } catch (error) { console.warn('Supplier payment error:', error); showToast('تعذر تسجيل سداد المورد'); }
+        finally { isBusy = false; if (btn) btn.disabled = false; }
+    }
+
+    function showSupplierLedger(supplierId) {
+        const select = document.getElementById('supplierLedgerSelect');
+        if (select) select.value = supplierId;
+        renderSupplierLedger();
+        document.getElementById('supplierLedgerSummary')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function renderSupplierLedger() {
+        const select = document.getElementById('supplierLedgerSelect');
+        const body = document.getElementById('supplierLedgerBody');
+        const summary = document.getElementById('supplierLedgerSummary');
+        if (!select || !body || !summary) return;
+        const supplier = (state.suppliers || []).find(item => item.id === select.value);
+        if (!supplier) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr>'; summary.innerHTML = ''; return; }
+        const totals = supplierTotalsFor(supplier.id);
+        summary.innerHTML = CURRENCY_CODES.map(code => `<div class="mini-stat"><div class="mini-stat-label">المتبقي على المورد — ${code}</div><div class="mini-stat-val">${formatMoney(totals[code].due)}</div><div class="mini-stat-label">توريدات ${formatMoney(totals[code].purchases)} | مدفوع ${formatMoney(totals[code].initialPaid + totals[code].payments)}</div></div>`).join('');
+        const records = (state.purchases || []).filter(item => item.supplierId === supplier.id && ['supplierPurchase', 'supplierPayment'].includes(item.kind)).slice().sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.id).localeCompare(String(b.id)));
+        const running = { YER: 0, SAR: 0, USD: 0 };
+        body.innerHTML = records.length ? records.map(item => {
+            const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+            const purchase = item.kind === 'supplierPurchase';
+            const total = purchase ? Number(item.amount || 0) : 0;
+            const paid = purchase ? Number(item.paidAmount || 0) : Number(item.amount || 0);
+            const due = purchase ? total - paid : -paid;
+            running[code] += due;
+            const detail = purchase ? (item.items || []).map(line => `${escapeUiText(line.name)} × ${formatQty(line.qty)} ${escapeUiText(line.unit)} @ ${formatMoney(line.costPrice)}`).join('<br>') : escapeUiText(item.notes || item.title || 'سداد للمورد');
+            return `<tr><td class="mono">${item.date || '-'}</td><td><span class="badge ${purchase ? 'badge-sup' : 'badge-cash'}">${purchase ? 'فاتورة توريد' : 'سداد'}</span></td><td>${detail}</td><td class="mono">${purchase ? formatCurrency(total, code) : '—'}</td><td class="mono">${paid ? formatCurrency(paid, code) : '—'}</td><td class="mono">${purchase ? formatCurrency(total - paid, code) : formatCurrency(paid, code)}</td><td class="mono" style="font-weight:800;color:${running[code] >= 0 ? 'var(--danger)' : 'var(--success)'}">${formatCurrency(running[code], code)}</td></tr>`;
+        }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">لا توجد فواتير توريد أو دفعات مسجلة لهذا المورد</td></tr>';
+    }
+
+    function printSupplierLedger() {
+        const supplier = (state.suppliers || []).find(item => item.id === document.getElementById('supplierLedgerSelect')?.value);
+        if (!supplier) { showToast('اختر المورد أولاً'); return; }
+        const table = document.getElementById('supplierLedgerBody')?.closest('table')?.outerHTML || '';
+        const summary = document.getElementById('supplierLedgerSummary')?.outerHTML || '';
+        const win = window.open('', '_blank');
+        if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لطباعة الكشف'); return; }
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>كشف حساب المورد ${escapeUiText(supplier.name)}</title><style>body{font-family:Tahoma,Arial;padding:24px;color:#111}h2{text-align:center;color:#0f4c81}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ccd5df;padding:8px;text-align:right;font-size:12px}th{background:#edf3f8}.summary-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}.mini-stat{border:1px solid #ddd;border-radius:8px;padding:10px}.mini-stat-label{font-size:11px;color:#555}.mini-stat-val{font-weight:bold;margin:5px 0}</style></head><body><h2>معمل أبو محمد — كشف حساب المورد</h2><p>المورد: ${escapeUiText(supplier.name)} | الهاتف: ${escapeUiText(supplier.phone || '-')} | التاريخ: ${getLocalDateKey()}</p>${summary}${table}<script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script></body></html>`);
+        win.document.close();
     }
 
     function renderPurchasesTable() {
@@ -4048,6 +4464,7 @@ function initMenuPermissionCheckboxes() {
 
     function handleInvoiceCurrencyChange() {
         updateInvoiceCashboxOptions();
+        renderWarehouseCatalogDropdown();
         document.querySelectorAll('#invoiceItemsContainer .item-price').forEach(input => {
             input.placeholder = `السعر بعملة ${document.getElementById('invCurrency')?.value || 'YER'}`;
         });
@@ -4078,6 +4495,27 @@ function initMenuPermissionCheckboxes() {
         if (previous && state.suppliers.some(s => s.id === previous)) select.value = previous;
     }
 
+    function populateSupplierAccountOptions() {
+        const supplierSelectIds = ['supplierInvoiceSupplier', 'supplierPaymentSupplier', 'supplierLedgerSelect'];
+        const options = '<option value="">اختر المورد</option>' + (state.suppliers || []).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        supplierSelectIds.forEach(id => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            const previous = select.value;
+            select.innerHTML = options;
+            if (previous && (state.suppliers || []).some(s => s.id === previous)) select.value = previous;
+        });
+        const branchSelect = document.getElementById('supplierInvoiceBranch');
+        if (branchSelect) {
+            const previous = branchSelect.value;
+            const branches = getAccessibleBranches();
+            branchSelect.innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('') || '<option value="">لا يوجد مخزن متاح لحسابك</option>';
+            if (previous && branches.some(b => b.id === previous)) branchSelect.value = previous;
+        }
+        filterSupplierInvoiceCashboxes();
+        filterSupplierPaymentCashboxes();
+    }
+
     function populateCashboxStatementOptions() {
         const select = document.getElementById('cashboxStatementSelect');
         if (!select) return;
@@ -4098,11 +4536,11 @@ function initMenuPermissionCheckboxes() {
 
     function addInvoiceItemRow(prefill = null) {
         const container = document.getElementById('invoiceItemsContainer');
+        if (!container) return;
         const nameVal = prefill ? prefill.name : '';
         const unitVal = prefill ? (prefill.unit || 'حبة') : 'حبة';
         const qtyVal = prefill ? (prefill.qty || 1) : 1;
         const priceVal = prefill ? Number(prefill.price || 0).toFixed(2) : '0.00';
-
         const rows = container.querySelectorAll('.invoice-item-row');
         if (prefill && rows.length === 1 && !rows[0].querySelector('.item-name').value.trim()) {
             rows[0].querySelector('.item-name').value = nameVal;
@@ -4112,23 +4550,19 @@ function initMenuPermissionCheckboxes() {
             recalculateInvoiceTotal();
             return;
         }
-
         const row = document.createElement('div');
         row.className = 'invoice-item-row';
         row.innerHTML = `
-            <input type="text" class="form-control item-name" placeholder="اسم الصنف" value="${nameVal}">
-            <select class="form-control item-unit">
-                <option value="حبة" ${unitVal === 'حبة' ? 'selected' : ''}>حبة</option>
-                <option value="شدة" ${unitVal === 'شدة' ? 'selected' : ''}>شدة</option>
-                <option value="وار" ${unitVal === 'وار' ? 'selected' : ''}>وار</option>
-            </select>
-            <input type="number" step="0.01" inputmode="decimal" class="form-control item-qty num-input" value="${qtyVal}" min="0.01" placeholder="الكمية" oninput="recalculateInvoiceTotal()">
-            <input type="number" step="0.01" inputmode="decimal" class="form-control item-price num-input" value="${priceVal}" min="0" placeholder="السعر" oninput="recalculateInvoiceTotal()">
-            <div class="row-line-total mono">0.00</div>
-            <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove(); recalculateInvoiceTotal();">
-                <i class="fa-solid fa-trash"></i>
-            </button>
-        `;
+            <div class="invoice-line-top">
+                <input type="text" class="form-control item-name" placeholder="اسم الصنف" value="${escapeUiText(nameVal)}">
+                <button type="button" class="btn btn-danger btn-sm" title="حذف الصنف" onclick="this.closest('.invoice-item-row').remove(); recalculateInvoiceTotal();"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            <div class="invoice-line-fields">
+                <div class="invoice-line-field"><label>الوحدة</label><select class="form-control item-unit"><option value="حبة" ${unitVal === 'حبة' ? 'selected' : ''}>حبة</option><option value="شدة" ${unitVal === 'شدة' ? 'selected' : ''}>شدة</option><option value="وار" ${unitVal === 'وار' ? 'selected' : ''}>وار</option></select></div>
+                <div class="invoice-line-field"><label>الكمية</label><input type="number" step="0.01" inputmode="decimal" class="form-control item-qty num-input" value="${qtyVal}" min="0.01" placeholder="0" oninput="recalculateInvoiceTotal()"></div>
+                <div class="invoice-line-field"><label>سعر البيع</label><input type="number" step="0.01" inputmode="decimal" class="form-control item-price num-input" value="${priceVal}" min="0" placeholder="0.00" oninput="recalculateInvoiceTotal()"></div>
+                <div class="invoice-line-total"><small>إجمالي السطر</small><strong class="row-line-total mono">0.00</strong></div>
+            </div>`;
         container.appendChild(row);
         recalculateInvoiceTotal();
     }
@@ -4322,7 +4756,7 @@ function initMenuPermissionCheckboxes() {
             document.getElementById('invRefNumber').value = '';
             document.getElementById('invCashCustomerName').value = '';
             updateInvoiceStatementPreview();
-            renderInvoicesTable(); renderWarehouseTable(); renderStats();
+            renderInvoicesTable(); renderWarehouseTable(); renderWarehouseCatalogDropdown(); renderStats();
             showToast('تم حفظ الفاتورة وخصم الكميات المتاحة بدقة');
             openPrintModal(invoiceDoc);
         } catch (e) {
@@ -4596,7 +5030,10 @@ function initMenuPermissionCheckboxes() {
         state.invoices.filter(item => item.paymentType === 'cash' && item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
             .forEach(item => movements.push({ date: item.date, type: 'مبيعات نقدية', note: `فاتورة ${item.refNumber || item.id} — ${item.customerName || ''}`, incoming: Number(item.netTotal || 0), outgoing: 0, actor: item.employee || '' }));
         state.purchases.filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
-            .forEach(item => movements.push({ date: item.date, type: item.kind === 'purchase' ? 'مشتريات نقدية' : 'مصروف', note: `${item.title || ''} ${item.supplierName ? ' — المورد: ' + item.supplierName : ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.employee || '' }));
+            .forEach(item => {
+                const outgoing = item.kind === 'supplierPurchase' ? Number(item.paidAmount || 0) : Number(item.amount || 0);
+                if (outgoing > 0) movements.push({ date: item.date, type: item.kind === 'supplierPurchase' ? 'سداد نقدي لفاتورة مورد' : item.kind === 'supplierPayment' ? 'دفعة سداد مورد' : item.kind === 'purchase' ? 'مشتريات نقدية' : 'مصروف', note: `${item.title || ''} ${item.supplierName ? ' — المورد: ' + item.supplierName : ''}`, incoming: 0, outgoing, actor: item.employee || '' });
+            });
         state.vouchers.filter(item => item.cashboxId === cashbox.id && (item.currency || currency) === currency)
             .forEach(item => movements.push({ date: item.date || '', type: item.type === 'receipt' ? 'سند قبض' : 'سند صرف', note: item.note || `سند ${item.refNumber || item.id}`, incoming: item.type === 'receipt' ? Number(item.amount || 0) : 0, outgoing: item.type === 'payment' ? Number(item.amount || 0) : 0, actor: item.employee || '' }));
         (state.employeeExpenses || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
@@ -4768,6 +5205,7 @@ function initMenuPermissionCheckboxes() {
         const qty = Number(document.getElementById('newItemQty').value || 0);
         const costPrice = Number(document.getElementById('newItemCostPrice')?.value || 0);
         const price = Number(document.getElementById('newItemPrice').value || 0);
+        const itemCurrency = CURRENCY_CODES.includes(document.getElementById('newItemPriceCurrency')?.value) ? document.getElementById('newItemPriceCurrency').value : 'YER';
         if (!name) { showToast('أدخل اسم الصنف'); return; }
         if (![qty, costPrice, price].every(Number.isFinite) || qty < 0 || costPrice < 0 || price < 0) { showToast('تحقق من الكمية وسعر التكلفة وسعر البيع'); return; }
         isBusy = true;
@@ -4781,13 +5219,13 @@ function initMenuPermissionCheckboxes() {
             if (existing) {
                 if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل على المخزون'); return; }
                 const updated = await updateDocumentOnce('warehouse', existing.id, {
-                    action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, actor: dedupeActorId()
-                }, () => ({ qty, costPrice, price, unit, branchId, branchName }));
+                    action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
+                }, () => ({ qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, unit, branchId, branchName }));
                 if (!updated) { showToast('تم منع تكرار حفظ الصنف نفسه خلال وقت قصير.'); return; }
             } else {
                 const result = await createRecordOnce('warehouse', 'wh', {
-                    action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, actor: dedupeActorId()
-                }, { branchId, branchName, name, unit, qty, costPrice, price }, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
+                    action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
+                }, { branchId, branchName, name, unit, qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency }, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
                 if (!result.created) { showToast('هذا الصنف موجود أو تمت إضافته للتو؛ لن يتكرر في المخزن.'); return; }
             }
             document.getElementById('newItemName').value = '';
@@ -6513,6 +6951,174 @@ window.addEventListener('load',function(){
             `).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد مصروفات مسجلة في هذه القائمة</td></tr>';
         }
         updateEmployeeExpensePreview();
+    }
+
+    // النسخ الاحتياطي: يشمل كل مجموعات البيانات التي يستخدمها النظام حالياً.
+    const SYSTEM_BACKUP_FORMAT = 'abu-mohammad-accounting-backup';
+    const SYSTEM_BACKUP_VERSION = 1;
+    const SYSTEM_BACKUP_COLLECTIONS = [
+        'branches', 'cashboxes', 'customers', 'suppliers', 'invoices', 'purchases',
+        'vouchers', 'employees', 'staff', 'employeeExpenses', 'employeeProduction', 'warehouse'
+    ];
+
+    function encodeBackupValue(value) {
+        if (value === null || value === undefined) return value === undefined ? null : value;
+        if (value instanceof Date) return { __backupType: 'Date', value: value.toISOString() };
+        if (value && typeof value.toDate === 'function' && Number.isFinite(value.seconds)) {
+            return { __backupType: 'FirestoreTimestamp', seconds: value.seconds, nanoseconds: value.nanoseconds || 0 };
+        }
+        if (Array.isArray(value)) return value.map(encodeBackupValue);
+        if (typeof value === 'object') {
+            const out = {};
+            Object.keys(value).forEach(key => { out[key] = encodeBackupValue(value[key]); });
+            return out;
+        }
+        if (typeof value === 'number' && !Number.isFinite(value)) return null;
+        return value;
+    }
+
+    function decodeBackupValue(value) {
+        if (Array.isArray(value)) return value.map(decodeBackupValue);
+        if (value && typeof value === 'object') {
+            if (value.__backupType === 'Date' && typeof value.value === 'string') return new Date(value.value);
+            if (value.__backupType === 'FirestoreTimestamp' && Number.isFinite(Number(value.seconds))) {
+                return new firebase.firestore.Timestamp(Number(value.seconds), Number(value.nanoseconds || 0));
+            }
+            const out = {};
+            Object.keys(value).forEach(key => { out[key] = decodeBackupValue(value[key]); });
+            return out;
+        }
+        return value;
+    }
+
+    function showSelectedBackupFile() {
+        const input = document.getElementById('backupFileInput');
+        const status = document.getElementById('backupRestoreStatus');
+        if (status) status.textContent = input?.files?.[0]
+            ? `الملف المختار: ${input.files[0].name} — اضغط استعادة ودمج البيانات بعد التأكد أنه ملف هذا النظام.`
+            : 'اختر ملفاً تم تنزيله من هذا النظام، ثم اضغط استعادة ودمج البيانات.';
+    }
+
+    async function downloadSystemBackup() {
+        if (!canManageUsers()) { showToast('النسخ الاحتياطي للمدير والمشرف العام فقط'); return; }
+        if (isBusy) return;
+        if (!confirm('سيتم تنزيل نسخة تتضمن البيانات المالية وحسابات الدخول. احفظ الملف في مكان آمن. هل تريد المتابعة؟')) return;
+        const button = document.getElementById('downloadBackupBtn');
+        const status = document.getElementById('backupExportStatus');
+        isBusy = true;
+        if (button) button.disabled = true;
+        if (status) status.textContent = 'جاري جمع البيانات من قاعدة النظام...';
+        try {
+            const entries = await Promise.all(SYSTEM_BACKUP_COLLECTIONS.map(async collectionName => {
+                const snapshot = await db.collection(collectionName).get();
+                return [collectionName, snapshot.docs.map(doc => ({ id: doc.id, data: encodeBackupValue(doc.data()) }))];
+            }));
+            const collections = Object.fromEntries(entries);
+            const documentCount = entries.reduce((sum, entry) => sum + entry[1].length, 0);
+            const backup = {
+                format: SYSTEM_BACKUP_FORMAT,
+                version: SYSTEM_BACKUP_VERSION,
+                projectId: firebaseConfig.projectId,
+                exportedAt: new Date().toISOString(),
+                exportedBy: getAccountDisplayName(currentUser),
+                documentCount,
+                collections
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const datePart = new Date().toISOString().replace(/[:.]/g, '-');
+            link.href = url;
+            link.download = `abu-mohammad-backup-${datePart}.json`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 30000);
+            if (status) status.textContent = `اكتملت النسخة الاحتياطية: ${documentCount} سجل من ${SYSTEM_BACKUP_COLLECTIONS.length} مجموعات بيانات. تاريخ النسخ: ${new Date().toLocaleString('ar-YE')}`;
+            showToast('تم تنزيل النسخة الاحتياطية بنجاح');
+        } catch (error) {
+            console.error('Backup export error:', error);
+            if (status) status.textContent = 'تعذر إنشاء النسخة. تحقق من الاتصال وصلاحية قراءة البيانات ثم حاول مرة أخرى.';
+            showToast('فشل تنزيل النسخة الاحتياطية');
+        } finally {
+            isBusy = false;
+            if (button) button.disabled = false;
+        }
+    }
+
+    async function restoreSystemBackup() {
+        if (!canManageUsers()) { showToast('استعادة النسخ للمدير والمشرف العام فقط'); return; }
+        if (isBusy) return;
+        const input = document.getElementById('backupFileInput');
+        const file = input?.files?.[0];
+        const status = document.getElementById('backupRestoreStatus');
+        const button = document.getElementById('restoreBackupBtn');
+        if (!file) { showToast('اختر ملف النسخة الاحتياطية أولاً'); return; }
+        if (file.size > 50 * 1024 * 1024) { showToast('حجم النسخة أكبر من 50 ميجابايت؛ لا يمكن استعادتها من المتصفح'); return; }
+        let backup;
+        try {
+            backup = JSON.parse(await file.text());
+        } catch (error) {
+            showToast('الملف ليس JSON صالحاً');
+            return;
+        }
+        if (!backup || backup.format !== SYSTEM_BACKUP_FORMAT || !backup.collections || typeof backup.collections !== 'object') {
+            showToast('هذا الملف ليس نسخة احتياطية معتمدة من نظام معمل أبو محمد');
+            return;
+        }
+        if (backup.projectId && backup.projectId !== firebaseConfig.projectId) {
+            showToast('هذه النسخة مأخوذة من مشروع Firebase مختلف؛ أوقفت الاستعادة لحماية بياناتك');
+            return;
+        }
+        const plan = [];
+        let count = 0;
+        try {
+            for (const collectionName of SYSTEM_BACKUP_COLLECTIONS) {
+                const docs = backup.collections[collectionName] || [];
+                if (!Array.isArray(docs)) throw new Error(`صيغة غير صحيحة للمجموعة ${collectionName}`);
+                for (const entry of docs) {
+                    if (!entry || typeof entry.id !== 'string' || !entry.id.trim() || !entry.data || typeof entry.data !== 'object' || Array.isArray(entry.data)) {
+                        throw new Error(`يوجد سجل غير صالح داخل ${collectionName}`);
+                    }
+                    plan.push({ collectionName, id: entry.id, data: decodeBackupValue(entry.data) });
+                    count++;
+                }
+            }
+        } catch (error) {
+            console.error('Backup validation error:', error);
+            showToast('تعذر التحقق من محتوى النسخة؛ لم يتم تغيير البيانات');
+            return;
+        }
+        const exported = backup.exportedAt ? new Date(backup.exportedAt).toLocaleString('ar-YE') : 'تاريخ غير محدد';
+        const ok = confirm(`سيتم استعادة ودمج ${count} سجل من النسخة بتاريخ ${exported}. سيتم استبدال السجلات ذات المعرّفات نفسها وإضافة السجلات الناقصة، ولن تُحذف السجلات الأخرى. يفضّل تنزيل نسخة جديدة من البيانات الحالية قبل المتابعة. هل تريد الاستمرار؟`);
+        if (!ok) return;
+        isBusy = true;
+        if (button) button.disabled = true;
+        if (status) status.textContent = 'جاري استعادة البيانات على دفعات... لا تغلق الصفحة.';
+        try {
+            const chunkSize = 400; // حد آمن أقل من حد Firestore البالغ 500 عملية لكل batch.
+            for (let start = 0; start < plan.length; start += chunkSize) {
+                const batch = db.batch();
+                const chunk = plan.slice(start, start + chunkSize);
+                chunk.forEach(item => {
+                    const ref = db.collection(item.collectionName).doc(item.id);
+                    batch.set(ref, item.data);
+                });
+                await batch.commit();
+                if (status) status.textContent = `تمت استعادة ${Math.min(start + chunk.length, plan.length)} من ${plan.length} سجل...`;
+            }
+            await reloadAllData(false);
+            if (status) status.textContent = `اكتملت الاستعادة والدمج بنجاح. تمت معالجة ${count} سجل. السجلات التي لم تكن في النسخة لم تُحذف.`;
+            if (input) input.value = '';
+            showToast('اكتملت استعادة النسخة الاحتياطية');
+        } catch (error) {
+            console.error('Backup restore error:', error);
+            if (status) status.textContent = 'توقفت الاستعادة بسبب خطأ في الاتصال أو صلاحيات Firestore. بعض الدفعات السابقة قد تكون حفظت؛ أعد الفحص ونزّل نسخة حالية.';
+            showToast('لم تكتمل الاستعادة؛ راجع اتصال Firebase والصلاحيات');
+        } finally {
+            isBusy = false;
+            if (button) button.disabled = false;
+        }
     }
 
     document.getElementById('employeePieceRatesModal')?.addEventListener('click', function (event) {
