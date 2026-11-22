@@ -1230,6 +1230,10 @@
                     <i class="fa-solid fa-user-shield"></i>
                     <span>الأمان وحسابات الدخول</span>
                 </button>
+                <button class="nav-tab" data-menu-key="userDeletionTab" onclick="openFullPage('userDeletionTab')">
+                    <i class="fa-solid fa-user-xmark"></i>
+                    <span>حذف حسابات المستخدمين</span>
+                </button>
                 <button class="nav-tab expense-tab" data-menu-key="employeeExpensesTab" onclick="openFullPage('employeeExpensesTab')">
                     <i class="fa-solid fa-money-bill-transfer"></i>
                     <span>مصروفات الموظفين</span>
@@ -2482,6 +2486,28 @@
             </div>
         </section>
 
+        <!-- إدارة حذف حسابات الدخول: صلاحية مستقلة يحددها المدير -->
+        <section id="userDeletionTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-user-xmark"></i> حذف حسابات المستخدمين</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+            </div>
+            <div class="employee-permission-note">
+                تظهر هذه الصفحة فقط للحسابات التي منحها المدير صلاحية «حذف حسابات المستخدمين». حذف الحساب يزيل بيانات الدخول والصلاحيات فقط، ويُبقي ملف الموظف والراتب والإنتاج والمصروفات محفوظة.
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-users-gear"></i> حسابات الدخول المسجلة</span>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="renderUserDeletionTable()"><i class="fa-solid fa-rotate"></i> تحديث</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>اسم المستخدم</th><th>نوع الحساب</th><th>الموظف المرتبط</th><th>المخازن</th><th>الحالة</th><th>إجراء</th></tr></thead>
+                        <tbody id="userDeletionTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <!-- النسخ الاحتياطي واستعادة البيانات -->
         <section id="backupTab" class="tab-content hidden">
             <div class="fullpage-topbar">
@@ -2626,6 +2652,7 @@
         { key: 'profitsTab', label: 'الأرباح' },
         { key: 'employeesTab', label: 'الموظفون' },
         { key: 'employeePermissionsTab', label: 'الأمان وحسابات الدخول' },
+        { key: 'userDeletionTab', label: 'حذف حسابات المستخدمين' },
         { key: 'employeeExpensesTab', label: 'مصروفات الموظفين' },
         { key: 'employeeProductionTab', label: 'إضافة شغل للموظفين' },
         { key: 'employeeDuesTab', label: 'مستحقات الموظفين وكشوف الحساب' },
@@ -3109,7 +3136,7 @@
 function initMenuPermissionCheckboxes() {
         const grid = document.getElementById('permissionMenusGrid');
         if (!grid) return;
-        const employeeAssignableMenus = MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab', 'quantitiesTab', 'backupTab'].includes(m.key));
+        const employeeAssignableMenus = MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab', 'backupTab'].includes(m.key));
         grid.innerHTML = employeeAssignableMenus.map(m => `
             <label class="perm-check">
                 <input type="checkbox" class="emp-menu-cb" value="${m.key}">
@@ -3295,7 +3322,7 @@ function initMenuPermissionCheckboxes() {
         if (!user) return [];
         if (hasFullAccess(user)) return MAIN_MENU_ITEMS.map(m => m.key);
         // الموظف لا يحصل على أي قسم افتراضياً؛ المدير/المشرف يفعّل الأقسام المطلوبة صراحةً.
-        if (Array.isArray(user.allowedMenus)) return user.allowedMenus.filter(key => !['employeesTab', 'employeePermissionsTab', 'quantitiesTab', 'backupTab'].includes(key));
+        if (Array.isArray(user.allowedMenus)) return user.allowedMenus.filter(key => !['employeesTab', 'employeePermissionsTab', 'backupTab'].includes(key));
         return [];
     }
 
@@ -3303,6 +3330,10 @@ function initMenuPermissionCheckboxes() {
         if (!user) return false;
         if (hasFullAccess(user)) return true;
         return getAllowedMenusForUser(user).includes(menuKey);
+    }
+
+    function canDeleteUserAccounts(user = currentUser) {
+        return Boolean(user && (hasFullAccess(user) || canAccessMenu('userDeletionTab', user)));
     }
 
     function applyDashboardWidgetPermissions() {
@@ -3323,14 +3354,14 @@ function initMenuPermissionCheckboxes() {
     function applyHomeMenuPermissions() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-menu-key]').forEach(btn => {
             const key = btn.getAttribute('data-menu-key');
-            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'quantitiesTab', 'backupTab'].includes(key);
+            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab'].includes(key);
             btn.classList.toggle('hidden', (adminOnly && !canManageUsers(currentUser)) || !canAccessMenu(key, currentUser));
         });
         applyDashboardWidgetPermissions();
     }
 
     function openFullPage(tabId) {
-        if (['employeesTab', 'employeePermissionsTab', 'quantitiesTab', 'backupTab'].includes(tabId) && !canManageUsers(currentUser)) {
+        if (['employeesTab', 'employeePermissionsTab', 'backupTab'].includes(tabId) && !canManageUsers(currentUser)) {
             showToast('إدارة الموظفين والصلاحيات للمشرف العام والمدير فقط');
             return;
         }
@@ -3384,6 +3415,9 @@ function initMenuPermissionCheckboxes() {
             populateNewUserWarehouseOptions();
             populateEmployeePermissionOptions();
             loadEmployeePermissions();
+        }
+        if (tabId === 'userDeletionTab') {
+            renderUserDeletionTable();
         }
         if (tabId === 'employeeExpensesTab') {
             renderEmployeeExpenses();
@@ -3810,7 +3844,7 @@ function initMenuPermissionCheckboxes() {
     function renderAllViews() {
         applyHomeMenuPermissions();
         const qtyShortcut = document.getElementById('warehouseQuantitiesShortcut');
-        if (qtyShortcut) qtyShortcut.classList.toggle('hidden', !canManageUsers());
+        if (qtyShortcut) qtyShortcut.classList.toggle('hidden', !canAccessMenu('quantitiesTab'));
         populateDropdowns();
         renderStats();
         renderInvoicesTable();
@@ -3831,6 +3865,7 @@ function initMenuPermissionCheckboxes() {
         }
         renderEmployeesTable();
         renderEmployeePermissionsTable();
+        if (!document.getElementById('userDeletionTab')?.classList.contains('hidden')) renderUserDeletionTable();
         if (!document.getElementById('employeePermissionsTab')?.classList.contains('hidden')) {
             populateNewUserStaffOptions();
             loadEmployeePermissions();
@@ -4127,6 +4162,7 @@ function initMenuPermissionCheckboxes() {
 
     async function saveStockQuantity() {
         if (isBusy) return;
+        if (!canAccessMenu('quantitiesTab')) { showToast('ليس لديك صلاحية إدخال كميات الأصناف'); return; }
         const btn = document.getElementById('saveQtyBtn');
         const branchId = document.getElementById('qtyBranchSelect')?.value || '';
         const mode = document.getElementById('qtyUpdateMode')?.value || 'add';
@@ -6343,13 +6379,13 @@ function initMenuPermissionCheckboxes() {
 
     async function deleteEmployeeAccount(empId) {
         if (isBusy) return;
-        if (!canManageUsers()) {
-            showToast('صلاحية حذف المستخدمين للمشرف العام والمدير فقط');
+        if (!canDeleteUserAccounts()) {
+            showToast('لا تملك صلاحية حذف حسابات المستخدمين');
             return;
         }
         const emp = state.employees.find(e => e.id === empId);
         if (!emp) return;
-        if (emp.id === 'emp_admin' || emp.username === ADMIN_USER) {
+        if (emp.id === 'emp_admin' || emp.username === ADMIN_USER || emp.role === 'admin') {
             showToast('لا يمكن حذف حساب المدير العام الأساسي');
             return;
         }
@@ -6357,20 +6393,42 @@ function initMenuPermissionCheckboxes() {
             showToast('لا يمكنك حذف حسابك الحالي أثناء الدخول');
             return;
         }
-        if (!confirm(`هل أنت متأكد من حذف حساب الدخول (${emp.username || emp.id})؟ سيبقى تعريف الموظف وبيانات راتبه محفوظة.`)) return;
+        if (!hasFullAccess(currentUser) && emp.role !== 'cashier') {
+            showToast('يمكن للحساب المفوض حذف حسابات الموظفين فقط، وليس حسابات المشرفين');
+            return;
+        }
+        if (!confirm(`هل أنت متأكد من حذف حساب الدخول (${emp.username || emp.id})؟ سيبقى تعريف الموظف والراتب والإنتاج والمصروفات محفوظة.`)) return;
 
+        const linkedStaffId = emp.staffId || state.staff.find(item => item.userAccountId === empId)?.id || '';
         isBusy = true;
         try {
-            await db.collection('employees').doc(empId).delete();
-            if (emp.staffId) {
-                const linkedStaff = state.staff.find(item => item.id === emp.staffId);
-                if (linkedStaff) {
-                    await db.collection('staff').doc(emp.staffId).update({ userAccountId: '', username: '' });
+            await db.runTransaction(async transaction => {
+                const accountRef = db.collection('employees').doc(empId);
+                const accountSnap = await transaction.get(accountRef);
+                if (!accountSnap.exists) throw new Error('ACCOUNT_NOT_FOUND');
+                const savedAccount = accountSnap.data() || {};
+                const staffIdToClear = savedAccount.staffId || linkedStaffId;
+                if (staffIdToClear) {
+                    const staffRef = db.collection('staff').doc(staffIdToClear);
+                    const staffSnap = await transaction.get(staffRef);
+                    if (staffSnap.exists) transaction.update(staffRef, { userAccountId: '', username: '' });
                 }
+                transaction.delete(accountRef);
+            });
+            state.employees = state.employees.filter(item => item.id !== empId);
+            if (linkedStaffId) {
+                const linkedStaff = state.staff.find(item => item.id === linkedStaffId);
+                if (linkedStaff) { linkedStaff.userAccountId = ''; linkedStaff.username = ''; }
             }
-            showToast('تم حذف حساب المستخدم فقط، وبقي تعريف الموظف وراتبه محفوظاً');
+            populateEmployeePermissionOptions();
+            populateNewUserStaffOptions();
+            renderEmployeesTable();
+            renderEmployeePermissionsTable();
+            renderUserDeletionTable();
+            showToast('تم حذف حساب الدخول فقط، وبقي ملف الموظف وسجلاته محفوظة');
         } catch (e) {
-            showToast('تعذر حذف المستخدم');
+            console.warn('Delete user account error:', e);
+            showToast('تعذر حذف المستخدم؛ تحقق من اتصال Firebase والصلاحيات');
         } finally {
             isBusy = false;
         }
@@ -6627,6 +6685,37 @@ function initMenuPermissionCheckboxes() {
         }).join('') : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون معرفون</td></tr>';
         populateEmployeePermissionOptions();
         populateNewUserStaffOptions();
+    }
+
+    function renderUserDeletionTable() {
+        const tbody = document.getElementById('userDeletionTableBody');
+        if (!tbody) return;
+        if (!canDeleteUserAccounts()) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا تملك صلاحية حذف حسابات المستخدمين</td></tr>';
+            return;
+        }
+        const visibleAccounts = state.employees.filter(account => {
+            if (account.id === 'emp_admin' || account.username === ADMIN_USER || account.role === 'admin') return false;
+            return hasFullAccess(currentUser) || account.role === 'cashier';
+        });
+        tbody.innerHTML = visibleAccounts.length ? visibleAccounts.map(account => {
+            const staff = state.staff.find(item => item.id === account.staffId || item.userAccountId === account.id);
+            const branchNames = Array.isArray(account.warehouseBranchNames) && account.warehouseBranchNames.length
+                ? account.warehouseBranchNames.join('، ')
+                : (account.warehouseBranchName || (account.role === 'supervisor' ? 'كل المخازن' : 'غير محدد'));
+            const self = account.id === currentUser?.id;
+            return `<tr>
+                <td><strong>${escapeUiText(account.username || account.id)}</strong></td>
+                <td>${roleLabel(account.role)}</td>
+                <td>${escapeUiText(staff?.fullName || 'غير مرتبط')}</td>
+                <td>${escapeUiText(branchNames)}</td>
+                <td>${account.active === false ? '<span class="badge badge-expense">موقوف</span>' : '<span class="badge badge-cash">نشط</span>'}</td>
+                <td>${self ? '<span class="badge badge-unit">الحساب الحالي</span>' : `<button type="button" class="btn btn-danger btn-sm" data-delete-user="${escapeUiText(account.id)}"><i class="fa-solid fa-trash"></i> حذف الحساب</button>`}</td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد حسابات قابلة للحذف</td></tr>';
+        tbody.querySelectorAll('[data-delete-user]').forEach(button => {
+            button.addEventListener('click', () => deleteEmployeeAccount(button.getAttribute('data-delete-user')));
+        });
     }
 
     function renderEmployeePermissionsTable() {
