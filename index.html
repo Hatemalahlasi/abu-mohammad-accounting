@@ -4275,7 +4275,7 @@ function initMenuPermissionCheckboxes() {
         Object.values(ids).forEach(id => document.getElementById(id)?.classList.add('hidden'));
         const target = document.getElementById(ids[section] || ids.ledger);
         target?.classList.remove('hidden');
-        if (section === 'ledger') renderSupplierBalances();
+        if (section === 'ledger') { ensureSupplierLedgerOptions(); renderSupplierBalances(); }
         if (section === 'invoice') { populateDropdowns(); filterSupplierInvoiceCashboxes(); }
         if (section === 'payment') { populateDropdowns(); filterSupplierPaymentCashboxes(); renderSupplierBalances(); }
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -5922,9 +5922,31 @@ function initMenuPermissionCheckboxes() {
         finally { isBusy = false; if (btn) btn.disabled = false; }
     }
 
-    function showSupplierLedger(supplierId) {
+    function ensureSupplierLedgerOptions(selectedId = '') {
         const select = document.getElementById('supplierLedgerSelect');
-        if (select) select.value = supplierId;
+        if (!select) return null;
+        const suppliers = Array.isArray(state.suppliers) ? state.suppliers : [];
+        const oldValue = selectedId || select.value || '';
+        // ابنِ خيارات كشف الحساب من الحالة الحالية مباشرة؛ لا تعتمد على أن populateDropdowns سبق أن نُفّذت.
+        select.innerHTML = '<option value="">اختر المورد</option>' + suppliers.map(item =>
+            `<option value="${escapeUiText(String(item.id))}">${escapeUiText(item.name || 'مورد')}</option>`
+        ).join('');
+        if (oldValue && suppliers.some(item => String(item.id) === String(oldValue))) select.value = String(oldValue);
+        else select.value = '';
+        return select;
+    }
+
+    function showSupplierLedger(supplierId) {
+        const id = String(supplierId ?? '');
+        const supplier = (state.suppliers || []).find(item => String(item.id) === id);
+        if (!supplier) {
+            showToast('لم أجد المورد المحدد في البيانات المحمّلة؛ اضغط تحديث ثم افتح الكشف مرة أخرى');
+            return;
+        }
+        // تأكد أن قسم الكشف ظاهر وأن قائمة الاختيار تحتوي المورد قبل محاولة عرضه.
+        showSupplierSection('ledger');
+        const select = ensureSupplierLedgerOptions(id);
+        if (select) select.value = id;
         renderSupplierLedger();
         document.getElementById('supplierLedgerSummary')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -5934,11 +5956,12 @@ function initMenuPermissionCheckboxes() {
         const body = document.getElementById('supplierLedgerBody');
         const summary = document.getElementById('supplierLedgerSummary');
         if (!select || !body || !summary) return;
-        const supplier = (state.suppliers || []).find(item => item.id === select.value);
+        const selectedId = String(select.value || '');
+        const supplier = (state.suppliers || []).find(item => String(item.id) === selectedId);
         if (!supplier) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr>'; summary.innerHTML = ''; return; }
         const totals = supplierTotalsFor(supplier.id);
         summary.innerHTML = CURRENCY_CODES.map(code => `<div class="mini-stat"><div class="mini-stat-label">المتبقي على المورد — ${code}</div><div class="mini-stat-val">${formatMoney(totals[code].due)}</div><div class="mini-stat-label">توريدات ${formatMoney(totals[code].purchases)} | مدفوع ${formatMoney(totals[code].initialPaid + totals[code].payments)}</div></div>`).join('');
-        const records = (state.purchases || []).filter(item => item.supplierId === supplier.id && ['supplierPurchase', 'supplierPayment'].includes(item.kind)).slice().sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.id).localeCompare(String(b.id)));
+        const records = (state.purchases || []).filter(item => String(item.supplierId) === String(supplier.id) && ['supplierPurchase', 'supplierPayment'].includes(item.kind)).slice().sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.id).localeCompare(String(b.id)));
         const running = { YER: 0, SAR: 0, USD: 0 };
         body.innerHTML = records.length ? records.map(item => {
             const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
@@ -5953,7 +5976,9 @@ function initMenuPermissionCheckboxes() {
     }
 
     function printSupplierLedger() {
-        const supplier = (state.suppliers || []).find(item => item.id === document.getElementById('supplierLedgerSelect')?.value);
+        renderSupplierLedger();
+        const selectedId = String(document.getElementById('supplierLedgerSelect')?.value || '');
+        const supplier = (state.suppliers || []).find(item => String(item.id) === selectedId);
         if (!supplier) { showToast('اختر المورد أولاً'); return; }
         const table = document.getElementById('supplierLedgerBody')?.closest('table')?.outerHTML || '';
         const summary = document.getElementById('supplierLedgerSummary')?.outerHTML || '';
@@ -6094,15 +6119,16 @@ function initMenuPermissionCheckboxes() {
     }
 
     function populateSupplierAccountOptions() {
-        const supplierSelectIds = ['supplierInvoiceSupplier', 'supplierPaymentSupplier', 'supplierLedgerSelect'];
-        const options = '<option value="">اختر المورد</option>' + (state.suppliers || []).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        const supplierSelectIds = ['supplierInvoiceSupplier', 'supplierPaymentSupplier'];
+        const options = '<option value="">اختر المورد</option>' + (state.suppliers || []).map(s => `<option value="${escapeUiText(String(s.id))}">${escapeUiText(s.name || 'مورد')}</option>`).join('');
         supplierSelectIds.forEach(id => {
             const select = document.getElementById(id);
             if (!select) return;
             const previous = select.value;
             select.innerHTML = options;
-            if (previous && (state.suppliers || []).some(s => s.id === previous)) select.value = previous;
+            if (previous && (state.suppliers || []).some(s => String(s.id) === String(previous))) select.value = previous;
         });
+        ensureSupplierLedgerOptions();
         const branchSelect = document.getElementById('supplierInvoiceBranch');
         if (branchSelect) {
             const previous = branchSelect.value;
