@@ -5573,6 +5573,8 @@ function initMenuPermissionCheckboxes() {
         const btn = document.getElementById('executeTransferBtn');
         btn.disabled = true;
         let completed = 0;
+        const batchSignature = { action: 'warehouse-transfer-batch', fromBranchId, toBranchId, rows: filled.map(row => ({ itemId: row.querySelector('.transfer-row-item').value, qty: Number(row.querySelector('.transfer-row-qty').value || 0) })), actor: dedupeActorId(), at: Date.now() };
+        window.__activeTransferBatchId = `TRF_BATCH_${dedupeHash(batchSignature)}_${Date.now()}`;
         try {
             for (const row of filled) {
                 const itemId = row.querySelector('.transfer-row-item').value;
@@ -5594,6 +5596,7 @@ function initMenuPermissionCheckboxes() {
                 renderTransferHistory();
             }
         } finally {
+            window.__activeTransferBatchId = null;
             btn.disabled = false;
             populateTransferItems();
             refreshTransferRows();
@@ -5606,8 +5609,18 @@ function initMenuPermissionCheckboxes() {
             (Array.isArray(item.warehouseMovementHistory) ? item.warehouseMovementHistory : []).forEach(log => {
                 if (!log || !log.transferId || Number(log.qty || 0) >= 0 || log.type !== 'نقل إلى مخزن آخر') return;
                 const key = String(log.transferId);
-                if (!grouped.has(key)) grouped.set(key, { id: key, date: log.date || '', fromBranchName: log.branchName || inventoryBranchName(log.branchId), toBranchName: String(log.reference || '').replace(/^إلى\s*/, ''), actor: log.actor || '-', items: [], createdAt: log.createdAt || '' });
-                grouped.get(key).items.push({ name: log.itemName || item.name || '-', unit: log.unit || item.unit || 'حبة', qty: Math.abs(Number(log.qty || 0)) });
+                if (!grouped.has(key)) grouped.set(key, { id: key, date: log.date || '', fromBranchId: log.branchId || '', fromBranchName: log.branchName || inventoryBranchName(log.branchId), toBranchName: String(log.reference || '').replace(/^إلى\s*/, ''), actor: log.actor || '-', items: [], createdAt: log.createdAt || '' });
+                const group = grouped.get(key);
+                group.items.push({ name: log.itemName || item.name || '-', unit: log.unit || item.unit || 'حبة', qty: Math.abs(Number(log.qty || 0)), sourceItemId: log.itemId || item.id, sourceLogId: log.id });
+            });
+        });
+        // Locate destination-side records/logs by transfer ID and item name; retain the matching item ID for safe edits/deletes.
+        grouped.forEach(group => {
+            group.items.forEach(entry => {
+                for (const record of (state.warehouse || [])) {
+                    const hit = (record.warehouseMovementHistory || []).find(log => log && log.transferId === group.id && log.type === 'نقل من مخزن آخر' && String(log.itemName || '').toLowerCase() === String(entry.name || '').toLowerCase());
+                    if (hit) { entry.targetItemId = record.id; entry.targetLogId = hit.id; break; }
+                }
             });
         });
         return [...grouped.values()].sort((a,b) => String(b.createdAt || b.date).localeCompare(String(a.createdAt || a.date)));
@@ -5620,14 +5633,15 @@ function initMenuPermissionCheckboxes() {
         const groups = getTransferHistoryGroups();
         if (count) count.textContent = `${groups.length} عملية`;
         host.innerHTML = groups.length ? groups.map(group => `
-            <div class="transfer-history-entry" style="border:1px solid var(--border-color,#dbe5de);border-right:4px solid var(--accent);border-radius:10px;padding:12px;margin:9px 0;background:var(--card-bg, #fff);">
+            <div class="transfer-history-entry" style="border:1px solid #cbded1;border-right:5px solid #176b43;border-radius:12px;padding:13px;margin:10px 0;background:linear-gradient(135deg,#ffffff,#f0f8f2);">
                 <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;">
-                    <strong style="color:var(--accent);">${escapeUiText(group.fromBranchName)} ← ${escapeUiText(group.toBranchName)}</strong>
-                    <span class="badge badge-unit">${escapeUiText(group.date || '-')}</span>
+                    <strong style="color:#174d32;">${escapeUiText(group.fromBranchName)} ← ${escapeUiText(group.toBranchName)}</strong>
+                    <span style="background:#dcefe2;color:#174d32;padding:5px 9px;border-radius:20px;font-weight:700;font-size:12px">${escapeUiText(group.date || '-')}</span>
                 </div>
-                <div style="font-size:13px;color:var(--text-muted);margin:7px 0;">${group.items.length} صنف · ${group.items.map(x => `${escapeUiText(x.name)} (${formatQty(x.qty)} ${escapeUiText(x.unit)})`).join('، ')}</div>
+                <div style="font-size:13px;color:#475569;margin:8px 0;">${group.items.length} صنف في نفس العملية · ${group.items.map(x => `${escapeUiText(x.name)} (${formatQty(x.qty)} ${escapeUiText(x.unit)})`).join('، ')}</div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                     <button type="button" class="btn btn-outline btn-sm" onclick="previewTransferReceipt('${encodeURIComponent(group.id)}')"><i class="fa-solid fa-eye"></i> استعراض / طباعة PDF</button>
+                    ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editTransferOperation('${encodeURIComponent(group.id)}')"><i class="fa-solid fa-pen"></i> تعديل الكميات</button><button type="button" class="btn btn-danger btn-sm" onclick="deleteTransferOperation('${encodeURIComponent(group.id)}')"><i class="fa-solid fa-trash"></i> حذف العملية</button>` : ''}
                 </div>
             </div>`).join('') : '<div style="text-align:center;color:var(--text-muted);padding:14px;">لا توجد حركات نقل مسجلة حتى الآن</div>';
     }
@@ -5637,15 +5651,67 @@ function initMenuPermissionCheckboxes() {
         const group = getTransferHistoryGroups().find(entry => entry.id === transferId);
         if (!group) { showToast('تعذر العثور على حركة النقل'); return; }
         const rows = group.items.map((item, index) => `<tr><td>${index + 1}</td><td>${escapeUiText(item.name)}</td><td>${formatQty(item.qty)}</td><td>${escapeUiText(item.unit)}</td></tr>`).join('');
-        const section = inventoryReportHeader('سند نقل مخزني', `رقم الحركة: ${escapeUiText(group.id)} · التاريخ: ${escapeUiText(group.date || '-')} · الموظف: ${escapeUiText(group.actor || '-')}`) + `
+        const section = inventoryReportHeader('سند نقل مخزني', `رقم العملية: ${escapeUiText(group.id)} · التاريخ: ${escapeUiText(group.date || '-')} · الموظف: ${escapeUiText(group.actor || '-')}`) + `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;">
-              <div style="background:#edf5ef;border:1px solid #cfe1d3;border-radius:9px;padding:12px;"><small style="color:#52715d">من مخزن / فرع</small><strong style="display:block;color:#174d32;margin-top:5px">${escapeUiText(group.fromBranchName)}</strong></div>
-              <div style="background:#edf5ef;border:1px solid #cfe1d3;border-radius:9px;padding:12px;"><small style="color:#52715d">إلى مخزن / فرع</small><strong style="display:block;color:#174d32;margin-top:5px">${escapeUiText(group.toBranchName)}</strong></div>
+              <div style="background:#e7f1ff;border:1px solid #bfd5f5;border-radius:9px;padding:12px;"><small style="color:#315b91">من مخزن / فرع</small><strong style="display:block;color:#174d32;margin-top:5px">${escapeUiText(group.fromBranchName)}</strong></div>
+              <div style="background:#e5f5e9;border:1px solid #b9dfc4;border-radius:9px;padding:12px;"><small style="color:#277344">إلى مخزن / فرع</small><strong style="display:block;color:#174d32;margin-top:5px">${escapeUiText(group.toBranchName)}</strong></div>
             </div>
+            <div style="background:#174d32;color:white;border-radius:8px;padding:9px 12px;font-weight:bold;margin:12px 0">تفاصيل جميع الأصناف المنقولة في هذه العملية (${group.items.length} صنف)</div>
             <table><thead><tr><th>م</th><th>الصنف</th><th>الكمية المنقولة</th><th>الوحدة</th></tr></thead><tbody>${rows}</tbody></table>
             <div style="margin-top:18px;padding:12px;border-top:2px solid #176b43;color:#475569;font-size:11px;display:flex;justify-content:space-between"><span>توقيع المسلم: __________________</span><span>توقيع المستلم: __________________</span></div></section>`;
-        inventoryPrintShell('سند نقل مخزني', [section]);
+        const win = inventoryPrintShell('سند نقل مخزني', [section]);
+        if (win) { try { win.document.querySelector('@page'); } catch(e) {} }
     }
+
+    async function changeTransferOperation(encodedId, mode) {
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية تعديل أو حذف حركات النقل'); return; }
+        const id = decodeURIComponent(encodedId || '');
+        const group = getTransferHistoryGroups().find(entry => entry.id === id);
+        if (!group) { showToast('تعذر العثور على العملية'); return; }
+        const changes = [];
+        for (const entry of group.items) {
+            const source = state.warehouse.find(x => x.id === entry.sourceItemId);
+            const target = state.warehouse.find(x => x.id === entry.targetItemId);
+            if (!source || !target) { showToast('لا يمكن تعديل هذه العملية لعدم اكتمال سجل أحد الأصناف'); return; }
+            let nextQty = 0;
+            if (mode === 'edit') {
+                const answer = prompt(`الكمية الجديدة للصنف: ${entry.name}\nالكمية الحالية: ${formatQty(entry.qty)}`, String(entry.qty));
+                if (answer === null) return;
+                nextQty = Number(answer);
+                if (!Number.isFinite(nextQty) || nextQty <= 0) { showToast('أدخل كمية صحيحة أكبر من صفر'); return; }
+            }
+            changes.push({ entry, source, target, nextQty });
+        }
+        if (mode === 'delete' && !confirm(`هل تريد حذف عملية النقل كاملة؟ سيتم إرجاع الكميات إلى مخزن المصدر وخصمها من مخزن الوجهة. عدد الأصناف: ${changes.length}`)) return;
+        if (mode === 'edit' && !confirm('تأكيد تعديل كميات جميع أصناف هذه العملية؟')) return;
+        // Preflight all destination balances before writing anything.
+        for (const c of changes) {
+            const delta = mode === 'delete' ? -c.entry.qty : c.nextQty - c.entry.qty;
+            if (delta < 0 && Number(c.target.qty || 0) < Math.abs(delta)) { showToast(`رصيد الوجهة غير كافٍ لتعديل ${c.entry.name}`); return; }
+            if (delta > 0 && Number(c.source.qty || 0) < delta) { showToast(`رصيد المصدر غير كافٍ لتعديل ${c.entry.name}`); return; }
+        }
+        isBusy = true;
+        try {
+            for (const c of changes) {
+                const delta = mode === 'delete' ? -c.entry.qty : c.nextQty - c.entry.qty;
+                const sourceLog = (c.source.warehouseMovementHistory || []).filter(log => log.transferId !== id);
+                const targetLog = (c.target.warehouseMovementHistory || []).filter(log => log.transferId !== id);
+                const sourceSaved = await updateDocumentOnce('warehouse', c.source.id, {action:`transfer-${mode}-source`,transferId:id,itemId:c.source.id,delta,at:Date.now()}, current => ({ qty:Number(current.qty||0)-delta, warehouseMovementHistory: mode === 'delete' ? sourceLog : [...sourceLog,{...((c.source.warehouseMovementHistory||[]).find(log=>log.transferId===id&&log.type==='نقل إلى مخزن آخر')),qty:-c.nextQty}] }));
+                if (!sourceSaved) throw new Error('TRANSFER_SOURCE_UPDATE_SKIPPED');
+                const targetSaved = await updateDocumentOnce('warehouse', c.target.id, {action:`transfer-${mode}-target`,transferId:id,itemId:c.target.id,delta,at:Date.now()}, current => ({ qty:Number(current.qty||0)+delta, warehouseMovementHistory: mode === 'delete' ? targetLog : [...targetLog,{...((c.target.warehouseMovementHistory||[]).find(log=>log.transferId===id&&log.type==='نقل من مخزن آخر')),qty:c.nextQty}] }));
+                if (!targetSaved) throw new Error('TRANSFER_TARGET_UPDATE_SKIPPED');
+                c.source.qty = Number(c.source.qty || 0) - delta;
+                c.target.qty = Number(c.target.qty || 0) + delta;
+                c.source.warehouseMovementHistory = mode === 'delete' ? sourceLog : [...sourceLog,{...((c.source.warehouseMovementHistory||[]).find(log=>log.transferId===id&&log.type==='نقل إلى مخزن آخر')),qty:-c.nextQty}];
+                c.target.warehouseMovementHistory = mode === 'delete' ? targetLog : [...targetLog,{...((c.target.warehouseMovementHistory||[]).find(log=>log.transferId===id&&log.type==='نقل من مخزن آخر')),qty:c.nextQty}];
+            }
+            showToast(mode === 'delete' ? 'تم حذف عملية النقل وإرجاع الكميات' : 'تم تعديل كميات عملية النقل');
+            renderTransferHistory(); renderWarehouseTable(); renderStats(); renderInventoryMovementReport(); renderInventoryItemMovementReport();
+        } catch (e) { console.warn('Transfer history change failed', e); showToast('تعذر إكمال التعديل؛ راجع أرصدة المخازن قبل إعادة المحاولة'); }
+        finally { isBusy = false; }
+    }
+    function editTransferOperation(id) { return changeTransferOperation(id, 'edit'); }
+    function deleteTransferOperation(id) { return changeTransferOperation(id, 'delete'); }
 
     async function transferWarehouseStock() {
         if (isBusy) return;
@@ -5670,10 +5736,10 @@ function initMenuPermissionCheckboxes() {
         isBusy = true;
         btn.disabled = true;
         try {
-            const transferId = `TRF_${dedupeHash(transferSignature)}`;
+            const transferId = window.__activeTransferBatchId || `TRF_${dedupeHash(transferSignature)}`;
             const transferDate = getLocalDateKey();
             const transferActor = getAccountDisplayName(currentUser);
-            const sourceMovementLog = { id: `${transferId}_OUT`, transferId, itemId: sourceItem.id, itemName: sourceItem.name, unit, branchId: fromBranchId, branchName: sourceItem.branchName || inventoryBranchName(fromBranchId), qty: -qtyToMove, type: 'نقل إلى مخزن آخر', reference: `إلى ${toBranchName}`, date: transferDate, createdAt: new Date().toISOString(), actor: transferActor };
+            const sourceMovementLog = { id: `${transferId}_OUT_${dedupeHash({itemId: sourceItem.id})}`, transferId, itemId: sourceItem.id, itemName: sourceItem.name, unit, branchId: fromBranchId, branchName: sourceItem.branchName || inventoryBranchName(fromBranchId), qty: -qtyToMove, type: 'نقل إلى مخزن آخر', reference: `إلى ${toBranchName}`, date: transferDate, createdAt: new Date().toISOString(), actor: transferActor };
             const movedOut = await updateDocumentOnce('warehouse', sourceItem.id, transferSignature,
                 current => {
                     const available = Number(current.qty || 0);
@@ -5688,7 +5754,7 @@ function initMenuPermissionCheckboxes() {
                 (w.unit || 'حبة') === unit
             );
             if (targetItem) {
-                const targetMovementLog = { id: `${transferId}_IN`, transferId, itemId: targetItem.id, itemName: sourceItem.name, unit, branchId: toBranchId, branchName: toBranchName, qty: qtyToMove, type: 'نقل من مخزن آخر', reference: `من ${sourceItem.branchName || inventoryBranchName(fromBranchId)}`, date: transferDate, createdAt: new Date().toISOString(), actor: transferActor };
+                const targetMovementLog = { id: `${transferId}_IN_${dedupeHash({itemId: sourceItem.id})}`, transferId, itemId: targetItem.id, itemName: sourceItem.name, unit, branchId: toBranchId, branchName: toBranchName, qty: qtyToMove, type: 'نقل من مخزن آخر', reference: `من ${sourceItem.branchName || inventoryBranchName(fromBranchId)}`, date: transferDate, createdAt: new Date().toISOString(), actor: transferActor };
                 await updateDocumentOnce('warehouse', targetItem.id, { ...transferSignature, action: 'warehouse-transfer-in' }, current => {
                     const oldQty = Number(current.qty || 0);
                     const oldCost = Number(current.costPrice ?? current.price ?? costPrice);
@@ -5700,7 +5766,7 @@ function initMenuPermissionCheckboxes() {
                 targetItem.qty = Number(targetItem.qty || 0) + qtyToMove;
                 targetItem.warehouseMovementHistory = [...(targetItem.warehouseMovementHistory || []), targetMovementLog].slice(-300);
             } else {
-                const targetMovementLog = { id: `${transferId}_IN`, transferId, itemName: sourceItem.name, unit, branchId: toBranchId, branchName: toBranchName, qty: qtyToMove, type: 'نقل من مخزن آخر', reference: `من ${sourceItem.branchName || inventoryBranchName(fromBranchId)}`, date: transferDate, createdAt: new Date().toISOString(), actor: transferActor };
+                const targetMovementLog = { id: `${transferId}_IN_${dedupeHash({itemId: sourceItem.id})}`, transferId, itemId: '', itemName: sourceItem.name, unit, branchId: toBranchId, branchName: toBranchName, qty: qtyToMove, type: 'نقل من مخزن آخر', reference: `من ${sourceItem.branchName || inventoryBranchName(fromBranchId)}`, date: transferDate, createdAt: new Date().toISOString(), actor: transferActor };
                 const createdTarget = await createRecordOnce('warehouse', 'wh', { ...transferSignature, action: 'warehouse-transfer-new-target' }, {
                     branchId: toBranchId, branchName: toBranchName, name: sourceItem.name, unit, qty: qtyToMove, costPrice, price, warehouseMovementHistory: [targetMovementLog]
                 }, `wh_transfer_${dedupeHash(transferSignature)}`);
@@ -7996,8 +8062,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         .report-page{background:#fff;max-width:1120px;margin:18px auto;padding:18px;box-shadow:0 2px 12px #0001;break-after:page;page-break-after:always}
         .report-page:last-child{break-after:auto;page-break-after:auto}.report-header{display:flex;align-items:center;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px;margin-bottom:12px}
         .report-header img{width:54px;height:54px;object-fit:contain}.report-header h1{font-size:20px;color:#174d32;margin:0}.report-header p{font-size:11px;color:#64748b;margin:5px 0 0}
-        h2{font-size:16px;color:#174d32;margin:0 0 10px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:10px}th{background:#eaf4ed;color:#174d32}th,td{border:1px solid #dbe5de;padding:7px;text-align:right;vertical-align:top}tr{break-inside:avoid}.report-note{font-size:10px;color:#64748b;margin-top:8px}
-        @page{size:A4 landscape;margin:10mm}@media print{html,body{background:#fff}.toolbar{display:none!important}.report-page{max-width:none;margin:0;padding:0;box-shadow:none;min-height:0}.report-page-break{break-before:page;page-break-before:always}.report-page{break-after:page;page-break-after:always}.report-page:last-child{break-after:auto;page-break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+        h2{font-size:16px;color:#174d32;margin:0 0 10px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:10px}tbody tr:nth-child(even){background:#f1f7f3;-webkit-print-color-adjust:exact;print-color-adjust:exact}th{background:#174d32;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}th,td{border:1px solid #dbe5de;padding:7px;text-align:right;vertical-align:top}tr{break-inside:avoid}.report-note{font-size:10px;color:#64748b;margin-top:8px}
+        @page{size:A4 portrait;margin:10mm}@media print{html,body{background:#fff}.toolbar{display:none!important}.report-page{max-width:none;margin:0;padding:0;box-shadow:none;min-height:0}.report-page-break{break-before:page;page-break-before:always}.report-page{break-after:page;page-break-after:always}.report-page:last-child{break-after:auto;page-break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
         </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button onclick="window.close()" class="close">إغلاق</button></div>${content}</body></html>`);
         win.document.close();
         return win;
