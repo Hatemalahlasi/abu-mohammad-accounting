@@ -5803,22 +5803,62 @@ function initMenuPermissionCheckboxes() {
         isBusy = true; if (btn) btn.disabled = true;
         try {
             const result = await db.runTransaction(async transaction => {
+                // Firestore requires every transaction read to finish BEFORE the first write.
+                // The old code wrote the purchase document and then read warehouse documents,
+                // which caused the transaction to fail only when "إدخال البضاعة إلى المخزن" was enabled.
                 const invoiceSnapshot = await transaction.get(invoiceRef);
                 if (invoiceSnapshot.exists) return { created: false };
+
+                const warehouseEntries = addToWarehouse
+                    ? stockTargets.map(target => ({ target, ref: db.collection('warehouse').doc(target.docId) }))
+                    : [];
+                const warehouseSnapshots = [];
+                for (const entry of warehouseEntries) {
+                    const snapshot = await transaction.get(entry.ref);
+                    warehouseSnapshots.push({ ...entry, snapshot });
+                }
+
+                // No transaction reads occur below this point.
                 transaction.set(invoiceRef, { ...record, id: docId });
-                if (addToWarehouse) {
-                const refs = stockTargets.map(target => ({ target, ref: db.collection('warehouse').doc(target.docId) }));
-                const snapshots = [];
-                for (const entry of refs) snapshots.push({ ...entry, snapshot: await transaction.get(entry.ref) });
-                snapshots.forEach(entry => {
+                warehouseSnapshots.forEach(entry => {
                     if (entry.snapshot.exists) {
                         const current = entry.snapshot.data() || {};
-                        transaction.update(entry.ref, { qty: Number(current.qty || 0) + entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, price: entry.target.salePrice || 0, priceCurrency: currency, branchId, branchName: branch.name, name: current.name || entry.target.name, unit: entry.target.unit, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
+                        transaction.update(entry.ref, {
+                            qty: Number(current.qty || 0) + entry.target.qty,
+                            costPrice: entry.target.costPrice,
+                            costCurrency: currency,
+                            price: entry.target.salePrice || 0,
+                            priceCurrency: currency,
+                            branchId,
+                            branchName: branch.name,
+                            name: current.name || entry.target.name,
+                            unit: entry.target.unit,
+                            sourceType: 'supplierPurchase',
+                            sourceName: record.supplierName,
+                            sourceDate: record.date,
+                            sourcePurchaseId: docId,
+                            sourceHidden: false
+                        });
                     } else {
-                        transaction.set(entry.ref, { id: entry.ref.id, branchId, branchName: branch.name, name: entry.target.name, unit: entry.target.unit, qty: entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, price: entry.target.salePrice || 0, priceCurrency: currency, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
+                        transaction.set(entry.ref, {
+                            id: entry.ref.id,
+                            branchId,
+                            branchName: branch.name,
+                            name: entry.target.name,
+                            unit: entry.target.unit,
+                            qty: entry.target.qty,
+                            costPrice: entry.target.costPrice,
+                            costCurrency: currency,
+                            price: entry.target.salePrice || 0,
+                            priceCurrency: currency,
+                            sourceType: 'supplierPurchase',
+                            sourceName: record.supplierName,
+                            sourceDate: record.date,
+                            sourcePurchaseId: docId,
+                            sourceHidden: false
+                        });
                     }
                 });
-                }
                 return { created: true };
             });
             if (!result.created) { showToast('فاتورة المورد مسجلة مسبقاً؛ لم تتم إضافتها مرة ثانية'); return; }
@@ -5827,7 +5867,7 @@ function initMenuPermissionCheckboxes() {
             stockTargets.forEach(target => {
                 const local = state.warehouse.find(w => w.id === target.docId);
                 if (local) { local.qty = Number(local.qty || 0) + target.qty; local.costPrice = target.costPrice; local.costCurrency = currency; local.price = target.salePrice || 0; local.priceCurrency = currency; local.sourceType = 'supplierPurchase'; local.sourceName = record.supplierName; local.sourceDate = record.date; local.sourcePurchaseId = docId; local.sourceHidden = false; }
-                else state.warehouse.push({ id: target.docId, branchId, branchName: branch.name, name: target.name, unit: target.unit, qty: target.qty, costPrice: target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
+                else state.warehouse.push({ id: target.docId, branchId, branchName: branch.name, name: target.name, unit: target.unit, qty: target.qty, costPrice: target.costPrice, costCurrency: currency, price: target.salePrice || 0, priceCurrency: currency, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
             });
             }
             document.getElementById('supplierInvoiceItemsContainer').innerHTML = '';
@@ -5837,7 +5877,10 @@ function initMenuPermissionCheckboxes() {
             showToast(addToWarehouse ? `تم حفظ فاتورة المورد وإضافة ${lines.length} صنف للمخزن` : 'تم حفظ فاتورة المورد بدون إدخال البضاعة للمخزن');
         } catch (error) {
             console.warn('Save supplier invoice error:', error);
-            showToast('تعذر حفظ فاتورة المورد؛ لم يتم تحديث المخزون');
+            const reason = String(error?.message || error?.code || '').trim();
+            showToast(addToWarehouse
+                ? `تعذر حفظ الفاتورة أو تحديث المخزون${reason ? ': ' + reason.slice(0, 90) : ''}`
+                : `تعذر حفظ فاتورة المورد${reason ? ': ' + reason.slice(0, 90) : ''}`);
         } finally { isBusy = false; if (btn) btn.disabled = false; }
     }
 
