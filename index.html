@@ -1465,11 +1465,11 @@
                         </select>
                     </div>
                     <div class="form-group" id="invCashboxGroup">
-                        <label>الصندوق المطابق لعملة الفاتورة</label>
+                        <label>الصندوق (الرصيد يُحسب بعملة الفاتورة)</label>
                         <select id="invCashboxSelect" class="form-control"></select>
                         <div id="invCashboxCreateHint" class="employee-permission-note hidden" style="margin-top:7px;">
-                            لا يوجد صندوق بهذه العملة. يمكن للمدير أو المشرف إنشاء صندوق مبيعات بهذه العملة مباشرة.
-                            <button type="button" class="btn btn-outline btn-sm" style="margin-top:7px;" onclick="createInvoiceCurrencyCashbox()">إنشاء صندوق لهذه العملة</button>
+                            لا يوجد صندوق بعد. يمكن للمدير أو المشرف إنشاء صندوق واحد يقبل العملات الثلاث.
+                            <button type="button" class="btn btn-outline btn-sm" style="margin-top:7px;" onclick="createInvoiceCurrencyCashbox()">إنشاء صندوق متعدد العملات</button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -1779,7 +1779,7 @@
 
             <div class="card-box">
                 <div class="card-title"><span>إصدار سند قبض / صرف</span></div>
-                <div class="grid-2">
+                <div class="grid-3">
                     <div class="form-group">
                         <label>نوع السند</label>
                         <select id="voucherType" class="form-control" onchange="toggleVoucherCustomerField(); updateVoucherStatementPreview();">
@@ -1790,6 +1790,10 @@
                     <div class="form-group">
                         <label>الصندوق</label>
                         <select id="voucherCashboxSelect" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>العملة</label>
+                        <select id="voucherCurrency" class="form-control" onchange="updateVoucherCashboxOptions()"><option value="YER">ريال يمني (YER)</option><option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option></select>
                     </div>
                 </div>
                 <div class="grid-2">
@@ -1847,6 +1851,7 @@
 
             <div class="card-box">
                 <div class="card-title"><span>الصناديق والأرصدة النظامية</span></div>
+                <div class="employee-permission-note" style="margin-bottom:10px;">كل صندوق يحتوي أرصدة مستقلة بالريال اليمني والسعودي والدولار، وتُحسب كل عملة وحدها دون تحويل أو خلط.</div>
                 <div id="dashboardCashboxesList" style="margin-bottom:14px;"></div>
                 <div class="grid-3">
                     <div class="form-group" style="margin-bottom:0;">
@@ -1854,7 +1859,7 @@
                         <input type="text" id="newCashboxName" class="form-control" placeholder="مثال: صندوق المعمل">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
-                        <label>عملة الصندوق</label>
+                        <label>عملة الرصيد الافتتاحي (ويقبل الصندوق العملات الثلاث)</label>
                         <select id="newCashboxCurrency" class="form-control">
                             <option value="YER">ريال يمني</option>
                             <option value="SAR">ريال سعودي</option>
@@ -1872,8 +1877,9 @@
             </div>
             <div class="card-box">
                 <div class="card-title"><span id="cashboxStatementTitle"><i class="fa-solid fa-file-invoice"></i> كشف حساب الصندوق</span></div>
-                <div class="grid-3">
-                    <div class="form-group"><label>الصندوق</label><select id="cashboxStatementSelect" class="form-control"></select></div>
+                <div class="grid-4">
+                    <div class="form-group"><label>الصندوق</label><select id="cashboxStatementSelect" class="form-control" onchange="renderCashboxStatement()"></select></div>
+                    <div class="form-group"><label>العملة</label><select id="cashboxStatementCurrency" class="form-control" onchange="renderCashboxStatement()"><option value="YER">ريال يمني (YER)</option><option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option></select></div>
                     <div class="form-group"><label>الشهر</label><input type="month" id="cashboxStatementPeriod" class="form-control"></div>
                     <div class="form-group" style="display:flex;align-items:flex-end;"><button class="btn btn-primary btn-full" onclick="renderCashboxStatement()"><i class="fa-solid fa-magnifying-glass"></i> عرض الكشف</button></div>
                 </div>
@@ -4404,26 +4410,36 @@ function initMenuPermissionCheckboxes() {
             : val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function getCashboxOpening(cb) {
-        if (cb.openingBalance !== undefined && cb.openingBalance !== null) {
-            return Number(cb.openingBalance || 0);
+    function getCashboxOpening(cb, currencyOverride = null) {
+        if (!cb) return 0;
+        const legacyCurrency = CURRENCY_CODES.includes(cb.currency) ? cb.currency : 'YER';
+        const currency = CURRENCY_CODES.includes(currencyOverride) ? currencyOverride : legacyCurrency;
+        if (cb.openingBalances && typeof cb.openingBalances === 'object' && Object.prototype.hasOwnProperty.call(cb.openingBalances, currency)) {
+            return Number(cb.openingBalances[currency] || 0);
         }
-        return Number(cb.balance || 0);
+        // الصناديق القديمة كان لها رصيد افتتاحي بعملة واحدة؛ نحافظ عليه في عملته فقط.
+        if (currency === legacyCurrency) {
+            if (cb.openingBalance !== undefined && cb.openingBalance !== null) return Number(cb.openingBalance || 0);
+            return Number(cb.balance || 0);
+        }
+        return 0;
     }
 
-    function computeSystemCashboxBalance(cb) {
-        const opening = getCashboxOpening(cb);
-        const cashCurrency = CURRENCY_CODES.includes(cb.currency) ? cb.currency : 'YER';
+    function computeSystemCashboxBalance(cb, currencyOverride = null) {
+        if (!cb) return 0;
+        const legacyCurrency = CURRENCY_CODES.includes(cb.currency) ? cb.currency : 'YER';
+        const cashCurrency = CURRENCY_CODES.includes(currencyOverride) ? currencyOverride : legacyCurrency;
+        const opening = getCashboxOpening(cb, cashCurrency);
         const cashSales = state.invoices
             .filter(i => i.paymentType === 'cash' && i.cashboxId === cb.id && (i.currency || 'YER') === cashCurrency)
             .reduce((s, i) => s + Number(i.netTotal || 0), 0);
 
         const receipts = state.vouchers
-            .filter(v => v.type === 'receipt' && v.cashboxId === cb.id && (v.currency || cashCurrency) === cashCurrency)
+            .filter(v => v.type === 'receipt' && v.cashboxId === cb.id && (v.currency || legacyCurrency) === cashCurrency)
             .reduce((s, v) => s + Number(v.amount || 0), 0);
 
         const payments = state.vouchers
-            .filter(v => v.type === 'payment' && v.cashboxId === cb.id && (v.currency || cashCurrency) === cashCurrency)
+            .filter(v => v.type === 'payment' && v.cashboxId === cb.id && (v.currency || legacyCurrency) === cashCurrency)
             .reduce((s, v) => s + Number(v.amount || 0), 0);
 
         const purchasesOut = state.purchases
@@ -4767,7 +4783,7 @@ function initMenuPermissionCheckboxes() {
         const prevCbVch = cbSelVch.value;
 
         const cbOpts = state.cashboxes.length
-            ? state.cashboxes.map(c => `<option value="${c.id}">${c.name} — ${CURRENCY_NAMES[c.currency || 'YER']} (${formatMoney(computeSystemCashboxBalance(c))})</option>`).join('')
+            ? state.cashboxes.map(c => `<option value="${c.id}">${escapeUiText(c.name)} — صندوق متعدد العملات</option>`).join('')
             : '<option value="">أضف صندوقاً أولاً</option>';
         cbSelInv.innerHTML = cbOpts;
         cbSelPur.innerHTML = cbOpts;
@@ -4777,6 +4793,7 @@ function initMenuPermissionCheckboxes() {
         if (prevCbVch && state.cashboxes.some(c => c.id === prevCbVch)) cbSelVch.value = prevCbVch;
         updateInvoiceCashboxOptions();
         filterPurchaseCashboxes();
+        updateVoucherCashboxOptions();
         populateCashboxStatementOptions();
         populateEmployeeExpenseCashboxOptions();
         populatePurchaseSupplierOptions();
@@ -5303,7 +5320,9 @@ function initMenuPermissionCheckboxes() {
         const visibleInvoices = state.invoices.filter(recordIsInUserBranch);
         const visiblePurchases = state.purchases.filter(recordIsInUserBranch);
         const cashTotals = { YER: 0, SAR: 0, USD: 0 };
-        state.cashboxes.forEach(c => { const code = CURRENCY_CODES.includes(c.currency) ? c.currency : 'YER'; cashTotals[code] += computeSystemCashboxBalance(c); });
+        CURRENCY_CODES.forEach(code => {
+            state.cashboxes.forEach(c => { cashTotals[code] += computeSystemCashboxBalance(c, code); });
+        });
         const cash = CURRENCY_CODES.filter(code => cashTotals[code] !== 0).map(code => `${formatMoney(cashTotals[code])} ${code}`).join(' | ') || '0.00 YER';
         const debtTotals = { YER: 0, SAR: 0, USD: 0 };
         state.customers.forEach(c => {
@@ -5338,8 +5357,8 @@ function initMenuPermissionCheckboxes() {
         const cashbox = cashboxId ? state.cashboxes.find(item => item.id === cashboxId) : null;
         if (!title || !Number.isFinite(amount) || amount <= 0) { showToast('أدخل بيان المصروف والمبلغ الصحيح'); return; }
         if (!cashbox) { showToast('اختر الصندوق الذي صُرف منه المبلغ'); return; }
-        if ((cashbox.currency || 'YER') !== currency) { showToast('عملة الصندوق لا تطابق عملة المصروف'); return; }
-        if (computeSystemCashboxBalance(cashbox) < amount) { showToast('رصيد الصندوق غير كافٍ لهذا المصروف'); return; }
+        
+        if (computeSystemCashboxBalance(cashbox, currency) < amount) { showToast('رصيد الصندوق غير كافٍ لهذا المصروف بهذه العملة'); return; }
 
         const date = getLocalDateKey();
         const record = {
@@ -5447,8 +5466,8 @@ function initMenuPermissionCheckboxes() {
         const select = document.getElementById('supplierInvoiceCashbox');
         if (!select) return;
         const old = select.value;
-        const list = (state.cashboxes || []).filter(box => (box.currency || 'YER') === currency);
-        select.innerHTML = list.map(box => `<option value="${box.id}">${escapeUiText(box.name)} — ${formatMoney(computeSystemCashboxBalance(box))} ${currency}</option>`).join('') || '<option value="">لا يوجد صندوق بهذه العملة</option>';
+        const list = (state.cashboxes || []);
+        select.innerHTML = list.map(box => `<option value="${box.id}">${escapeUiText(box.name)} — ${formatMoney(computeSystemCashboxBalance(box, currency))} ${currency}</option>`).join('') || '<option value="">لا يوجد صندوق متاح</option>';
         if (old && list.some(box => box.id === old)) select.value = old;
     }
 
@@ -5457,8 +5476,8 @@ function initMenuPermissionCheckboxes() {
         const select = document.getElementById('supplierPaymentCashbox');
         if (!select) return;
         const old = select.value;
-        const list = (state.cashboxes || []).filter(box => (box.currency || 'YER') === currency);
-        select.innerHTML = list.map(box => `<option value="${box.id}">${escapeUiText(box.name)} — متاح ${formatMoney(computeSystemCashboxBalance(box))} ${currency}</option>`).join('') || '<option value="">لا يوجد صندوق بهذه العملة</option>';
+        const list = (state.cashboxes || []);
+        select.innerHTML = list.map(box => `<option value="${box.id}">${escapeUiText(box.name)} — متاح ${formatMoney(computeSystemCashboxBalance(box, currency))} ${currency}</option>`).join('') || '<option value="">لا يوجد صندوق متاح</option>';
         if (old && list.some(box => box.id === old)) select.value = old;
     }
 
@@ -5542,8 +5561,8 @@ function initMenuPermissionCheckboxes() {
         const cashboxId = paidAmount > 0 ? (document.getElementById('supplierInvoiceCashbox')?.value || '') : '';
         const cashbox = cashboxId ? state.cashboxes.find(box => box.id === cashboxId) : null;
         if (paidAmount > 0 && !cashbox) { showToast('اختر صندوقاً مطابقاً لعملة الدفعة'); return; }
-        if (cashbox && (cashbox.currency || 'YER') !== currency) { showToast('عملة الصندوق لا تطابق عملة فاتورة المورد'); return; }
-        if (cashbox && computeSystemCashboxBalance(cashbox) < paidAmount) { showToast('رصيد الصندوق غير كافٍ لسداد هذا المبلغ'); return; }
+        
+        if (cashbox && computeSystemCashboxBalance(cashbox, currency) < paidAmount) { showToast('رصيد الصندوق غير كافٍ لسداد هذا المبلغ بهذه العملة'); return; }
         const grouped = new Map();
         lines.forEach(line => {
             const key = `${line.name.trim().toLowerCase()}|${line.unit}`;
@@ -5622,10 +5641,10 @@ function initMenuPermissionCheckboxes() {
         const cashbox = state.cashboxes.find(box => box.id === cashboxId);
         const note = (document.getElementById('supplierPaymentNote')?.value || '').trim();
         if (!supplier || !cashbox || !Number.isFinite(amount) || amount <= 0) { showToast('اختر المورد والصندوق وأدخل مبلغاً صحيحاً'); return; }
-        if ((cashbox.currency || 'YER') !== currency) { showToast('عملة الصندوق لا تطابق عملة السداد'); return; }
+        
         const totals = supplierTotalsFor(supplierId);
         if (amount > Math.max(0, totals[currency].due) + 0.000001) { showToast(`المبلغ أكبر من المتبقي للمورد (${formatMoney(Math.max(0, totals[currency].due))} ${currency})`); return; }
-        if (computeSystemCashboxBalance(cashbox) < amount) { showToast('رصيد الصندوق غير كافٍ للسداد'); return; }
+        if (computeSystemCashboxBalance(cashbox, currency) < amount) { showToast('رصيد الصندوق غير كافٍ للسداد بهذه العملة'); return; }
         const date = getLocalDateKey();
         const record = { kind: 'supplierPayment', date, supplierId, supplierName: supplier.name, currency, amount, title: note || `سداد للمورد ${supplier.name}`, notes: note, cashboxId: cashbox.id, cashboxName: cashbox.name, employee: getAccountDisplayName(currentUser), createdByUserId: currentUser?.id || '' };
         const signature = { kind: record.kind, date, supplierId, currency, amount, cashboxId, note, actor: dedupeActorId() };
@@ -5740,11 +5759,12 @@ function initMenuPermissionCheckboxes() {
         if (!select) return;
         const currency = document.getElementById('invCurrency')?.value || 'YER';
         const previous = select.value;
-        const available = state.cashboxes.filter(box => (box.currency || 'YER') === currency);
+        const available = state.cashboxes;
         select.innerHTML = available.length
-            ? available.map(box => `<option value="${box.id}">${box.name} — متاح ${formatMoney(computeSystemCashboxBalance(box))} ${currency}</option>`).join('')
+            ? available.map(box => `<option value="${box.id}">${box.name} — متاح ${formatMoney(computeSystemCashboxBalance(box, currency))} ${currency}</option>`).join('')
             : `<option value="">لا يوجد صندوق بعملة ${currency}</option>`;
         if (previous && available.some(box => box.id === previous)) select.value = previous;
+        else if (available.length) select.selectedIndex = 0;
         const hint = document.getElementById('invCashboxCreateHint');
         const isCash = document.getElementById('invPaymentType')?.value === 'cash';
         if (hint) {
@@ -5753,7 +5773,7 @@ function initMenuPermissionCheckboxes() {
             if (button) button.classList.toggle('hidden', !canManageUsers());
             const text = hint.firstChild;
             if (text && text.nodeType === Node.TEXT_NODE) text.textContent = canManageUsers()
-                ? 'لا يوجد صندوق بهذه العملة. يمكن للمدير أو المشرف إنشاء صندوق مبيعات بهذه العملة مباشرة. '
+                ? 'لا يوجد صندوق بعد. يمكن للمدير أو المشرف إنشاء صندوق واحد يقبل العملات الثلاث. '
                 : 'لا يوجد صندوق بهذه العملة. اطلب من المدير أو المشرف إنشاء صندوق بهذه العملة. ';
         }
     }
@@ -5763,33 +5783,26 @@ function initMenuPermissionCheckboxes() {
             showToast('إنشاء الصناديق متاح للمدير والمشرف فقط');
             return;
         }
-        const currency = document.getElementById('invCurrency')?.value || 'YER';
-        const existing = state.cashboxes.find(box => (box.currency || 'YER') === currency);
-        if (existing) {
+        if (state.cashboxes.length) {
             updateInvoiceCashboxOptions();
-            document.getElementById('invCashboxSelect').value = existing.id;
-            showToast('يوجد صندوق بهذه العملة وتم اختياره');
+            document.getElementById('invCashboxSelect').value = state.cashboxes[0].id;
+            showToast('الصندوق المختار يقبل العملات الثلاث؛ تم اختياره');
             return;
         }
         isBusy = true;
         try {
-            const name = `صندوق المبيعات - ${currency}`;
+            const currency = document.getElementById('invCurrency')?.value || 'YER';
+            const name = 'صندوق المبيعات';
+            const openingBalances = { YER: 0, SAR: 0, USD: 0 };
             const saved = await createRecordOnce('cashboxes', 'cb',
-                { name: name.toLowerCase(), currency, opening: 0, actor: dedupeActorId() },
-                { name, currency, openingBalance: 0, balance: 0 },
-                `cb_sales_${currency}`
+                { name: name.toLowerCase(), currency, openingBalances, actor: dedupeActorId() },
+                { name, currency, openingBalance: 0, openingBalances, balance: 0, multiCurrency: true },
+                'cb_sales_multi_currency'
             );
-            if (!saved.created) {
-                await reloadAllData(false);
-                showToast('تم العثور على صندوق سابق بهذه العملة؛ تم تحديث القائمة');
-                return;
-            }
-            state.cashboxes.push({ id: saved.id, name, currency, openingBalance: 0, balance: 0 });
+            await reloadAllData(false);
             updateInvoiceCashboxOptions();
-            document.getElementById('invCashboxSelect').value = saved.id;
-            populateCashboxStatementOptions();
-            renderCashboxesList();
-            showToast(`تم إنشاء صندوق ${currency} واختياره للفاتورة`);
+            if (saved.id) document.getElementById('invCashboxSelect').value = saved.id;
+            showToast('تم إنشاء صندوق يقبل العملات الثلاث');
         } catch (error) {
             console.warn('Create invoice currency cashbox error:', error);
             showToast('تعذر إنشاء الصندوق؛ تحقق من اتصال قاعدة البيانات');
@@ -5814,9 +5827,9 @@ function initMenuPermissionCheckboxes() {
         if (!select) return;
         const currency = document.getElementById('purCurrency')?.value || 'YER';
         const previous = select.value;
-        const available = state.cashboxes.filter(box => (box.currency || 'YER') === currency);
+        const available = state.cashboxes;
         select.innerHTML = available.length
-            ? available.map(box => `<option value="${box.id}">${box.name} — ${formatMoney(computeSystemCashboxBalance(box))} ${currency}</option>`).join('')
+            ? available.map(box => `<option value="${box.id}">${box.name} — ${formatMoney(computeSystemCashboxBalance(box, currency))} ${currency}</option>`).join('')
             : `<option value="">لا يوجد صندوق بعملة ${currency}</option>`;
         if (previous && available.some(box => box.id === previous)) select.value = previous;
     }
@@ -5851,14 +5864,27 @@ function initMenuPermissionCheckboxes() {
         const select = document.getElementById('cashboxStatementSelect');
         if (!select) return;
         const previous = select.value;
-        select.innerHTML = '<option value="">اختر الصندوق</option>' + state.cashboxes.map(c => `<option value="${c.id}">${c.name} (${c.currency || 'YER'})</option>`).join('');
+        select.innerHTML = '<option value="">اختر الصندوق</option>' + state.cashboxes.map(c => `<option value="${c.id}">${escapeUiText(c.name)}</option>`).join('');
         if (previous && state.cashboxes.some(c => c.id === previous)) select.value = previous;
+        const currency = document.getElementById('cashboxStatementCurrency');
+        if (currency && !CURRENCY_CODES.includes(currency.value)) currency.value = 'YER';
         const period = document.getElementById('cashboxStatementPeriod');
         if (period && !period.value) period.value = getCurrentPayrollPeriod();
     }
 
+    function updateVoucherCashboxOptions() {
+        const select = document.getElementById('voucherCashboxSelect');
+        if (!select) return;
+        const currency = document.getElementById('voucherCurrency')?.value || 'YER';
+        const previous = select.value;
+        select.innerHTML = state.cashboxes.length
+            ? state.cashboxes.map(box => `<option value="${escapeUiText(box.id)}">${escapeUiText(box.name)} — متاح ${formatMoney(computeSystemCashboxBalance(box, currency))} ${currency}</option>`).join('')
+            : '<option value="">أضف صندوقاً أولاً</option>';
+        if (previous && state.cashboxes.some(box => box.id === previous)) select.value = previous;
+    }
+
     function populateEmployeeExpenseCashboxOptions() {
-        // الصندوق يظهر فقط لمن لديه صلاحية الاطلاع على الصناديق، وتُفلتر الخيارات حسب عملة الصرفة اليومية.
+        // الصندوق يظهر فقط لمن لديه صلاحية الاطلاع على الصناديق، ويعرض رصيد العملة المختارة.
         filterEmployeeExpenseCashboxes();
     }
 
@@ -6079,7 +6105,7 @@ function initMenuPermissionCheckboxes() {
         const netTotal = Math.max(0, subtotal - discount);
         const cashbox = paymentType === 'cash' ? state.cashboxes.find(c => c.id === cashboxId) : null;
         if (paymentType === 'cash' && !cashbox) { showToast(`لا يوجد صندوق بعملة ${currency}؛ أضف صندوقاً بهذه العملة أو اختر صندوقاً مطابقاً`); return; }
-        if (paymentType === 'cash' && (cashbox.currency || 'YER') !== currency) { showToast('عملة الفاتورة يجب أن تطابق عملة الصندوق المختار'); return; }
+        
         let customer = null;
         if (paymentType === 'credit') {
             customer = state.customers.find(c => c.id === selectedCustomerId);
@@ -6249,12 +6275,13 @@ function initMenuPermissionCheckboxes() {
         const btn = document.getElementById('saveVoucherBtn');
         const type = document.getElementById('voucherType').value;
         const cashboxId = document.getElementById('voucherCashboxSelect').value;
+        const currency = document.getElementById('voucherCurrency')?.value || 'YER';
         const customerId = type === 'receipt' ? document.getElementById('voucherCustomerSelect').value : '';
         const amount = Number(document.getElementById('voucherAmount').value || 0);
         const refNum = (document.getElementById('voucherRefNumber')?.value || '').trim();
         const cashbox = state.cashboxes.find(c => c.id === cashboxId);
         if (!cashbox || amount <= 0) { showToast('اختر الصندوق وأدخل مبلغاً صحيحاً'); return; }
-        const currentCbBal = computeSystemCashboxBalance(cashbox);
+        const currentCbBal = computeSystemCashboxBalance(cashbox, currency);
         if (type === 'payment' && currentCbBal < amount) { showToast('رصيد الصندوق غير كافٍ'); return; }
         isBusy = true;
         btn.disabled = true;
@@ -6263,12 +6290,12 @@ function initMenuPermissionCheckboxes() {
             const note = type === 'receipt' ? `لكم سند قبض برقم ${refNum || '—'}` : `عليكم سند صرف برقم ${refNum || '—'}`;
             const record = {
                 refNumber: refNum, type, date: getLocalDateKey(), cashboxId: cashbox.id, cashboxName: cashbox.name,
-                currency: CURRENCY_CODES.includes(cashbox.currency) ? cashbox.currency : 'YER',
+                currency,
                 customerId: customer ? customer.id : '', customerName: customer ? customer.name : 'عام',
                 amount, note, employee: currentUser.fullName
             };
             const result = await createRecordOnce('vouchers', 'vch', {
-                refNumber: refNum, type, cashboxId, customerId, amount, note, actor: dedupeActorId()
+                refNumber: refNum, type, cashboxId, customerId, currency, amount, note, actor: dedupeActorId()
             }, record, refNum ? `VCH-${refNum}` : '');
             if (!result.created) { showToast('تم منع تكرار السند؛ هذا السند مسجل مسبقاً.'); return; }
             document.getElementById('voucherAmount').value = '';
@@ -6348,48 +6375,60 @@ function initMenuPermissionCheckboxes() {
         const opening = Number(document.getElementById('newCashboxOpening').value || 0);
         const currency = document.getElementById('newCashboxCurrency').value || 'YER';
         if (!name) { showToast('أدخل اسم الصندوق'); return; }
+        if (!Number.isFinite(opening) || opening < 0) { showToast('أدخل رصيداً افتتاحياً صحيحاً'); return; }
         const normalizedName = name.replace(/\s+/g, ' ').toLowerCase();
-        if ((state.cashboxes || []).some(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalizedName && (item.currency || 'YER') === currency)) {
-            showToast('يوجد صندوق بهذا الاسم والعملة بالفعل؛ لن تتم إضافة نسخة أخرى.'); return;
+        if ((state.cashboxes || []).some(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalizedName)) {
+            showToast('يوجد صندوق بهذا الاسم بالفعل؛ الصندوق الواحد يقبل العملات الثلاث.'); return;
         }
+        const openingBalances = { YER: 0, SAR: 0, USD: 0 };
+        openingBalances[currency] = opening;
         isBusy = true;
         btn.disabled = true;
         try {
             const result = await createRecordOnce('cashboxes', 'cb', {
-                name: name.replace(/\s+/g, ' ').toLowerCase(), currency, opening, actor: dedupeActorId()
-            }, { name, currency, openingBalance: opening, balance: opening }, `cb_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), currency })}`);
+                name: normalizedName, currency, opening, openingBalances, actor: dedupeActorId()
+            }, { name, currency, openingBalance: opening, openingBalances, balance: opening, multiCurrency: true }, `cb_${dedupeHash(normalizedName)}`);
             if (!result.created) { showToast('هذا الصندوق مسجل مسبقاً؛ لم تتم إضافة نسخة أخرى.'); return; }
             document.getElementById('newCashboxName').value = '';
             document.getElementById('newCashboxOpening').value = '0.00';
             document.getElementById('newCashboxCurrency').value = 'YER';
-            showToast('تمت إضافة الصندوق');
+            await reloadAllData(false);
+            showToast('تمت إضافة الصندوق بأرصدة منفصلة للعملات الثلاث');
         } catch (e) { console.warn('Create cashbox error:', e); showToast('تعذر إضافة الصندوق'); }
         finally { isBusy = false; btn.disabled = false; }
     }
 
-    async function editCashboxOpening(cbId) {
+    async function editCashboxOpening(cbId, currency = 'YER') {
         if (isBusy) return;
         if (!canEditRecord()) {
             showToast('ليس لديك صلاحية التعديل');
             return;
         }
         const cb = state.cashboxes.find(x => x.id === cbId);
-        if (!cb) return;
-        const currentOpen = getCashboxOpening(cb);
-        const nextVal = prompt(`الرصيد الافتتاحي لـ (${cb.name}):`, currentOpen.toFixed(2));
+        if (!cb || !CURRENCY_CODES.includes(currency)) return;
+        const currentOpen = getCashboxOpening(cb, currency);
+        const nextVal = prompt(`الرصيد الافتتاحي لـ (${cb.name}) بعملة ${currency}:`, currentOpen.toFixed(2));
         if (nextVal === null) return;
         const parsed = Number(nextVal);
-        if (isNaN(parsed) || parsed < 0) {
+        if (!Number.isFinite(parsed) || parsed < 0) {
             showToast('أدخل رقماً صحيحاً');
             return;
         }
+        const openingBalances = { YER: 0, SAR: 0, USD: 0 };
+        CURRENCY_CODES.forEach(code => { openingBalances[code] = getCashboxOpening(cb, code); });
+        openingBalances[currency] = parsed;
         isBusy = true;
         try {
-            await db.collection('cashboxes').doc(cbId).update({
-                openingBalance: parsed,
-                balance: parsed
-            });
-            showToast('تم تحديث الرصيد الافتتاحي');
+            await db.collection('cashboxes').doc(cbId).update({ openingBalances, multiCurrency: true });
+            const idx = state.cashboxes.findIndex(x => x.id === cbId);
+            if (idx >= 0) state.cashboxes[idx] = { ...state.cashboxes[idx], openingBalances, multiCurrency: true };
+            renderCashboxesList();
+            renderStats();
+            if (document.getElementById('cashboxStatementSelect')?.value === cbId) renderCashboxStatement();
+            showToast('تم تحديث الرصيد الافتتاحي لهذه العملة فقط');
+        } catch (error) {
+            console.warn('Edit cashbox opening error:', error);
+            showToast('تعذر تحديث الرصيد الافتتاحي');
         } finally {
             isBusy = false;
         }
@@ -6397,29 +6436,29 @@ function initMenuPermissionCheckboxes() {
 
     function renderCashboxesList() {
         const el = document.getElementById('dashboardCashboxesList');
+        if (!el) return;
         el.innerHTML = state.cashboxes.length
             ? state.cashboxes.map(c => {
-                const opening = getCashboxOpening(c);
-                const sysBal = computeSystemCashboxBalance(c);
+                const currencyRows = CURRENCY_CODES.map(code => `
+                    <div style="border:1px solid var(--border);border-radius:9px;padding:9px;min-width:0;">
+                        <div style="font-size:11px;color:var(--text-muted);">${CURRENCY_NAMES[code]} (${code})</div>
+                        <div class="mono" style="font-size:15px;font-weight:800;color:var(--success);margin:3px 0;">${formatMoney(computeSystemCashboxBalance(c, code))} ${code}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">افتتاحي: ${formatMoney(getCashboxOpening(c, code))}</div>
+                        ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;width:100%;" onclick="editCashboxOpening('${c.id}','${code}')"><i class="fa-solid fa-pen"></i> تعديل الافتتاحي</button>` : ''}
+                    </div>`).join('');
                 return `
-                    <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-                        <div>
-                            <strong>${c.name}</strong>
-                            <div style="font-size:11px; color:var(--text-muted);">${CURRENCY_NAMES[c.currency || 'YER']} — رصيد افتتاحي: <span class="mono">${formatMoney(opening)}</span></div>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span class="mono" style="color:var(--success); font-size:15px;">${formatMoney(sysBal)} ${c.currency || 'YER'}</span>
-                            <button type="button" class="btn btn-outline btn-sm" onclick="showCashboxStatement('${c.id}')" title="كشف حساب الصندوق"><i class="fa-solid fa-file-lines"></i> كشف</button>
-                            ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editCashboxOpening('${c.id}')" title="تعديل الرصيد الافتتاحي"><i class="fa-solid fa-pen"></i></button>` : ''}
-                        </div>
-                    </div>
-                `;
+                    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:11px 12px;margin-bottom:9px;">
+                        <strong style="display:block;margin-bottom:9px;">${escapeUiText(c.name)}</strong>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;">${currencyRows}</div>
+                        <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="showCashboxStatement('${c.id}')" title="كشف حساب الصندوق"><i class="fa-solid fa-file-lines"></i> كشف حساب الصندوق</button>
+                    </div>`;
             }).join('')
-            : '<p style="color:var(--text-muted); font-size:13px;">لا توجد صناديق</p>';
+            : '<p style="color:var(--text-muted);font-size:13px;">لا توجد صناديق</p>';
     }
 
-    function getCashboxStatementMovements(cashbox, period) {
-        const currency = cashbox.currency || 'YER';
+    function getCashboxStatementMovements(cashbox, period, currencyOverride = null) {
+        const currency = CURRENCY_CODES.includes(currencyOverride) ? currencyOverride : (cashbox.currency || 'YER');
+        const legacyCurrency = CURRENCY_CODES.includes(cashbox.currency) ? cashbox.currency : 'YER';
         const movements = [];
         state.invoices.filter(item => item.paymentType === 'cash' && item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
             .forEach(item => movements.push({ date: item.date, type: 'مبيعات نقدية', note: `فاتورة ${item.refNumber || item.id} — ${item.customerName || ''}`, incoming: Number(item.netTotal || 0), outgoing: 0, actor: item.employee || '' }));
@@ -6428,7 +6467,7 @@ function initMenuPermissionCheckboxes() {
                 const outgoing = item.kind === 'supplierPurchase' ? Number(item.paidAmount || 0) : Number(item.amount || 0);
                 if (outgoing > 0) movements.push({ date: item.date, type: item.kind === 'supplierPurchase' ? 'سداد نقدي لفاتورة مورد' : item.kind === 'supplierPayment' ? 'دفعة سداد مورد' : item.kind === 'purchase' ? 'مشتريات نقدية' : 'مصروف', note: `${item.title || ''} ${item.supplierName ? ' — المورد: ' + item.supplierName : ''}`, incoming: 0, outgoing, actor: item.employee || '' });
             });
-        state.vouchers.filter(item => item.cashboxId === cashbox.id && (item.currency || currency) === currency)
+        state.vouchers.filter(item => item.cashboxId === cashbox.id && (item.currency || legacyCurrency) === currency)
             .forEach(item => movements.push({ date: item.date || '', type: item.type === 'receipt' ? 'سند قبض' : 'سند صرف', note: item.note || `سند ${item.refNumber || item.id}`, incoming: item.type === 'receipt' ? Number(item.amount || 0) : 0, outgoing: item.type === 'payment' ? Number(item.amount || 0) : 0, actor: item.employee || '' }));
         (state.employeeExpenses || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
             .forEach(item => movements.push({ date: item.date || '', type: item.source === 'dailyDisbursementAdvance' ? 'سلفة مخصومة من مستحق موظف' : 'دفعة من مستحق موظف', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
@@ -6439,18 +6478,18 @@ function initMenuPermissionCheckboxes() {
 
     function renderCashboxStatement() {
         const cashboxId = document.getElementById('cashboxStatementSelect')?.value || '';
+        const currency = document.getElementById('cashboxStatementCurrency')?.value || 'YER';
         const period = document.getElementById('cashboxStatementPeriod')?.value || getCurrentPayrollPeriod();
         const cashbox = state.cashboxes.find(item => item.id === cashboxId);
         const body = document.getElementById('cashboxStatementBody');
         const summary = document.getElementById('cashboxStatementSummary');
         if (!body || !summary) return;
         if (!cashbox) { body.innerHTML = '<tr><td colspan="6">اختر الصندوق أولاً</td></tr>'; summary.innerHTML = ''; return; }
-        const currency = cashbox.currency || 'YER';
         const startDate = `${period}-01`;
-        const all = getCashboxStatementMovements(cashbox, period);
+        const all = getCashboxStatementMovements(cashbox, period, currency);
         const previousMovements = all.filter(item => item.date < startDate);
         const periodMovements = all.filter(item => item.date.slice(0,7) === period);
-        let opening = getCashboxOpening(cashbox) + previousMovements.reduce((sum,item) => sum + item.incoming - item.outgoing, 0);
+        let opening = getCashboxOpening(cashbox, currency) + previousMovements.reduce((sum,item) => sum + item.incoming - item.outgoing, 0);
         let running = opening;
         const totalIn = periodMovements.reduce((sum,item) => sum + item.incoming, 0);
         const totalOut = periodMovements.reduce((sum,item) => sum + item.outgoing, 0);
@@ -6465,12 +6504,14 @@ function initMenuPermissionCheckboxes() {
             <div class="mini-stat"><div class="mini-stat-label">الرصيد الختامي</div><div class="mini-stat-val mono">${formatMoney(running)} ${currency}</div></div>`;
         body.innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد حركات لهذا الصندوق خلال الشهر المحدد</td></tr>';
         const boxTitle = document.getElementById('cashboxStatementTitle');
-        if (boxTitle) boxTitle.textContent = `كشف حساب ${cashbox.name} — ${period}`;
+        if (boxTitle) boxTitle.textContent = `كشف حساب ${cashbox.name} — ${currency} — ${period}`;
     }
 
-    function showCashboxStatement(cashboxId) {
+    function showCashboxStatement(cashboxId, currency = null) {
         const select = document.getElementById('cashboxStatementSelect');
         if (select) select.value = cashboxId;
+        const currencySelect = document.getElementById('cashboxStatementCurrency');
+        if (currencySelect && CURRENCY_CODES.includes(currency)) currencySelect.value = currency;
         renderCashboxStatement();
         document.getElementById('cashboxStatementSelect')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -6479,12 +6520,13 @@ function initMenuPermissionCheckboxes() {
         const cashboxId = document.getElementById('cashboxStatementSelect')?.value || '';
         const cashbox = state.cashboxes.find(item => item.id === cashboxId);
         if (!cashbox) { showToast('اختر الصندوق واعرض كشفه أولاً'); return; }
+        const currency = document.getElementById('cashboxStatementCurrency')?.value || 'YER';
         const period = document.getElementById('cashboxStatementPeriod')?.value || getCurrentPayrollPeriod();
         const summary = document.getElementById('cashboxStatementSummary')?.innerHTML || '';
         const table = document.getElementById('cashboxStatementBody')?.closest('table')?.outerHTML || '';
         const win = window.open('', '_blank', 'width=1000,height=800');
         if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لطباعة الكشف'); return; }
-        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>كشف حساب ${cashbox.name}</title><style>body{font-family:Tahoma,Arial;padding:24px;color:#111}h2{text-align:center;color:#0f4c81}.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}.mini-stat{border:1px solid #ddd;padding:10px;border-radius:8px}.mini-stat-label{font-size:12px;color:#555}.mini-stat-val{font-weight:bold;margin-top:5px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #ccc;padding:8px;text-align:right;font-size:12px}th{background:#eef2f6}@media print{button{display:none}}</style></head><body><h2>معمل أبو محمد — كشف حساب الصندوق</h2><p>الصندوق: ${cashbox.name} | العملة: ${cashbox.currency || 'YER'} | الفترة: ${period}</p><div class="summary-strip">${summary}</div>${table}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>كشف حساب ${cashbox.name}</title><style>body{font-family:Tahoma,Arial;padding:24px;color:#111}h2{text-align:center;color:#0f4c81}.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}.mini-stat{border:1px solid #ddd;padding:10px;border-radius:8px}.mini-stat-label{font-size:12px;color:#555}.mini-stat-val{font-weight:bold;margin-top:5px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #ccc;padding:8px;text-align:right;font-size:12px}th{background:#eef2f6}@media print{button{display:none}}</style></head><body><h2>معمل أبو محمد — كشف حساب الصندوق</h2><p>الصندوق: ${escapeUiText(cashbox.name)} | العملة: ${currency} | الفترة: ${period}</p><div class="summary-strip">${summary}</div>${table}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
         win.document.close();
     }
 
@@ -8090,9 +8132,9 @@ function initMenuPermissionCheckboxes() {
         const previous = select.value;
         const currency = document.getElementById('employeeDailyDisbursementCurrency')?.value || 'YER';
         const allowed = hasFullAccess() || canAccessMenu('cashboxTab');
-        const boxes = allowed ? state.cashboxes.filter(box => (box.currency || 'YER') === currency) : [];
+        const boxes = allowed ? state.cashboxes : [];
         select.innerHTML = '<option value="">بدون ربط بصندوق</option>' + boxes.map(box =>
-            `<option value="${escapeUiText(box.id)}">${escapeUiText(box.name)} — ${formatMoney(computeSystemCashboxBalance(box))} ${currency}</option>`
+            `<option value="${escapeUiText(box.id)}">${escapeUiText(box.name)} — ${formatMoney(computeSystemCashboxBalance(box, currency))} ${currency}</option>`
         ).join('');
         if (previous && boxes.some(box => box.id === previous)) select.value = previous;
     }
@@ -8145,8 +8187,8 @@ function initMenuPermissionCheckboxes() {
         if (!CURRENCY_CODES.includes(currency)) { showToast('اختر عملة صحيحة'); return; }
         if (!date) { showToast('حدد تاريخ الصرفة'); return; }
         if (cashboxId && !cashbox) { showToast('الصندوق المحدد غير موجود'); return; }
-        if (cashbox && (cashbox.currency || 'YER') !== currency) { showToast('عملة الصندوق لا تطابق عملة الصرفة'); return; }
-        if (cashbox && computeSystemCashboxBalance(cashbox) < amount) { showToast('رصيد الصندوق غير كافٍ'); return; }
+        
+        if (cashbox && computeSystemCashboxBalance(cashbox, currency) < amount) { showToast('رصيد الصندوق غير كافٍ'); return; }
 
         isBusy = true;
         if (btn) btn.disabled = true;
@@ -8221,7 +8263,7 @@ function initMenuPermissionCheckboxes() {
             if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
             if (item.cashboxId) {
                 const box = state.cashboxes.find(cashbox => cashbox.id === item.cashboxId);
-                if (box && amount > computeSystemCashboxBalance(box) + Number(item.amount || 0)) { showToast('رصيد الصندوق لا يكفي للمبلغ الجديد'); return; }
+                if (box && amount > computeSystemCashboxBalance(box, item.currency || 'YER') + Number(item.amount || 0)) { showToast('رصيد الصندوق لا يكفي للمبلغ الجديد'); return; }
             }
             const note = prompt('بيان السلفة:', item.note || 'سلفة تخصم من مستحق العامل');
             if (note === null) return;
@@ -8272,7 +8314,7 @@ function initMenuPermissionCheckboxes() {
         if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
         if (item.cashboxId) {
             const box = state.cashboxes.find(cashbox => cashbox.id === item.cashboxId);
-            if (box && amount > computeSystemCashboxBalance(box) + Number(item.amount || 0)) {
+            if (box && amount > computeSystemCashboxBalance(box, item.currency || 'YER') + Number(item.amount || 0)) {
                 showToast('رصيد الصندوق لا يكفي للمبلغ الجديد'); return;
             }
         }
