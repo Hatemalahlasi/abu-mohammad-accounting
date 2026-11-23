@@ -3165,12 +3165,18 @@
     }
 
     function getLegacyStaffFromAccount(account) {
+        // الحسابات القديمة كانت تحفظ الراتب وبعض إعدادات الأجر داخل employees
+        // وليس staff؛ لذلك ننسخ نسبة التحصيل ونوع الأجر أيضًا حتى تظهر في سند القبض.
+        const collectionCommissionRate = getStaffCollectionCommissionRate(account);
         return {
-            id: `legacy_${account.id}`,
+            id: account.staffId || `legacy_${account.id}`,
             legacyUserId: account.id,
             fullName: account.fullName || account.username || 'موظف سابق',
             salary: Number(account.salary || 0),
             salaryCurrency: CURRENCY_CODES.includes(account.salaryCurrency) ? account.salaryCurrency : 'YER',
+            payType: account.payType === 'piecework' ? 'piecework' : (account.payType === 'monthly_commission' || collectionCommissionRate > 0 ? 'monthly_commission' : (account.payType || 'monthly')),
+            collectionCommissionRate,
+            commissionRate: account.commissionRate,
             warehouseBranchId: account.warehouseBranchId || '',
             warehouseBranchIds: Array.isArray(account.warehouseBranchIds) ? normalizeBranchIds(account.warehouseBranchIds) : (account.warehouseBranchId ? [account.warehouseBranchId] : []),
             quantityBranchIds: Array.isArray(account.quantityBranchIds) ? normalizeBranchIds(account.quantityBranchIds) : undefined,
@@ -3194,17 +3200,38 @@
     }
 
     function getAllStaff() {
-        const staff = Array.isArray(state.staff) ? state.staff.slice() : [];
+        const accounts = Array.isArray(state.employees) ? state.employees : [];
+        // عند ربط ملف الموظف بحساب دخول، قد تكون النسبة محفوظة في سجل employees
+        // القديم فقط. ندمجها كقيمة احتياطية ولا نستبدل نسبة ملف staff إذا كانت موجودة.
+        const staff = (Array.isArray(state.staff) ? state.staff : []).map(item => {
+            const linkedAccount = accounts.find(account => account && (
+                account.id === item.userAccountId ||
+                account.id === item.legacyUserId ||
+                account.staffId === item.id
+            ));
+            if (!linkedAccount) return { ...item };
+            const staffRate = getStaffCollectionCommissionRate(item);
+            const accountRate = getStaffCollectionCommissionRate(linkedAccount);
+            const effectiveRate = staffRate > 0 ? staffRate : accountRate;
+            return {
+                ...item,
+                collectionCommissionRate: effectiveRate,
+                payType: item.payType === 'piecework'
+                    ? 'piecework'
+                    : (item.payType === 'monthly_commission' || linkedAccount.payType === 'monthly_commission' || effectiveRate > 0
+                        ? 'monthly_commission'
+                        : (item.payType || linkedAccount.payType || 'monthly')),
+                active: item.active !== undefined ? item.active : linkedAccount.active
+            };
+        });
         const knownLegacyIds = new Set(staff.map(item => item.legacyUserId).filter(Boolean));
         const knownAccountIds = new Set(staff.flatMap(item => [item.userAccountId, item.legacyUserId].filter(Boolean)));
-        (Array.isArray(state.employees) ? state.employees : []).forEach(account => {
+        accounts.forEach(account => {
             if (!account || account.securityOnly === true) return;
             if (account.id === 'emp_admin' || account.username === ADMIN_USER || account.role === 'supervisor') return;
             if (knownAccountIds.has(account.id) || knownLegacyIds.has(account.id)) return;
 
-            // بعض الحسابات تكون مرتبطة بملف موظف عبر staffId؛ إذا لم يصل ملف الموظف
-            // ضمن state.staff لأي سبب، أنشئ سجل عرض احتياطي بنفس المعرّف المرتبط
-            // حتى لا يختفي الموظف من كشوف المستحقات أو تنفصل حركاته عن ملفه.
+            // إذا لم يصل ملف الموظف المرتبط، نعرض الحساب كسجل احتياطي بنفس المعرّف.
             const linkedStaff = account.staffId
                 ? staff.find(item => item.id === account.staffId || item.userAccountId === account.id)
                 : staff.find(item => item.userAccountId === account.id || item.legacyUserId === account.id);
@@ -3214,7 +3241,6 @@
             }
 
             const fallback = getLegacyStaffFromAccount(account);
-            if (account.staffId) fallback.id = account.staffId;
             staff.push(fallback);
             knownAccountIds.add(account.id);
             knownLegacyIds.add(account.id);
@@ -3262,13 +3288,8 @@
     }
 
     function getStaffById(staffId) {
-        const saved = state.staff.find(item => item.id === staffId);
-        if (saved) return saved;
-        if (String(staffId || '').startsWith('legacy_')) {
-            const accountId = String(staffId).slice(7);
-            const account = state.employees.find(item => item.id === accountId);
-            return account ? getLegacyStaffFromAccount(account) : null;
-        }
+        // استخدم نفس السجل الموحّد الذي تُبنى منه قائمة سند القبض، حتى لا
+        // يظهر الموظف في القائمة ثم يُرفض عند حفظ السند بسبب اختلاف مصدر البيانات.
         return getAllStaff().find(item => item.id === staffId) || null;
     }
 
@@ -3320,7 +3341,12 @@
     }
 
     function getStaffCollectionCommissionRate(staff) {
-        const rate = Number(staff?.collectionCommissionRate ?? staff?.commissionRate ?? 0);
+        const rawRate = staff?.collectionCommissionRate ?? staff?.commissionRate ??
+            staff?.collectionCommissionPercent ?? staff?.commissionPercent ?? staff?.collectionRate ?? 0;
+        const normalized = typeof rawRate === 'string'
+            ? rawRate.trim().replace(/[%٪\s]/g, '').replace(/[٫،]/g, '.')
+            : rawRate;
+        const rate = Number(normalized);
         return Number.isFinite(rate) ? Math.max(0, Math.min(100, rate)) : 0;
     }
 
@@ -6417,7 +6443,7 @@ function initMenuPermissionCheckboxes() {
         const hint = document.getElementById('voucherCollectorHint');
         if (hint) hint.textContent = staff.length
             ? 'اختر الموظف الذي قام بالتحصيل. تُحسب النسبة من المبلغ المقبوض فعليًا وبعملة السند.'
-            : 'لا يوجد موظف مفعّل له نسبة بعد. من صفحة الموظفين أدخل نسبة أكبر من 0% بجانب راتبه الشهري.';
+            : 'لم أجد نسبة أكبر من 0% في ملفات الموظفين المحمّلة. راجع صفحة تعريف الموظفين واحفظ النسبة في ملف الموظف نفسه، ثم اضغط تحديث.';
         return staff;
     }
 
