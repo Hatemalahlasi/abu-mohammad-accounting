@@ -1828,6 +1828,15 @@
                         <select id="voucherCurrency" class="form-control" onchange="updateVoucherCashboxOptions()"><option value="YER">ريال يمني (YER)</option><option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option></select>
                     </div>
                 </div>
+                <div class="form-group hidden" id="voucherProfitTreatmentGroup">
+                    <label>تصنيف سند الصرف في حساب الأرباح</label>
+                    <select id="voucherProfitTreatment" class="form-control">
+                        <option value="unclassified">غير مصنف — لا يدخل في الأرباح حتى المراجعة</option>
+                        <option value="operatingExpense">مصروف تشغيلي — يُخصم من الربح</option>
+                        <option value="nonExpense">حركة مالية فقط — لا تُخصم من الربح</option>
+                    </select>
+                    <small style="display:block;color:var(--text-muted);margin-top:5px;">اختر «مصروف تشغيلي» للمصروفات الحقيقية فقط. اختر «حركة مالية» لسداد المورد أو السلفة أو التحويل أو السحب غير التشغيلي.</small>
+                </div>
                 <div class="grid-2">
                     <div class="form-group" id="voucherCustomerGroup">
                         <label>العميل (اختياري)</label>
@@ -2289,23 +2298,35 @@
 
             <div class="summary-strip">
                 <div class="mini-stat">
-                    <div class="mini-stat-label">إجمالي المبيعات</div>
-                    <div class="mini-stat-val mono" id="profTotalSales">0.00</div>
+                    <div class="mini-stat-label">إجمالي المبيعات — حسب العملة</div>
+                    <div class="mini-stat-val mono" id="profTotalSales">0.00 YER</div>
                 </div>
                 <div class="mini-stat">
-                    <div class="mini-stat-label">تكلفة البضاعة / المشتروات</div>
-                    <div class="mini-stat-val mono" id="profTotalCost" style="color:var(--warning);">0.00</div>
+                    <div class="mini-stat-label">تكلفة البضاعة المباعة فقط</div>
+                    <div class="mini-stat-val mono" id="profTotalCost" style="color:var(--warning);">0.00 YER</div>
                 </div>
                 <div class="mini-stat">
-                    <div class="mini-stat-label">المصروفات / سندات الصرف</div>
-                    <div class="mini-stat-val mono" id="profTotalExpenses" style="color:var(--danger);">0.00</div>
+                    <div class="mini-stat-label">المصروفات التشغيلية المسجلة</div>
+                    <div class="mini-stat-val mono" id="profTotalExpenses" style="color:var(--danger);">0.00 YER</div>
                 </div>
                 <div class="mini-stat">
-                    <div class="mini-stat-label">صافي الربح</div>
-                    <div class="mini-stat-val mono" id="profNetProfit" style="color:var(--success);">0.00</div>
+                    <div class="mini-stat-label">صافي الربح — كل عملة مستقلة</div>
+                    <div class="mini-stat-val mono" id="profNetProfit" style="color:var(--success);">0.00 YER</div>
                 </div>
             </div>
-
+            <div class="employee-permission-note" style="margin-bottom:14px;">
+                لا تُحسب فواتير شراء المخزون كاملةً كمصروف عند شرائها؛ تُحسب تكلفة الأصناف التي بيعت فقط. ولا تُحسب سندات الصرف العامة ضمن المصروفات إلا بعد تصنيفها كمصروف تشغيلي. لا يتم جمع العملات المختلفة أو تحويلها.
+            </div>
+            <div class="card-box" id="unclassifiedProfitVouchersCard">
+                <div class="card-title"><span><i class="fa-solid fa-circle-question"></i> سندات صرف تحتاج تصنيفًا</span></div>
+                <div class="employee-permission-note">السندات القديمة أو الجديدة غير المصنفة تظهر هنا للمراجعة فقط، ولا تُنقص صافي الربح تلقائيًا. حدّد هل السند مصروف تشغيلي أم حركة مالية مثل سداد / سلفة / تحويل.</div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>التاريخ</th><th>رقم السند</th><th>البيان</th><th>المبلغ</th><th>التصنيف</th></tr></thead>
+                        <tbody id="unclassifiedProfitVouchersBody"></tbody>
+                    </table>
+                </div>
+            </div>
             <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-calculator"></i> تفصيل الأرباح حسب الفواتير</span></div>
                 <div class="table-responsive">
@@ -2314,8 +2335,9 @@
                             <tr>
                                 <th>رقم الفاتورة</th>
                                 <th>العميل</th>
+                                <th>العملة</th>
                                 <th>صافي الفاتورة</th>
-                                <th>التكلفة التقديرية</th>
+                                <th>تكلفة البضاعة</th>
                                 <th>ربح الفاتورة</th>
                             </tr>
                         </thead>
@@ -6654,7 +6676,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             );
             if (!stockItem) { showToast(`الصنف (${row.name}) غير موجود في مخزون ${branchName}`); return; }
             const costPrice = Number(stockItem.costPrice ?? stockItem.price ?? 0);
-            items.push({ ...row, stockItemId: stockItem.id, costPrice });
+            items.push({ ...row, stockItemId: stockItem.id, costPrice, costCurrency: stockItem.costCurrency || currency });
             const old = stockRequirements.get(stockItem.id) || { item: stockItem, qty: 0 };
             old.qty += row.qty;
             stockRequirements.set(stockItem.id, old);
@@ -6835,6 +6857,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const isReceipt = document.getElementById('voucherType').value === 'receipt';
         document.getElementById('voucherCustomerGroup').classList.toggle('hidden', !isReceipt);
         document.getElementById('voucherCollectionStaffGroup')?.classList.toggle('hidden', !isReceipt);
+        document.getElementById('voucherProfitTreatmentGroup')?.classList.toggle('hidden', isReceipt);
         if (isReceipt) populateVoucherCollectionStaffOptions();
     }
 
@@ -6853,6 +6876,9 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             return;
         }
         const amount = Number(document.getElementById('voucherAmount').value || 0);
+        const profitTreatment = type === 'payment'
+            ? (document.getElementById('voucherProfitTreatment')?.value || 'unclassified')
+            : 'notApplicable';
         const refNum = (document.getElementById('voucherRefNumber')?.value || '').trim();
         const cashbox = state.cashboxes.find(c => c.id === cashboxId);
         if (!cashbox || amount <= 0) { showToast('اختر الصندوق وأدخل مبلغاً صحيحاً'); return; }
@@ -6870,10 +6896,11 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 collectionStaffId: selectedCollectionStaff ? selectedCollectionStaff.id : '',
                 collectionStaffName: selectedCollectionStaff ? selectedCollectionStaff.fullName : '',
                 collectionCommissionRate: selectedCollectionStaff ? collectionCommissionRate : 0,
+                profitTreatment,
                 amount, note, employee: currentUser.fullName
             };
             const result = await createRecordOnce('vouchers', 'vch', {
-                refNumber: refNum, type, cashboxId, customerId, collectionStaffId, currency, amount, note, actor: dedupeActorId()
+                refNumber: refNum, type, cashboxId, customerId, collectionStaffId, currency, amount, note, profitTreatment, actor: dedupeActorId()
             }, record, refNum ? `VCH-${refNum}` : '');
             if (!result.created) { showToast('تم منع تكرار السند؛ هذا السند مسجل مسبقاً.'); return; }
             document.getElementById('voucherAmount').value = '';
@@ -8010,54 +8037,162 @@ tbody tr:nth-child(even){background:#f8fbf9}
         showToast('تم فتح معاينة كشف العميل؛ يمكنك الطباعة أو تجهيز PDF للمشاركة أو إغلاق النافذة');
     }
 
-    function renderProfitsSection() {
-        const totalSales = state.invoices.reduce((s, i) => s + Number(i.netTotal || 0), 0);
-        const purchasesTotal = state.purchases.reduce((s, p) => s + Number(p.amount || 0), 0);
-        const paymentVouchers = state.vouchers
-            .filter(v => v.type === 'payment')
-            .reduce((s, v) => s + Number(v.amount || 0), 0);
+    async function setVoucherProfitTreatment(voucherId, treatment) {
+        if (!hasFullAccess()) { showToast('تصنيف سندات الصرف في الأرباح متاح للمدير والمشرف العام فقط'); return; }
+        if (!['operatingExpense', 'nonExpense'].includes(treatment)) return;
+        const voucher = (state.vouchers || []).find(item => String(item.id) === String(voucherId));
+        if (!voucher || voucher.type !== 'payment') { showToast('لم يتم العثور على سند الصرف'); return; }
+        const label = treatment === 'operatingExpense' ? 'مصروف تشغيلي' : 'حركة مالية غير تشغيلية';
+        if (!confirm(`تأكيد تصنيف السند ${voucher.refNumber || voucher.id} على أنه «${label}»؟`)) return;
+        try {
+            await db.collection('vouchers').doc(String(voucherId)).update({
+                profitTreatment: treatment,
+                profitClassificationUpdatedAt: new Date().toISOString(),
+                profitClassificationUpdatedBy: getAccountDisplayName(currentUser)
+            });
+            voucher.profitTreatment = treatment;
+            renderProfitsSection();
+            renderVouchersTable();
+            showToast(`تم تصنيف السند: ${label}`);
+        } catch (error) {
+            console.warn('Classify profit voucher error:', error);
+            showToast('تعذر حفظ تصنيف السند. تحقق من اتصال قاعدة البيانات.');
+        }
+    }
 
-        const costMap = {};
-        state.warehouse.forEach(w => {
-            const key = `${(w.name || '').trim().toLowerCase()}|${w.unit || 'حبة'}`;
-            costMap[key] = Number(w.costPrice ?? w.price ?? 0);
+    function renderProfitsSection() {
+        const codes = Array.isArray(CURRENCY_CODES) && CURRENCY_CODES.length ? CURRENCY_CODES : ['YER', 'SAR', 'USD'];
+        const totals = {};
+        codes.forEach(code => totals[code] = {
+            sales: 0, costOfGoodsSold: 0, operatingExpenses: 0,
+            net: 0, currencyMismatch: 0, unclassifiedVoucherTotal: 0
+        });
+        const currencyOf = value => codes.includes(String(value || '').toUpperCase()) ? String(value).toUpperCase() : 'YER';
+        const amountOf = value => {
+            const n = Number(value || 0);
+            return Number.isFinite(n) ? n : 0;
+        };
+        const movementCurrencies = new Set(['YER']);
+        const fmtLines = (values, field) => codes
+            .filter(code => code === 'YER' || Math.abs(amountOf(values[code]?.[field])) > 0.000001)
+            .map(code => `<div style="display:flex;justify-content:space-between;gap:8px;line-height:1.75;"><span>${code}</span><strong>${formatMoney(values[code]?.[field] || 0)}</strong></div>`)
+            .join('') || '<span>0.00 YER</span>';
+
+        const costMapById = new Map((state.warehouse || []).map(item => [String(item.id), item]));
+        const costMapByName = new Map();
+        (state.warehouse || []).forEach(item => {
+            const key = `${String(item.name || '').trim().toLocaleLowerCase('ar')}|${item.unit || 'حبة'}`;
+            if (!costMapByName.has(key)) costMapByName.set(key, item);
         });
 
-        let estimatedCost = 0;
-        const rowsHtml = state.invoices.length
-            ? state.invoices.slice().reverse().map(inv => {
-                const invNet = Number(inv.netTotal || 0);
-                const invCost = Array.isArray(inv.items)
-                    ? inv.items.reduce((sum, it) => {
-                        const key = `${(it.name || '').trim().toLowerCase()}|${it.unit || 'حبة'}`;
-                        const unitPrice = Number(it.costPrice ?? costMap[key] ?? 0);
-                        return sum + (Number(it.qty || 0) * unitPrice);
-                    }, 0)
-                    : 0;
-                estimatedCost += invCost;
-                const invProfit = invNet - invCost;
-                return `
-                    <tr>
-                        <td><span class="mono">${inv.id}</span></td>
-                        <td>${inv.customerName || '-'}</td>
-                        <td><span class="mono">${formatMoney(invNet)}</span></td>
-                        <td><span class="mono">${formatMoney(invCost)}</span></td>
-                        <td><span class="mono" style="color:${invProfit >= 0 ? 'var(--success)' : 'var(--danger)'};">${formatMoney(invProfit)}</span></td>
-                    </tr>
-                `;
-            }).join('')
-            : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا توجد فواتير لاحتساب الأرباح</td></tr>';
+        const invoiceRows = (state.invoices || []).slice().reverse().map(inv => {
+            const saleCurrency = currencyOf(inv.currency);
+            const invoiceNet = amountOf(inv.netTotal);
+            totals[saleCurrency].sales += invoiceNet;
+            movementCurrencies.add(saleCurrency);
+            let invoiceCostComparable = 0;
+            let mismatchCost = false;
+            const costBreakdown = {};
+            (Array.isArray(inv.items) ? inv.items : []).forEach(line => {
+                const stockItem = (line.stockItemId ? costMapById.get(String(line.stockItemId)) : null)
+                    || costMapByName.get(`${String(line.name || '').trim().toLocaleLowerCase('ar')}|${line.unit || 'حبة'}`);
+                const unitCost = amountOf(line.costPrice ?? stockItem?.costPrice ?? stockItem?.price ?? 0);
+                const lineQty = amountOf(line.qty);
+                const lineCost = unitCost * lineQty;
+                const costCurrency = currencyOf(line.costCurrency || stockItem?.costCurrency || saleCurrency);
+                costBreakdown[costCurrency] = (costBreakdown[costCurrency] || 0) + lineCost;
+                totals[costCurrency].costOfGoodsSold += lineCost;
+                movementCurrencies.add(costCurrency);
+                if (costCurrency === saleCurrency) invoiceCostComparable += lineCost;
+                else mismatchCost = true;
+            });
+            const costLabel = codes.filter(code => Math.abs(costBreakdown[code] || 0) > 0.000001)
+                .map(code => `${formatMoney(costBreakdown[code])} ${code}`).join(' / ') || `0.00 ${saleCurrency}`;
+            let profitCell;
+            if (mismatchCost) {
+                totals[saleCurrency].currencyMismatch += 1;
+                profitCell = '<span style="color:var(--warning);font-weight:800;">غير محسوب — تكلفة بعملة مختلفة</span>';
+            } else {
+                const invoiceProfit = invoiceNet - invoiceCostComparable;
+                profitCell = `<span class="mono" style="color:${invoiceProfit >= 0 ? 'var(--success)' : 'var(--danger)'};">${formatMoney(invoiceProfit)} ${saleCurrency}</span>`;
+                totals[saleCurrency].net += invoiceProfit;
+            }
+            return `<tr>
+                <td><span class="mono">${escapeUiText(String(inv.refNumber || inv.id || '-'))}</span></td>
+                <td>${escapeUiText(inv.customerName || '-')}</td>
+                <td><span class="badge badge-unit">${saleCurrency}</span></td>
+                <td><span class="mono">${formatMoney(invoiceNet)} ${saleCurrency}</span></td>
+                <td><span class="mono">${costLabel}</span></td>
+                <td>${profitCell}</td>
+            </tr>`;
+        }).join('');
 
-        const dailyEmployeeDisbursements = (state.employeeDailyDisbursements || [])
-            .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-        const totalExpenses = purchasesTotal + paymentVouchers + dailyEmployeeDisbursements;
-        const netProfit = totalSales - purchasesTotal - paymentVouchers - dailyEmployeeDisbursements;
+        // المصروفات التشغيلية الفعلية فقط: سجل المصروفات، الصرف اليومي للعاملين، وسند الصرف المصنف كمصروف.
+        // فواتير التوريد وسداد المورد والسندات العامة غير المصنفة ليست مصروفاً تلقائياً.
+        (state.purchases || []).filter(item => item.kind === 'expense').forEach(item => {
+            const code = currencyOf(item.currency);
+            totals[code].operatingExpenses += amountOf(item.amount);
+            movementCurrencies.add(code);
+        });
+        (state.employeeDailyDisbursements || []).forEach(item => {
+            const code = currencyOf(item.currency);
+            totals[code].operatingExpenses += amountOf(item.amount);
+            movementCurrencies.add(code);
+        });
+        const classifiedVoucherExpenses = (state.vouchers || []).filter(item => item.type === 'payment' && item.profitTreatment === 'operatingExpense');
+        classifiedVoucherExpenses.forEach(item => {
+            const code = currencyOf(item.currency || item.currencyCode);
+            totals[code].operatingExpenses += amountOf(item.amount);
+            movementCurrencies.add(code);
+        });
+        const unclassifiedVouchers = (state.vouchers || []).filter(item => item.type === 'payment' && !['operatingExpense', 'nonExpense'].includes(item.profitTreatment));
+        unclassifiedVouchers.forEach(item => {
+            const code = currencyOf(item.currency || item.currencyCode);
+            totals[code].unclassifiedVoucherTotal += amountOf(item.amount);
+            movementCurrencies.add(code);
+        });
+        codes.forEach(code => {
+            if (totals[code].currencyMismatch === 0) totals[code].net -= totals[code].operatingExpenses;
+        });
 
-        document.getElementById('profTotalSales').textContent = formatMoney(totalSales);
-        document.getElementById('profTotalCost').textContent = formatMoney(estimatedCost);
-        document.getElementById('profTotalExpenses').textContent = formatMoney(totalExpenses);
-        document.getElementById('profNetProfit').textContent = formatMoney(netProfit);
-        document.getElementById('profitsTableBody').innerHTML = rowsHtml;
+        const activeCodes = codes.filter(code => code === 'YER' || movementCurrencies.has(code)
+            || Object.values(totals[code]).some(value => typeof value === 'number' && Math.abs(value) > 0.000001));
+        const renderMetric = (field, extra = '') => activeCodes.map(code =>
+            `<div style="display:flex;justify-content:space-between;gap:8px;line-height:1.75;"><span>${code}</span><strong>${formatMoney(totals[code][field] || 0)}</strong></div>`
+        ).join('') + extra;
+
+        const salesEl = document.getElementById('profTotalSales');
+        const costEl = document.getElementById('profTotalCost');
+        const expensesEl = document.getElementById('profTotalExpenses');
+        const netEl = document.getElementById('profNetProfit');
+        if (salesEl) salesEl.innerHTML = renderMetric('sales');
+        if (costEl) costEl.innerHTML = renderMetric('costOfGoodsSold');
+        if (expensesEl) expensesEl.innerHTML = renderMetric('operatingExpenses');
+        if (netEl) netEl.innerHTML = activeCodes.map(code => {
+            const mismatch = totals[code].currencyMismatch > 0;
+            return `<div style="display:flex;justify-content:space-between;gap:8px;line-height:1.75;"><span>${code}</span><strong style="color:${mismatch ? 'var(--warning)' : totals[code].net >= 0 ? 'var(--success)' : 'var(--danger)'};">${mismatch ? `مراجعة العملة (${totals[code].currencyMismatch} فاتورة)` : formatMoney(totals[code].net)}</strong></div>`;
+        }).join('');
+
+        const voucherBody = document.getElementById('unclassifiedProfitVouchersBody');
+        if (voucherBody) {
+            voucherBody.innerHTML = unclassifiedVouchers.length ? unclassifiedVouchers.slice().reverse().map(voucher => {
+                const code = currencyOf(voucher.currency || voucher.currencyCode);
+                const ref = escapeUiText(String(voucher.refNumber || voucher.id || '—'));
+                const note = escapeUiText(String(voucher.note || 'سند صرف بدون تصنيف'));
+                return `<tr>
+                    <td class="mono">${escapeUiText(voucher.date || '-')}</td>
+                    <td class="mono">${ref}</td>
+                    <td>${note}</td>
+                    <td class="mono">${formatMoney(amountOf(voucher.amount))} ${code}</td>
+                    <td style="display:flex;gap:5px;flex-wrap:wrap;">
+                        <button type="button" class="btn btn-success btn-sm" onclick="setVoucherProfitTreatment('${String(voucher.id).replace(/'/g, '&#39;')}', 'operatingExpense')">مصروف</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setVoucherProfitTreatment('${String(voucher.id).replace(/'/g, '&#39;')}', 'nonExpense')">ليس مصروفًا</button>
+                    </td>
+                </tr>`;
+            }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--success);">لا توجد سندات صرف غير مصنفة</td></tr>';
+        }
+        const tableBody = document.getElementById('profitsTableBody');
+        if (tableBody) tableBody.innerHTML = invoiceRows || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد فواتير مبيعات مسجلة حتى الآن</td></tr>';
     }
 
     let employeePieceRateRowCounter = 0;
