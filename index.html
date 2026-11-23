@@ -1268,6 +1268,19 @@
  #myQuantityHistoryCard{padding:9px!important}
  #myQuantityHistoryCard th,#myQuantityHistoryCard td{font-size:11px!important;padding:6px 4px!important}
 }
+        .supplier-stock-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin: 4px 0 10px;
+        }
+        .supplier-stock-toggle .perm-check { color: #166534; }
+        .supplier-stock-toggle small { color: #64748b; font-size: 11px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -1643,8 +1656,15 @@
                     <div class="form-group" id="supplierInvoiceCashboxGroup"><label>الصندوق الذي تم الدفع منه</label><select id="supplierInvoiceCashbox" class="form-control"></select></div>
                 </div>
                 <div class="form-group"><label>ملاحظة / رقم فاتورة المورد (اختياري)</label><input type="text" id="supplierInvoiceNote" class="form-control" placeholder="رقم فاتورة المورد أو ملاحظة"></div>
-                <button id="saveSupplierInvoiceBtn" class="btn btn-primary btn-full" onclick="saveSupplierInvoice()"><i class="fa-solid fa-floppy-disk"></i> حفظ فاتورة المورد وإدخال الأصناف للمخزن</button>
-                <div class="employee-permission-note" style="margin-top:9px;">أضف كل صنف في صف مستقل، واكتب الكمية وسعر تكلفة الوحدة. يحسب إجمالي كل صف وإجمالي فاتورة المورد تلقائياً، وتُضاف الكميات للمخزن، ويُسجل المتبقي في كشف حساب المورد. الدفعات النقدية والآجلة والجزئية تظهر منفصلة حسب العملة.</div>
+                <div class="supplier-stock-toggle">
+                    <label class="perm-check" style="margin:0;">
+                        <input type="checkbox" id="supplierInvoiceAddToWarehouse" checked>
+                        <span>إدخال البضاعة إلى المخزن</span>
+                    </label>
+                    <small>مفعّل تلقائياً. أزل الصح إذا تريد تسجيل الفاتورة وحساب المورد فقط بدون إدخال الكميات للمخزن.</small>
+                </div>
+                <button id="saveSupplierInvoiceBtn" class="btn btn-primary btn-full" onclick="saveSupplierInvoice()"><i class="fa-solid fa-floppy-disk"></i> حفظ فاتورة المورد</button>
+                <div class="employee-permission-note" style="margin-top:9px;">أضف كل صنف في صف مستقل، واكتب الكمية وسعر تكلفة الوحدة. يحسب إجمالي كل صف وإجمالي فاتورة المورد تلقائياً. إذا كانت علامة «إدخال البضاعة إلى المخزن» مفعّلة تُضاف الكميات للمخزن، وإذا أزلت الصح تُحفظ الفاتورة وحساب المورد بدون تغيير المخزون. الدفعات النقدية والآجلة والجزئية تظهر منفصلة حسب العملة.</div>
             </div>
             </div>
 
@@ -5471,6 +5491,7 @@ function initMenuPermissionCheckboxes() {
         const branch = (state.branches || []).find(item => item.id === branchId);
         const currency = document.getElementById('supplierInvoiceCurrency')?.value || 'YER';
         const paymentType = document.getElementById('supplierInvoicePaymentType')?.value || 'credit';
+        const addToWarehouse = document.getElementById('supplierInvoiceAddToWarehouse')?.checked !== false;
         const lines = getSupplierInvoiceLines();
         const total = lines.reduce((sum, item) => sum + item.qty * item.costPrice, 0);
         let paidAmount = paymentType === 'cash' ? total : paymentType === 'credit' ? 0 : Number(document.getElementById('supplierInvoicePaid')?.value || 0);
@@ -5503,10 +5524,10 @@ function initMenuPermissionCheckboxes() {
             branchId, branchName: branch.name, currency, currencyName: CURRENCY_NAMES[currency],
             items: lines, amount: total, totalAmount: total, paidAmount,
             outstanding: total - paidAmount, paymentType, cashboxId: cashbox?.id || '', cashboxName: cashbox?.name || '',
-            title: note || `فاتورة توريد من ${supplier.name}`, notes: note,
+            title: note || `فاتورة توريد من ${supplier.name}`, notes: note, addToWarehouse,
             employee: getAccountDisplayName(currentUser), createdByUserId: currentUser?.id || ''
         };
-        const signature = { kind: record.kind, supplierId, branchId, currency, lines, total, paidAmount, note, date, actor: dedupeActorId() };
+        const signature = { kind: record.kind, supplierId, branchId, currency, lines, total, paidAmount, note, addToWarehouse, date, actor: dedupeActorId() };
         const docId = `SUPPUR_${dedupeHash(signature)}_${Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS)}`;
         const invoiceRef = db.collection('purchases').doc(docId);
         isBusy = true; if (btn) btn.disabled = true;
@@ -5514,10 +5535,11 @@ function initMenuPermissionCheckboxes() {
             const result = await db.runTransaction(async transaction => {
                 const invoiceSnapshot = await transaction.get(invoiceRef);
                 if (invoiceSnapshot.exists) return { created: false };
+                transaction.set(invoiceRef, { ...record, id: docId });
+                if (addToWarehouse) {
                 const refs = stockTargets.map(target => ({ target, ref: db.collection('warehouse').doc(target.docId) }));
                 const snapshots = [];
                 for (const entry of refs) snapshots.push({ ...entry, snapshot: await transaction.get(entry.ref) });
-                transaction.set(invoiceRef, { ...record, id: docId });
                 snapshots.forEach(entry => {
                     if (entry.snapshot.exists) {
                         const current = entry.snapshot.data() || {};
@@ -5526,20 +5548,23 @@ function initMenuPermissionCheckboxes() {
                         transaction.set(entry.ref, { id: entry.ref.id, branchId, branchName: branch.name, name: entry.target.name, unit: entry.target.unit, qty: entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, price: entry.target.salePrice || 0, priceCurrency: currency, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
                     }
                 });
+                }
                 return { created: true };
             });
             if (!result.created) { showToast('فاتورة المورد مسجلة مسبقاً؛ لم تتم إضافتها مرة ثانية'); return; }
             record.id = docId; state.purchases = (state.purchases || []).concat(record);
+            if (addToWarehouse) {
             stockTargets.forEach(target => {
                 const local = state.warehouse.find(w => w.id === target.docId);
                 if (local) { local.qty = Number(local.qty || 0) + target.qty; local.costPrice = target.costPrice; local.costCurrency = currency; local.price = target.salePrice || 0; local.priceCurrency = currency; local.sourceType = 'supplierPurchase'; local.sourceName = record.supplierName; local.sourceDate = record.date; local.sourcePurchaseId = docId; local.sourceHidden = false; }
                 else state.warehouse.push({ id: target.docId, branchId, branchName: branch.name, name: target.name, unit: target.unit, qty: target.qty, costPrice: target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
             });
+            }
             document.getElementById('supplierInvoiceItemsContainer').innerHTML = '';
             addSupplierInvoiceRow();
             document.getElementById('supplierInvoiceNote').value = '';
             renderSupplierBalances(); renderWarehouseTable(); renderStats(); renderCashboxesList();
-            showToast(`تم حفظ فاتورة المورد وإضافة ${lines.length} صنف للمخزن`);
+            showToast(addToWarehouse ? `تم حفظ فاتورة المورد وإضافة ${lines.length} صنف للمخزن` : 'تم حفظ فاتورة المورد بدون إدخال البضاعة للمخزن');
         } catch (error) {
             console.warn('Save supplier invoice error:', error);
             showToast('تعذر حفظ فاتورة المورد؛ لم يتم تحديث المخزون');
