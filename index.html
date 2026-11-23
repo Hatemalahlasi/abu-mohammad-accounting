@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معمل أبو محمد | نظام المحاسبة والمبيعات</title>
+    <title>معمل أبو محمد | نظام المحاسبة والمبيعات — الأساس + نسبة التحصيل</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -1827,6 +1827,13 @@
                         <input type="number" step="0.01" inputmode="decimal" id="voucherAmount" class="form-control num-input" min="0" placeholder="0.00">
                     </div>
                 </div>
+                <div class="form-group hidden" id="voucherCollectionStaffGroup">
+                    <label>الموظف المسؤول عن التحصيل (اختياري)</label>
+                    <select id="voucherCollectionStaffSelect" class="form-control">
+                        <option value="">بدون موظف / لا تحتسب عمولة</option>
+                    </select>
+                    <small style="display:block;color:var(--text-muted);margin-top:5px;">تظهر هنا أسماء الموظفين الذين لديهم نسبة تحصيل أكبر من صفر، وتحسب العمولة من مبلغ هذا السند وبعملته.</small>
+                </div>
                 <div class="form-group">
                     <label>البيان لكشف الحساب (رقم السند)</label>
                     <div class="statement-builder">
@@ -2353,6 +2360,11 @@
                                 <option value="SAR">ريال سعودي (SAR)</option>
                                 <option value="USD">دولار أمريكي (USD)</option>
                             </select>
+                        </div>
+                        <div class="form-group" id="newEmpCollectionRateGroup" style="margin-bottom:0;">
+                            <label>نسبة الموظف من تحصيل العملاء (%) — اختيارية</label>
+                            <input type="number" step="0.01" min="0" max="100" inputmode="decimal" id="newEmpCollectionRate" class="form-control num-input" value="0" placeholder="مثال: 5">
+                            <small style="display:block;color:var(--text-muted);margin-top:5px;">تحسب من سندات القبض الفعلية المسجلة باسم الموظف، وبعملة السند نفسها. اتركها 0 إذا لا توجد عمولة.</small>
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label>المخازن المسموح بها للموظف بواسطة المشرف</label>
@@ -3149,7 +3161,10 @@
             fullName: account.fullName || account.username || 'موظف سابق',
             salary: Number(account.salary || 0),
             salaryCurrency: CURRENCY_CODES.includes(account.salaryCurrency) ? account.salaryCurrency : 'YER',
+            collectionCommissionRate: Number(account.collectionCommissionRate ?? account.commissionRate ?? account.collectionRate ?? 0) || 0,
+            commissionRate: Number(account.commissionRate ?? account.collectionCommissionRate ?? account.collectionRate ?? 0) || 0,
             warehouseBranchId: account.warehouseBranchId || '',
+
             warehouseBranchIds: Array.isArray(account.warehouseBranchIds) ? normalizeBranchIds(account.warehouseBranchIds) : (account.warehouseBranchId ? [account.warehouseBranchId] : []),
             quantityBranchIds: Array.isArray(account.quantityBranchIds) ? normalizeBranchIds(account.quantityBranchIds) : undefined,
             quantityBranchNames: Array.isArray(account.quantityBranchNames) ? account.quantityBranchNames : [],
@@ -3260,6 +3275,45 @@
 
     function getStaffSalaryCurrency(staff) {
         return CURRENCY_CODES.includes(staff?.salaryCurrency) ? staff.salaryCurrency : 'YER';
+    }
+
+    // قراءة نسبة التحصيل من ملف الموظف أو حساب الدخول القديم، مع تجاهل الصفر الافتراضي
+    // حتى لا يحجب نسبة صحيحة محفوظة في حقل متوافق آخر.
+    function getStaffCollectionRate(staff) {
+        if (!staff) return 0;
+        const account = getStaffLoginAccount(staff);
+        const keys = ['collectionCommissionRate', 'commissionRate', 'collectionRate', 'collectionPercentage', 'commissionPercentage'];
+        for (const source of [staff, account]) {
+            if (!source) continue;
+            for (const key of keys) {
+                const raw = source[key];
+                const parsed = Number(String(raw ?? '').replace('%', '').trim());
+                if (Number.isFinite(parsed) && parsed > 0 && parsed <= 100) return parsed;
+            }
+        }
+        return 0;
+    }
+
+    function getCollectionCommissionStaff() {
+        return getAllStaff().filter(staff => staff && staff.active !== false && getStaffCollectionRate(staff) > 0);
+    }
+
+    function populateVoucherCollectionStaffOptions() {
+        const select = document.getElementById('voucherCollectionStaffSelect');
+        if (!select) return [];
+        const previous = select.value;
+        const staff = getCollectionCommissionStaff();
+        select.innerHTML = '<option value="">بدون موظف / لا تحتسب عمولة</option>' + staff.map(item =>
+            `<option value="${escapeUiText(item.id)}">${escapeUiText(item.fullName || 'موظف')} — ${getStaffCollectionRate(item).toFixed(2)}%</option>`
+        ).join('');
+        if (previous && staff.some(item => String(item.id) === String(previous))) select.value = previous;
+        return staff;
+    }
+
+    function formatEmployeeCurrencyMapHtml(map, fallbackCurrency = 'YER') {
+        const rows = CURRENCY_CODES.filter(code => Math.abs(Number(map?.[code] || 0)) > 0.000001)
+            .map(code => `<div><span class="mono">${formatMoney(Number(map[code] || 0))} ${code}</span></div>`);
+        return rows.length ? rows.join('') : `<span class="mono">0.00 ${fallbackCurrency}</span>`;
     }
 
     function getLocalDateKey(date = new Date()) {
@@ -4675,6 +4729,7 @@ function initMenuPermissionCheckboxes() {
         const qtyShortcut = document.getElementById('warehouseQuantitiesShortcut');
         if (qtyShortcut) qtyShortcut.classList.toggle('hidden', !canAccessMenu('quantitiesTab'));
         populateDropdowns();
+        populateVoucherCollectionStaffOptions();
         renderStats();
         renderInvoicesTable();
         renderPurchasesTable();
@@ -6298,6 +6353,8 @@ function initMenuPermissionCheckboxes() {
     function toggleVoucherCustomerField() {
         const isReceipt = document.getElementById('voucherType').value === 'receipt';
         document.getElementById('voucherCustomerGroup').classList.toggle('hidden', !isReceipt);
+        document.getElementById('voucherCollectionStaffGroup')?.classList.toggle('hidden', !isReceipt);
+        if (isReceipt) populateVoucherCollectionStaffOptions();
     }
 
     async function createVoucher() {
@@ -6307,6 +6364,13 @@ function initMenuPermissionCheckboxes() {
         const cashboxId = document.getElementById('voucherCashboxSelect').value;
         const currency = document.getElementById('voucherCurrency')?.value || 'YER';
         const customerId = type === 'receipt' ? document.getElementById('voucherCustomerSelect').value : '';
+        const collectionStaffId = type === 'receipt' ? (document.getElementById('voucherCollectionStaffSelect')?.value || '') : '';
+        const selectedCollectionStaff = collectionStaffId ? getAllStaff().find(item => String(item.id) === String(collectionStaffId)) : null;
+        const collectionCommissionRate = selectedCollectionStaff ? getStaffCollectionRate(selectedCollectionStaff) : 0;
+        if (collectionStaffId && (!selectedCollectionStaff || collectionCommissionRate <= 0)) {
+            showToast('نسبة تحصيل الموظف غير مفعّلة. حدّث قائمة الموظفين واختر موظفاً لديه نسبة أكبر من صفر.');
+            return;
+        }
         const amount = Number(document.getElementById('voucherAmount').value || 0);
         const refNum = (document.getElementById('voucherRefNumber')?.value || '').trim();
         const cashbox = state.cashboxes.find(c => c.id === cashboxId);
@@ -6322,10 +6386,13 @@ function initMenuPermissionCheckboxes() {
                 refNumber: refNum, type, date: getLocalDateKey(), cashboxId: cashbox.id, cashboxName: cashbox.name,
                 currency,
                 customerId: customer ? customer.id : '', customerName: customer ? customer.name : 'عام',
+                collectionStaffId: selectedCollectionStaff ? selectedCollectionStaff.id : '',
+                collectionStaffName: selectedCollectionStaff ? selectedCollectionStaff.fullName : '',
+                collectionCommissionRate: selectedCollectionStaff ? collectionCommissionRate : 0,
                 amount, note, employee: currentUser.fullName
             };
             const result = await createRecordOnce('vouchers', 'vch', {
-                refNumber: refNum, type, cashboxId, customerId, currency, amount, note, actor: dedupeActorId()
+                refNumber: refNum, type, cashboxId, customerId, collectionStaffId, currency, amount, note, actor: dedupeActorId()
             }, record, refNum ? `VCH-${refNum}` : '');
             if (!result.created) { showToast('تم منع تكرار السند؛ هذا السند مسجل مسبقاً.'); return; }
             document.getElementById('voucherAmount').value = '';
@@ -7242,6 +7309,7 @@ function initMenuPermissionCheckboxes() {
     function toggleEmployeePayTypeFields() {
         const isPiecework = document.getElementById('newEmpPayType')?.value === 'piecework';
         document.getElementById('newEmpSalaryGroup')?.classList.toggle('hidden', isPiecework);
+        document.getElementById('newEmpCollectionRateGroup')?.classList.toggle('hidden', isPiecework);
         document.getElementById('newEmpPieceRatesPanel')?.classList.toggle('hidden', !isPiecework);
         const label = document.getElementById('newEmpCurrencyLabel');
         if (label) label.textContent = isPiecework ? 'عملة أجر القطعة' : 'عملة الراتب';
@@ -7373,6 +7441,7 @@ function initMenuPermissionCheckboxes() {
         const payType = document.getElementById('newEmpPayType')?.value || 'monthly';
         const salary = payType === 'piecework' ? 0 : Number(document.getElementById('newEmpSalary').value || 0);
         const salaryCurrency = document.getElementById('newEmpSalaryCurrency').value || 'YER';
+        const collectionCommissionRate = payType === 'piecework' ? 0 : Number(document.getElementById('newEmpCollectionRate')?.value || 0);
         const enteredPieceRates = payType === 'piecework' ? collectEmployeePieceRates() : [];
         const pieceRateValidationError = payType === 'piecework' ? validateEmployeePieceRates(enteredPieceRates) : '';
         const pieceRates = enteredPieceRates.map(({ _rowNumber, ...rate }) => rate);
@@ -7393,6 +7462,10 @@ function initMenuPermissionCheckboxes() {
         }
         if (payType === 'monthly' && (!Number.isFinite(salary) || salary < 0)) {
             showToast('أدخل راتباً شهرياً صحيحاً');
+            return;
+        }
+        if (payType !== 'piecework' && (!Number.isFinite(collectionCommissionRate) || collectionCommissionRate < 0 || collectionCommissionRate > 100)) {
+            showToast('نسبة التحصيل يجب أن تكون من 0 إلى 100');
             return;
         }
         if (payType === 'piecework' && pieceRateValidationError) {
@@ -7420,6 +7493,8 @@ function initMenuPermissionCheckboxes() {
                 payType,
                 salary,
                 salaryCurrency,
+                collectionCommissionRate,
+                commissionRate: collectionCommissionRate,
                 pieceRates,
                 warehouseBranchId,
                 warehouseBranchIds,
@@ -7444,6 +7519,7 @@ function initMenuPermissionCheckboxes() {
             document.getElementById('newEmpFullName').value = '';
             document.getElementById('newEmpSalary').value = '0.00';
             document.getElementById('newEmpSalaryCurrency').value = 'YER';
+            if (document.getElementById('newEmpCollectionRate')) document.getElementById('newEmpCollectionRate').value = '0';
             document.getElementById('newEmpWarehouseBranch').selectedIndex = -1;
             setNewEmployeeBranches(false);
             document.getElementById('newEmpPayType').value = 'monthly';
@@ -7646,18 +7722,35 @@ function initMenuPermissionCheckboxes() {
             showToast('أدخل راتباً صحيحاً');
             return;
         }
+        const nextRate = prompt(`نسبة الموظف من تحصيل العملاء (${staff.fullName}) — اكتب 0 لإلغاء العمولة:`, String(getStaffCollectionRate(staff)));
+        if (nextRate === null) return;
+        const parsedRate = Number(String(nextRate).replace('%', '').trim());
+        if (!Number.isFinite(parsedRate) || parsedRate < 0 || parsedRate > 100) {
+            showToast('نسبة التحصيل يجب أن تكون من 0 إلى 100');
+            return;
+        }
         isBusy = true;
         try {
+            const patch = { salary: parsed, collectionCommissionRate: parsedRate, commissionRate: parsedRate };
             if (staff.legacy) {
-                await db.collection('employees').doc(staff.legacyUserId).update({ salary: parsed });
+                await db.collection('employees').doc(staff.legacyUserId).update(patch);
+                const account = state.employees.find(item => item.id === staff.legacyUserId);
+                if (account) Object.assign(account, patch);
             } else {
-                await db.collection('staff').doc(staffId).update({ salary: parsed });
+                await db.collection('staff').doc(staffId).update(patch);
+                Object.assign(staff, patch);
                 const linked = getStaffLoginAccount(staff);
-                // الراتب محفوظ حصراً في سجل الموظف داخل مجموعة staff وليس في حساب الدخول.
+                if (linked) {
+                    // لا ننقل بيانات الراتب إلى حساب الدخول؛ ملف staff هو المصدر الأساسي.
+                }
             }
-            showToast('تم تحديث الراتب');
+            renderEmployeesTable();
+            populateVoucherCollectionStaffOptions();
+            if (document.getElementById('employeeDuesSummaryBody')) renderEmployeeDues();
+            showToast('تم تحديث الراتب ونسبة التحصيل');
         } catch (e) {
-            showToast('تعذر تحديث الراتب');
+            console.warn('Update employee salary/commission error:', e);
+            showToast('تعذر تحديث الراتب والنسبة؛ تحقق من اتصال Firebase وصلاحية الكتابة');
         } finally {
             isBusy = false;
         }
@@ -7996,16 +8089,16 @@ function initMenuPermissionCheckboxes() {
             return `
                 <tr>
                     <td><strong>${item.fullName || '-'}</strong></td>
-                    <td>${isPieceworkStaff(item) ? '<span class="badge badge-sup">بالقطعة</span>' : '<span class="badge badge-cash">راتب شهري</span>'}</td>
+                    <td>${isPieceworkStaff(item) ? '<span class="badge badge-sup">بالقطعة</span>' : (getStaffCollectionRate(item) > 0 ? '<span class="badge badge-cash">راتب + نسبة تحصيل</span>' : '<span class="badge badge-cash">راتب شهري</span>')}</td>
                     <td>${isPieceworkStaff(item)
                         ? (item.pieceRates || []).map(rate => `${rate.name}: ${formatMoney(rate.rate)} ${getStaffSalaryCurrency(item)} / ${rate.unit}`).join('<br>') || '-'
-                        : `<span class="mono">${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}</span>`}</td>
+                        : `<span class="mono">${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}</span>${getStaffCollectionRate(item) > 0 ? `<br><small style="color:var(--success);font-weight:800;">نسبة التحصيل: ${getStaffCollectionRate(item).toFixed(2)}%</small>` : ''}`}</td>
                     <td>${branchName}</td>
                     <td>${active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
                     <td style="white-space:nowrap;">
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeName('${item.id}')" title="تعديل اسم الموظف"><i class="fa-solid fa-user-pen"></i> تعديل الاسم</button>` : ''}
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeWarehouse('${item.id}')" title="تحديد المخازن العامة ومخازن إدخال الكميات ومخازن النقل بشكل مستقل"><i class="fa-solid fa-warehouse"></i> صلاحيات المخازن</button>` : ''}
-                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeePaySettings('${item.id}')" title="تعديل الراتب أو التسعيرة"><i class="fa-solid fa-pen"></i> ${isPieceworkStaff(item) ? 'التسعيرة' : 'الراتب'}</button>` : ''}
+                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeePaySettings('${item.id}')" title="تعديل الراتب ونسبة التحصيل أو التسعيرة"><i class="fa-solid fa-pen"></i> ${isPieceworkStaff(item) ? 'التسعيرة' : 'الراتب والنسبة'}</button>` : ''}
                         ${allowManage ? `<button class="btn btn-danger btn-sm" onclick="deleteStaffDefinition('${item.id}')" title="حذف تعريف الموظف"><i class="fa-solid fa-trash"></i> حذف</button>` : ''}
                     </td>
                 </tr>
@@ -8680,16 +8773,36 @@ function initMenuPermissionCheckboxes() {
         ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
         const currency = getStaffSalaryCurrency(staff);
         const expenses = (state.employeeExpenses || []).filter(item =>
-            item.staffId === staff.id &&
-            (item.period || String(item.date || '').slice(0, 7)) === period &&
-            (item.currency || currency) === currency
+            item.staffId === staff.id && (item.period || String(item.date || '').slice(0, 7)) === period
         ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
         const productionTotal = isPieceworkStaff(staff)
             ? production.reduce((sum, item) => sum + Number(item.amount || 0), 0)
             : 0;
-        const entitlement = isPieceworkStaff(staff) ? productionTotal : Number(staff.salary || 0);
-        const paid = expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-        const remaining = entitlement - paid;
+        const baseEntitlement = isPieceworkStaff(staff) ? productionTotal : Number(staff.salary || 0);
+        const commissions = (state.vouchers || []).filter(v =>
+            v.type === 'receipt' &&
+            (v.collectionStaffId === staff.id || v.commissionStaffId === staff.id || v.employeeStaffId === staff.id) &&
+            String(v.date || '').slice(0, 7) === period
+        ).map(v => {
+            const rate = Number(v.collectionCommissionRate || v.commissionRate || getStaffCollectionRate(staff) || 0);
+            const amount = Number(v.amount || 0);
+            const code = CURRENCY_CODES.includes(v.currency) ? v.currency : 'YER';
+            return { ...v, commissionRate: rate, commissionAmount: rate > 0 ? amount * rate / 100 : 0, commissionCurrency: code };
+        }).filter(v => v.commissionAmount > 0);
+
+        const earnedByCurrency = { YER: 0, SAR: 0, USD: 0 };
+        const paidByCurrency = { YER: 0, SAR: 0, USD: 0 };
+        earnedByCurrency[currency] += baseEntitlement;
+        commissions.forEach(v => { earnedByCurrency[v.commissionCurrency] += v.commissionAmount; });
+        expenses.forEach(item => {
+            const code = CURRENCY_CODES.includes(item.currency) ? item.currency : currency;
+            paidByCurrency[code] += Number(item.amount || 0);
+        });
+        const remainingByCurrency = { YER: 0, SAR: 0, USD: 0 };
+        CURRENCY_CODES.forEach(code => { remainingByCurrency[code] = earnedByCurrency[code] - paidByCurrency[code]; });
+        const entitlement = earnedByCurrency[currency];
+        const paid = paidByCurrency[currency];
+        const remaining = remainingByCurrency[currency];
         const byWork = new Map();
         production.forEach(item => {
             const key = [item.rateId || '', item.workName || 'عمل', item.unit || ''].join('|');
@@ -8702,7 +8815,7 @@ function initMenuPermissionCheckboxes() {
             group.amount += Number(item.amount || 0);
             group.records++;
         });
-        return { staff, period, currency, production, expenses, entitlement, paid, remaining, byWork: [...byWork.values()] };
+        return { staff, period, currency, production, expenses, commissions, baseEntitlement, productionTotal, entitlement, paid, remaining, earnedByCurrency, paidByCurrency, remainingByCurrency, byWork: [...byWork.values()] };
     }
 
     function populateEmployeeDuesStaffOptions() {
@@ -8730,20 +8843,24 @@ function initMenuPermissionCheckboxes() {
         const period = getSelectedEmployeeDuesPeriod();
         const staff = populateEmployeeDuesStaffOptions();
         const label = document.getElementById('employeeDuesPeriodLabel');
-        if (label) label.textContent = `كشف ${period}: المستحق، والمبالغ المستلمة، والمتبقي لكل موظف. كل عملة تُحسب بشكل مستقل.`;
+        if (label) label.textContent = `كشف ${period}: الرواتب والإنتاج وعمولات التحصيل والمبالغ المستلمة. كل عملة تُحسب بشكل مستقل.`;
 
         const totals = {};
+        CURRENCY_CODES.forEach(code => { totals[code] = { earned: 0, paid: 0, remaining: 0, staffCount: 0 }; });
         staff.forEach(item => {
             const data = getEmployeeDuesData(item, period);
-            if (!totals[data.currency]) totals[data.currency] = { earned: 0, paid: 0, remaining: 0, staffCount: 0 };
-            totals[data.currency].earned += data.entitlement;
-            totals[data.currency].paid += data.paid;
-            totals[data.currency].remaining += data.remaining;
-            totals[data.currency].staffCount++;
+            CURRENCY_CODES.forEach(code => {
+                const hasActivity = Math.abs(data.earnedByCurrency[code]) > 0.000001 || Math.abs(data.paidByCurrency[code]) > 0.000001;
+                if (!hasActivity) return;
+                totals[code].earned += data.earnedByCurrency[code];
+                totals[code].paid += data.paidByCurrency[code];
+                totals[code].remaining += data.remainingByCurrency[code];
+                totals[code].staffCount++;
+            });
         });
         const totalsBox = document.getElementById('employeeDuesCurrencyTotals');
         if (totalsBox) {
-            const codes = CURRENCY_CODES.filter(code => totals[code]);
+            const codes = CURRENCY_CODES.filter(code => totals[code].staffCount || totals[code].earned || totals[code].paid);
             totalsBox.innerHTML = codes.length ? codes.map(code => `
                 <div class="employee-dues-currency-card">
                     <div class="currency-title">${CURRENCY_NAMES[code]} (${code})</div>
@@ -8759,16 +8876,16 @@ function initMenuPermissionCheckboxes() {
         if (tbody) {
             tbody.innerHTML = staff.length ? staff.map(item => {
                 const data = getEmployeeDuesData(item, period);
-                const system = isPieceworkStaff(item) ? 'بالقطعة' : 'راتب شهري';
+                const system = isPieceworkStaff(item) ? 'بالقطعة' : (getStaffCollectionRate(item) > 0 ? `راتب + ${getStaffCollectionRate(item).toFixed(2)}% تحصيل` : 'راتب شهري');
                 const detail = isPieceworkStaff(item)
                     ? `${data.production.length} سجل إنتاج`
-                    : 'استحقاق الراتب الشهري';
+                    : (data.commissions.length ? `راتب + ${data.commissions.length} عمولة تحصيل` : 'استحقاق الراتب الشهري');
                 return `<tr>
                     <td><strong>${escapeEmployeeDuesHtml(item.fullName || '-')}</strong><br><small>${detail}</small></td>
                     <td>${system}</td>
-                    <td><strong class="mono">${formatMoney(data.entitlement)} ${data.currency}</strong></td>
-                    <td><span class="mono">${formatMoney(data.paid)} ${data.currency}</span></td>
-                    <td><strong class="mono" style="color:${data.remaining < 0 ? 'var(--danger)' : 'var(--success)'}">${formatMoney(data.remaining)} ${data.currency}</strong></td>
+                    <td>${formatEmployeeCurrencyMapHtml(data.earnedByCurrency, data.currency)}</td>
+                    <td>${formatEmployeeCurrencyMapHtml(data.paidByCurrency, data.currency)}</td>
+                    <td>${formatEmployeeCurrencyMapHtml(data.remainingByCurrency, data.currency)}</td>
                     <td><button type="button" class="btn btn-outline btn-sm" onclick="selectEmployeeDuesStaff('${escapeEmployeeDuesHtml(item.id)}')"><i class="fa-solid fa-eye"></i> كشف الحساب</button></td>
                 </tr>`;
             }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد بيانات موظفين لعرضها</td></tr>';
@@ -8787,64 +8904,66 @@ function initMenuPermissionCheckboxes() {
         const target = document.getElementById('employeeDuesSelectedDetail');
         if (!target) return;
         const staffId = document.getElementById('employeeDuesStaffSelect')?.value || '';
-        const staff = getVisiblePayrollStaff().find(item => item.id === staffId);
+        const staff = getVisibleEmployeeDuesStaff().find(item => item.id === staffId);
         if (!staff) {
             target.innerHTML = '<div class="employee-permission-note">اختر الموظف لعرض تفاصيل إنتاجه ومستحقاته والمبالغ التي استلمها.</div>';
             return;
         }
         const data = getEmployeeDuesData(staff, getSelectedEmployeeDuesPeriod());
         const title = escapeEmployeeDuesHtml(staff.fullName || 'الموظف');
-        const earnedLabel = isPieceworkStaff(staff) ? 'إجمالي قيمة الإنتاج' : 'الراتب الشهري المستحق';
+        const earnedLabel = isPieceworkStaff(staff) ? 'إجمالي قيمة الإنتاج والعمولات' : 'الراتب وعمولات التحصيل';
         const workRows = data.byWork.length ? data.byWork.map(item => `
             <tr><td>${escapeEmployeeDuesHtml(item.name)}</td><td>${escapeEmployeeDuesHtml(item.unit)}</td><td><span class="mono">${formatQty(item.quantity)}</span></td><td><span class="mono">${formatMoney(item.unitRate)} ${data.currency}</span></td><td><strong class="mono">${formatMoney(item.amount)} ${data.currency}</strong></td><td>${item.records}</td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا يوجد إنتاج مسجل في هذه الفترة</td></tr>';
+        const commissionRows = data.commissions.length ? data.commissions.map(item => `
+            <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td><span class="mono">${formatMoney(item.amount || 0)} ${item.commissionCurrency}</span></td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td><strong class="mono">${formatMoney(item.commissionAmount)} ${item.commissionCurrency}</strong></td></tr>
+        `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد سندات قبض مسجلة باسم هذا الموظف خلال هذه الفترة</td></tr>';
         const ledgerRows = [];
-        if (!isPieceworkStaff(staff)) {
-            ledgerRows.push({ date: `${data.period}-01`, order: '0', type: 'استحقاق راتب', details: 'الراتب الشهري', quantity: '-', rate: '-', earned: data.entitlement, paid: 0, actor: 'النظام' });
-        }
+        if (!isPieceworkStaff(staff)) ledgerRows.push({ date: `${data.period}-01`, order: '0', type: 'استحقاق راتب', details: 'الراتب الشهري', quantity: '-', rate: '-', earned: data.baseEntitlement, paid: 0, currency: data.currency, actor: 'النظام' });
         data.production.forEach(item => ledgerRows.push({
             date: item.date || '-', order: item.createdAt || '', type: 'إنتاج',
             details: `${item.workName || 'عمل'} (${item.unit || '-'})${item.note ? ` — ${item.note}` : ''}`,
             quantity: `${formatQty(item.quantity)} ${item.unit || ''}`,
             rate: `${formatMoney(item.unitRate || 0)} ${data.currency}`,
-            earned: Number(item.amount || 0), paid: 0, actor: item.createdBy || '-'
+            earned: Number(item.amount || 0), paid: 0, currency: data.currency, actor: item.createdBy || '-'
+        }));
+        data.commissions.forEach(item => ledgerRows.push({
+            date: item.date || '-', order: item.createdAt || '', type: 'عمولة تحصيل',
+            details: `سند قبض ${item.refNumber || item.id || ''} — العميل ${item.customerName || 'عام'} — نسبة ${Number(item.commissionRate).toFixed(2)}%`,
+            quantity: '-', rate: `${formatMoney(item.amount || 0)} ${item.commissionCurrency}`,
+            earned: Number(item.commissionAmount || 0), paid: 0, currency: item.commissionCurrency, actor: item.employee || '-'
         }));
         data.expenses.forEach(item => ledgerRows.push({
             date: item.date || '-', order: item.createdAt || '',
             type: item.source === 'dailyDisbursementAdvance' ? (isPieceworkStaff(staff) ? 'سلفة مخصومة من مستحق الإنتاج' : 'سلفة مخصومة من الراتب') : 'استلام / دفعة',
             details: item.note || 'مبلغ مستلم', quantity: '-', rate: '-',
-            earned: 0, paid: Number(item.amount || 0), actor: item.createdBy || '-'
+            earned: 0, paid: Number(item.amount || 0), currency: CURRENCY_CODES.includes(item.currency) ? item.currency : data.currency, actor: item.createdBy || '-'
         }));
         ledgerRows.sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.order).localeCompare(String(b.order)));
         const historyRows = ledgerRows.length ? ledgerRows.map(item => `
-            <tr><td>${escapeEmployeeDuesHtml(item.date)}</td><td>${escapeEmployeeDuesHtml(item.type)}</td><td>${escapeEmployeeDuesHtml(item.details)}</td><td>${escapeEmployeeDuesHtml(item.quantity)}</td><td>${escapeEmployeeDuesHtml(item.rate)}</td><td class="pdf-positive">${item.earned ? `${formatMoney(item.earned)} ${data.currency}` : '—'}</td><td class="pdf-negative">${item.paid ? `${formatMoney(item.paid)} ${data.currency}` : '—'}</td><td>${escapeEmployeeDuesHtml(item.actor)}</td></tr>
+            <tr><td>${escapeEmployeeDuesHtml(item.date)}</td><td>${escapeEmployeeDuesHtml(item.type)}</td><td>${escapeEmployeeDuesHtml(item.details)}</td><td>${escapeEmployeeDuesHtml(item.quantity)}</td><td>${escapeEmployeeDuesHtml(item.rate)}</td><td class="pdf-positive">${item.earned ? `${formatMoney(item.earned)} ${item.currency}` : '—'}</td><td class="pdf-negative">${item.paid ? `${formatMoney(item.paid)} ${item.currency}` : '—'}</td><td>${escapeEmployeeDuesHtml(item.actor)}</td></tr>
         `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد حركة مسجلة خلال هذه الفترة</td></tr>';
+        const hasNegative = CURRENCY_CODES.some(code => data.remainingByCurrency[code] < 0);
         target.innerHTML = `
             <div class="employee-dues-detail-head">
-                <div><strong style="font-size:16px;color:var(--primary);">${title}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${isPieceworkStaff(staff) ? 'موظف بنظام الأجر بالقطعة' : 'موظف براتب شهري'} — الفترة ${data.period}</div></div>
-                <span class="badge ${data.remaining < 0 ? 'badge-expense' : 'badge-cash'}">${data.remaining < 0 ? 'رصيد سالب' : 'مستحق للموظف'}</span>
+                <div><strong style="font-size:16px;color:var(--primary);">${title}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${isPieceworkStaff(staff) ? 'موظف بنظام الأجر بالقطعة' : (getStaffCollectionRate(staff) > 0 ? 'راتب شهري مع نسبة تحصيل' : 'موظف براتب شهري')} — الفترة ${data.period}</div></div>
+                <span class="badge ${hasNegative ? 'badge-expense' : 'badge-cash'}">${hasNegative ? 'يوجد رصيد سالب بعملة' : 'مستحق للموظف'}</span>
             </div>
             <div class="employee-dues-kpis">
-                <div class="employee-dues-kpi"><span>${earnedLabel}</span><strong>${formatMoney(data.entitlement)} ${data.currency}</strong></div>
-                <div class="employee-dues-kpi"><span>إجمالي ما استلمه</span><strong>${formatMoney(data.paid)} ${data.currency}</strong></div>
-                <div class="employee-dues-kpi"><span>المتبقي له</span><strong style="color:${data.remaining < 0 ? 'var(--danger)' : 'var(--success)'}">${formatMoney(data.remaining)} ${data.currency}</strong></div>
+                <div class="employee-dues-kpi"><span>${earnedLabel}</span>${formatEmployeeCurrencyMapHtml(data.earnedByCurrency, data.currency)}</div>
+                <div class="employee-dues-kpi"><span>إجمالي ما استلمه</span>${formatEmployeeCurrencyMapHtml(data.paidByCurrency, data.currency)}</div>
+                <div class="employee-dues-kpi"><span>المتبقي له</span>${formatEmployeeCurrencyMapHtml(data.remainingByCurrency, data.currency)}</div>
             </div>
-            ${isPieceworkStaff(staff) ? `
-                <div class="card-box" style="padding:12px;">
-                    <div class="card-title"><span>تفصيل ما أنجزه حسب نوع العمل</span></div>
-                    <div class="table-responsive"><table><thead><tr><th>نوع العمل</th><th>الوحدة</th><th>إجمالي الكمية</th><th>سعر الوحدة</th><th>قيمة الإنتاج</th><th>عدد العمليات</th></tr></thead><tbody>${workRows}</tbody></table></div>
-                </div>` : ''}
-            <div class="card-box" style="padding:12px;">
-                <div class="card-title"><span>كشف الحركة التفصيلي</span></div>
-                <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>البيان</th><th>الكمية</th><th>سعر الوحدة</th><th>مستحق</th><th>مستلم</th><th>سجل بواسطة</th></tr></thead><tbody>${historyRows}</tbody></table></div>
-            </div>
+            ${isPieceworkStaff(staff) ? `<div class="card-box" style="padding:12px;"><div class="card-title"><span>تفصيل ما أنجزه حسب نوع العمل</span></div><div class="table-responsive"><table><thead><tr><th>نوع العمل</th><th>الوحدة</th><th>إجمالي الكمية</th><th>سعر الوحدة</th><th>قيمة الإنتاج</th><th>عدد العمليات</th></tr></thead><tbody>${workRows}</tbody></table></div></div>` : ''}
+            <div class="card-box" style="padding:12px;"><div class="card-title"><span>عمولات سندات القبض</span></div><div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>رقم السند</th><th>العميل</th><th>المبلغ المحصل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${commissionRows}</tbody></table></div></div>
+            <div class="card-box" style="padding:12px;"><div class="card-title"><span>كشف الحركة التفصيلي</span></div><div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>البيان</th><th>الكمية</th><th>سعر الوحدة / المبلغ</th><th>مستحق</th><th>مستلم</th><th>سجل بواسطة</th></tr></thead><tbody>${historyRows}</tbody></table></div></div>
         `;
     }
 
     function buildEmployeeDuesPdfSheet(staff, period, isLast = false) {
         const data = getEmployeeDuesData(staff, period);
         const name = escapeEmployeeDuesHtml(staff.fullName || 'الموظف');
-        const type = isPieceworkStaff(staff) ? 'أجر بالقطعة' : 'راتب شهري';
+        const type = isPieceworkStaff(staff) ? 'أجر بالقطعة' : (getStaffCollectionRate(staff) > 0 ? `راتب + نسبة تحصيل ${getStaffCollectionRate(staff)}%` : 'راتب شهري');
         const productionRows = data.production.length ? data.production.map(item => `
             <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.workName || 'عمل')} (${escapeEmployeeDuesHtml(item.unit || '-')})</td><td>${formatQty(item.quantity || 0)}</td><td>${formatMoney(item.unitRate || 0)} ${data.currency}</td><td>${formatMoney(item.amount || 0)} ${data.currency}</td><td>${escapeEmployeeDuesHtml(item.createdBy || '-')}</td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;">لا يوجد إنتاج مسجل لهذه الفترة</td></tr>';
@@ -8852,9 +8971,12 @@ function initMenuPermissionCheckboxes() {
             <tr><td>${escapeEmployeeDuesHtml(item.name)}</td><td>${escapeEmployeeDuesHtml(item.unit)}</td><td>${formatQty(item.quantity)}</td><td>${formatMoney(item.unitRate)} ${data.currency}</td><td>${formatMoney(item.amount)} ${data.currency}</td><td>${item.records}</td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;">لا يوجد تفصيل إنتاج</td></tr>';
         const expenseRows = data.expenses.length ? data.expenses.map(item => `
-            <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.note || 'مبلغ مستلم')}</td><td>${formatMoney(item.amount || 0)} ${data.currency}</td><td>${escapeEmployeeDuesHtml(item.createdBy || '-')}</td></tr>
+            <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.note || 'مبلغ مستلم')}</td><td>${formatMoney(item.amount || 0)} ${CURRENCY_CODES.includes(item.currency) ? item.currency : data.currency}</td><td>${escapeEmployeeDuesHtml(item.createdBy || '-')}</td></tr>
         `).join('') : '<tr><td colspan="4" style="text-align:center;">لا توجد مبالغ مصروفة / مستلمة</td></tr>';
-        const salaryRow = !isPieceworkStaff(staff) ? `<tr><td>${period}-01</td><td>الراتب الشهري المستحق</td><td>${formatMoney(data.entitlement)} ${data.currency}</td><td>النظام</td></tr>` : '';
+        const commissionRows = data.commissions.length ? data.commissions.map(item => `
+            <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td>${formatMoney(item.amount || 0)} ${item.commissionCurrency}</td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td>${formatMoney(item.commissionAmount || 0)} ${item.commissionCurrency}</td></tr>
+        `).join('') : '<tr><td colspan="6" style="text-align:center;">لا توجد عمولات تحصيل لهذه الفترة</td></tr>';
+        const salaryRow = !isPieceworkStaff(staff) ? `<tr><td>${period}-01</td><td>الراتب الشهري المستحق</td><td>${formatMoney(data.baseEntitlement)} ${data.currency}</td><td>النظام</td></tr>` : '';
         return `
             <div class="employee-dues-pdf-sheet">
                 <div class="employee-dues-pdf-header">
@@ -8864,26 +8986,17 @@ function initMenuPermissionCheckboxes() {
                 <div class="employee-dues-pdf-meta">
                     <div><b>اسم الموظف:</b> ${name}</div><div><b>نظام الأجر:</b> ${type}</div>
                     <div><b>المخزن:</b> ${escapeEmployeeDuesHtml(staff.warehouseBranchName || getAllBranches().find(branch => branch.id === staff.warehouseBranchId)?.name || 'غير محدد')}</div>
-                    <div><b>عملة الحساب:</b> ${data.currency}</div>
                     <div><b>الفترة:</b> ${period}</div><div><b>تاريخ استخراج الكشف:</b> ${getLocalDateKey()}</div>
                 </div>
                 <div class="employee-dues-pdf-kpis">
-                    <div class="employee-dues-pdf-kpi"><small>إجمالي المستحق / الإنتاج</small><b>${formatMoney(data.entitlement)} ${data.currency}</b></div>
-                    <div class="employee-dues-pdf-kpi"><small>إجمالي المبالغ المستلمة</small><b>${formatMoney(data.paid)} ${data.currency}</b></div>
-                    <div class="employee-dues-pdf-kpi"><small>المتبقي للموظف</small><b style="color:${data.remaining < 0 ? '#b91c1c' : '#166534'}">${formatMoney(data.remaining)} ${data.currency}</b></div>
+                    <div class="employee-dues-pdf-kpi"><small>إجمالي المستحق حسب العملة</small><b>${formatEmployeeCurrencyMapHtml(data.earnedByCurrency, data.currency)}</b></div>
+                    <div class="employee-dues-pdf-kpi"><small>إجمالي المبالغ المستلمة حسب العملة</small><b>${formatEmployeeCurrencyMapHtml(data.paidByCurrency, data.currency)}</b></div>
+                    <div class="employee-dues-pdf-kpi"><small>المتبقي حسب العملة</small><b>${formatEmployeeCurrencyMapHtml(data.remainingByCurrency, data.currency)}</b></div>
                 </div>
-                ${isPieceworkStaff(staff) ? `
-                    <h3>ملخص الإنتاج حسب نوع العمل</h3>
-                    <table><thead><tr><th>نوع العمل</th><th>الوحدة</th><th>إجمالي الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th><th>عدد السجلات</th></tr></thead><tbody>${workSummaryRows}</tbody></table>
-                    <h3>سجل الإنتاج التفصيلي</h3>
-                    <table><thead><tr><th>التاريخ</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th><th>سجل بواسطة</th></tr></thead><tbody>${productionRows}</tbody></table>
-                ` : `
-                    <h3>استحقاق الراتب الشهري</h3>
-                    <table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>المصدر</th></tr></thead><tbody>${salaryRow}</tbody></table>
-                `}
-                <h3>سجل المبالغ المصروفة / المستلمة</h3>
-                <table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>سجل بواسطة</th></tr></thead><tbody>${expenseRows}</tbody></table>
-                <div class="employee-dues-pdf-footer">تم استخراج هذا الكشف من نظام معمل أبو محمد — جميع المبالغ بعملة ${data.currency} ولا يوجد تحويل تلقائي للعملات.</div>
+                ${isPieceworkStaff(staff) ? `<h3>ملخص الإنتاج حسب نوع العمل</h3><table><thead><tr><th>نوع العمل</th><th>الوحدة</th><th>إجمالي الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th><th>عدد السجلات</th></tr></thead><tbody>${workSummaryRows}</tbody></table><h3>سجل الإنتاج التفصيلي</h3><table><thead><tr><th>التاريخ</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th><th>سجل بواسطة</th></tr></thead><tbody>${productionRows}</tbody></table>` : `<h3>استحقاق الراتب الشهري</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>المصدر</th></tr></thead><tbody>${salaryRow}</tbody></table>`}
+                <h3>عمولات سندات القبض</h3><table><thead><tr><th>التاريخ</th><th>رقم السند</th><th>العميل</th><th>المبلغ المحصل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${commissionRows}</tbody></table>
+                <h3>سجل المبالغ المصروفة / المستلمة</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>سجل بواسطة</th></tr></thead><tbody>${expenseRows}</tbody></table>
+                <div class="employee-dues-pdf-footer">تم استخراج هذا الكشف من نظام معمل أبو محمد — جميع المبالغ حسب عملتها دون تحويل أو خلط.</div>
             </div>
         `;
     }
@@ -8893,7 +9006,7 @@ function initMenuPermissionCheckboxes() {
     function exportEmployeeDuesPdf(allStaff = false) {
         if (employeeDuesPdfBusy) return;
         const period = getSelectedEmployeeDuesPeriod();
-        const available = getVisiblePayrollStaff();
+        const available = getVisibleEmployeeDuesStaff();
         const selectedId = document.getElementById('employeeDuesStaffSelect')?.value || '';
         const selected = available.find(item => item.id === selectedId);
         const staffList = allStaff ? available : (selected ? [selected] : []);
