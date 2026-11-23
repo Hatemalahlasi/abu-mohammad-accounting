@@ -1643,6 +1643,14 @@
                     </table>
                 </div>
             </div>
+
+            <div class="card-box" id="supplierLedgerDetailCard">
+                <div class="card-title"><span><i class="fa-solid fa-book-open"></i> كشف حساب المورد</span><button type="button" class="btn btn-outline btn-sm" onclick="printSupplierLedger()"><i class="fa-solid fa-print"></i> طباعة الكشف</button></div>
+                <div class="form-group"><label>اختر المورد لعرض كشفه</label><select id="supplierLedgerSelect" class="form-control" onchange="renderSupplierLedger()"></select></div>
+                <div id="supplierLedgerSummary" class="summary-strip"></div>
+                <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>الأصناف / البيان</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الرصيد بعد الحركة</th></tr></thead><tbody id="supplierLedgerBody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr></tbody></table></div>
+            </div>
+            <div class="employee-permission-note">هذه الصفحة مخصصة للموردين وفواتير التوريد وتسديد الموردين وكشوف حساباتهم. لتسجيل المصروفات اليومية استخدم زر «تسجيل مصروف جديد» في القائمة الرئيسية.</div>
             </div>
 
             <div id="supplierAddSection" class="supplier-section hidden">
@@ -1703,14 +1711,6 @@
                 <button id="saveSupplierPaymentBtn" type="button" class="btn btn-success btn-full" onclick="recordSupplierPayment()"><i class="fa-solid fa-check"></i> تسجيل السداد وخصمه من رصيد المورد</button>
             </div>
 
-            <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-book-open"></i> كشف حساب المورد</span><button type="button" class="btn btn-outline btn-sm" onclick="printSupplierLedger()"><i class="fa-solid fa-print"></i> طباعة الكشف</button></div>
-                <div class="form-group"><label>اختر المورد لعرض كشفه</label><select id="supplierLedgerSelect" class="form-control" onchange="renderSupplierLedger()"></select></div>
-                <div id="supplierLedgerSummary" class="summary-strip"></div>
-                <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>الأصناف / البيان</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الرصيد بعد الحركة</th></tr></thead><tbody id="supplierLedgerBody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr></tbody></table></div>
-            </div>
-
-            <div class="employee-permission-note">هذه الصفحة مخصصة للموردين وفواتير التوريد وتسديد الموردين وكشوف حساباتهم. لتسجيل المصروفات اليومية استخدم زر «تسجيل مصروف جديد» في القائمة الرئيسية.</div>
         </section>
 
 
@@ -4272,13 +4272,16 @@ function initMenuPermissionCheckboxes() {
 
     function showSupplierSection(section) {
         const ids = { ledger: 'supplierLedgerSection', add: 'supplierAddSection', invoice: 'supplierInvoiceSection', payment: 'supplierPaymentSection' };
+        const key = Object.prototype.hasOwnProperty.call(ids, section) ? section : 'ledger';
         Object.values(ids).forEach(id => document.getElementById(id)?.classList.add('hidden'));
-        const target = document.getElementById(ids[section] || ids.ledger);
-        target?.classList.remove('hidden');
-        if (section === 'ledger') { ensureSupplierLedgerOptions(); renderSupplierBalances(); }
-        if (section === 'invoice') { populateDropdowns(); filterSupplierInvoiceCashboxes(); }
-        if (section === 'payment') { populateDropdowns(); filterSupplierPaymentCashboxes(); renderSupplierBalances(); }
+        const target = document.getElementById(ids[key]);
+        if (!target) { showToast('تعذر فتح قسم الموردين؛ حدّث الصفحة وجرب مرة أخرى'); return false; }
+        target.classList.remove('hidden');
+        if (key === 'ledger') { ensureSupplierLedgerOptions(); renderSupplierBalances(); renderSupplierLedger(); }
+        if (key === 'invoice') { populateDropdowns(); filterSupplierInvoiceCashboxes(); }
+        if (key === 'payment') { populateDropdowns(); filterSupplierPaymentCashboxes(); renderSupplierBalances(); }
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        return true;
     }
 
     async function editSupplier(supplierId) {
@@ -5940,15 +5943,23 @@ function initMenuPermissionCheckboxes() {
         const id = String(supplierId ?? '');
         const supplier = (state.suppliers || []).find(item => String(item.id) === id);
         if (!supplier) {
-            showToast('لم أجد المورد المحدد في البيانات المحمّلة؛ اضغط تحديث ثم افتح الكشف مرة أخرى');
-            return;
+            showToast('لم أجد المورد المحدد ضمن البيانات المحمّلة. اضغط تحديث ثم حاول مرة أخرى');
+            return false;
         }
-        // تأكد أن قسم الكشف ظاهر وأن قائمة الاختيار تحتوي المورد قبل محاولة عرضه.
-        showSupplierSection('ledger');
+        // افتح القسم الذي يحتوي فعلياً على عناصر الكشف، ثم املأ القائمة واختر المورد.
+        if (!showSupplierSection('ledger')) return false;
         const select = ensureSupplierLedgerOptions(id);
-        if (select) select.value = id;
+        if (!select) { showToast('قائمة كشف حساب المورد غير موجودة في الصفحة؛ حدّث النسخة المنشورة'); return false; }
+        select.value = id;
+        if (String(select.value) !== id) {
+            const option = document.createElement('option');
+            option.value = id; option.textContent = supplier.name || 'مورد';
+            select.appendChild(option); select.value = id;
+        }
         renderSupplierLedger();
-        document.getElementById('supplierLedgerSummary')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const detail = document.getElementById('supplierLedgerDetailCard');
+        detail?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
     }
 
     function renderSupplierLedger() {
