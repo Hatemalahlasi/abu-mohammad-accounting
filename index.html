@@ -3167,13 +3167,18 @@
     }
 
     function getLegacyStaffFromAccount(account) {
-        // الحسابات القديمة كانت تحفظ الراتب وبعض إعدادات الأجر داخل employees
-        // وليس staff؛ لذلك ننسخ نسبة التحصيل ونوع الأجر أيضًا حتى تظهر في سند القبض.
+        const linkedId = account.staffId || `legacy_${account.id}`;
+        const historyRows = [
+            ...(Array.isArray(state.employeeProduction) ? state.employeeProduction : []),
+            ...(Array.isArray(state.employeeExpenses) ? state.employeeExpenses : []),
+            ...(Array.isArray(state.employeeDailyDisbursements) ? state.employeeDailyDisbursements : [])
+        ].filter(row => String(row.staffId || '') === String(linkedId));
+        const historyName = historyRows.find(row => row.staffName || row.employeeName || row.fullName);
         const collectionCommissionRate = getStaffCollectionCommissionRate(account);
         return {
-            id: account.staffId || `legacy_${account.id}`,
+            id: linkedId,
             legacyUserId: account.id,
-            fullName: account.fullName || account.username || 'موظف سابق',
+            fullName: account.fullName || account.name || historyName?.staffName || historyName?.employeeName || historyName?.fullName || account.username || 'موظف سابق',
             salary: Number(account.salary || 0),
             salaryCurrency: CURRENCY_CODES.includes(account.salaryCurrency) ? account.salaryCurrency : 'YER',
             payType: account.payType === 'piecework' ? 'piecework' : (account.payType === 'monthly_commission' || collectionCommissionRate > 0 ? 'monthly_commission' : (account.payType || 'monthly')),
@@ -3232,59 +3237,96 @@
     function getAllStaff() {
         const accounts = Array.isArray(state.employees) ? state.employees : [];
         const rawStaff = Array.isArray(state.staff) ? state.staff : [];
-        const staff = rawStaff.map(item => {
-            const linkedAccount = findLinkedAccountForStaff(item, accounts);
-            if (!linkedAccount) return { ...item };
-            const staffRate = getStaffCollectionCommissionRate(item);
-            const accountRate = getStaffCollectionCommissionRate(linkedAccount);
-            const effectiveRate = Math.max(staffRate, accountRate);
-            return {
-                ...item,
-                collectionCommissionRate: effectiveRate,
-                commissionRate: Math.max(Number(item.commissionRate || 0), Number(linkedAccount.commissionRate || 0), effectiveRate),
-                payType: item.payType === 'piecework'
-                    ? 'piecework'
-                    : (item.payType === 'monthly_commission' || linkedAccount.payType === 'monthly_commission' || effectiveRate > 0
-                        ? 'monthly_commission'
-                        : (item.payType || linkedAccount.payType || 'monthly')),
-                // حالة ملف الموظف هي الأساس؛ لا نجعل حساب دخول قديمًا موقوفًا يخفي الموظف.
-                active: item.active !== undefined ? item.active : (linkedAccount.active !== undefined ? linkedAccount.active : true),
-                userAccountId: item.userAccountId || linkedAccount.id,
-                username: item.username || linkedAccount.username || ''
-            };
+        const staff = rawStaff.filter(item => item && item.id).map(item => ({ ...item }));
+
+        const history = [
+            ...(Array.isArray(state.employeeProduction) ? state.employeeProduction : []),
+            ...(Array.isArray(state.employeeExpenses) ? state.employeeExpenses : []),
+            ...(Array.isArray(state.employeeDailyDisbursements) ? state.employeeDailyDisbursements : [])
+        ];
+        const historyFor = staffId => history.filter(row => String(row.staffId || '') === String(staffId || ''));
+        const historyNameFor = staffId => {
+            const row = historyFor(staffId).find(item => item.staffName || item.employeeName || item.fullName);
+            return row?.staffName || row?.employeeName || row?.fullName || '';
+        };
+
+        // أدمج بيانات حساب الدخول في ملف الموظف عند وجود ربط مباشر أو تطابق اسم فريد.
+        staff.forEach(item => {
+            const linked = findLinkedAccountForStaff(item, accounts);
+            if (!linked) return;
+            const rate = Math.max(getStaffCollectionCommissionRate(item), getStaffCollectionCommissionRate(linked));
+            item.collectionCommissionRate = rate;
+            item.commissionRate = Math.max(Number(item.commissionRate || 0), Number(linked.commissionRate || 0), rate);
+            if (item.payType !== 'piecework' && (linked.payType === 'monthly_commission' || rate > 0)) item.payType = 'monthly_commission';
+            item.userAccountId = item.userAccountId || linked.id;
+            item.username = item.username || linked.username || '';
+            if (!item.fullName) item.fullName = linked.fullName || historyNameFor(item.id) || linked.username || 'موظف';
+            if (item.active === undefined) item.active = linked.active !== false;
         });
 
-        const knownAccountIds = new Set(staff.flatMap(item => [item.userAccountId, item.legacyUserId].filter(Boolean).map(String)));
-        const knownLegacyIds = new Set(staff.map(item => item.legacyUserId).filter(Boolean).map(String));
+        const hasAccount = account => staff.some(item =>
+            String(item.userAccountId || '') === String(account.id || '') ||
+            String(item.legacyUserId || '') === String(account.id || '') ||
+            (account.staffId && String(item.id || '') === String(account.staffId))
+        );
+
         accounts.forEach(account => {
             if (!account || account.id === 'emp_admin' || account.username === ADMIN_USER || account.role === 'admin' || account.role === 'supervisor') return;
-            if (knownAccountIds.has(String(account.id)) || knownLegacyIds.has(String(account.id))) return;
-            const accountNameKey = normalizeStaffName(account.fullName || account.name);
-            const nameMatches = accountNameKey ? staff.filter(item => normalizeStaffName(item.fullName || item.name) === accountNameKey) : [];
+            if (hasAccount(account)) return;
+
+            const linkedId = account.staffId ? String(account.staffId) : '';
+            const accountName = account.fullName || account.name || historyNameFor(linkedId) || account.username || '';
+            const nameKey = normalizeStaffName(accountName);
+            const nameMatches = nameKey ? staff.filter(item => normalizeStaffName(item.fullName || item.name) === nameKey) : [];
             if (nameMatches.length === 1) {
-                // السجل موجود في staff لكنه غير مربوط بمعرّف الحساب؛ تم دمجه أعلاه عند التحديث التالي.
+                nameMatches[0].userAccountId = nameMatches[0].userAccountId || account.id;
+                nameMatches[0].username = nameMatches[0].username || account.username || '';
+                const rate = Math.max(getStaffCollectionCommissionRate(nameMatches[0]), getStaffCollectionCommissionRate(account));
+                nameMatches[0].collectionCommissionRate = rate;
+                if (rate > 0 && nameMatches[0].payType !== 'piecework') nameMatches[0].payType = 'monthly_commission';
                 return;
             }
-            // حسابات الدخول الأمنية عادة ليست موظفين، لكن بعض البيانات القديمة وضعت الراتب
-            // والنسبة داخل employees فقط. نستعيد هذه الحالات دون إظهار حسابات الدخول العادية.
-            if (account.securityOnly === true && !accountHasLegacyPayrollData(account)) return;
-            const fallback = getLegacyStaffFromAccount(account);
-            staff.push(fallback);
-            knownAccountIds.add(String(account.id));
-            knownLegacyIds.add(String(account.id));
+
+            // لا نهمل حسابًا أمنيًا قديمًا يحمل staffId؛ قد تكون قراءة مجموعة staff
+            // غير متاحة مؤقتًا، أو أن الملف القديم نُقل جزئيًا. نعيد سجل عرض آمنًا.
+            const hasLinkedStaffId = Boolean(linkedId);
+            const hasLegacyPayroll = accountHasLegacyPayrollData(account);
+            if (account.securityOnly === true && !hasLinkedStaffId && !hasLegacyPayroll) return;
+            if (account.securityOnly !== true || hasLinkedStaffId || hasLegacyPayroll) {
+                const fallback = getLegacyStaffFromAccount({
+                    ...account,
+                    fullName: account.fullName || account.name || historyNameFor(linkedId) || account.username,
+                    staffId: linkedId || account.staffId
+                });
+                fallback.userAccountId = account.id;
+                fallback.username = account.username || '';
+                fallback.fullName = fallback.fullName || historyNameFor(fallback.id) || account.username || 'موظف سابق';
+                staff.push(fallback);
+            }
         });
 
-        // إزالة تكرار المعرّف فقط؛ لا نحذف موظفين مختلفين لهم الاسم نفسه.
+        // إذا كانت ملفات staff غير متاحة ولكن بقيت حركات تاريخية، أظهر أسماء أصحابها
+        // مؤقتًا بدل عرض صفر موظفين. لا نخترع رواتب أو نسبًا غير موجودة في السجلات.
+        const knownIds = new Set(staff.map(item => String(item.id)));
+        const groupedHistory = new Map();
+        history.forEach(row => {
+            const id = String(row.staffId || '');
+            if (!id || knownIds.has(id)) return;
+            const name = row.staffName || row.employeeName || row.fullName;
+            if (!name) return;
+            if (!groupedHistory.has(id)) groupedHistory.set(id, { id, fullName: name, salary: 0, salaryCurrency: row.currency || 'YER', payType: row.source === 'production' || row.type === 'production' ? 'piecework' : 'monthly', active: true, recoveredFromHistory: true });
+        });
+        groupedHistory.forEach(item => staff.push(item));
+
         const byId = new Map();
         staff.forEach(item => {
             if (!item || !item.id) return;
             const key = String(item.id);
-            const prior = byId.get(key);
-            if (!prior) byId.set(key, item);
+            const previous = byId.get(key);
+            if (!previous) byId.set(key, item);
             else {
-                const priorRate = getStaffCollectionCommissionRate(prior);
-                const nextRate = getStaffCollectionCommissionRate(item);
-                byId.set(key, { ...prior, ...item, collectionCommissionRate: Math.max(priorRate, nextRate) });
+                const rate = Math.max(getStaffCollectionCommissionRate(previous), getStaffCollectionCommissionRate(item));
+                byId.set(key, { ...previous, ...item, collectionCommissionRate: rate });
             }
         });
         return Array.from(byId.values());
@@ -4569,6 +4611,10 @@ function initMenuPermissionCheckboxes() {
                         showToast('تعذر تحميل سجل الصرف اليومي. تحقق من صلاحية قراءة مجموعة employeeDailyDisbursements في Firestore.');
                         return;
                     }
+                    if (colName === 'staff') {
+                        showToast('تعذرت قراءة ملفات الموظفين من Firestore. احتفظنا بالقائمة الحالية ولم نحذف التعريفات.');
+                        return;
+                    }
                     isDemoMode = true;
                     const badge = document.getElementById('connectionStatusBadge');
                     if (badge) {
@@ -4764,7 +4810,14 @@ function initMenuPermissionCheckboxes() {
     }
 
     async function reloadAllData(showMsg = false) {
+        const previousStaff = Array.isArray(state.staff) ? state.staff.slice() : [];
+        let staffReadFailed = false;
         try {
+            const staffPromise = loadCollection('staff').catch(error => {
+                staffReadFailed = true;
+                console.warn('Staff collection could not be read; keeping the last known employee list.', error);
+                return previousStaff;
+            });
             const [branches, cashboxes, customers, suppliers, invoices, purchases, vouchers, employees, staff, employeeExpenses, employeeDailyDisbursements, employeeProduction, warehouse] = await Promise.all([
                 loadCollection('branches'),
                 loadCollection('cashboxes'),
@@ -4774,20 +4827,17 @@ function initMenuPermissionCheckboxes() {
                 loadCollection('purchases'),
                 loadCollection('vouchers'),
                 loadCollection('employees'),
-                loadCollection('staff'),
+                staffPromise,
                 loadCollection('employeeExpenses'),
                 loadOptionalCollection('employeeDailyDisbursements'),
                 loadCollection('employeeProduction'),
                 loadCollection('warehouse')
             ]);
-            const mergedStaff = Array.isArray(staff) ? staff.slice() : [];
+            const mergedStaff = Array.isArray(staff) ? staff.slice() : previousStaff;
             const loadedStaffIds = new Set(mergedStaff.map(item => String(item.id)));
             const now = Date.now();
             for (const [pendingId, pending] of pendingStaffProfiles.entries()) {
-                if (now - pending.savedAt > 2 * 60 * 1000) {
-                    pendingStaffProfiles.delete(pendingId);
-                    continue;
-                }
+                if (now - pending.savedAt > 10 * 60 * 1000) { pendingStaffProfiles.delete(pendingId); continue; }
                 if (!loadedStaffIds.has(String(pendingId))) mergedStaff.push({ ...pending.record });
                 else pendingStaffProfiles.delete(pendingId);
             }
@@ -4799,10 +4849,12 @@ function initMenuPermissionCheckboxes() {
                 document.getElementById('headerWelcome').textContent = currentUser.fullName;
             }
             isDemoMode = false;
-            if (showMsg) showToast('تم التحديث');
+            if (staffReadFailed) showToast('تعذرت قراءة ملفات الموظفين من قاعدة البيانات؛ أبقينا آخر قائمة متاحة ولم نحذف أي سجل.');
+            else if (showMsg) showToast('تم التحديث');
         } catch (err) {
-            console.warn('Firestore error:', err);
+            console.warn('Firestore reload error:', err);
             isDemoMode = true;
+            if (showMsg) showToast('تعذر تحديث البيانات من قاعدة البيانات. لم يتم حذف أي سجل محلي ظاهر.');
         }
         renderAllViews();
     }
@@ -4945,6 +4997,7 @@ function initMenuPermissionCheckboxes() {
         const selectedBefore = preserve
             ? new Set(Array.from(hiddenSelect.selectedOptions || []).map(option => option.value))
             : new Set();
+        if (!selectedBefore.size && all.length) selectedBefore.add(all[0].id);
         hiddenSelect.innerHTML = all.map(branch => `<option value="${branch.id}">${branch.name}</option>`).join('');
         container.innerHTML = all.map(branch => `
             <label class="perm-check" style="background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 10px;">
@@ -7643,63 +7696,53 @@ function initMenuPermissionCheckboxes() {
     async function createEmployee() {
         if (isBusy || !canManageUsers()) return;
         const btn = document.getElementById('saveEmployeeBtn');
-        const fullName = document.getElementById('newEmpFullName').value.trim();
+        const fullName = document.getElementById('newEmpFullName')?.value.trim() || '';
         const nameKey = normalizeStaffName(fullName);
         const selectedPayType = document.getElementById('newEmpPayType')?.value || 'monthly';
-        const salary = selectedPayType === 'piecework' ? 0 : Number(document.getElementById('newEmpSalary').value || 0);
-        const salaryCurrency = document.getElementById('newEmpSalaryCurrency').value || 'YER';
+        const salary = selectedPayType === 'piecework' ? 0 : Number(document.getElementById('newEmpSalary')?.value || 0);
+        const salaryCurrency = document.getElementById('newEmpSalaryCurrency')?.value || 'YER';
         const collectionCommissionRate = selectedPayType === 'piecework' ? 0 : Number(document.getElementById('newEmpCollectionCommissionRate')?.value || 0);
         const payType = selectedPayType === 'piecework' ? 'piecework' : (collectionCommissionRate > 0 ? 'monthly_commission' : 'monthly');
         const enteredPieceRates = payType === 'piecework' ? collectEmployeePieceRates() : [];
         const pieceRateValidationError = payType === 'piecework' ? validateEmployeePieceRates(enteredPieceRates) : '';
         const pieceRates = enteredPieceRates.map(({ _rowNumber, ...rate }) => rate);
-        const warehouseBranchIds = getNewEmployeeBranchIds();
+        let warehouseBranchIds = getNewEmployeeBranchIds();
+        // في حال لم يحدد المستخدم مخزنًا، استخدم أول مخزن متاح افتراضيًا بدل منع الحفظ بصمت.
+        if (!warehouseBranchIds.length) {
+            const firstBranch = getAllBranches()[0];
+            if (firstBranch) {
+                warehouseBranchIds = [firstBranch.id];
+                const checkbox = Array.from(document.querySelectorAll('.new-employee-branch-cb')).find(cb => cb.value === firstBranch.id);
+                if (checkbox) checkbox.checked = true;
+                syncNewEmployeeBranchSelection();
+            }
+        }
         const selectedBranches = getAllBranches().filter(item => warehouseBranchIds.includes(item.id));
         const warehouseBranchId = warehouseBranchIds[0] || '';
         const branch = selectedBranches[0] || null;
         const warehouseBranchNames = selectedBranches.map(item => item.name);
 
-        if (!fullName) {
-            showToast('أدخل اسم الموظف');
-            return;
-        }
+        if (!fullName) { showToast('أدخل اسم الموظف'); return; }
         const duplicate = getAllStaff().find(item => normalizeStaffName(item.fullName) === nameKey);
         if (duplicate) {
-            showToast(`الموظف «${duplicate.fullName}» مسجل مسبقاً. استخدم زر تعديل الاسم أو التسعيرة بدل إضافته مرة ثانية.`);
+            showToast(`الموظف «${duplicate.fullName}» موجود بالفعل. لم يتم إنشاء نسخة مكررة.`);
+            renderEmployeesTable();
             return;
         }
-        if (payType !== 'piecework' && (!Number.isFinite(salary) || salary < 0)) {
-            showToast('أدخل راتباً شهرياً صحيحاً');
-            return;
-        }
-        if (payType !== 'piecework' && (!Number.isFinite(collectionCommissionRate) || collectionCommissionRate < 0 || collectionCommissionRate > 100)) {
-            showToast('أدخل نسبة صحيحة من 0 إلى 100%');
-            return;
-        }
-        if (selectedPayType === 'monthly_commission' && collectionCommissionRate <= 0) {
-            showToast('أدخل نسبة تحصيل أكبر من صفر، أو اختر راتباً شهرياً فقط');
-            return;
-        }
-        if (payType === 'piecework' && pieceRateValidationError) {
-            showToast(pieceRateValidationError);
-            return;
-        }
-        if (!CURRENCY_CODES.includes(salaryCurrency)) {
-            showToast('اختر عملة صحيحة للأجر');
-            return;
-        }
-        if (!warehouseBranchIds.length || !branch) {
-            showToast('حدد مخزناً واحداً على الأقل للموظف؛ ويمكنك اختيار كل المخازن');
-            return;
-        }
+        if (payType !== 'piecework' && (!Number.isFinite(salary) || salary < 0)) { showToast('أدخل راتبًا شهريًا صحيحًا'); return; }
+        if (payType !== 'piecework' && (!Number.isFinite(collectionCommissionRate) || collectionCommissionRate < 0 || collectionCommissionRate > 100)) { showToast('أدخل نسبة صحيحة من 0 إلى 100%'); return; }
+        if (selectedPayType === 'monthly_commission' && collectionCommissionRate <= 0) { showToast('أدخل نسبة تحصيل أكبر من صفر، أو اختر راتبًا شهريًا فقط'); return; }
+        if (payType === 'piecework' && pieceRateValidationError) { showToast(pieceRateValidationError); return; }
+        if (!CURRENCY_CODES.includes(salaryCurrency)) { showToast('اختر عملة صحيحة للأجر'); return; }
+        if (!warehouseBranchIds.length || !branch) { showToast('لا يوجد مخزن متاح لتعريف الموظف'); return; }
 
         isBusy = true;
-        btn.disabled = true;
+        if (btn) btn.disabled = true;
         try {
-            const id = stableStaffIdFromName(fullName);
-            const docRef = db.collection('staff').doc(id);
+            // معرّف جديد يمنع الكتابة فوق ملف قديم مخفي أو سجل تاريخي.
+            const docRef = db.collection('staff').doc();
             const record = {
-                id,
+                id: docRef.id,
                 fullName,
                 nameKey,
                 payType,
@@ -7707,9 +7750,12 @@ function initMenuPermissionCheckboxes() {
                 salaryCurrency,
                 collectionCommissionRate,
                 collectionCommissionPercent: collectionCommissionRate,
+                collectionCommissionPercentage: collectionCommissionRate,
                 commissionRate: collectionCommissionRate,
                 commissionPercent: collectionCommissionRate,
+                commissionPercentage: collectionCommissionRate,
                 collectionRate: collectionCommissionRate,
+                collection_rate: collectionCommissionRate,
                 pieceRates,
                 warehouseBranchId,
                 warehouseBranchIds,
@@ -7719,51 +7765,34 @@ function initMenuPermissionCheckboxes() {
                 createdAt: new Date().toISOString(),
                 createdBy: currentUser?.fullName || 'المدير'
             };
-            // Atomic existence check: simultaneous/double submissions for the same name
-            // converge on the same document ID and only one can create the profile.
-            await db.runTransaction(async transaction => {
-                const existing = await transaction.get(docRef);
-                if (existing.exists) {
-                    const err = new Error('STAFF_ALREADY_EXISTS');
-                    err.code = 'STAFF_ALREADY_EXISTS';
-                    throw err;
-                }
-                transaction.set(docRef, record);
-            });
-            state.staff = (Array.isArray(state.staff) ? state.staff : []).filter(item => String(item.id) !== String(record.id));
+            // عملية إنشاء مباشرة دون transaction.get حتى لا تتطلب صلاحية قراءة المستند قبل إنشائه.
+            await docRef.set(record);
+            state.staff = Array.isArray(state.staff) ? state.staff : [];
             state.staff.push({ ...record });
             pendingStaffProfiles.set(String(record.id), { record: { ...record }, savedAt: Date.now() });
+
             document.getElementById('newEmpFullName').value = '';
             document.getElementById('newEmpSalary').value = '0.00';
             document.getElementById('newEmpSalaryCurrency').value = 'YER';
             if (document.getElementById('newEmpCollectionCommissionRate')) document.getElementById('newEmpCollectionCommissionRate').value = '0';
-            document.getElementById('newEmpWarehouseBranch').selectedIndex = -1;
-            setNewEmployeeBranches(false);
             document.getElementById('newEmpPayType').value = 'monthly';
             document.getElementById('newEmpPieceRatesContainer').innerHTML = '';
             toggleEmployeePayTypeFields();
-            await reloadAllData(false);
             renderEmployeesTable();
             populateNewUserStaffOptions();
             populateVoucherCollectorOptions();
             showToast(payType === 'piecework'
-                ? 'تم تعريف موظف القطعة وحفظ تسعيراته. سجل عمله من زر «إضافة شغل للموظفين»'
+                ? `تم حفظ تعريف ${fullName} وتسعيراته بنجاح.`
                 : payType === 'monthly_commission'
-                    ? 'تم تعريف الموظف براتب شهري ونسبة تحصيل. اختر اسمه في سند قبض العميل لاحتساب العمولة.'
-                    : 'تم تعريف الموظف براتب شهري. لإضافة حساب دخول افتح «الصلاحيات»');
+                    ? `تم حفظ ${fullName} براتب شهري ونسبة تحصيل ${collectionCommissionRate}%.`
+                    : `تم حفظ تعريف الموظف ${fullName} بنجاح.`);
         } catch (e) {
-            console.warn('Create staff error:', e);
-            if (e?.code === 'STAFF_ALREADY_EXISTS' || e?.message === 'STAFF_ALREADY_EXISTS') {
-                showToast('هذا الاسم مسجل مسبقاً. لن تتم إضافة سجل مكرر.');
-                await reloadAllData(false);
-            } else {
-                // Refresh in case the write reached Firestore but the client lost the response.
-                try { await reloadAllData(false); } catch (_) {}
-                showToast('تعذر حفظ تعريف الموظف. تم تحديث البيانات للتأكد من عدم تكراره.');
-            }
+            console.warn('Create staff profile failed:', e);
+            const code = e?.code || e?.message || 'UNKNOWN_ERROR';
+            showToast(`تعذر حفظ الموظف في قاعدة البيانات (${String(code).slice(0, 80)})`);
         } finally {
             isBusy = false;
-            btn.disabled = false;
+            if (btn) btn.disabled = false;
         }
     }
 
@@ -8346,35 +8375,36 @@ function initMenuPermissionCheckboxes() {
         if (countEl) countEl.textContent = String(staff.length);
         if (salaryEl) {
             const totals = { YER: 0, SAR: 0, USD: 0 };
-            staff.filter(item => !isPieceworkStaff(item)).forEach(item => { totals[getStaffSalaryCurrency(item)] += Number(item.salary || 0); });
+            staff.filter(item => !isPieceworkStaff(item) && !item.recoveredFromHistory).forEach(item => { totals[getStaffSalaryCurrency(item)] += Number(item.salary || 0); });
             salaryEl.textContent = CURRENCY_CODES.filter(code => totals[code] !== 0).map(code => `${formatMoney(totals[code])} ${code}`).join(' | ') || '0.00 YER';
         }
 
         tbody.innerHTML = staff.length ? staff.map(item => {
             const branchName = getStaffBranchNames(item);
             const active = item.active !== false;
+            const recovered = item.recoveredFromHistory === true;
             return `
                 <tr>
-                    <td><strong>${item.fullName || '-'}</strong></td>
-                    <td>${isPieceworkStaff(item)
+                    <td><strong>${escapeUiText(item.fullName || '-')}</strong>${recovered ? '<br><small style="color:var(--warning);">اسم مستعاد من السجلات التاريخية</small>' : ''}</td>
+                    <td>${recovered ? '<span class="badge badge-unit">تعريف يحتاج استكمال</span>' : isPieceworkStaff(item)
                         ? '<span class="badge badge-sup">بالقطعة</span>'
                         : isMonthlyCommissionStaff(item)
                             ? '<span class="badge badge-cash">راتب + نسبة تحصيل</span>'
                             : '<span class="badge badge-cash">راتب شهري</span>'}</td>
-                    <td>${isPieceworkStaff(item)
-                        ? (item.pieceRates || []).map(rate => `${rate.name}: ${formatMoney(rate.rate)} ${getStaffSalaryCurrency(item)} / ${rate.unit}`).join('<br>') || '-'
+                    <td>${recovered ? '<span style="color:var(--text-muted);">بيانات الراتب غير متوفرة في السجل التاريخي</span>' : isPieceworkStaff(item)
+                        ? (item.pieceRates || []).map(rate => `${escapeUiText(rate.name)}: ${formatMoney(rate.rate)} ${getStaffSalaryCurrency(item)} / ${escapeUiText(rate.unit)}`).join('<br>') || '-'
                         : `<span class="mono">${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}</span>${isMonthlyCommissionStaff(item) ? `<br><small>نسبة التحصيل: ${getStaffCollectionCommissionRate(item)}%</small>` : ''}`}</td>
-                    <td>${branchName}</td>
-                    <td>${active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
+                    <td>${escapeUiText(branchName)}</td>
+                    <td>${recovered ? '<span class="badge badge-unit">استعادة مطلوبة</span>' : active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
                     <td style="white-space:nowrap;">
-                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeName('${item.id}')" title="تعديل اسم الموظف"><i class="fa-solid fa-user-pen"></i> تعديل الاسم</button>` : ''}
+                        ${recovered ? '<small style="color:var(--text-muted);">لا تعدّل قبل استكمال بيانات الراتب</small>' : `${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeName('${item.id}')" title="تعديل اسم الموظف"><i class="fa-solid fa-user-pen"></i> تعديل الاسم</button>` : ''}
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeWarehouse('${item.id}')" title="تحديد المخازن العامة ومخازن إدخال الكميات ومخازن النقل بشكل مستقل"><i class="fa-solid fa-warehouse"></i> صلاحيات المخازن</button>` : ''}
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeePaySettings('${item.id}')" title="تعديل الراتب أو النسبة أو التسعيرة"><i class="fa-solid fa-pen"></i> ${isPieceworkStaff(item) ? 'التسعيرة' : 'الراتب والنسبة'}</button>` : ''}
-                        ${allowManage ? `<button class="btn btn-danger btn-sm" onclick="deleteStaffDefinition('${item.id}')" title="حذف تعريف الموظف"><i class="fa-solid fa-trash"></i> حذف</button>` : ''}
+                        ${allowManage ? `<button class="btn btn-danger btn-sm" onclick="deleteStaffDefinition('${item.id}')" title="حذف تعريف الموظف"><i class="fa-solid fa-trash"></i> حذف</button>` : ''}`}
                     </td>
                 </tr>
             `;
-        }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون معرفون</td></tr>';
+        }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد ملفات موظفين محمّلة من قاعدة البيانات. لم يتم حذف أي سجل من هذه الصفحة؛ تحقق من اتصال/صلاحية قراءة مجموعة staff.</td></tr>';
         populateEmployeePermissionOptions();
         populateNewUserStaffOptions();
     }
