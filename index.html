@@ -1281,6 +1281,27 @@
         }
         .supplier-stock-toggle .perm-check { color: #166534; }
         .supplier-stock-toggle small { color: #64748b; font-size: 11px; font-weight: 600; }
+
+
+/* قائمة اختيار الأصناف في إدخال الكميات: قائمة منسدلة فعلية وواضحة */
+#quantitiesTab .qty-item-picker{width:100%;min-width:0}
+#quantitiesTab #qtyAdjustmentRows select.batch-qty-item{
+  display:block!important;visibility:visible!important;position:relative!important;
+  width:100%!important;min-width:0!important;min-height:46px!important;height:46px!important;
+  padding:8px 10px!important;border:1.5px solid #b9c9d8!important;border-radius:10px!important;
+  background:#fff!important;color:#172033!important;font-family:'Cairo',sans-serif!important;
+  font-size:14px!important;font-weight:700!important;direction:rtl!important;text-align:right!important;
+  appearance:auto!important;-webkit-appearance:menulist!important;
+}
+#quantitiesTab #qtyAdjustmentRows select.batch-qty-item:focus{outline:2px solid rgba(35,131,75,.22);border-color:#23834b!important}
+@media(max-width:600px){
+  #quantitiesTab #qtyAdjustmentRows .batch-qty-row{
+    grid-template-columns:minmax(0,1fr) 96px 36px!important;gap:7px!important;
+  }
+  #quantitiesTab #qtyAdjustmentRows select.batch-qty-item{min-height:46px!important;height:46px!important;font-size:13px!important;padding:7px 6px!important}
+  #quantitiesTab #qtyAdjustmentRows .batch-qty-value{min-height:46px!important;height:46px!important;font-size:15px!important}
+  #quantitiesTab #qtyAdjustmentRows .qty-row-delete{width:34px!important;height:40px!important;min-height:40px!important}
+}
 </style>
 </head>
 <body>
@@ -4949,9 +4970,10 @@ function initMenuPermissionCheckboxes() {
             const search = row.querySelector('.qty-item-search');
             if (!select) return;
             const previous = select.value;
-            select.innerHTML = '<option value="">اختر الصنف</option>' + items.map(item =>
+            select.innerHTML = (items.length ? '<option value="">اختر الصنف من القائمة</option>' : '<option value="">لا توجد أصناف في هذا المخزن</option>') + items.map(item =>
                 `<option value="${escapeUiText(item.id)}">${escapeUiText(item.name)} (${escapeUiText(item.unit || 'حبة')}) — متاح ${formatQty(item.qty || 0)}</option>`
             ).join('');
+            select.disabled = items.length === 0;
             if (previous && items.some(item => item.id === previous)) {
                 select.value = previous;
                 const chosen = items.find(item => item.id === previous);
@@ -4976,9 +4998,9 @@ function initMenuPermissionCheckboxes() {
         row.innerHTML = `
             <td>
                 <div class="qty-item-picker">
-                    <textarea rows="2" class="form-control qty-item-search" placeholder="اضغط لاختيار الصنف أو اكتب اسمه كاملاً" autocomplete="off" onfocus="renderStockQuantityItemSuggestions(this)" oninput="renderStockQuantityItemSuggestions(this)"></textarea>
-                    <select class="batch-qty-item hidden" tabindex="-1" aria-hidden="true"><option value="">اختر الصنف</option></select>
-                    <div class="qty-item-suggestions hidden"></div>
+                    <select class="form-control batch-qty-item" aria-label="اختر الصنف" title="اختر الصنف">
+                        <option value="">اختر الصنف</option>
+                    </select>
                 </div>
             </td>
             <td><input type="number" step="0.01" min="0.01" inputmode="decimal" class="form-control num-input batch-qty-value" placeholder="أدخل الكمية"></td>
