@@ -1645,7 +1645,7 @@
             </div>
 
             <div class="card-box" id="supplierLedgerDetailCard">
-                <div class="card-title"><span><i class="fa-solid fa-book-open"></i> كشف حساب المورد</span><button type="button" class="btn btn-outline btn-sm" onclick="printSupplierLedger()"><i class="fa-solid fa-print"></i> طباعة الكشف</button></div>
+                <div class="card-title"><span><i class="fa-solid fa-book-open"></i> كشف حساب المورد</span><button type="button" class="btn btn-outline btn-sm" onclick="printSupplierLedger()"><i class="fa-solid fa-file-pdf"></i> طباعة / حفظ PDF</button></div>
                 <div class="form-group"><label>اختر المورد لعرض كشفه</label><select id="supplierLedgerSelect" class="form-control" onchange="renderSupplierLedger()"></select></div>
                 <div id="supplierLedgerSummary" class="summary-strip"></div>
                 <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>الأصناف / البيان</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الرصيد بعد الحركة</th></tr></thead><tbody id="supplierLedgerBody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr></tbody></table></div>
@@ -5990,20 +5990,136 @@ function initMenuPermissionCheckboxes() {
         renderSupplierLedger();
         const selectedId = String(document.getElementById('supplierLedgerSelect')?.value || '');
         const supplier = (state.suppliers || []).find(item => String(item.id) === selectedId);
-        if (!supplier) { showToast('اختر المورد أولاً'); return; }
-        const table = document.getElementById('supplierLedgerBody')?.closest('table')?.outerHTML || '';
-        const summary = document.getElementById('supplierLedgerSummary')?.outerHTML || '';
+        if (!supplier) { showToast('اختر المورد أولاً لعرض كشفه ثم اطبعه'); return; }
+
+        const totals = supplierTotalsFor(supplier.id);
+        const records = (state.purchases || [])
+            .filter(item => String(item.supplierId) === String(supplier.id) && ['supplierPurchase', 'supplierPayment'].includes(item.kind))
+            .slice()
+            .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.id || '').localeCompare(String(b.id || '')));
+
+        const summaryCards = CURRENCY_CODES.map(code => {
+            const t = totals[code] || { purchases: 0, initialPaid: 0, payments: 0, due: 0 };
+            return `<div class="kpi-card">
+                <div class="kpi-head">${code === 'YER' ? '🇾🇪 الريال اليمني' : code === 'SAR' ? '🇸🇦 الريال السعودي' : '🇺🇸 الدولار الأمريكي'}</div>
+                <div class="kpi-line"><span>إجمالي التوريدات</span><b>${formatMoney(t.purchases)} ${code}</b></div>
+                <div class="kpi-line"><span>المدفوع عند الفواتير</span><b>${formatMoney(t.initialPaid)} ${code}</b></div>
+                <div class="kpi-line"><span>الدفعات المسجلة</span><b>${formatMoney(t.payments)} ${code}</b></div>
+                <div class="kpi-due"><span>المتبقي للمورد</span><strong>${formatMoney(t.due)} ${code}</strong></div>
+            </div>`;
+        }).join('');
+
+        const running = { YER: 0, SAR: 0, USD: 0 };
+        const rows = records.length ? records.map((item, index) => {
+            const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+            const purchase = item.kind === 'supplierPurchase';
+            const total = purchase ? Number(item.amount || item.totalAmount || 0) : 0;
+            const paid = purchase ? Number(item.paidAmount || 0) : Number(item.amount || 0);
+            const remaining = purchase ? total - paid : 0;
+            running[code] += remaining - (purchase ? 0 : paid);
+            const detail = purchase
+                ? (Array.isArray(item.items) ? item.items.map(line => {
+                    const name = escapeUiText(line.name || line.itemName || 'صنف');
+                    const qty = formatQty(line.qty ?? line.quantity ?? 0);
+                    const unit = escapeUiText(line.unit || '');
+                    const cost = Number(line.costPrice ?? line.unitCost ?? 0);
+                    return `<div class="item-detail"><b>${name}</b><span>${qty} ${unit}${cost ? ` · تكلفة الوحدة ${formatMoney(cost)} ${code}` : ''}</span></div>`;
+                }).join('') : '') || '<span class="muted">فاتورة توريد</span>'
+                : escapeUiText(item.notes || item.title || 'سداد للمورد');
+            const runningColor = running[code] >= 0 ? 'debt' : 'credit';
+            return `<tr>
+                <td class="date-cell">${escapeUiText(item.date || '-')}</td>
+                <td><span class="move-badge ${purchase ? 'purchase' : 'payment'}">${purchase ? 'فاتورة توريد' : 'سداد للمورد'}</span></td>
+                <td class="detail-cell">${detail}</td>
+                <td class="amount">${purchase ? `${formatMoney(total)} ${code}` : '—'}</td>
+                <td class="amount paid">${paid ? `${formatMoney(paid)} ${code}` : '—'}</td>
+                <td class="amount ${purchase && remaining > 0 ? 'debt' : ''}">${purchase ? `${formatMoney(remaining)} ${code}` : `${formatMoney(paid)} ${code}`}</td>
+                <td class="amount balance ${runningColor}">${formatMoney(running[code])} ${code}</td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="7" class="empty-row">لا توجد فواتير توريد أو دفعات مسجلة لهذا المورد حتى الآن.</td></tr>';
+
         const win = window.open('', '_blank');
-        if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لطباعة الكشف'); return; }
-        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>كشف حساب المورد ${escapeUiText(supplier.name)}</title><style>body{font-family:Tahoma,Arial;padding:24px;color:#111}h2{text-align:center;color:#0f4c81}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ccd5df;padding:8px;text-align:right;font-size:12px}th{background:#edf3f8}.summary-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}.mini-stat{border:1px solid #ddd;border-radius:8px;padding:10px}.mini-stat-label{font-size:11px;color:#555}.mini-stat-val{font-weight:bold;margin:5px 0}</style></head><body><h2>معمل أبو محمد — كشف حساب المورد</h2><p>المورد: ${escapeUiText(supplier.name)} | الهاتف: ${escapeUiText(supplier.phone || '-')} | التاريخ: ${getLocalDateKey()}</p>${summary}${table}<script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script>
+        if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لهذا الموقع حتى تتمكن من حفظ الكشف PDF'); return; }
+        const supplierName = escapeUiText(supplier.name || 'مورد');
+        const supplierPhone = escapeUiText(supplier.phone || '-');
+        const logoUrl = 'https://abu-mohammad-accounting.vercel.app/logo.png';
+        const title = `كشف حساب المورد - ${supplier.name || 'مورد'}`;
+        win.document.open();
+        win.document.write(`<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeUiText(title)}</title>
 <style>
-.supplier-submenu{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
-.supplier-submenu .btn{min-height:52px;font-size:14px}
-.supplier-section{margin-top:12px}
-.supplier-section.hidden{display:none!important}
-.supplier-invoice-row{grid-template-columns:minmax(180px,2fr) 100px 100px 120px 120px 120px 42px!important}
-@media(max-width:700px){.supplier-submenu{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.supplier-submenu .btn{min-height:46px;font-size:12px;padding:8px 5px}.supplier-invoice-row{grid-template-columns:minmax(120px,1.7fr) 70px 75px 90px 90px 95px 34px!important;gap:5px!important}.supplier-invoice-row label{font-size:10px}.supplier-invoice-row .form-control{font-size:12px;padding:7px 5px}.supplier-invoice-row .btn{padding:6px 7px}}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff;color:#172033;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{padding:22px}
+.report{max-width:1120px;margin:0 auto;background:#fff}
+.report-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 0 16px;border-bottom:3px solid #176b43;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand-logo{width:66px;height:66px;object-fit:contain;border:1px solid #dce9df;border-radius:13px;padding:5px;background:#fff}
+.brand h1{margin:0 0 5px;color:#174d32;font-size:23px;font-weight:900}
+.brand p{margin:0;color:#64748b;font-size:12px;font-weight:700}
+.report-tag{padding:8px 13px;border:1px solid #cfe4d5;border-radius:999px;background:#edf7ef;color:#176b43;font-size:11px;font-weight:800;white-space:nowrap}
+.meta{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;margin:0 0 15px}
+.meta-item{padding:11px 13px;border:1px solid #dfe9e2;border-radius:11px;background:#f8fbf9;min-width:0}
+.meta-item span{display:block;color:#64748b;font-size:10px;font-weight:700;margin-bottom:4px}
+.meta-item strong{display:block;color:#1f2937;font-size:13px;font-weight:900;overflow-wrap:anywhere}
+.section-title{display:flex;align-items:center;gap:8px;color:#174d32;font-size:14px;font-weight:900;margin:17px 0 9px}
+.section-title:before{content:"";width:5px;height:18px;border-radius:5px;background:#d6a33c;display:inline-block}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:17px}
+.kpi-card{border:1px solid #dce8df;border-radius:13px;background:#fff;overflow:hidden;break-inside:avoid}
+.kpi-head{background:#edf6ef;color:#174d32;padding:9px 12px;font-weight:900;font-size:12px;border-bottom:1px solid #dce8df}
+.kpi-line{display:flex;justify-content:space-between;gap:8px;padding:7px 11px;border-bottom:1px solid #eef2ef;font-size:10px}
+.kpi-line span{color:#64748b}.kpi-line b{color:#263445;font-size:10px;direction:ltr;white-space:nowrap}
+.kpi-due{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 11px;background:#fff8ed}
+.kpi-due span{color:#965b10;font-size:10px;font-weight:800}.kpi-due strong{color:#9a5410;font-size:13px;font-weight:900;direction:ltr;white-space:nowrap}
+.table-wrap{border:1px solid #dce5df;border-radius:11px;overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px}
+thead{display:table-header-group}
+th{background:#174d32;color:#fff;font-size:10px;font-weight:900;padding:10px 7px;text-align:right;border:1px solid #174d32}
+td{padding:8px 7px;text-align:right;vertical-align:top;border:1px solid #e2e9e4;overflow-wrap:anywhere;line-height:1.55}
+tbody tr:nth-child(even){background:#f8fbf9}
+.date-cell{white-space:nowrap;font-weight:800;color:#425466}
+.move-badge{display:inline-block;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:900;white-space:nowrap}
+.move-badge.purchase{background:#e6f2eb;color:#176b43}.move-badge.payment{background:#e7f1fb;color:#1e5c91}
+.detail-cell{line-height:1.6}.item-detail{padding:2px 0 4px;margin-bottom:3px;border-bottom:1px dashed #e1e8e3}.item-detail:last-child{border:0}.item-detail b{display:block;color:#263445}.item-detail span{display:block;color:#64748b;font-size:9px}
+.amount{direction:ltr;text-align:left;white-space:nowrap;font-weight:800;font-variant-numeric:tabular-nums}.paid{color:#176b43}.debt{color:#a45b0a}.balance{font-size:10px}.balance.debt{color:#a45b0a}.balance.credit{color:#176b43}
+.empty-row{text-align:center;padding:25px;color:#64748b;font-weight:700}
+.footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:15px;padding-top:10px;border-top:1px solid #dfe7e1;color:#64748b;font-size:9px}
+.actions{display:flex;justify-content:center;gap:9px;margin:0 auto 16px;max-width:1120px}
+.action-btn{border:0;border-radius:10px;padding:10px 18px;background:#176b43;color:#fff;font-weight:800;font-family:Tahoma,Arial,sans-serif;cursor:pointer}
+.action-btn.secondary{background:#eef2f6;color:#344256;border:1px solid #d8e0e8}
+@page{size:A4 landscape;margin:9mm}
+@media print{body{padding:0}.actions{display:none!important}.report{max-width:none}.report-header,.meta,.kpis,.table-wrap,.footer{break-inside:avoid}tr{break-inside:avoid}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media(max-width:720px){body{padding:10px}.report-header{align-items:flex-start}.brand-logo{width:52px;height:52px}.brand h1{font-size:18px}.report-tag{font-size:9px}.meta{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr}.table-wrap{overflow-x:auto}table{min-width:850px}}
 </style>
+</head>
+<body>
+<div class="actions"><button class="action-btn" onclick="window.print()">طباعة / حفظ PDF</button><button class="action-btn secondary" onclick="window.close()">إغلاق</button></div>
+<main class="report">
+    <header class="report-header">
+        <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><div><h1>معمل أبو محمد</h1><p>كشف حساب المورد — تقرير مالي تفصيلي</p></div></div>
+        <div class="report-tag">كشف رسمي · جميع العملات مستقلة</div>
+    </header>
+    <section class="meta">
+        <div class="meta-item"><span>اسم المورد</span><strong>${supplierName}</strong></div>
+        <div class="meta-item"><span>رقم الهاتف</span><strong>${supplierPhone}</strong></div>
+        <div class="meta-item"><span>تاريخ استخراج الكشف</span><strong>${getLocalDateKey()}</strong></div>
+    </section>
+    <div class="section-title">ملخص حساب المورد حسب العملة</div>
+    <section class="kpis">${summaryCards}</section>
+    <div class="section-title">كشف الحركات التفصيلي</div>
+    <div class="table-wrap"><table><colgroup><col style="width:10%"><col style="width:12%"><col style="width:28%"><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:14%"></colgroup>
+        <thead><tr><th>التاريخ</th><th>الحركة</th><th>الأصناف / البيان</th><th>إجمالي الفاتورة</th><th>المدفوع</th><th>المتبقي للحركة</th><th>الرصيد بعد الحركة</th></tr></thead>
+        <tbody>${rows}</tbody>
+    </table></div>
+    <footer class="footer"><span>تم استخراج هذا الكشف من نظام معمل أبو محمد المحاسبي.</span><span>جميع المبالغ موضحة بعملتها الأصلية دون تحويل أو خلط.</span></footer>
+</main>
+<script>
+window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.print()}catch(e){}},650)});
+<\/script>
 </body></html>`);
         win.document.close();
     }
