@@ -735,6 +735,21 @@
             transform: translate(-50%, -50%);
         }
 
+        /* شاشة المخزون: أزرار عمودية مريحة للهاتف */
+        .inventory-hub-list{display:flex;flex-direction:column;gap:10px;margin:12px 0 18px}
+        .inventory-hub-action{display:flex;align-items:center;gap:12px;width:100%;min-height:76px;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;background:#fff;text-align:right;font-family:'Cairo',sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(15,76,129,.045);transition:border-color .16s ease,background .16s ease}
+        .inventory-hub-action:hover{border-color:var(--primary);background:#f7fbff}
+        .inventory-action-icon{width:44px;height:44px;flex:0 0 44px;border-radius:12px;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:19px}
+        .inventory-action-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+        .inventory-action-copy strong{font-size:14px;font-weight:900;color:var(--text-main)}
+        .inventory-action-copy small{font-size:11px;color:var(--text-muted);line-height:1.6}
+        .inventory-action-arrow{color:#94a3b8;font-size:13px;flex:0 0 auto}
+        .inventory-report-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 14px}
+        .inventory-report-kpi{padding:10px;border:1px solid var(--border);background:#f8fafc;border-radius:11px;min-width:0}
+        .inventory-report-kpi small{display:block;font-size:10px;color:var(--text-muted);font-weight:700}
+        .inventory-report-kpi strong{display:block;font-size:15px;color:var(--primary);font-weight:900;margin-top:3px}
+        @media(max-width:600px){.inventory-hub-action{min-height:72px;padding:10px}.inventory-action-icon{width:40px;height:40px;flex-basis:40px}.inventory-action-copy strong{font-size:13px}.inventory-action-copy small{font-size:10px}.inventory-report-summary{grid-template-columns:1fr 1fr}.inventory-report-kpi:last-child{grid-column:1/-1}}
+
         .employee-subnav {
             display: flex;
             flex-wrap: wrap;
@@ -1405,29 +1420,13 @@
                     <i class="fa-solid fa-vault"></i>
                     <span>الصندوق</span>
                 </button>
-                <button class="nav-tab" data-menu-key="warehouseTab" onclick="openFullPage('warehouseTab')">
+                <button class="nav-tab accent-tab" data-inventory-hub="true" onclick="openInventoryHub()">
                     <i class="fa-solid fa-boxes-stacked"></i>
-                    <span>المخازن والفروع</span>
-                </button>
-                <button class="nav-tab accent-tab" data-menu-key="itemListTab" onclick="openFullPage('itemListTab')">
-                    <i class="fa-solid fa-list-check"></i>
-                    <span>قائمة الأصناف</span>
+                    <span>شاشة المخزون</span>
                 </button>
                 <button class="nav-tab" data-menu-key="customersTab" onclick="openFullPage('customersTab')">
                     <i class="fa-solid fa-users"></i>
                     <span>العملاء</span>
-                </button>
-                <button class="nav-tab accent-tab" data-menu-key="quantitiesTab" onclick="openFullPage('quantitiesTab')">
-                    <i class="fa-solid fa-cubes-stacked"></i>
-                    <span>إدخال كميات الأصناف</span>
-                </button>
-                <button class="nav-tab accent-tab" data-menu-key="addItemTab" onclick="openFullPage('addItemTab')">
-                    <i class="fa-solid fa-box-open"></i>
-                    <span>إضافة أصناف</span>
-                </button>
-                <button class="nav-tab accent-tab" data-menu-key="transferTab" onclick="openFullPage('transferTab')">
-                    <i class="fa-solid fa-right-left"></i>
-                    <span>نقل مخازن</span>
                 </button>
                 <button class="nav-tab profit-tab" data-menu-key="profitsTab" onclick="openFullPage('profitsTab')">
                     <i class="fa-solid fa-chart-line"></i>
@@ -1939,6 +1938,95 @@
             </div>
         </section>
 
+        <!-- شاشة المخزون: مدخل موحد لأقسام الأصناف والحركات والتقارير -->
+        <section id="inventoryHubTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-boxes-stacked"></i> شاشة المخزون</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+            </div>
+            <div class="employee-permission-note">اختر القسم المطلوب. تظهر لك الأقسام حسب الصلاحيات التي حددها المدير أو المشرف، وكل قسم يحتوي تقريراً للطباعة عند الحاجة.</div>
+            <div class="inventory-hub-list">
+                <button type="button" class="inventory-hub-action" data-inv-permission="itemListTab" onclick="openFullPage('itemListTab')">
+                    <span class="inventory-action-icon"><i class="fa-solid fa-list-check"></i></span>
+                    <span class="inventory-action-copy"><strong>قائمة الأصناف</strong><small>عرض الأصناف ومصادرها والكميات والأسعار</small></span>
+                    <i class="fa-solid fa-chevron-left inventory-action-arrow"></i>
+                </button>
+                <button type="button" class="inventory-hub-action" data-inv-permission="addItemTab" onclick="openFullPage('addItemTab')">
+                    <span class="inventory-action-icon"><i class="fa-solid fa-box-open"></i></span>
+                    <span class="inventory-action-copy"><strong>إضافة أصناف</strong><small>تعريف صنف جديد وتحديد الوحدة والكمية والتكلفة والبيع</small></span>
+                    <i class="fa-solid fa-chevron-left inventory-action-arrow"></i>
+                </button>
+                <button type="button" class="inventory-hub-action" data-inv-permission="inventoryItemMovementTab" onclick="openFullPage('inventoryItemMovementTab')">
+                    <span class="inventory-action-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>
+                    <span class="inventory-action-copy"><strong>حركة الأصناف</strong><small>تقرير دخول وخروج صنف محدد حسب التاريخ والمخزن</small></span>
+                    <i class="fa-solid fa-chevron-left inventory-action-arrow"></i>
+                </button>
+                <button type="button" class="inventory-hub-action" data-inv-permission="inventoryMovementTab" onclick="openFullPage('inventoryMovementTab')">
+                    <span class="inventory-action-icon"><i class="fa-solid fa-chart-line"></i></span>
+                    <span class="inventory-action-copy"><strong>حركة المخزون</strong><small>تقرير شامل لحركات التوريد والبيع والتعديل والنقل</small></span>
+                    <i class="fa-solid fa-chevron-left inventory-action-arrow"></i>
+                </button>
+                <button type="button" class="inventory-hub-action" data-inv-permission="warehouseTab" onclick="openFullPage('warehouseTab')">
+                    <span class="inventory-action-icon"><i class="fa-solid fa-warehouse"></i></span>
+                    <span class="inventory-action-copy"><strong>جرد المخازن والفروع</strong><small>الأرصدة الحالية والكميات وقيمة المخزون</small></span>
+                    <i class="fa-solid fa-chevron-left inventory-action-arrow"></i>
+                </button>
+                <button type="button" class="inventory-hub-action" data-inv-permission="quantitiesTab" onclick="openFullPage('quantitiesTab')">
+                    <span class="inventory-action-icon"><i class="fa-solid fa-cubes-stacked"></i></span>
+                    <span class="inventory-action-copy"><strong>إدخال كميات الأصناف</strong><small>زيادة الكميات أو تحديث الرصيد حسب الصلاحية</small></span>
+                    <i class="fa-solid fa-chevron-left inventory-action-arrow"></i>
+                </button>
+                <button type="button" class="inventory-hub-action" data-inv-permission="transferTab" onclick="openFullPage('transferTab')">
+                    <span class="inventory-action-icon"><i class="fa-solid fa-right-left"></i></span>
+                    <span class="inventory-action-copy"><strong>نقل بين المخازن</strong><small>تحويل كميات الأصناف بين المخازن المسموح بها</small></span>
+                    <i class="fa-solid fa-chevron-left inventory-action-arrow"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- تقرير حركة صنف محدد -->
+        <section id="inventoryItemMovementTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-arrow-right-arrow-left"></i> حركة الأصناف</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="backToInventoryHub()"><i class="fa-solid fa-arrow-right"></i> شاشة المخزون</button>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span>تحديد الصنف والفترة</span></div>
+                <div class="grid-2">
+                    <div class="form-group"><label>الصنف</label><select id="itemMovementSelect" class="form-control" onchange="renderInventoryItemMovementReport()"></select></div>
+                    <div class="form-group"><label>المخزن</label><select id="itemMovementBranch" class="form-control" onchange="populateInventoryMovementItems();renderInventoryItemMovementReport()"></select></div>
+                    <div class="form-group"><label>من تاريخ</label><input id="itemMovementFrom" type="date" class="form-control" onchange="renderInventoryItemMovementReport()"></div>
+                    <div class="form-group"><label>إلى تاريخ</label><input id="itemMovementTo" type="date" class="form-control" onchange="renderInventoryItemMovementReport()"></div>
+                </div>
+                <div id="itemMovementSummary" class="summary-strip"></div>
+                <div class="table-responsive">
+                    <table><thead><tr><th>التاريخ</th><th>الحركة</th><th>المخزن</th><th>داخل</th><th>خارج</th><th>البيان / المرجع</th><th>سجل بواسطة</th></tr></thead><tbody id="itemMovementBody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر الصنف لعرض حركاته</td></tr></tbody></table>
+                </div>
+                <button type="button" class="btn btn-primary btn-full" style="margin-top:12px" onclick="printInventoryMovementReport('item')"><i class="fa-solid fa-print"></i> طباعة / حفظ تقرير حركة الصنف</button>
+            </div>
+        </section>
+
+        <!-- تقرير حركة المخزون بالكامل -->
+        <section id="inventoryMovementTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-chart-line"></i> حركة المخزون</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="backToInventoryHub()"><i class="fa-solid fa-arrow-right"></i> شاشة المخزون</button>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span>تقرير حركة المخزون</span></div>
+                <div class="grid-3">
+                    <div class="form-group"><label>المخزن</label><select id="stockMovementBranch" class="form-control" onchange="renderInventoryMovementReport()"></select></div>
+                    <div class="form-group"><label>من تاريخ</label><input id="stockMovementFrom" type="date" class="form-control" onchange="renderInventoryMovementReport()"></div>
+                    <div class="form-group"><label>إلى تاريخ</label><input id="stockMovementTo" type="date" class="form-control" onchange="renderInventoryMovementReport()"></div>
+                </div>
+                <div id="stockMovementSummary" class="summary-strip"></div>
+                <div class="table-responsive">
+                    <table><thead><tr><th>التاريخ</th><th>الصنف</th><th>الحركة</th><th>المخزن</th><th>داخل</th><th>خارج</th><th>البيان / المرجع</th><th>سجل بواسطة</th></tr></thead><tbody id="stockMovementBody"><tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد حركات معروضة</td></tr></tbody></table>
+                </div>
+                <button type="button" class="btn btn-primary btn-full" style="margin-top:12px" onclick="printInventoryMovementReport('all')"><i class="fa-solid fa-print"></i> طباعة / حفظ تقرير حركة المخزون</button>
+            </div>
+        </section>
+
         <!-- 4. صفحة المخازن والفروع -->
         <section id="warehouseTab" class="tab-content hidden">
             <div class="fullpage-topbar">
@@ -1953,7 +2041,7 @@
                     <button type="button" class="btn btn-accent btn-sm" onclick="openFullPage('transferTab')">
                         <i class="fa-solid fa-right-left"></i> نقل مخازن
                     </button>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="backToInventoryHub()">
                         <i class="fa-solid fa-arrow-right"></i> رجوع
                     </button>
                 </div>
@@ -1983,7 +2071,7 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-warehouse"></i> جرد مخازن الفروع</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-warehouse"></i> جرد مخازن الفروع</span><button type="button" class="btn btn-outline btn-sm" onclick="printWarehouseStockReport()"><i class="fa-solid fa-print"></i> تقرير الجرد</button></div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -2008,10 +2096,10 @@
         <section id="itemListTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-list-check"></i> قائمة الأصناف</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="backToInventoryHub()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
             </div>
             <div class="card-box">
-                <div class="card-title"><span>الأصناف ومصادرها</span><span class="badge badge-unit" id="itemListCount">0 صنف</span></div>
+                <div class="card-title"><span>الأصناف ومصادرها</span><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="badge badge-unit" id="itemListCount">0 صنف</span><button type="button" class="btn btn-outline btn-sm" onclick="printItemListReport()"><i class="fa-solid fa-print"></i> تقرير الأصناف</button></div></div>
                 <div id="itemListSummary" class="item-list-summary"></div>
                 <div class="item-list-filters">
                     <div class="form-group"><label for="itemListSearch">بحث باسم الصنف أو المورد أو المصدر</label><input id="itemListSearch" class="form-control" type="search" placeholder="اكتب اسم الصنف أو المورد..." oninput="renderItemList()"></div>
@@ -2026,7 +2114,7 @@
         <section id="addItemTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title" style="color:var(--accent);"><i class="fa-solid fa-box-open"></i> إضافة أصناف</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                <button type="button" class="btn btn-outline btn-sm" onclick="backToInventoryHub()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
@@ -2081,7 +2169,7 @@
         <section id="quantitiesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title" style="color:var(--accent);"><i class="fa-solid fa-cubes-stacked"></i> إدخال كميات الأصناف</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                <button type="button" class="btn btn-outline btn-sm" onclick="backToInventoryHub()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
@@ -2149,7 +2237,7 @@
         <section id="transferTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title" style="color:var(--accent);"><i class="fa-solid fa-right-left"></i> نقل مخازن</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                <button type="button" class="btn btn-outline btn-sm" onclick="backToInventoryHub()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
@@ -3061,12 +3149,14 @@
         { key: 'expenseEntryTab', label: 'تسجيل مصروف جديد' },
         { key: 'vouchersTab', label: 'الأسناد' },
         { key: 'cashboxTab', label: 'الصندوق' },
-        { key: 'warehouseTab', label: 'المخازن والفروع' },
+        { key: 'warehouseTab', label: 'جرد المخازن والفروع' },
         { key: 'itemListTab', label: 'قائمة الأصناف' },
         { key: 'customersTab', label: 'العملاء' },
         { key: 'quantitiesTab', label: 'إدخال كميات الأصناف' },
         { key: 'addItemTab', label: 'إضافة أصناف' },
         { key: 'transferTab', label: 'نقل مخازن' },
+        { key: 'inventoryItemMovementTab', label: 'تقرير حركة الأصناف' },
+        { key: 'inventoryMovementTab', label: 'تقرير حركة المخزون' },
         { key: 'profitsTab', label: 'الأرباح' },
         { key: 'employeesTab', label: 'الموظفون' },
         { key: 'employeePermissionsTab', label: 'الأمان وحسابات الدخول' },
@@ -4188,11 +4278,44 @@ function initMenuPermissionCheckboxes() {
         strip.classList.toggle('hidden', visibleCount === 0);
     }
 
+    const INVENTORY_MENU_KEYS = ['warehouseTab', 'itemListTab', 'addItemTab', 'quantitiesTab', 'transferTab', 'inventoryItemMovementTab', 'inventoryMovementTab'];
+
+    function canOpenInventoryHub(user = currentUser) {
+        return INVENTORY_MENU_KEYS.some(key => canAccessMenu(key, user));
+    }
+
+    function applyInventoryHubPermissions() {
+        document.querySelectorAll('#inventoryHubTab [data-inv-permission]').forEach(button => {
+            button.classList.toggle('hidden', !canAccessMenu(button.getAttribute('data-inv-permission'), currentUser));
+        });
+    }
+
+    function openInventoryHub() {
+        if (!canOpenInventoryHub(currentUser)) { showToast('ليس لديك صلاحية الدخول إلى شاشة المخزون'); return; }
+        document.getElementById('homeMenuContainer').classList.add('hidden');
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById('inventoryHubTab')?.classList.remove('hidden');
+        applyInventoryHubPermissions();
+        document.body.classList.remove('sales-page-active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function backToInventoryHub() {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById('homeMenuContainer').classList.add('hidden');
+        document.getElementById('inventoryHubTab')?.classList.remove('hidden');
+        applyInventoryHubPermissions();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     function applyHomeMenuPermissions() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-menu-key]').forEach(btn => {
             const key = btn.getAttribute('data-menu-key');
             const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab'].includes(key);
             btn.classList.toggle('hidden', (adminOnly && !canManageUsers(currentUser)) || !canAccessMenu(key, currentUser));
+        });
+        document.querySelectorAll('#homeMenuContainer .nav-tab[data-inventory-hub]').forEach(btn => {
+            btn.classList.toggle('hidden', !canOpenInventoryHub(currentUser));
         });
         applyDashboardWidgetPermissions();
     }
@@ -4245,6 +4368,15 @@ function initMenuPermissionCheckboxes() {
             populateItemListBranchFilter();
             renderItemList();
             refreshItemListFromFirestore();
+        }
+        if (tabId === 'inventoryItemMovementTab') {
+            populateInventoryMovementFilters();
+            populateInventoryMovementItems();
+            renderInventoryItemMovementReport();
+        }
+        if (tabId === 'inventoryMovementTab') {
+            populateInventoryMovementFilters();
+            renderInventoryMovementReport();
         }
         if (tabId === 'quantitiesTab') {
             applyQuantityUpdateModePermission();
@@ -5405,11 +5537,16 @@ function initMenuPermissionCheckboxes() {
         isBusy = true;
         btn.disabled = true;
         try {
+            const transferId = `TRF_${dedupeHash(transferSignature)}`;
+            const transferDate = getLocalDateKey();
+            const transferActor = getAccountDisplayName(currentUser);
+            const sourceMovementLog = { id: `${transferId}_OUT`, transferId, itemId: sourceItem.id, itemName: sourceItem.name, unit, branchId: fromBranchId, branchName: sourceItem.branchName || inventoryBranchName(fromBranchId), qty: -qtyToMove, type: 'نقل إلى مخزن آخر', reference: `إلى ${toBranchName}`, date: transferDate, createdAt: new Date().toISOString(), actor: transferActor };
             const movedOut = await updateDocumentOnce('warehouse', sourceItem.id, transferSignature,
                 current => {
                     const available = Number(current.qty || 0);
                     if (qtyToMove > available) throw new Error('TRANSFER_QTY_CHANGED');
-                    return { qty: available - qtyToMove };
+                    const history = Array.isArray(current.warehouseMovementHistory) ? current.warehouseMovementHistory : [];
+                    return { qty: available - qtyToMove, warehouseMovementHistory: [...history, sourceMovementLog].slice(-300) };
                 });
             if (!movedOut) { showToast('تم منع تكرار عملية النقل نفسها خلال وقت قصير.'); return; }
             const targetItem = state.warehouse.find(w =>
@@ -5418,19 +5555,29 @@ function initMenuPermissionCheckboxes() {
                 (w.unit || 'حبة') === unit
             );
             if (targetItem) {
+                const targetMovementLog = { id: `${transferId}_IN`, transferId, itemId: targetItem.id, itemName: sourceItem.name, unit, branchId: toBranchId, branchName: toBranchName, qty: qtyToMove, type: 'نقل من مخزن آخر', reference: `من ${sourceItem.branchName || inventoryBranchName(fromBranchId)}`, date: transferDate, createdAt: new Date().toISOString(), actor: transferActor };
                 await updateDocumentOnce('warehouse', targetItem.id, { ...transferSignature, action: 'warehouse-transfer-in' }, current => {
                     const oldQty = Number(current.qty || 0);
                     const oldCost = Number(current.costPrice ?? current.price ?? costPrice);
                     const nextQty = oldQty + qtyToMove;
                     const nextCost = nextQty > 0 ? ((oldQty * oldCost) + (qtyToMove * costPrice)) / nextQty : costPrice;
-                    return { qty: nextQty, costPrice: Number(nextCost.toFixed(4)) };
+                    const history = Array.isArray(current.warehouseMovementHistory) ? current.warehouseMovementHistory : [];
+                    return { qty: nextQty, costPrice: Number(nextCost.toFixed(4)), warehouseMovementHistory: [...history, targetMovementLog].slice(-300) };
                 });
+                targetItem.qty = Number(targetItem.qty || 0) + qtyToMove;
+                targetItem.warehouseMovementHistory = [...(targetItem.warehouseMovementHistory || []), targetMovementLog].slice(-300);
             } else {
-                await createRecordOnce('warehouse', 'wh', { ...transferSignature, action: 'warehouse-transfer-new-target' }, {
-                    branchId: toBranchId, branchName: toBranchName, name: sourceItem.name, unit, qty: qtyToMove, costPrice, price
+                const targetMovementLog = { id: `${transferId}_IN`, transferId, itemName: sourceItem.name, unit, branchId: toBranchId, branchName: toBranchName, qty: qtyToMove, type: 'نقل من مخزن آخر', reference: `من ${sourceItem.branchName || inventoryBranchName(fromBranchId)}`, date: transferDate, createdAt: new Date().toISOString(), actor: transferActor };
+                const createdTarget = await createRecordOnce('warehouse', 'wh', { ...transferSignature, action: 'warehouse-transfer-new-target' }, {
+                    branchId: toBranchId, branchName: toBranchName, name: sourceItem.name, unit, qty: qtyToMove, costPrice, price, warehouseMovementHistory: [targetMovementLog]
                 }, `wh_transfer_${dedupeHash(transferSignature)}`);
+                if (createdTarget.created) state.warehouse.push({ id: createdTarget.id, branchId: toBranchId, branchName: toBranchName, name: sourceItem.name, unit, qty: qtyToMove, costPrice, price, warehouseMovementHistory: [targetMovementLog] });
             }
+            sourceItem.qty = Number(sourceItem.qty || 0) - qtyToMove;
+            sourceItem.warehouseMovementHistory = [...(sourceItem.warehouseMovementHistory || []), sourceMovementLog].slice(-300);
             document.getElementById('transferQty').value = '1';
+            renderWarehouseTable(); renderStats();
+            renderInventoryMovementReport(); renderInventoryItemMovementReport();
             showToast(`تم نقل ${formatQty(qtyToMove)} ${unit} إلى ${toBranchName}`);
         } catch (e) {
             console.warn('Transfer stock error:', e);
@@ -7262,12 +7409,26 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             const itemPatch = { qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, unit, branchId, branchName, name, sourceType: existing?.sourceType || 'manual', sourceName: existing?.sourceName || getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() };
             if (existing) {
                 if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل على المخزون'); return; }
+                let savedHistory = Array.isArray(existing.quantityAdjustmentHistory) ? existing.quantityAdjustmentHistory.slice() : [];
                 const updated = await updateDocumentOnce('warehouse', existing.id, {
                     action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
-                }, () => itemPatch);
+                }, current => {
+                    const previousQty = Number(current.qty || 0);
+                    const delta = qty - previousQty;
+                    const history = Array.isArray(current.quantityAdjustmentHistory) ? current.quantityAdjustmentHistory.slice() : [];
+                    if (Math.abs(delta) > 0.000001) history.push({
+                        id: `manual_${Date.now()}_${existing.id}`, itemId: existing.id, itemName: name, unit, branchId, branchName,
+                        qty: delta, previousQty, quantityAfter: qty, mode: 'manual', date: getLocalDateKey(), createdAt: new Date().toISOString(),
+                        actorId: String(currentUser?.id || ''), actorName: getAccountDisplayName(currentUser)
+                    });
+                    savedHistory = history.slice(-200);
+                    return { ...itemPatch, quantityAdjustmentHistory: savedHistory };
+                });
                 if (!updated) { showToast('تم منع تكرار حفظ الصنف نفسه خلال وقت قصير.'); return; }
-                Object.assign(existing, itemPatch);
+                Object.assign(existing, itemPatch, { quantityAdjustmentHistory: savedHistory });
             } else {
+                const initialHistory = qty > 0 ? [{ id: `manual_add_${Date.now()}`, itemName: name, unit, branchId, branchName, qty, previousQty: 0, quantityAfter: qty, mode: 'manual', date: getLocalDateKey(), createdAt: new Date().toISOString(), actorId: String(currentUser?.id || ''), actorName: getAccountDisplayName(currentUser) }] : [];
+                itemPatch.quantityAdjustmentHistory = initialHistory;
                 const result = await createRecordOnce('warehouse', 'wh', {
                     action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
                 }, itemPatch, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
@@ -7537,6 +7698,201 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 </div>
             </article>`;
         }).join('');
+    }
+
+    function inventoryBranchName(branchId) {
+        return state.branches.find(branch => String(branch.id) === String(branchId))?.name || 'الفرع الرئيسي';
+    }
+
+    function populateInventoryMovementFilters() {
+        const branches = getAccessibleBranchesForOperation('warehouseTab');
+        const fill = (id, includeAll = true) => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            const previous = select.value || 'ALL';
+            select.innerHTML = (includeAll ? '<option value="ALL">كل المخازن المسموحة</option>' : '<option value="">اختر المخزن</option>') +
+                branches.map(branch => `<option value="${escapeUiText(branch.id)}">${escapeUiText(branch.name)}</option>`).join('');
+            select.value = branches.some(branch => String(branch.id) === String(previous)) ? previous : (includeAll ? 'ALL' : (branches[0]?.id || ''));
+        };
+        fill('itemMovementBranch', true);
+        fill('stockMovementBranch', true);
+    }
+
+    function populateInventoryMovementItems() {
+        const select = document.getElementById('itemMovementSelect');
+        if (!select) return;
+        const previous = select.value || '';
+        const branchId = document.getElementById('itemMovementBranch')?.value || 'ALL';
+        const items = getScopedWarehouseItems().filter(item => branchId === 'ALL' || String(item.branchId || 'main_branch') === String(branchId))
+            .slice().sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
+        select.innerHTML = '<option value="">اختر الصنف</option>' + items.map(item =>
+            `<option value="${escapeUiText(item.id)}">${escapeUiText(item.name)} — ${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(item.branchName || inventoryBranchName(item.branchId))}</option>`
+        ).join('');
+        if (items.some(item => String(item.id) === String(previous))) select.value = previous;
+    }
+
+    function findInventoryItemRecord(itemId, itemName, unit, branchId) {
+        return (state.warehouse || []).find(item => {
+            const sameBranch = String(item.branchId || 'main_branch') === String(branchId || 'main_branch');
+            if (!sameBranch) return false;
+            if (itemId && String(item.id) === String(itemId)) return true;
+            return String(item.name || '').trim().toLocaleLowerCase('ar') === String(itemName || '').trim().toLocaleLowerCase('ar') &&
+                String(item.unit || 'حبة') === String(unit || 'حبة');
+        });
+    }
+
+    function getInventoryMovementRows() {
+        const rows = [];
+        const add = movement => {
+            const branchId = String(movement.branchId || 'main_branch');
+            if (!isBranchAllowedForOperation(branchId, 'warehouseTab')) return;
+            const qty = Number(movement.qty || 0);
+            if (!Number.isFinite(qty) || Math.abs(qty) < 0.000001) return;
+            rows.push({
+                date: String(movement.date || movement.createdAt || '').slice(0,10),
+                itemId: String(movement.itemId || ''), itemName: movement.itemName || 'صنف',
+                unit: movement.unit || 'حبة', branchId, branchName: movement.branchName || inventoryBranchName(branchId),
+                type: movement.type || (qty > 0 ? 'إدخال مخزون' : 'إخراج مخزون'), qty,
+                reference: movement.reference || movement.note || '-', actor: movement.actor || ''
+            });
+        };
+
+        // فواتير المورد التي دخلت بضاعتها فعلاً إلى المخزون.
+        (state.purchases || []).filter(purchase => purchase.kind === 'supplierPurchase' && purchase.addToWarehouse !== false).forEach(purchase => {
+            (Array.isArray(purchase.items) ? purchase.items : []).forEach(line => {
+                const item = findInventoryItemRecord(line.stockItemId || line.itemId, line.name || line.itemName, line.unit, purchase.branchId);
+                add({ date: purchase.date, itemId: item?.id || line.stockItemId || line.itemId || '', itemName: line.name || line.itemName, unit: line.unit,
+                    branchId: purchase.branchId, branchName: purchase.branchName, qty: Math.abs(Number(line.qty ?? line.quantity ?? 0)),
+                    type: 'توريد من مورد', reference: purchase.title || `فاتورة ${purchase.id || ''}`, actor: purchase.employee || purchase.createdByUserId || '' });
+            });
+        });
+
+        // فواتير المبيعات تمثل خروجاً من المخزون.
+        (state.invoices || []).forEach(invoice => {
+            (Array.isArray(invoice.items) ? invoice.items : []).forEach(line => {
+                const item = findInventoryItemRecord(line.stockItemId || line.itemId, line.name, line.unit, invoice.branchId);
+                add({ date: invoice.date, itemId: item?.id || line.stockItemId || line.itemId || '', itemName: line.name, unit: line.unit,
+                    branchId: invoice.branchId, branchName: invoice.branchName, qty: -Math.abs(Number(line.qty || 0)),
+                    type: 'مبيعات', reference: `فاتورة ${invoice.refNumber || invoice.id || ''} — ${invoice.customerName || ''}`, actor: invoice.employee || '' });
+            });
+        });
+
+        // إدخال/تسوية الكميات المسجلة على بطاقة الصنف.
+        (state.warehouse || []).forEach(item => {
+            const branchId = item.branchId || 'main_branch';
+            (Array.isArray(item.quantityAdjustmentHistory) ? item.quantityAdjustmentHistory : []).forEach(log => {
+                const difference = log.mode === 'set'
+                    ? Number(log.quantityAfter || 0) - Number(log.previousQty || 0)
+                    : Number(log.qty || 0);
+                add({ date: log.date || log.createdAt, itemId: log.itemId || item.id, itemName: log.itemName || item.name, unit: log.unit || item.unit,
+                    branchId: log.branchId || branchId, branchName: log.branchName || item.branchName, qty: difference,
+                    type: log.mode === 'set' ? 'تسوية رصيد' : 'إدخال كميات', reference: log.mode === 'set' ? `من ${formatQty(log.previousQty || 0)} إلى ${formatQty(log.quantityAfter || 0)}` : 'إضافة كمية للمخزون', actor: log.actorName || '' });
+            });
+            (Array.isArray(item.warehouseMovementHistory) ? item.warehouseMovementHistory : []).forEach(log => {
+                add({ date: log.date || log.createdAt, itemId: log.itemId || item.id, itemName: log.itemName || item.name, unit: log.unit || item.unit,
+                    branchId: log.branchId || branchId, branchName: log.branchName || item.branchName, qty: Number(log.qty || 0),
+                    type: log.type || 'حركة مخزون', reference: log.reference || log.note || '-', actor: log.actor || log.actorName || '' });
+            });
+        });
+
+        return rows.sort((a,b) => String(b.date).localeCompare(String(a.date)) || String(a.itemName).localeCompare(String(b.itemName), 'ar'));
+    }
+
+    function filterInventoryMovementRows(rows, from, to) {
+        return rows.filter(row => (!from || row.date >= from) && (!to || row.date <= to));
+    }
+
+    function renderInventoryItemMovementReport() {
+        const body = document.getElementById('itemMovementBody');
+        const summary = document.getElementById('itemMovementSummary');
+        const itemId = document.getElementById('itemMovementSelect')?.value || '';
+        if (!body) return;
+        if (!itemId) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر الصنف لعرض حركاته</td></tr>'; if (summary) summary.innerHTML = ''; return; }
+        const item = (state.warehouse || []).find(entry => String(entry.id) === String(itemId));
+        if (!item) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">الصنف غير موجود في المخازن المسموحة</td></tr>'; return; }
+        const from = document.getElementById('itemMovementFrom')?.value || '';
+        const to = document.getElementById('itemMovementTo')?.value || '';
+        const rows = filterInventoryMovementRows(getInventoryMovementRows().filter(row => String(row.itemId) === String(itemId)), from, to);
+        const incoming = rows.filter(row => row.qty > 0).reduce((sum,row) => sum + row.qty, 0);
+        const outgoing = rows.filter(row => row.qty < 0).reduce((sum,row) => sum + Math.abs(row.qty), 0);
+        if (summary) summary.innerHTML = `
+            <div class="inventory-report-kpi"><small>عدد الحركات</small><strong>${rows.length}</strong></div>
+            <div class="inventory-report-kpi"><small>إجمالي الداخل</small><strong>${formatQty(incoming)} ${escapeUiText(item.unit || 'حبة')}</strong></div>
+            <div class="inventory-report-kpi"><small>إجمالي الخارج</small><strong>${formatQty(outgoing)} ${escapeUiText(item.unit || 'حبة')}</strong></div>`;
+        body.innerHTML = rows.length ? rows.map(row => `<tr>
+            <td>${escapeUiText(row.date || '-')}</td><td><span class="badge ${row.qty > 0 ? 'badge-cash' : 'badge-expense'}">${escapeUiText(row.type)}</span></td>
+            <td>${escapeUiText(row.branchName)}</td><td class="mono" style="color:var(--success)">${row.qty > 0 ? formatQty(row.qty) + ' ' + escapeUiText(row.unit) : '—'}</td>
+            <td class="mono" style="color:var(--danger)">${row.qty < 0 ? formatQty(Math.abs(row.qty)) + ' ' + escapeUiText(row.unit) : '—'}</td>
+            <td>${escapeUiText(row.reference)}</td><td>${escapeUiText(row.actor || '-')}</td></tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">لا توجد حركات مسجلة لهذا الصنف خلال الفترة</td></tr>';
+    }
+
+    function renderInventoryMovementReport() {
+        const body = document.getElementById('stockMovementBody');
+        const summary = document.getElementById('stockMovementSummary');
+        if (!body) return;
+        const branchId = document.getElementById('stockMovementBranch')?.value || 'ALL';
+        const from = document.getElementById('stockMovementFrom')?.value || '';
+        const to = document.getElementById('stockMovementTo')?.value || '';
+        let rows = getInventoryMovementRows().filter(row => branchId === 'ALL' || String(row.branchId) === String(branchId));
+        rows = filterInventoryMovementRows(rows, from, to);
+        const incoming = rows.filter(row => row.qty > 0).length;
+        const outgoing = rows.filter(row => row.qty < 0).length;
+        const itemCount = new Set(rows.map(row => row.itemId || `${row.itemName}|${row.unit}`)).size;
+        if (summary) summary.innerHTML = `
+            <div class="inventory-report-kpi"><small>عدد الحركات</small><strong>${rows.length}</strong></div>
+            <div class="inventory-report-kpi"><small>حركات إدخال</small><strong>${incoming}</strong></div>
+            <div class="inventory-report-kpi"><small>حركات إخراج</small><strong>${outgoing}</strong></div>
+            <div class="inventory-report-kpi"><small>عدد الأصناف المتحركة</small><strong>${itemCount}</strong></div>`;
+        body.innerHTML = rows.length ? rows.map(row => `<tr>
+            <td>${escapeUiText(row.date || '-')}</td><td><strong>${escapeUiText(row.itemName)}</strong><small style="display:block;color:var(--text-muted)">${escapeUiText(row.unit)}</small></td>
+            <td><span class="badge ${row.qty > 0 ? 'badge-cash' : 'badge-expense'}">${escapeUiText(row.type)}</span></td><td>${escapeUiText(row.branchName)}</td>
+            <td class="mono" style="color:var(--success)">${row.qty > 0 ? formatQty(row.qty) : '—'}</td><td class="mono" style="color:var(--danger)">${row.qty < 0 ? formatQty(Math.abs(row.qty)) : '—'}</td>
+            <td>${escapeUiText(row.reference)}</td><td>${escapeUiText(row.actor || '-')}</td></tr>`).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد حركات مخزون مسجلة ضمن الاختيارات</td></tr>';
+    }
+
+    function printInventoryMovementReport(mode) {
+        const isItem = mode === 'item';
+        const rows = getInventoryMovementRows();
+        const itemId = document.getElementById('itemMovementSelect')?.value || '';
+        const item = (state.warehouse || []).find(entry => String(entry.id) === String(itemId));
+        const branchId = document.getElementById(isItem ? 'itemMovementBranch' : 'stockMovementBranch')?.value || 'ALL';
+        const from = document.getElementById(isItem ? 'itemMovementFrom' : 'stockMovementFrom')?.value || '';
+        const to = document.getElementById(isItem ? 'itemMovementTo' : 'stockMovementTo')?.value || '';
+        let filtered = rows;
+        if (isItem) filtered = filtered.filter(row => String(row.itemId) === String(itemId));
+        else if (branchId !== 'ALL') filtered = filtered.filter(row => String(row.branchId) === String(branchId));
+        filtered = filterInventoryMovementRows(filtered, from, to);
+        const title = isItem ? `تقرير حركة الصنف — ${item?.name || ''}` : 'تقرير حركة المخزون';
+        const tableRows = filtered.map(row => `<tr><td>${escapeUiText(row.date || '-')}</td><td>${escapeUiText(row.itemName)}</td><td>${escapeUiText(row.type)}</td><td>${escapeUiText(row.branchName)}</td><td>${row.qty > 0 ? formatQty(row.qty) + ' ' + escapeUiText(row.unit) : '—'}</td><td>${row.qty < 0 ? formatQty(Math.abs(row.qty)) + ' ' + escapeUiText(row.unit) : '—'}</td><td>${escapeUiText(row.reference)}</td><td>${escapeUiText(row.actor || '-')}</td></tr>`).join('');
+        const win = window.open('', '_blank');
+        if (!win) { showToast('اسمح بالنوافذ المنبثقة لطباعة التقرير'); return; }
+        win.document.open();
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeUiText(title)}</title><style>*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;margin:18px;color:#172033}header{display:flex;align-items:center;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px}header img{width:56px;height:56px;object-fit:contain}h1{font-size:20px;color:#174d32;margin:0}p{font-size:11px;color:#64748b;margin:5px 0}table{width:100%;border-collapse:collapse;margin-top:14px;font-size:10px}th{background:#eaf4ed;color:#174d32}th,td{border:1px solid #dbe5de;padding:7px;text-align:right}tr{break-inside:avoid}.print-note{margin-top:10px;font-size:10px;color:#64748b}@page{size:A4 landscape;margin:10mm}@media print{body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><header><img src="https://abu-mohammad-accounting.vercel.app/logo.png"><div><h1>معمل أبو محمد — ${escapeUiText(title)}</h1><p>الفترة: ${escapeUiText(from || 'بداية السجل')} إلى ${escapeUiText(to || 'اليوم')} · المخزن: ${escapeUiText(branchId === 'ALL' ? 'كل المخازن' : inventoryBranchName(branchId))}</p></div></header><table><thead><tr><th>التاريخ</th><th>الصنف</th><th>الحركة</th><th>المخزن</th><th>داخل</th><th>خارج</th><th>البيان / المرجع</th><th>سجل بواسطة</th></tr></thead><tbody>${tableRows || '<tr><td colspan="8">لا توجد حركات مسجلة</td></tr>'}</tbody></table><div class="print-note">عدد الحركات: ${filtered.length}</div><script>window.addEventListener('load',function(){setTimeout(function(){window.print()},350)});<\/script></body></html>`);
+        win.document.close();
+    }
+
+    function printItemListReport() {
+        const items = getScopedWarehouseItems().slice().sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
+        const rows = items.map(item => `<tr><td>${escapeUiText(item.branchName || inventoryBranchName(item.branchId))}</td><td>${escapeUiText(item.name || '-')}</td><td>${escapeUiText(item.unit || 'حبة')}</td><td>${formatQty(item.qty || 0)}</td><td>${formatMoney(item.costPrice ?? item.price ?? 0)} ${escapeUiText(item.costCurrency || 'YER')}</td><td>${formatMoney(item.price || 0)} ${escapeUiText(item.priceCurrency || 'YER')}</td><td>${formatMoney(Number(item.qty || 0) * Number(item.costPrice ?? item.price ?? 0))}</td></tr>`).join('');
+        const win = window.open('', '_blank');
+        if (!win) { showToast('اسمح بالنوافذ المنبثقة لطباعة تقرير الأصناف'); return; }
+        win.document.open();
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تقرير الأصناف</title><style>*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;margin:18px;color:#172033}header{display:flex;align-items:center;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px}header img{width:54px;height:54px;object-fit:contain}h1{font-size:20px;color:#174d32;margin:0}table{width:100%;border-collapse:collapse;margin-top:14px;font-size:11px}th{background:#eaf4ed;color:#174d32}th,td{border:1px solid #dbe5de;padding:8px;text-align:right}@page{size:A4 landscape;margin:10mm}@media print{body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><header><img src="https://abu-mohammad-accounting.vercel.app/logo.png"><h1>معمل أبو محمد — تقرير قائمة الأصناف</h1></header><table><thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>التكلفة</th><th>البيع</th><th>قيمة المخزون بالتكلفة</th></tr></thead><tbody>${rows || '<tr><td colspan="7">لا توجد أصناف</td></tr>'}</tbody></table><script>window.addEventListener('load',function(){setTimeout(function(){window.print()},350)});<\/script></body></html>`);
+        win.document.close();
+    }
+
+    function printWarehouseStockReport() {
+        const selectedBranch = document.getElementById('activeBranchFilter')?.value || 'ALL';
+        const items = getScopedWarehouseItems().filter(item => selectedBranch === 'ALL' || String(item.branchId || 'main_branch') === String(selectedBranch));
+        const rows = items.slice().sort((a,b) => String(a.branchName || '').localeCompare(String(b.branchName || ''), 'ar') || String(a.name || '').localeCompare(String(b.name || ''), 'ar')).map(item => {
+            const currency = item.costCurrency || item.priceCurrency || 'YER';
+            return `<tr><td>${escapeUiText(item.branchName || inventoryBranchName(item.branchId))}</td><td>${escapeUiText(item.name || '-')}</td><td>${escapeUiText(item.unit || 'حبة')}</td><td>${formatQty(item.qty || 0)}</td><td>${formatMoney(item.costPrice ?? item.price ?? 0)} ${escapeUiText(currency)}</td><td>${formatMoney(item.price || 0)} ${escapeUiText(item.priceCurrency || currency)}</td><td>${formatMoney(Number(item.qty || 0) * Number(item.costPrice ?? item.price ?? 0))} ${escapeUiText(currency)}</td></tr>`;
+        }).join('');
+        const win = window.open('', '_blank');
+        if (!win) { showToast('اسمح بالنوافذ المنبثقة لطباعة تقرير الجرد'); return; }
+        win.document.open();
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تقرير جرد المخزون</title><style>*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;margin:18px;color:#172033}header{display:flex;align-items:center;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px}header img{width:54px;height:54px;object-fit:contain}h1{font-size:20px;color:#174d32;margin:0}p{font-size:11px;color:#64748b}table{width:100%;border-collapse:collapse;margin-top:14px;font-size:10px}th{background:#eaf4ed;color:#174d32}th,td{border:1px solid #dbe5de;padding:7px;text-align:right}@page{size:A4 landscape;margin:10mm}@media print{body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><header><img src="https://abu-mohammad-accounting.vercel.app/logo.png"><div><h1>معمل أبو محمد — تقرير جرد المخزون</h1><p>المخزن: ${escapeUiText(selectedBranch === 'ALL' ? 'كل المخازن المسموحة' : inventoryBranchName(selectedBranch))} · عدد الأصناف: ${items.length}</p></div></header><table><thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>سعر التكلفة</th><th>سعر البيع</th><th>قيمة المخزون بالتكلفة</th></tr></thead><tbody>${rows || '<tr><td colspan="7">لا توجد أصناف</td></tr>'}</tbody></table><script>window.addEventListener('load',function(){setTimeout(function(){window.print()},350)});<\/script></body></html>`);
+        win.document.close();
     }
 
     function renderWarehouseTable() {
