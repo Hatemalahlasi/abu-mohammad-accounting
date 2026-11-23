@@ -1305,6 +1305,7 @@
   #quantitiesTab #qtyAdjustmentRows .qty-row-delete{width:34px!important;height:40px!important;min-height:40px!important}
 }
 </style>
+<!-- Supplier payment ledger repair 2026-11-23-D -->
 </head>
 <body>
 
@@ -1648,7 +1649,7 @@
                 <div class="card-title"><span><i class="fa-solid fa-book-open"></i> كشف حساب المورد</span><button type="button" class="btn btn-outline btn-sm" onclick="printSupplierLedger()"><i class="fa-solid fa-file-pdf"></i> طباعة / حفظ PDF</button></div>
                 <div class="form-group"><label>اختر المورد لعرض كشفه</label><select id="supplierLedgerSelect" class="form-control" onchange="renderSupplierLedger()"></select></div>
                 <div id="supplierLedgerSummary" class="summary-strip"></div>
-                <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>الأصناف / البيان</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الرصيد بعد الحركة</th></tr></thead><tbody id="supplierLedgerBody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr></tbody></table></div>
+                <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>الأصناف / البيان</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الرصيد بعد الحركة</th><th>إجراءات</th></tr></thead><tbody id="supplierLedgerBody"><tr><td colspan="8" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr></tbody></table></div>
             </div>
             <div class="employee-permission-note">هذه الصفحة مخصصة للموردين وفواتير التوريد وتسديد الموردين وكشوف حساباتهم. لتسجيل المصروفات اليومية استخدم زر «تسجيل مصروف جديد» في القائمة الرئيسية.</div>
             </div>
@@ -1705,10 +1706,18 @@
                     <div class="form-group"><label>المورد</label><select id="supplierPaymentSupplier" class="form-control"></select></div>
                     <div class="form-group"><label>العملة</label><select id="supplierPaymentCurrency" class="form-control" onchange="filterSupplierPaymentCashboxes(); renderSupplierBalances();"><option value="YER">ريال يمني (YER)</option><option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option></select></div>
                     <div class="form-group"><label>المبلغ المدفوع</label><input id="supplierPaymentAmount" type="number" min="0.01" step="0.01" class="form-control num-input" placeholder="0.00"></div>
+                    <div class="form-group"><label>تاريخ السداد</label><input id="supplierPaymentDate" type="date" class="form-control"></div>
                     <div class="form-group"><label>الصندوق</label><select id="supplierPaymentCashbox" class="form-control"></select></div>
                 </div>
+                <div class="supplier-stock-toggle" style="margin:8px 0 12px;">
+                    <label class="perm-check" style="margin:0;">
+                        <input type="checkbox" id="supplierPaymentPreviouslyPaid" onchange="filterSupplierPaymentCashboxes()">
+                        <span>دفعة مسددة سابقاً — سجّلها في كشف المورد دون خصمها مرة ثانية من الصندوق</span>
+                    </label>
+                    <small>فعّل هذا الخيار فقط إذا كان مبلغ السداد قد خرج من الصندوق أو سُجّل كمصروف من قبل. ستظهر الحركة في كشف المورد دون تكرار الخصم من الصندوق.</small>
+                </div>
                 <div class="form-group"><label>بيان السداد (اختياري)</label><input id="supplierPaymentNote" class="form-control" placeholder="دفعة من حساب المورد"></div>
-                <button id="saveSupplierPaymentBtn" type="button" class="btn btn-success btn-full" onclick="recordSupplierPayment()"><i class="fa-solid fa-check"></i> تسجيل السداد وخصمه من رصيد المورد</button>
+                <button id="saveSupplierPaymentBtn" type="button" class="btn btn-success btn-full" onclick="recordSupplierPayment()"><i class="fa-solid fa-check"></i> تسجيل السداد وإضافته إلى كشف المورد</button>
             </div>
 
         </section>
@@ -4305,8 +4314,8 @@ function initMenuPermissionCheckboxes() {
         if (!hasFullAccess()) { showToast('حذف المورد متاح للمشرف العام والمدير فقط'); return; }
         const supplier = (state.suppliers || []).find(item => item.id === supplierId);
         if (!supplier) return;
-        const related = (state.purchases || []).filter(item => item.supplierId === supplierId);
-        if (related.length) { showToast('لا يمكن حذف المورد لأن له فواتير أو دفعات مسجلة. عدّل الاسم بدلاً من حذفه.'); return; }
+        const related = (state.purchases || []).filter(item => isSupplierMovementFor(item, supplierId));
+        if (related.length) { showToast('هذا المورد مرتبط بفواتير أو دفعات؛ لا يمكن حذف حسابه حتى لا تضيع الحركات. يمكنك تعديل اسمه، أو حذف دفعات السداد من كشف الحساب بصلاحية المدير.'); return; }
         if (!confirm(`حذف حساب المورد «${supplier.name}»؟`)) return;
         try {
             await db.collection('suppliers').doc(supplierId).delete();
@@ -4524,9 +4533,9 @@ function initMenuPermissionCheckboxes() {
             .reduce((s, v) => s + Number(v.amount || 0), 0);
 
         const purchasesOut = state.purchases
-            .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
+            .filter(p => p.cashboxId === cb.id && p.affectsCashbox !== false && (p.currency || 'YER') === cashCurrency)
             .reduce((sum, p) => {
-                // فاتورة التوريد قد تكون آجلة أو مدفوعة جزئياً؛ الصندوق ينقص فقط بالمبلغ المدفوع فعلاً.
+                // فاتورة التوريد تخصم المدفوع الفعلي فقط؛ والدفعة السابقة المسجلة في كشف المورد لا تخصم مرتين.
                 const cashOut = p.kind === 'supplierPurchase'
                     ? Number(p.paidAmount || 0)
                     : Number(p.amount || 0);
@@ -5512,9 +5521,26 @@ function initMenuPermissionCheckboxes() {
         }
     }
 
+    function supplierNameKey(value) {
+        return String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('ar');
+    }
+
+    function isSupplierMovementFor(purchase, supplierId) {
+        const target = (state.suppliers || []).find(item => String(item.id) === String(supplierId));
+        if (!target || !purchase) return false;
+        if (purchase.supplierId !== undefined && purchase.supplierId !== null && String(purchase.supplierId) !== '') {
+            return String(purchase.supplierId) === String(supplierId);
+        }
+        // لبعض الحركات القديمة supplierName موجود لكن supplierId غير محفوظ؛ نربطها فقط إذا كان الاسم فريداً.
+        const key = supplierNameKey(target.name);
+        if (!key || supplierNameKey(purchase.supplierName) !== key) return false;
+        const sameNameCount = (state.suppliers || []).filter(item => supplierNameKey(item.name) === key).length;
+        return sameNameCount === 1;
+    }
+
     function supplierTotalsFor(supplierId) {
         const totals = { YER: { purchases: 0, initialPaid: 0, payments: 0, due: 0 }, SAR: { purchases: 0, initialPaid: 0, payments: 0, due: 0 }, USD: { purchases: 0, initialPaid: 0, payments: 0, due: 0 } };
-        (state.purchases || []).filter(p => p.supplierId === supplierId).forEach(p => {
+        (state.purchases || []).filter(p => isSupplierMovementFor(p, supplierId)).forEach(p => {
             const code = CURRENCY_CODES.includes(p.currency) ? p.currency : 'YER';
             if (p.kind === 'supplierPurchase') {
                 totals[code].purchases += Number(p.amount || p.totalAmount || 0);
@@ -5567,9 +5593,19 @@ function initMenuPermissionCheckboxes() {
         const select = document.getElementById('supplierPaymentCashbox');
         if (!select) return;
         const old = select.value;
+        const pastMode = Boolean(document.getElementById('supplierPaymentPreviouslyPaid')?.checked);
         const list = (state.cashboxes || []);
-        select.innerHTML = list.map(box => `<option value="${box.id}">${escapeUiText(box.name)} — متاح ${formatMoney(computeSystemCashboxBalance(box, currency))} ${currency}</option>`).join('') || '<option value="">لا يوجد صندوق متاح</option>';
-        if (old && list.some(box => box.id === old)) select.value = old;
+        if (pastMode) {
+            select.innerHTML = '<option value="">دفعة سابقة — لا تخصم من الصندوق</option>';
+            select.value = '';
+            select.disabled = true;
+            select.required = false;
+            return;
+        }
+        select.disabled = false;
+        select.required = true;
+        select.innerHTML = list.map(box => `<option value="${escapeUiText(String(box.id))}">${escapeUiText(box.name)} — متاح ${formatMoney(computeSystemCashboxBalance(box, currency))} ${currency}</option>`).join('') || '<option value="">لا يوجد صندوق متاح</option>';
+        if (old && list.some(box => String(box.id) === String(old))) select.value = old;
     }
 
     function supplierCatalogKey(name, unit) {
@@ -5891,20 +5927,34 @@ function initMenuPermissionCheckboxes() {
         if (isBusy) return;
         const btn = document.getElementById('saveSupplierPaymentBtn');
         const supplierId = document.getElementById('supplierPaymentSupplier')?.value || '';
-        const supplier = (state.suppliers || []).find(item => item.id === supplierId);
+        const supplier = (state.suppliers || []).find(item => String(item.id) === String(supplierId));
         const currency = document.getElementById('supplierPaymentCurrency')?.value || 'YER';
         const amount = Number(document.getElementById('supplierPaymentAmount')?.value || 0);
-        const cashboxId = document.getElementById('supplierPaymentCashbox')?.value || '';
-        const cashbox = state.cashboxes.find(box => box.id === cashboxId);
+        const previouslyPaid = Boolean(document.getElementById('supplierPaymentPreviouslyPaid')?.checked);
+        const cashboxId = previouslyPaid ? '' : (document.getElementById('supplierPaymentCashbox')?.value || '');
+        const cashbox = previouslyPaid ? null : (state.cashboxes || []).find(box => String(box.id) === String(cashboxId));
         const note = (document.getElementById('supplierPaymentNote')?.value || '').trim();
-        if (!supplier || !cashbox || !Number.isFinite(amount) || amount <= 0) { showToast('اختر المورد والصندوق وأدخل مبلغاً صحيحاً'); return; }
-        
+        const chosenDate = document.getElementById('supplierPaymentDate')?.value || getLocalDateKey();
+        if (!supplier || !Number.isFinite(amount) || amount <= 0 || (!previouslyPaid && !cashbox)) {
+            showToast('اختر المورد والصندوق وأدخل مبلغاً صحيحاً'); return;
+        }
         const totals = supplierTotalsFor(supplierId);
-        if (amount > Math.max(0, totals[currency].due) + 0.000001) { showToast(`المبلغ أكبر من المتبقي للمورد (${formatMoney(Math.max(0, totals[currency].due))} ${currency})`); return; }
-        if (computeSystemCashboxBalance(cashbox, currency) < amount) { showToast('رصيد الصندوق غير كافٍ للسداد بهذه العملة'); return; }
-        const date = getLocalDateKey();
-        const record = { kind: 'supplierPayment', date, supplierId, supplierName: supplier.name, currency, amount, title: note || `سداد للمورد ${supplier.name}`, notes: note, cashboxId: cashbox.id, cashboxName: cashbox.name, employee: getAccountDisplayName(currentUser), createdByUserId: currentUser?.id || '' };
-        const signature = { kind: record.kind, date, supplierId, currency, amount, cashboxId, note, actor: dedupeActorId() };
+        if (amount > Math.max(0, totals[currency].due) + 0.000001) {
+            showToast(`المبلغ أكبر من المتبقي للمورد (${formatMoney(Math.max(0, totals[currency].due))} ${currency})`); return;
+        }
+        if (!previouslyPaid && computeSystemCashboxBalance(cashbox, currency) < amount) {
+            showToast('رصيد الصندوق غير كافٍ. إذا كانت الدفعة خرجت من الصندوق سابقاً فعّل خيار «دفعة مسددة سابقاً» حتى لا تُخصم مرتين.'); return;
+        }
+        const record = {
+            kind: 'supplierPayment', date: chosenDate, supplierId: String(supplier.id), supplierName: supplier.name,
+            currency, amount, title: note || `سداد للمورد ${supplier.name}`, notes: note,
+            cashboxId: previouslyPaid ? '' : String(cashbox.id),
+            cashboxName: previouslyPaid ? 'دفعة سابقة — لا تخصم من الصندوق' : cashbox.name,
+            affectsCashbox: !previouslyPaid,
+            previousPaymentEntry: previouslyPaid,
+            employee: getAccountDisplayName(currentUser), createdByUserId: currentUser?.id || ''
+        };
+        const signature = { kind: record.kind, date: chosenDate, supplierId: String(supplier.id), currency, amount, cashboxId, note, previouslyPaid, actor: dedupeActorId() };
         const docId = `SUPPAY_${dedupeHash(signature)}_${Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS)}`;
         isBusy = true; if (btn) btn.disabled = true;
         try {
@@ -5916,13 +5966,71 @@ function initMenuPermissionCheckboxes() {
                 return { created: true };
             });
             if (!result.created) { showToast('عملية السداد مسجلة مسبقاً؛ لم تُكرر'); return; }
-            record.id = docId; state.purchases = (state.purchases || []).concat(record);
-            document.getElementById('supplierPaymentAmount').value = '';
-            document.getElementById('supplierPaymentNote').value = '';
+            record.id = docId;
+            // تحديث محلي فوري بطريقة upsert؛ لا نكرر السجل إذا وصل snapshot قبل اكتمال الدالة.
+            state.purchases = (state.purchases || []).filter(item => String(item.id) !== String(docId)).concat(record);
+            const amountInput = document.getElementById('supplierPaymentAmount');
+            const noteInput = document.getElementById('supplierPaymentNote');
+            if (amountInput) amountInput.value = '';
+            if (noteInput) noteInput.value = '';
+            const oldDate = document.getElementById('supplierPaymentDate');
+            if (oldDate) oldDate.value = getLocalDateKey();
+            renderSupplierBalances(); renderPurchasesTable(); renderCashboxesList(); renderStats();
+            if (previouslyPaid) {
+                showToast(`تمت إضافة دفعة ${formatMoney(amount)} ${currency} إلى كشف المورد دون خصمها مرة ثانية من الصندوق`);
+            } else {
+                showToast(`تم تسجيل سداد ${formatMoney(amount)} ${currency} للمورد وتحديث رصيد الصندوق`);
+            }
+        } catch (error) {
+            console.warn('Supplier payment error:', error);
+            showToast(`تعذر تسجيل سداد المورد${error?.code ? ' (' + error.code + ')' : ''}. لم يتم تأكيد الحفظ؛ تحقق من الاتصال ثم حدّث الصفحة قبل إعادة المحاولة.`);
+        } finally {
+            isBusy = false; if (btn) btn.disabled = false;
+        }
+    }
+
+    async function editSupplierPayment(paymentId) {
+        if (!hasFullAccess()) { showToast('تعديل حركة المورد متاح للمدير والمشرف العام فقط'); return; }
+        const payment = (state.purchases || []).find(item => String(item.id) === String(paymentId));
+        if (!payment || payment.kind !== 'supplierPayment') { showToast('يمكن تعديل دفعات المورد فقط من هذا المكان'); return; }
+        const oldAmount = Number(payment.amount || 0);
+        const amountInput = prompt(`المبلغ الجديد (${payment.currency || 'YER'}):`, String(oldAmount));
+        if (amountInput === null) return;
+        const nextAmount = Number(amountInput);
+        if (!Number.isFinite(nextAmount) || nextAmount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
+        const currentDue = supplierTotalsFor(payment.supplierId)[payment.currency || 'YER']?.due || 0;
+        const maxAllowed = Math.max(0, currentDue + oldAmount);
+        if (nextAmount > maxAllowed + 0.000001) { showToast(`المبلغ أكبر من المتبقي المسموح (${formatMoney(maxAllowed)} ${payment.currency || 'YER'})`); return; }
+        const nextNote = prompt('بيان السداد:', payment.notes || payment.title || '');
+        if (nextNote === null) return;
+        isBusy = true;
+        try {
+            const patch = { amount: nextAmount, notes: nextNote.trim(), title: nextNote.trim() || `سداد للمورد ${payment.supplierName || ''}`, updatedAt: new Date().toISOString(), updatedBy: getAccountDisplayName(currentUser) };
+            await db.collection('purchases').doc(String(paymentId)).update(patch);
+            Object.assign(payment, patch);
             renderSupplierBalances(); renderCashboxesList(); renderStats();
-            showToast('تم تسجيل سداد المورد وتحديث رصيده');
-        } catch (error) { console.warn('Supplier payment error:', error); showToast('تعذر تسجيل سداد المورد'); }
-        finally { isBusy = false; if (btn) btn.disabled = false; }
+            showToast('تم تعديل حركة السداد وتحديث كشف المورد والصندوق');
+        } catch (error) {
+            console.warn('Edit supplier payment error:', error);
+            showToast(`تعذر تعديل حركة السداد${error?.code ? ' (' + error.code + ')' : ''}`);
+        } finally { isBusy = false; }
+    }
+
+    async function deleteSupplierPayment(paymentId) {
+        if (!hasFullAccess()) { showToast('حذف حركة المورد متاح للمدير والمشرف العام فقط'); return; }
+        const payment = (state.purchases || []).find(item => String(item.id) === String(paymentId));
+        if (!payment || payment.kind !== 'supplierPayment') { showToast('لا يمكن حذف هذه الحركة من هنا'); return; }
+        if (!confirm(`حذف حركة سداد ${formatMoney(payment.amount || 0)} ${payment.currency || 'YER'} للمورد ${payment.supplierName || ''}؟ سيتم إعادة المبلغ إلى رصيد الصندوق فقط إذا كان قد خُصم منه عند التسجيل.`)) return;
+        isBusy = true;
+        try {
+            await db.collection('purchases').doc(String(paymentId)).delete();
+            state.purchases = (state.purchases || []).filter(item => String(item.id) !== String(paymentId));
+            renderSupplierBalances(); renderPurchasesTable(); renderCashboxesList(); renderStats();
+            showToast('تم حذف حركة السداد وتحديث كشف المورد والصندوق');
+        } catch (error) {
+            console.warn('Delete supplier payment error:', error);
+            showToast(`تعذر حذف حركة السداد${error?.code ? ' (' + error.code + ')' : ''}`);
+        } finally { isBusy = false; }
     }
 
     function ensureSupplierLedgerOptions(selectedId = '') {
@@ -5964,7 +6072,7 @@ function initMenuPermissionCheckboxes() {
 
     function getSupplierLedgerRecords(supplierId) {
         return (state.purchases || [])
-            .filter(item => String(item.supplierId) === String(supplierId) && ['supplierPurchase', 'supplierPayment'].includes(item.kind))
+            .filter(item => isSupplierMovementFor(item, supplierId) && ['supplierPurchase', 'supplierPayment'].includes(item.kind))
             .slice()
             .sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.id || '').localeCompare(String(b.id || '')));
     }
@@ -5988,7 +6096,7 @@ function initMenuPermissionCheckboxes() {
         if (!select || !body || !summary) return;
         const selectedId = String(select.value || '');
         const supplier = (state.suppliers || []).find(item => String(item.id) === selectedId);
-        if (!supplier) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr>'; summary.innerHTML = ''; return; }
+        if (!supplier) { body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr>'; summary.innerHTML = ''; return; }
         const totals = supplierTotalsFor(supplier.id);
         const records = getSupplierLedgerRecords(supplier.id);
         const activeCurrencies = getSupplierLedgerActiveCurrencies(records);
@@ -6005,8 +6113,11 @@ function initMenuPermissionCheckboxes() {
             const due = purchase ? total - paid : -paid;
             running[code] += due;
             const detail = purchase ? (item.items || []).map(line => `${escapeUiText(line.name)} × ${formatQty(line.qty)} ${escapeUiText(line.unit)} @ ${formatMoney(line.costPrice)}`).join('<br>') : escapeUiText(item.notes || item.title || 'سداد للمورد');
-            return `<tr><td class="mono">${item.date || '-'}</td><td><span class="badge ${purchase ? 'badge-sup' : 'badge-cash'}">${purchase ? 'فاتورة توريد' : 'سداد'}</span></td><td>${detail}</td><td class="mono">${purchase ? formatCurrency(total, code) : '—'}</td><td class="mono">${paid ? formatCurrency(paid, code) : '—'}</td><td class="mono">${purchase ? formatCurrency(total - paid, code) : formatCurrency(paid, code)}</td><td class="mono" style="font-weight:800;color:${running[code] >= 0 ? 'var(--danger)' : 'var(--success)'}">${formatCurrency(running[code], code)}</td></tr>`;
-        }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">لا توجد فواتير توريد أو دفعات مسجلة لهذا المورد</td></tr>';
+            const actions = !purchase && hasFullAccess()
+                ? `<button type="button" class="btn btn-outline btn-sm" onclick="editSupplierPayment('${String(item.id).replace(/'/g, '&#39;')}')">تعديل</button> <button type="button" class="btn btn-danger btn-sm" onclick="deleteSupplierPayment('${String(item.id).replace(/'/g, '&#39;')}')">حذف</button>`
+                : (hasFullAccess() ? '<span class="employee-permission-note">الفاتورة مرتبطة بالمخزون</span>' : '—');
+            return `<tr><td class="mono">${escapeUiText(item.date || '-')}</td><td><span class="badge ${purchase ? 'badge-sup' : 'badge-cash'}">${purchase ? 'فاتورة توريد' : 'سداد'}</span></td><td>${detail}${item.previousPaymentEntry ? '<br><small style="color:var(--text-muted)">دفعة سابقة — لم تخصم من الصندوق مرة أخرى</small>' : ''}</td><td class="mono">${purchase ? formatCurrency(total, code) : '—'}</td><td class="mono">${paid ? formatCurrency(paid, code) : '—'}</td><td class="mono">${purchase ? formatCurrency(total - paid, code) : formatCurrency(paid, code)}</td><td class="mono" style="font-weight:800;color:${running[code] >= 0 ? 'var(--danger)' : 'var(--success)'}">${formatCurrency(running[code], code)}</td><td>${actions}</td></tr>`;
+        }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد فواتير توريد أو دفعات مسجلة لهذا المورد</td></tr>';
     }
 
     function printSupplierLedger() {
