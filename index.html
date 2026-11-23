@@ -7631,6 +7631,21 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         document.getElementById('customerStatementCard').classList.add('hidden');
     }
 
+    function getCustomerInvoiceStatementDescription(invoice, refDisplay) {
+        const itemLines = Array.isArray(invoice?.items) ? invoice.items : [];
+        const itemsText = itemLines.map(item => {
+            const itemName = String(item?.name || 'صنف').trim();
+            const qty = formatQty(Number(item?.qty || 0));
+            const unit = String(item?.unit || 'حبة');
+            return `${itemName} × ${qty} ${unit}`;
+        }).filter(Boolean).join('، ');
+        const noteText = String(invoice?.notes || invoice?.note || '').trim();
+        const details = [];
+        if (itemsText) details.push(`الأصناف: ${itemsText}`);
+        if (noteText) details.push(`البيان: ${noteText}`);
+        return details.length ? details.join(' — ') : `عليكم فاتورة مبيعات برقم ${refDisplay || invoice?.id || '—'}`;
+    }
+
     function renderCustomerStatement(custId, shouldScroll = false) {
         const cust = state.customers.find(c => c.id === custId);
         const card = document.getElementById('customerStatementCard');
@@ -7648,7 +7663,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 entries.push({
                     date: i.date || '-',
                     ref: i.id || '-',
-                    desc: i.notes || `عليكم فاتورة مبيعات برقم ${refDisplay}`,
+                    desc: getCustomerInvoiceStatementDescription(i, refDisplay),
                     currency: CURRENCY_CODES.includes(i.currency) ? i.currency : 'YER',
                     debit: Number(i.netTotal || 0),
                     credit: 0,
@@ -7691,7 +7706,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                     <tr>
                         <td><span class="mono">${en.date}</span></td>
                         <td><span class="mono">${en.ref}</span></td>
-                        <td>${en.desc}</td>
+                        <td>${escapeUiText(String(en.desc || '—'))}</td>
                         <td>${en.debit > 0 ? `<span class="mono" style="color:var(--warning);">${formatMoney(en.debit)} ${code}</span>` : '<span class="mono">0.00</span>'}</td>
                         <td>${en.credit > 0 ? `<span class="mono" style="color:var(--success);">${formatMoney(en.credit)} ${code}</span>` : '<span class="mono">0.00</span>'}</td>
                         <td><span class="mono" style="color:${running[code] > 0 ? 'var(--warning)' : 'var(--success)'};">${formatMoney(running[code])} ${code}</span></td>
@@ -7735,7 +7750,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 entries.push({
                     date: i.date || '-',
                     ref: refDisplay,
-                    desc: i.notes || `عليكم فاتورة مبيعات برقم ${refDisplay}`,
+                    desc: getCustomerInvoiceStatementDescription(i, refDisplay),
                     currency: CURRENCY_CODES.includes(i.currency) ? i.currency : 'YER',
                     debit: Number(i.netTotal || 0), credit: 0,
                     sortKey: String(i.id || '')
@@ -7887,7 +7902,12 @@ tbody tr:nth-child(even){background:#f8fbf9}
                 if (typeof window.html2pdf !== 'function') throw new Error('مكتبة PDF لم تُحمّل. استخدم طباعة / حفظ PDF.');
                 const report = win.document.querySelector('.report');
                 if (!report) throw new Error('تعذر العثور على معاينة الكشف.');
-                const filename = 'كشف-حساب-العميل.pdf';
+                const safeCustomerName = String(cust.name || 'عميل').replace(/[\\/:*?"<>|]+/g, '-').trim().slice(0, 55) || 'عميل';
+                const filename = `كشف-حساب-${safeCustomerName}.pdf`;
+                const statementTable = report.querySelector('.table-wrap table tbody');
+                if (!statementTable) throw new Error('لم يتم العثور على جدول حركات العميل داخل الكشف.');
+                const reportText = String(report.innerText || report.textContent || '').trim();
+                if (!reportText.includes('كشف الحركات التفصيلي')) throw new Error('محتوى الحركات غير جاهز في الكشف. أغلق المعاينة وافتح الكشف مرة أخرى.');
                 const blob = await window.html2pdf()
                     .set({
                         margin: [8, 8, 8, 8],
@@ -7898,21 +7918,27 @@ tbody tr:nth-child(even){background:#f8fbf9}
                     })
                     .from(report)
                     .outputPdf('blob');
-                win._customerPdfBlob = blob;
-                win._customerPdfFile = new win.File([blob], filename, { type: 'application/pdf' });
-                const canShareFile = !!(win.navigator.share && win._customerPdfFile &&
-                    (!win.navigator.canShare || win.navigator.canShare({ files: [win._customerPdfFile] })));
+                if (!blob || !blob.size || blob.size < 1200) throw new Error('تم إنشاء ملف PDF فارغ أو غير مكتمل. أعد فتح الكشف وحاول مرة أخرى.');
+                win._customerPdfBlob = new win.Blob([blob], { type: 'application/pdf' });
+                win._customerPdfFile = typeof win.File === 'function'
+                    ? new win.File([win._customerPdfBlob], filename, { type: 'application/pdf' })
+                    : null;
+                let canShareFile = false;
+                try {
+                    canShareFile = !!(win.navigator.share && win.navigator.canShare && win._customerPdfFile &&
+                        win.navigator.canShare({ files: [win._customerPdfFile] }));
+                } catch (_) { canShareFile = false; }
                 const status = win.document.getElementById('shareStatus');
                 status.style.display = 'block';
                 win.document.getElementById('downloadPdfBtn').style.display = 'inline-flex';
                 if (canShareFile) {
                     win.document.getElementById('shareReadyBtn').style.display = 'inline-flex';
                     win.document.getElementById('whatsAppBtn').style.display = 'none';
-                    status.textContent = 'تم تجهيز ملف PDF. اضغط «مشاركة الآن» واختر واتساب أو أي تطبيق من قائمة المشاركة في الآيفون.';
+                    status.textContent = 'تم تجهيز ملف PDF يحتوي على ملخص الحساب وجميع الحركات والأصناف والبيانات. اضغط «مشاركة ملف PDF» واختر واتساب أو أي تطبيق.';
                 } else {
                     win.document.getElementById('shareReadyBtn').style.display = 'none';
-                    win.document.getElementById('whatsAppBtn').style.display = 'inline-flex';
-                    status.textContent = 'تم تجهيز PDF. على اللابتوب نزّل الملف، ثم افتح واتساب وأرفقه من مجلد التنزيلات. المتصفح لا يتيح إرفاق الملف تلقائياً.';
+                    win.document.getElementById('whatsAppBtn').style.display = 'none';
+                    status.textContent = 'تم تجهيز PDF ويحتوي على الحركات والبيان. هذا المتصفح لا يشارك الملفات مباشرة؛ اضغط «تنزيل PDF» ثم أرفقه في واتساب أو البريد.';
                 }
                 button.textContent = 'تم تجهيز PDF';
             } catch (error) {
@@ -7928,16 +7954,23 @@ tbody tr:nth-child(even){background:#f8fbf9}
         win.sharePreparedCustomerPdf = async function () {
             const file = win._customerPdfFile;
             if (!file) { win.alert('جهّز PDF أولاً.'); return; }
-            if (!win.navigator.share || (win.navigator.canShare && !win.navigator.canShare({ files: [file] }))) {
+            let canShareFile = false;
+            try { canShareFile = !!(win.navigator.share && win.navigator.canShare && win.navigator.canShare({ files: [file] })); }
+            catch (_) { canShareFile = false; }
+            if (!canShareFile) {
                 win.downloadPreparedCustomerPdf();
-                win.alert('المشاركة المباشرة للملفات غير مدعومة في هذا المتصفح. تم تجهيز التنزيل؛ أرفق PDF يدوياً.');
+                const status = win.document.getElementById('shareStatus');
+                if (status) { status.style.display = 'block'; status.textContent = 'تم تنزيل كشف PDF كاملاً. أرفق الملف نفسه في واتساب أو البريد؛ لن نرسل رسالة نصية بدلاً من الكشف.'; }
                 return;
             }
             try {
-                // استدعاء المشاركة مباشرة من ضغطة المستخدم بعد أن أصبح الملف جاهزاً.
-                await win.navigator.share({ files: [file], title: 'كشف حساب العميل', text: 'كشف حساب العميل: ' + (cust.name || '') });
+                // مشاركة ملف PDF نفسه فقط، حتى لا يصل للمستلم إشعار نصي بلا كشف.
+                await win.navigator.share({ files: [file], title: `كشف حساب العميل - ${cust.name || ''}` });
             } catch (error) {
-                if (!error || error.name !== 'AbortError') win.alert(error && error.message ? error.message : 'تعذرت المشاركة. يمكنك تنزيل PDF وإرساله كمرفق.');
+                if (!error || error.name !== 'AbortError') {
+                    const status = win.document.getElementById('shareStatus');
+                    if (status) { status.style.display = 'block'; status.textContent = 'تعذرت مشاركة الملف مباشرة. اضغط «تنزيل PDF» ثم أرفقه بنفسك.'; }
+                }
             }
         };
         win.downloadPreparedCustomerPdf = function () {
@@ -7945,7 +7978,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
             const url = win.URL.createObjectURL(win._customerPdfBlob);
             const link = win.document.createElement('a');
             link.href = url;
-            link.download = 'كشف-حساب-العميل.pdf';
+            link.download = win._customerPdfFile?.name || 'كشف-حساب-العميل.pdf';
             win.document.body.appendChild(link);
             link.click();
             link.remove();
