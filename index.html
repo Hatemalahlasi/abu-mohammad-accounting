@@ -1940,6 +1940,10 @@
 
         <!-- شاشة المخزون: مدخل موحد لأقسام الأصناف والحركات والتقارير -->
         <section id="inventoryHubTab" class="tab-content hidden">
+            <div class="card-box" style="margin-bottom:12px;display:flex;justify-content:center;">
+                <button type="button" class="btn btn-primary btn-full" onclick="printAllInventoryReports()"><i class="fa-solid fa-file-pdf"></i> طباعة PDF للكل — جميع كشوفات المخزون</button>
+            </div>
+
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-boxes-stacked"></i> شاشة المخزون</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
@@ -2254,18 +2258,17 @@
                         <select id="transferToBranch" class="form-control"></select>
                     </div>
                 </div>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>الصنف المراد نقله</label>
-                        <select id="transferItemSelect" class="form-control"></select>
+                <div class="form-group" style="margin-top:12px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                        <label style="margin:0;">الأصناف والكميات المراد نقلها</label>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="addTransferRow()"><i class="fa-solid fa-plus"></i> إضافة صنف</button>
                     </div>
-                    <div class="form-group">
-                        <label>الكمية للنقل</label>
-                        <input type="number" step="0.01" inputmode="decimal" id="transferQty" class="form-control num-input" value="1" min="0.01">
-                    </div>
+                    <div id="transferRows" style="display:flex;flex-direction:column;gap:10px;margin-top:10px;"></div>
                 </div>
-                <button id="executeTransferBtn" class="btn btn-accent btn-full" onclick="transferWarehouseStock()">
-                    <i class="fa-solid fa-dolly"></i> تنفيذ النقل بين المخازن
+                <select id="transferItemSelect" class="form-control" style="display:none;"></select>
+                <input type="hidden" id="transferQty" value="1">
+                <button id="executeTransferBtn" class="btn btn-accent btn-full" onclick="transferAllWarehouseRows()">
+                    <i class="fa-solid fa-dolly"></i> تنفيذ نقل جميع الأصناف
                 </button>
             </div>
         </section>
@@ -5512,6 +5515,83 @@ function initMenuPermissionCheckboxes() {
         if (prevVal && availableItems.some(w => w.id === prevVal)) {
             sel.value = prevVal;
         }
+        refreshTransferRows();
+        if (document.getElementById('transferRows') && !document.querySelector('#transferRows .transfer-item-row')) addTransferRow();
+    }
+
+    let transferRowCounter = 0;
+
+    function getTransferItemOptions(selectedId = '') {
+        const fromBranchId = document.getElementById('transferFromBranch')?.value || '';
+        const items = (state.warehouse || []).filter(w =>
+            (w.branchId || 'main_branch') === fromBranchId && Number(w.qty || 0) > 0
+        );
+        return '<option value="">اختر الصنف</option>' + items.map(w =>
+            `<option value="${w.id}" ${w.id === selectedId ? 'selected' : ''}>${w.name} — متاح: ${formatQty(w.qty)} ${w.unit || 'حبة'}</option>`
+        ).join('');
+    }
+
+    function addTransferRow() {
+        const host = document.getElementById('transferRows');
+        if (!host) return;
+        const id = ++transferRowCounter;
+        const row = document.createElement('div');
+        row.className = 'card-box transfer-item-row';
+        row.style.cssText = 'padding:10px;display:grid;grid-template-columns:minmax(0,2fr) minmax(90px,1fr) auto;gap:8px;align-items:end;';
+        row.innerHTML = `<div class="form-group" style="margin:0;min-width:0;"><label>الصنف</label><select class="form-control transfer-row-item">${getTransferItemOptions()}</select></div><div class="form-group" style="margin:0;"><label>الكمية</label><input class="form-control num-input transfer-row-qty" type="number" min="0.01" step="0.01" inputmode="decimal" value="1"></div><button type="button" class="btn btn-outline btn-sm" title="حذف الصف" onclick="this.closest('.transfer-item-row').remove()"><i class="fa-solid fa-trash"></i></button>`;
+        host.appendChild(row);
+    }
+
+    function refreshTransferRows() {
+        document.querySelectorAll('.transfer-row-item').forEach(sel => {
+            const previous = sel.value;
+            sel.innerHTML = getTransferItemOptions(previous);
+        });
+    }
+
+    async function transferAllWarehouseRows() {
+        const rows = [...document.querySelectorAll('#transferRows .transfer-item-row')];
+        const filled = rows.filter(row => row.querySelector('.transfer-row-item')?.value);
+        if (!filled.length) { showToast('أضف صنفاً واحداً على الأقل وحدد كميته'); return; }
+        const fromBranchId = document.getElementById('transferFromBranch').value || '';
+        const toBranchId = document.getElementById('transferToBranch').value || '';
+        if (!fromBranchId || !toBranchId || fromBranchId === toBranchId) { showToast('حدد مخزني المصدر والوجهة بشكل صحيح'); return; }
+        const seen = new Set();
+        for (const row of filled) {
+            const itemId = row.querySelector('.transfer-row-item').value;
+            const qty = Number(row.querySelector('.transfer-row-qty').value || 0);
+            if (seen.has(itemId)) { showToast('لا تكرر الصنف في أكثر من صف؛ اجمع الكمية في صف واحد'); return; }
+            seen.add(itemId);
+            const item = state.warehouse.find(w => w.id === itemId);
+            if (!item || qty <= 0 || qty > Number(item.qty || 0)) { showToast(`تحقق من الكمية للصنف ${item?.name || ''} — المتاح: ${formatQty(item?.qty || 0)}`); return; }
+        }
+        const btn = document.getElementById('executeTransferBtn');
+        btn.disabled = true;
+        let completed = 0;
+        try {
+            for (const row of filled) {
+                const itemId = row.querySelector('.transfer-row-item').value;
+                const qty = Number(row.querySelector('.transfer-row-qty').value || 0);
+                const item = state.warehouse.find(w => w.id === itemId);
+                const before = Number(item?.qty || 0);
+                document.getElementById('transferItemSelect').value = itemId;
+                document.getElementById('transferQty').value = String(qty);
+                await transferWarehouseStock();
+                const after = Number(state.warehouse.find(w => w.id === itemId)?.qty || 0);
+                if (after < before) completed++;
+                else break;
+            }
+            if (completed) {
+                showToast(`تم تنفيذ نقل ${completed} من ${filled.length} صنف`);
+                document.getElementById('transferRows').innerHTML = '';
+                addTransferRow();
+                refreshTransferRows();
+            }
+        } finally {
+            btn.disabled = false;
+            populateTransferItems();
+            refreshTransferRows();
+        }
     }
 
     async function transferWarehouseStock() {
@@ -7850,7 +7930,47 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             <td>${escapeUiText(row.reference)}</td><td>${escapeUiText(row.actor || '-')}</td></tr>`).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد حركات مخزون مسجلة ضمن الاختيارات</td></tr>';
     }
 
-    function printInventoryMovementReport(mode) {
+    function inventoryPrintShell(title, sections) {
+        const safeTitle = escapeUiText(title || 'تقارير المخزون');
+        const content = sections.join('<div class="report-page-break"></div>');
+        const win = window.open('', '_blank', 'width=1100,height=850');
+        if (!win) { showToast('اسمح بفتح النوافذ المنبثقة حتى تتمكن من معاينة وحفظ تقارير المخزون PDF'); return null; }
+        win.document.open();
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title><style>
+        *{box-sizing:border-box}html,body{margin:0;padding:0;background:#f1f5f2;color:#172033;font-family:Tahoma,Arial,sans-serif;direction:rtl}
+        .toolbar{position:sticky;top:0;z-index:5;display:flex;gap:10px;justify-content:center;padding:12px;background:#174d32;box-shadow:0 2px 8px #0002}
+        .toolbar button{border:0;border-radius:8px;padding:10px 18px;font:700 14px Tahoma;cursor:pointer;background:#fff;color:#174d32}.toolbar .close{background:#e8edf0;color:#334155}
+        .report-page{background:#fff;max-width:1120px;margin:18px auto;padding:18px;box-shadow:0 2px 12px #0001;break-after:page;page-break-after:always}
+        .report-page:last-child{break-after:auto;page-break-after:auto}.report-header{display:flex;align-items:center;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px;margin-bottom:12px}
+        .report-header img{width:54px;height:54px;object-fit:contain}.report-header h1{font-size:20px;color:#174d32;margin:0}.report-header p{font-size:11px;color:#64748b;margin:5px 0 0}
+        h2{font-size:16px;color:#174d32;margin:0 0 10px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:10px}th{background:#eaf4ed;color:#174d32}th,td{border:1px solid #dbe5de;padding:7px;text-align:right;vertical-align:top}tr{break-inside:avoid}.report-note{font-size:10px;color:#64748b;margin-top:8px}
+        @page{size:A4 landscape;margin:10mm}@media print{html,body{background:#fff}.toolbar{display:none!important}.report-page{max-width:none;margin:0;padding:0;box-shadow:none;min-height:0}.report-page-break{break-before:page;page-break-before:always}.report-page{break-after:page;page-break-after:always}.report-page:last-child{break-after:auto;page-break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+        </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button onclick="window.close()" class="close">إغلاق</button></div>${content}</body></html>`);
+        win.document.close();
+        return win;
+    }
+
+    function inventoryReportHeader(title, subtitle='') {
+        return `<section class="report-page"><header class="report-header"><img src="https://abu-mohammad-accounting.vercel.app/logo.png"><div><h1>معمل أبو محمد — ${escapeUiText(title)}</h1>${subtitle ? `<p>${escapeUiText(subtitle)}</p>` : ''}</div></header>`;
+    }
+
+    function buildInventoryItemListPrintSection() {
+        const items = getScopedWarehouseItems().slice().sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
+        const rows = items.map(item => `<tr><td>${escapeUiText(item.branchName || inventoryBranchName(item.branchId))}</td><td>${escapeUiText(item.name || '-')}</td><td>${escapeUiText(item.unit || 'حبة')}</td><td>${formatQty(item.qty || 0)}</td><td>${formatMoney(item.costPrice ?? item.price ?? 0)} ${escapeUiText(item.costCurrency || 'YER')}</td><td>${formatMoney(item.price || 0)} ${escapeUiText(item.priceCurrency || 'YER')}</td><td>${formatMoney(Number(item.qty || 0) * Number(item.costPrice ?? item.price ?? 0))}</td></tr>`).join('');
+        return inventoryReportHeader('تقرير قائمة الأصناف', `عدد الأصناف: ${items.length}`) + `<table><thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>التكلفة</th><th>البيع</th><th>قيمة المخزون بالتكلفة</th></tr></thead><tbody>${rows || '<tr><td colspan="7">لا توجد أصناف</td></tr>'}</tbody></table></section>`;
+    }
+
+    function buildWarehouseStockPrintSection() {
+        const selectedBranch = document.getElementById('activeBranchFilter')?.value || 'ALL';
+        const items = getScopedWarehouseItems().filter(item => selectedBranch === 'ALL' || String(item.branchId || 'main_branch') === String(selectedBranch));
+        const rows = items.slice().sort((a,b) => String(a.branchName || '').localeCompare(String(b.branchName || ''), 'ar') || String(a.name || '').localeCompare(String(b.name || ''), 'ar')).map(item => {
+            const currency = item.costCurrency || item.priceCurrency || 'YER';
+            return `<tr><td>${escapeUiText(item.branchName || inventoryBranchName(item.branchId))}</td><td>${escapeUiText(item.name || '-')}</td><td>${escapeUiText(item.unit || 'حبة')}</td><td>${formatQty(item.qty || 0)}</td><td>${formatMoney(item.costPrice ?? item.price ?? 0)} ${escapeUiText(currency)}</td><td>${formatMoney(item.price || 0)} ${escapeUiText(item.priceCurrency || currency)}</td><td>${formatMoney(Number(item.qty || 0) * Number(item.costPrice ?? item.price ?? 0))} ${escapeUiText(currency)}</td></tr>`;
+        }).join('');
+        return inventoryReportHeader('تقرير جرد المخزون', `المخزن: ${selectedBranch === 'ALL' ? 'كل المخازن المسموحة' : inventoryBranchName(selectedBranch)} · عدد الأصناف: ${items.length}`) + `<table><thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>سعر التكلفة</th><th>سعر البيع</th><th>قيمة المخزون بالتكلفة</th></tr></thead><tbody>${rows || '<tr><td colspan="7">لا توجد أصناف</td></tr>'}</tbody></table></section>`;
+    }
+
+    function buildInventoryMovementPrintSection(mode) {
         const isItem = mode === 'item';
         const rows = getInventoryMovementRows();
         const itemId = document.getElementById('itemMovementSelect')?.value || '';
@@ -7864,35 +7984,32 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         filtered = filterInventoryMovementRows(filtered, from, to);
         const title = isItem ? `تقرير حركة الصنف — ${item?.name || ''}` : 'تقرير حركة المخزون';
         const tableRows = filtered.map(row => `<tr><td>${escapeUiText(row.date || '-')}</td><td>${escapeUiText(row.itemName)}</td><td>${escapeUiText(row.type)}</td><td>${escapeUiText(row.branchName)}</td><td>${row.qty > 0 ? formatQty(row.qty) + ' ' + escapeUiText(row.unit) : '—'}</td><td>${row.qty < 0 ? formatQty(Math.abs(row.qty)) + ' ' + escapeUiText(row.unit) : '—'}</td><td>${escapeUiText(row.reference)}</td><td>${escapeUiText(row.actor || '-')}</td></tr>`).join('');
-        const win = window.open('', '_blank');
-        if (!win) { showToast('اسمح بالنوافذ المنبثقة لطباعة التقرير'); return; }
-        win.document.open();
-        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeUiText(title)}</title><style>*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;margin:18px;color:#172033}header{display:flex;align-items:center;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px}header img{width:56px;height:56px;object-fit:contain}h1{font-size:20px;color:#174d32;margin:0}p{font-size:11px;color:#64748b;margin:5px 0}table{width:100%;border-collapse:collapse;margin-top:14px;font-size:10px}th{background:#eaf4ed;color:#174d32}th,td{border:1px solid #dbe5de;padding:7px;text-align:right}tr{break-inside:avoid}.print-note{margin-top:10px;font-size:10px;color:#64748b}@page{size:A4 landscape;margin:10mm}@media print{body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><header><img src="https://abu-mohammad-accounting.vercel.app/logo.png"><div><h1>معمل أبو محمد — ${escapeUiText(title)}</h1><p>الفترة: ${escapeUiText(from || 'بداية السجل')} إلى ${escapeUiText(to || 'اليوم')} · المخزن: ${escapeUiText(branchId === 'ALL' ? 'كل المخازن' : inventoryBranchName(branchId))}</p></div></header><table><thead><tr><th>التاريخ</th><th>الصنف</th><th>الحركة</th><th>المخزن</th><th>داخل</th><th>خارج</th><th>البيان / المرجع</th><th>سجل بواسطة</th></tr></thead><tbody>${tableRows || '<tr><td colspan="8">لا توجد حركات مسجلة</td></tr>'}</tbody></table><div class="print-note">عدد الحركات: ${filtered.length}</div><script>window.addEventListener('load',function(){setTimeout(function(){window.print()},350)});<\/script></body></html>`);
-        win.document.close();
+        return inventoryReportHeader(title, `الفترة: ${from || 'بداية السجل'} إلى ${to || 'اليوم'} · المخزن: ${branchId === 'ALL' ? 'كل المخازن' : inventoryBranchName(branchId)} · عدد الحركات: ${filtered.length}`) + `<table><thead><tr><th>التاريخ</th><th>الصنف</th><th>الحركة</th><th>المخزن</th><th>داخل</th><th>خارج</th><th>البيان / المرجع</th><th>سجل بواسطة</th></tr></thead><tbody>${tableRows || '<tr><td colspan="8">لا توجد حركات مسجلة</td></tr>'}</tbody></table></section>`;
+    }
+
+    function printInventoryMovementReport(mode) {
+        const section = buildInventoryMovementPrintSection(mode);
+        inventoryPrintShell(mode === 'item' ? 'تقرير حركة الصنف' : 'تقرير حركة المخزون', [section]);
     }
 
     function printItemListReport() {
-        const items = getScopedWarehouseItems().slice().sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
-        const rows = items.map(item => `<tr><td>${escapeUiText(item.branchName || inventoryBranchName(item.branchId))}</td><td>${escapeUiText(item.name || '-')}</td><td>${escapeUiText(item.unit || 'حبة')}</td><td>${formatQty(item.qty || 0)}</td><td>${formatMoney(item.costPrice ?? item.price ?? 0)} ${escapeUiText(item.costCurrency || 'YER')}</td><td>${formatMoney(item.price || 0)} ${escapeUiText(item.priceCurrency || 'YER')}</td><td>${formatMoney(Number(item.qty || 0) * Number(item.costPrice ?? item.price ?? 0))}</td></tr>`).join('');
-        const win = window.open('', '_blank');
-        if (!win) { showToast('اسمح بالنوافذ المنبثقة لطباعة تقرير الأصناف'); return; }
-        win.document.open();
-        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تقرير الأصناف</title><style>*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;margin:18px;color:#172033}header{display:flex;align-items:center;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px}header img{width:54px;height:54px;object-fit:contain}h1{font-size:20px;color:#174d32;margin:0}table{width:100%;border-collapse:collapse;margin-top:14px;font-size:11px}th{background:#eaf4ed;color:#174d32}th,td{border:1px solid #dbe5de;padding:8px;text-align:right}@page{size:A4 landscape;margin:10mm}@media print{body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><header><img src="https://abu-mohammad-accounting.vercel.app/logo.png"><h1>معمل أبو محمد — تقرير قائمة الأصناف</h1></header><table><thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>التكلفة</th><th>البيع</th><th>قيمة المخزون بالتكلفة</th></tr></thead><tbody>${rows || '<tr><td colspan="7">لا توجد أصناف</td></tr>'}</tbody></table><script>window.addEventListener('load',function(){setTimeout(function(){window.print()},350)});<\/script></body></html>`);
-        win.document.close();
+        inventoryPrintShell('تقرير قائمة الأصناف', [buildInventoryItemListPrintSection()]);
     }
 
     function printWarehouseStockReport() {
-        const selectedBranch = document.getElementById('activeBranchFilter')?.value || 'ALL';
-        const items = getScopedWarehouseItems().filter(item => selectedBranch === 'ALL' || String(item.branchId || 'main_branch') === String(selectedBranch));
-        const rows = items.slice().sort((a,b) => String(a.branchName || '').localeCompare(String(b.branchName || ''), 'ar') || String(a.name || '').localeCompare(String(b.name || ''), 'ar')).map(item => {
-            const currency = item.costCurrency || item.priceCurrency || 'YER';
-            return `<tr><td>${escapeUiText(item.branchName || inventoryBranchName(item.branchId))}</td><td>${escapeUiText(item.name || '-')}</td><td>${escapeUiText(item.unit || 'حبة')}</td><td>${formatQty(item.qty || 0)}</td><td>${formatMoney(item.costPrice ?? item.price ?? 0)} ${escapeUiText(currency)}</td><td>${formatMoney(item.price || 0)} ${escapeUiText(item.priceCurrency || currency)}</td><td>${formatMoney(Number(item.qty || 0) * Number(item.costPrice ?? item.price ?? 0))} ${escapeUiText(currency)}</td></tr>`;
-        }).join('');
-        const win = window.open('', '_blank');
-        if (!win) { showToast('اسمح بالنوافذ المنبثقة لطباعة تقرير الجرد'); return; }
-        win.document.open();
-        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تقرير جرد المخزون</title><style>*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;margin:18px;color:#172033}header{display:flex;align-items:center;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px}header img{width:54px;height:54px;object-fit:contain}h1{font-size:20px;color:#174d32;margin:0}p{font-size:11px;color:#64748b}table{width:100%;border-collapse:collapse;margin-top:14px;font-size:10px}th{background:#eaf4ed;color:#174d32}th,td{border:1px solid #dbe5de;padding:7px;text-align:right}@page{size:A4 landscape;margin:10mm}@media print{body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><header><img src="https://abu-mohammad-accounting.vercel.app/logo.png"><div><h1>معمل أبو محمد — تقرير جرد المخزون</h1><p>المخزن: ${escapeUiText(selectedBranch === 'ALL' ? 'كل المخازن المسموحة' : inventoryBranchName(selectedBranch))} · عدد الأصناف: ${items.length}</p></div></header><table><thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>سعر التكلفة</th><th>سعر البيع</th><th>قيمة المخزون بالتكلفة</th></tr></thead><tbody>${rows || '<tr><td colspan="7">لا توجد أصناف</td></tr>'}</tbody></table><script>window.addEventListener('load',function(){setTimeout(function(){window.print()},350)});<\/script></body></html>`);
-        win.document.close();
+        inventoryPrintShell('تقرير جرد المخزون', [buildWarehouseStockPrintSection()]);
+    }
+
+    function printAllInventoryReports() {
+        const sections = [
+            buildInventoryItemListPrintSection(),
+            buildWarehouseStockPrintSection()
+        ];
+        if (document.getElementById('itemMovementSelect')?.value) {
+            sections.push(buildInventoryMovementPrintSection('item'));
+        }
+        sections.push(buildInventoryMovementPrintSection('all'));
+        inventoryPrintShell('جميع كشوفات المخزون', sections);
     }
 
     function renderWarehouseTable() {
