@@ -2271,6 +2271,10 @@
                     <i class="fa-solid fa-dolly"></i> تنفيذ نقل جميع الأصناف
                 </button>
             </div>
+            <div id="transferHistoryCard" class="card-box" style="margin-top:14px;">
+                <div class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل حركات نقل المخازن</span><span class="badge badge-unit" id="transferHistoryCount">0 عملية</span></div>
+                <div id="transferHistoryList"><div class="text-muted" style="text-align:center;padding:14px;">لا توجد حركات نقل مسجلة حتى الآن</div></div>
+            </div>
         </section>
 
         <!-- 5. صفحة العملاء وكشف الحساب الكامل -->
@@ -5517,6 +5521,7 @@ function initMenuPermissionCheckboxes() {
         }
         refreshTransferRows();
         if (document.getElementById('transferRows') && !document.querySelector('#transferRows .transfer-item-row')) addTransferRow();
+        renderTransferHistory();
     }
 
     let transferRowCounter = 0;
@@ -5586,12 +5591,60 @@ function initMenuPermissionCheckboxes() {
                 document.getElementById('transferRows').innerHTML = '';
                 addTransferRow();
                 refreshTransferRows();
+                renderTransferHistory();
             }
         } finally {
             btn.disabled = false;
             populateTransferItems();
             refreshTransferRows();
         }
+    }
+
+    function getTransferHistoryGroups() {
+        const grouped = new Map();
+        (state.warehouse || []).forEach(item => {
+            (Array.isArray(item.warehouseMovementHistory) ? item.warehouseMovementHistory : []).forEach(log => {
+                if (!log || !log.transferId || Number(log.qty || 0) >= 0 || log.type !== 'نقل إلى مخزن آخر') return;
+                const key = String(log.transferId);
+                if (!grouped.has(key)) grouped.set(key, { id: key, date: log.date || '', fromBranchName: log.branchName || inventoryBranchName(log.branchId), toBranchName: String(log.reference || '').replace(/^إلى\s*/, ''), actor: log.actor || '-', items: [], createdAt: log.createdAt || '' });
+                grouped.get(key).items.push({ name: log.itemName || item.name || '-', unit: log.unit || item.unit || 'حبة', qty: Math.abs(Number(log.qty || 0)) });
+            });
+        });
+        return [...grouped.values()].sort((a,b) => String(b.createdAt || b.date).localeCompare(String(a.createdAt || a.date)));
+    }
+
+    function renderTransferHistory() {
+        const host = document.getElementById('transferHistoryList');
+        const count = document.getElementById('transferHistoryCount');
+        if (!host) return;
+        const groups = getTransferHistoryGroups();
+        if (count) count.textContent = `${groups.length} عملية`;
+        host.innerHTML = groups.length ? groups.map(group => `
+            <div class="transfer-history-entry" style="border:1px solid var(--border-color,#dbe5de);border-right:4px solid var(--accent);border-radius:10px;padding:12px;margin:9px 0;background:var(--card-bg, #fff);">
+                <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <strong style="color:var(--accent);">${escapeUiText(group.fromBranchName)} ← ${escapeUiText(group.toBranchName)}</strong>
+                    <span class="badge badge-unit">${escapeUiText(group.date || '-')}</span>
+                </div>
+                <div style="font-size:13px;color:var(--text-muted);margin:7px 0;">${group.items.length} صنف · ${group.items.map(x => `${escapeUiText(x.name)} (${formatQty(x.qty)} ${escapeUiText(x.unit)})`).join('، ')}</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="previewTransferReceipt('${encodeURIComponent(group.id)}')"><i class="fa-solid fa-eye"></i> استعراض / طباعة PDF</button>
+                </div>
+            </div>`).join('') : '<div style="text-align:center;color:var(--text-muted);padding:14px;">لا توجد حركات نقل مسجلة حتى الآن</div>';
+    }
+
+    function previewTransferReceipt(encodedId) {
+        const transferId = decodeURIComponent(encodedId || '');
+        const group = getTransferHistoryGroups().find(entry => entry.id === transferId);
+        if (!group) { showToast('تعذر العثور على حركة النقل'); return; }
+        const rows = group.items.map((item, index) => `<tr><td>${index + 1}</td><td>${escapeUiText(item.name)}</td><td>${formatQty(item.qty)}</td><td>${escapeUiText(item.unit)}</td></tr>`).join('');
+        const section = inventoryReportHeader('سند نقل مخزني', `رقم الحركة: ${escapeUiText(group.id)} · التاريخ: ${escapeUiText(group.date || '-')} · الموظف: ${escapeUiText(group.actor || '-')}`) + `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;">
+              <div style="background:#edf5ef;border:1px solid #cfe1d3;border-radius:9px;padding:12px;"><small style="color:#52715d">من مخزن / فرع</small><strong style="display:block;color:#174d32;margin-top:5px">${escapeUiText(group.fromBranchName)}</strong></div>
+              <div style="background:#edf5ef;border:1px solid #cfe1d3;border-radius:9px;padding:12px;"><small style="color:#52715d">إلى مخزن / فرع</small><strong style="display:block;color:#174d32;margin-top:5px">${escapeUiText(group.toBranchName)}</strong></div>
+            </div>
+            <table><thead><tr><th>م</th><th>الصنف</th><th>الكمية المنقولة</th><th>الوحدة</th></tr></thead><tbody>${rows}</tbody></table>
+            <div style="margin-top:18px;padding:12px;border-top:2px solid #176b43;color:#475569;font-size:11px;display:flex;justify-content:space-between"><span>توقيع المسلم: __________________</span><span>توقيع المستلم: __________________</span></div></section>`;
+        inventoryPrintShell('سند نقل مخزني', [section]);
     }
 
     async function transferWarehouseStock() {
