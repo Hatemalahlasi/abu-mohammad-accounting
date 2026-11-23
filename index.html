@@ -1497,7 +1497,7 @@
                 <div class="sales-workspace-grid">
                     <div class="sales-products-panel">
                         <div class="sales-panel-heading">
-                            <div><strong><i class="fa-solid fa-boxes-stacked"></i> اختر الصنف</strong><small>كل الأصناف المتوفرة تظهر مباشرة؛ ابحث فقط إذا أردت الوصول لصنف بسرعة</small></div>
+                            <div><strong><i class="fa-solid fa-boxes-stacked"></i> الأصناف المتاحة</strong><small>ابحث عن الصنف ثم اضغط «إضافة» لوضعه في الفاتورة</small></div>
                             <span class="badge badge-sup" id="invoiceProductsCount">0 صنف</span>
                         </div>
                         <div class="sales-product-search">
@@ -1505,7 +1505,7 @@
                             <input type="search" id="warehouseItemSearch" class="form-control" placeholder="ابحث عن اسم الصنف (اختياري)..." oninput="renderWarehouseCatalogDropdown()" autocomplete="off">
                             <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('warehouseItemSearch').value=''; renderWarehouseCatalogDropdown();" title="مسح البحث"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                        <div class="sales-direct-hint"><i class="fa-solid fa-hand-pointer"></i> اضغط على أي صنف لإضافته مباشرة إلى الفاتورة. الأصناف المتوفرة مرتبة في بطاقات واضحة.</div>
+                        <div class="sales-direct-hint"><i class="fa-solid fa-circle-check"></i> اختر الصنف من القائمة. يمكنك زيادة الكمية بالضغط على «إضافة» أكثر من مرة.</div>
                         <div id="invoiceQuickProducts" class="invoice-quick-products hidden" aria-hidden="true"></div>
                         <div id="invoiceProductGrid" class="invoice-product-grid"><div class="empty-products">اكتب جزءاً من اسم الصنف للبحث، أو اختر صنفاً سريعاً بالأعلى</div></div>
                         <select id="warehouseCatalogSelect" class="hidden" aria-hidden="true"><option value="">اختر صنفاً</option></select>
@@ -4872,11 +4872,19 @@ function initMenuPermissionCheckboxes() {
             const safeName = escapeUiText(item.name || 'صنف');
             const selected = selectedRows.find(row => row.dataset.stockId === String(item.id));
             const selectedQty = selected ? Number(selected.querySelector('.item-qty')?.value || 0) : 0;
-            return `<button type="button" class="invoice-product-card ${selectedQty > 0 ? 'is-selected' : ''}" data-add-stock="${escapeUiText(item.id)}" ${available <= 0 ? 'disabled' : ''}>
-                <strong>${safeName}</strong>
-                <div class="invoice-product-meta"><span>${escapeUiText(item.unit || 'حبة')}</span><span>متاح ${formatQty(available)}</span></div>
-                <div class="invoice-product-price">${priceLabel}</div>
-                <span class="invoice-product-add-label"><i class="fa-solid fa-${selectedQty > 0 ? 'plus' : 'cart-plus'}"></i> ${selectedQty > 0 ? `بالسلة: ${formatQty(selectedQty)} · أضف` : (available > 0 ? 'إضافة مباشرة' : 'نفد المخزون')}</span>
+            return `<button type="button" class="invoice-product-card ${selectedQty > 0 ? 'is-selected' : ''}" data-add-stock="${escapeUiText(item.id)}" aria-label="إضافة ${safeName} إلى الفاتورة" ${available <= 0 ? 'disabled' : ''}>
+                <span class="invoice-product-info">
+                    <strong>${safeName}</strong>
+                    <span class="invoice-product-meta">
+                        <span class="invoice-product-unit">${escapeUiText(item.unit || 'حبة')}</span>
+                        <span class="invoice-product-stock"><i class="fa-solid fa-boxes-stacked"></i> المتاح: ${formatQty(available)}</span>
+                    </span>
+                    <span class="invoice-product-price">${priceLabel === 'أدخل سعر البيع' ? 'السعر يحتاج إدخال' : priceLabel}</span>
+                </span>
+                <span class="invoice-product-add-label">
+                    <i class="fa-solid fa-${selectedQty > 0 ? 'plus' : 'cart-plus'}"></i>
+                    <span>${selectedQty > 0 ? `بالسلة ${formatQty(selectedQty)} · أضف` : 'إضافة'}</span>
+                </span>
             </button>`;
         }).join('');
         bindInvoiceProductButtons(grid);
@@ -9058,6 +9066,69 @@ thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avo
   .item-list-actions .btn{width:100% !important;}
 }
 
+
+        /* واجهة أصناف المبيعات: قائمة واضحة وسهلة للمس على الهاتف */
+        #salesTab .sales-products-panel{
+            background:#f7fafc;border:1px solid #dbe5ee;border-radius:16px;padding:13px;
+        }
+        #salesTab .sales-panel-heading{align-items:center;margin-bottom:10px;}
+        #salesTab .sales-panel-heading strong{font-size:15px;letter-spacing:0;}
+        #salesTab .sales-panel-heading small{font-size:12px;line-height:1.6;}
+        #salesTab #invoiceProductsCount{white-space:nowrap;padding:6px 10px;border-radius:20px;font-size:11px;}
+        #salesTab .sales-product-search{
+            min-height:50px;border:1.5px solid #cbd8e4;border-radius:13px;padding:4px 10px;
+            background:#fff;box-shadow:0 2px 7px rgba(15,23,42,.035);
+        }
+        #salesTab .sales-product-search input{min-height:42px;font-size:15px!important;}
+        #salesTab .sales-product-search .btn{min-width:38px;min-height:38px;padding:7px;}
+        #salesTab .sales-direct-hint{font-size:11px;line-height:1.7;margin:0 0 10px;padding:8px 10px;background:#eef6ff;border:1px solid #d9e9f8;border-radius:10px;color:#37536d;}
+        #salesTab .invoice-product-grid{
+            display:flex;flex-direction:column;gap:8px;max-height:460px;overflow-y:auto;overscroll-behavior:contain;padding:2px;
+        }
+        #salesTab .invoice-product-card{
+            display:grid;grid-template-columns:minmax(0,1fr) 108px;grid-template-areas:"info action";
+            align-items:center;gap:10px;min-height:82px;padding:11px 12px;border:1px solid #dce5ee;
+            border-radius:13px;background:#fff;text-align:right;box-shadow:0 2px 7px rgba(15,23,42,.035);
+            transition:border-color .15s ease,background .15s ease,transform .15s ease;
+        }
+        #salesTab .invoice-product-card:active{transform:scale(.99);}
+        #salesTab .invoice-product-info{grid-area:info;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;}
+        #salesTab .invoice-product-card strong{
+            display:block;width:100%;min-height:0;font-size:14px;line-height:1.5;font-weight:800;color:#18283b;
+            white-space:normal;overflow-wrap:anywhere;word-break:normal;
+        }
+        #salesTab .invoice-product-meta{display:flex;justify-content:flex-start;align-items:center;gap:7px;flex-wrap:wrap;font-size:11px;}
+        #salesTab .invoice-product-unit{padding:3px 8px;border-radius:20px;background:#f1f5f9;color:#536477;font-weight:700;}
+        #salesTab .invoice-product-stock{padding:3px 8px;border-radius:20px;background:#eef8f1;color:#247044;font-weight:700;}
+        #salesTab .invoice-product-stock i{margin-left:3px;}
+        #salesTab .invoice-product-price{font-size:12px;font-weight:800;color:#175c91;line-height:1.4;}
+        #salesTab .invoice-product-add-label{
+            grid-area:action;display:flex;align-items:center;justify-content:center;gap:6px;align-self:center;
+            width:100%;min-height:46px;margin:0;padding:8px;border-radius:11px;background:#176b3a;color:#fff;
+            font-size:12px;font-weight:800;text-align:center;line-height:1.35;
+        }
+        #salesTab .invoice-product-add-label i{font-size:14px;}
+        #salesTab .invoice-product-card.is-selected{border:1.5px solid #23834b;background:#f5fbf6;}
+        #salesTab .invoice-product-card.is-selected .invoice-product-add-label{background:#e1f3e7;color:#176b3a;border:1px solid #b9dfc6;}
+        #salesTab .invoice-product-card:disabled .invoice-product-add-label{background:#e5e7eb;color:#64748b;}
+        #salesTab .empty-products{padding:24px 12px;border-radius:13px;font-size:13px;line-height:1.8;}
+        @media(max-width:700px){
+            #salesTab .sales-products-panel{padding:10px;border-radius:14px;}
+            #salesTab .sales-panel-heading strong{font-size:14px;}
+            #salesTab .sales-panel-heading small{font-size:11px;}
+            #salesTab .sales-product-search{min-height:52px;}
+            #salesTab .sales-product-search input{font-size:16px!important;}
+            #salesTab .invoice-product-grid{max-height:none;overflow:visible;gap:7px;}
+            #salesTab .invoice-product-card{grid-template-columns:minmax(0,1fr) 92px;min-height:78px;padding:10px;border-radius:12px;gap:8px;}
+            #salesTab .invoice-product-card strong{font-size:13px;}
+            #salesTab .invoice-product-meta{font-size:10.5px;}
+            #salesTab .invoice-product-price{font-size:11.5px;}
+            #salesTab .invoice-product-add-label{min-height:44px;font-size:11px;padding:6px;border-radius:10px;}
+        }
+        @media(max-width:380px){
+            #salesTab .invoice-product-card{grid-template-columns:minmax(0,1fr) 82px;gap:7px;padding:9px;}
+            #salesTab .invoice-product-card strong{font-size:12.5px;}
+        }
 </style>
 </head>
 <body>${safeSheets}
