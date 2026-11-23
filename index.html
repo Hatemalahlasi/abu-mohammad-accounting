@@ -6000,12 +6000,14 @@ function initMenuPermissionCheckboxes() {
 
         const summaryCards = CURRENCY_CODES.map(code => {
             const t = totals[code] || { purchases: 0, initialPaid: 0, payments: 0, due: 0 };
+            const paidTotal = Number(t.initialPaid || 0) + Number(t.payments || 0);
             return `<div class="kpi-card">
                 <div class="kpi-head">${code === 'YER' ? '🇾🇪 الريال اليمني' : code === 'SAR' ? '🇸🇦 الريال السعودي' : '🇺🇸 الدولار الأمريكي'}</div>
-                <div class="kpi-line"><span>إجمالي التوريدات</span><b>${formatMoney(t.purchases)} ${code}</b></div>
-                <div class="kpi-line"><span>المدفوع عند الفواتير</span><b>${formatMoney(t.initialPaid)} ${code}</b></div>
-                <div class="kpi-line"><span>الدفعات المسجلة</span><b>${formatMoney(t.payments)} ${code}</b></div>
-                <div class="kpi-due"><span>المتبقي للمورد</span><strong>${formatMoney(t.due)} ${code}</strong></div>
+                <div class="kpi-compact-values">
+                    <div><span>التوريدات</span><b>${formatMoney(t.purchases)} ${code}</b></div>
+                    <div><span>المدفوع</span><b class="paid-value">${formatMoney(paidTotal)} ${code}</b></div>
+                    <div><span>المتبقي</span><b class="due-value">${formatMoney(t.due)} ${code}</b></div>
+                </div>
             </div>`;
         }).join('');
 
@@ -6054,51 +6056,74 @@ function initMenuPermissionCheckboxes() {
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:#fff;color:#172033;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{padding:22px}
+body{padding:18px}
 .report{max-width:1120px;margin:0 auto;background:#fff}
-.report-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 0 16px;border-bottom:3px solid #176b43;margin-bottom:16px}
-.brand{display:flex;align-items:center;gap:14px;min-width:0}
-.brand-logo{width:66px;height:66px;object-fit:contain;border:1px solid #dce9df;border-radius:13px;padding:5px;background:#fff}
-.brand h1{margin:0 0 5px;color:#174d32;font-size:23px;font-weight:900}
-.brand p{margin:0;color:#64748b;font-size:12px;font-weight:700}
-.report-tag{padding:8px 13px;border:1px solid #cfe4d5;border-radius:999px;background:#edf7ef;color:#176b43;font-size:11px;font-weight:800;white-space:nowrap}
-.meta{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;margin:0 0 15px}
-.meta-item{padding:11px 13px;border:1px solid #dfe9e2;border-radius:11px;background:#f8fbf9;min-width:0}
-.meta-item span{display:block;color:#64748b;font-size:10px;font-weight:700;margin-bottom:4px}
-.meta-item strong{display:block;color:#1f2937;font-size:13px;font-weight:900;overflow-wrap:anywhere}
-.section-title{display:flex;align-items:center;gap:8px;color:#174d32;font-size:14px;font-weight:900;margin:17px 0 9px}
-.section-title:before{content:"";width:5px;height:18px;border-radius:5px;background:#d6a33c;display:inline-block}
-.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:17px}
-.kpi-card{border:1px solid #dce8df;border-radius:13px;background:#fff;overflow:hidden;break-inside:avoid}
-.kpi-head{background:#edf6ef;color:#174d32;padding:9px 12px;font-weight:900;font-size:12px;border-bottom:1px solid #dce8df}
-.kpi-line{display:flex;justify-content:space-between;gap:8px;padding:7px 11px;border-bottom:1px solid #eef2ef;font-size:10px}
-.kpi-line span{color:#64748b}.kpi-line b{color:#263445;font-size:10px;direction:ltr;white-space:nowrap}
-.kpi-due{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 11px;background:#fff8ed}
-.kpi-due span{color:#965b10;font-size:10px;font-weight:800}.kpi-due strong{color:#9a5410;font-size:13px;font-weight:900;direction:ltr;white-space:nowrap}
-.table-wrap{border:1px solid #dce5df;border-radius:11px;overflow:hidden}
-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px}
+.report-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 0 10px;border-bottom:3px solid #176b43;margin-bottom:10px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.brand-logo{width:56px;height:56px;object-fit:contain;border:1px solid #dce9df;border-radius:11px;padding:4px;background:#fff}
+.brand h1{margin:0 0 4px;color:#174d32;font-size:21px;font-weight:900}
+.brand p{margin:0;color:#64748b;font-size:11px;font-weight:700}
+.report-tag{padding:6px 10px;border:1px solid #cfe4d5;border-radius:999px;background:#edf7ef;color:#176b43;font-size:10px;font-weight:800;white-space:nowrap}
+.meta{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:7px;margin:0 0 9px}
+.meta-item{padding:7px 9px;border:1px solid #dfe9e2;border-radius:9px;background:#f8fbf9;min-width:0}
+.meta-item span{display:block;color:#64748b;font-size:9px;font-weight:700;margin-bottom:3px}
+.meta-item strong{display:block;color:#1f2937;font-size:11px;font-weight:900;overflow-wrap:anywhere}
+.section-title{display:flex;align-items:center;gap:7px;color:#174d32;font-size:12px;font-weight:900;margin:10px 0 6px}
+.section-title:before{content:"";width:4px;height:14px;border-radius:5px;background:#d6a33c;display:inline-block}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:9px}
+.kpi-card{border:1px solid #dce8df;border-radius:9px;background:#fff;overflow:hidden;break-inside:avoid}
+.kpi-head{background:#edf6ef;color:#174d32;padding:6px 8px;font-weight:900;font-size:10px;border-bottom:1px solid #dce8df}
+.kpi-compact-values{display:grid;grid-template-columns:1fr;gap:0}
+.kpi-compact-values>div{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 8px;border-bottom:1px solid #eef2ef;font-size:9px}
+.kpi-compact-values>div:last-child{border-bottom:0;background:#fff8ed}
+.kpi-compact-values span{color:#64748b;font-weight:700}.kpi-compact-values b{color:#263445;font-size:9px;direction:ltr;white-space:nowrap}.kpi-compact-values .paid-value{color:#176b43}.kpi-compact-values .due-value{color:#9a5410;font-weight:900}
+.table-wrap{border:1px solid #dce5df;border-radius:9px;overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px}
 thead{display:table-header-group}
-th{background:#174d32;color:#fff;font-size:10px;font-weight:900;padding:10px 7px;text-align:right;border:1px solid #174d32}
-td{padding:8px 7px;text-align:right;vertical-align:top;border:1px solid #e2e9e4;overflow-wrap:anywhere;line-height:1.55}
+th{background:#174d32;color:#fff;font-size:9px;font-weight:900;padding:7px 5px;text-align:right;border:1px solid #174d32}
+td{padding:5px 5px;text-align:right;vertical-align:top;border:1px solid #e2e9e4;overflow-wrap:anywhere;line-height:1.35}
 tbody tr:nth-child(even){background:#f8fbf9}
 .date-cell{white-space:nowrap;font-weight:800;color:#425466}
-.move-badge{display:inline-block;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:900;white-space:nowrap}
+.move-badge{display:inline-block;padding:3px 6px;border-radius:999px;font-size:8px;font-weight:900;white-space:nowrap}
 .move-badge.purchase{background:#e6f2eb;color:#176b43}.move-badge.payment{background:#e7f1fb;color:#1e5c91}
-.detail-cell{line-height:1.6}.item-detail{padding:2px 0 4px;margin-bottom:3px;border-bottom:1px dashed #e1e8e3}.item-detail:last-child{border:0}.item-detail b{display:block;color:#263445}.item-detail span{display:block;color:#64748b;font-size:9px}
-.amount{direction:ltr;text-align:left;white-space:nowrap;font-weight:800;font-variant-numeric:tabular-nums}.paid{color:#176b43}.debt{color:#a45b0a}.balance{font-size:10px}.balance.debt{color:#a45b0a}.balance.credit{color:#176b43}
-.empty-row{text-align:center;padding:25px;color:#64748b;font-weight:700}
-.footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:15px;padding-top:10px;border-top:1px solid #dfe7e1;color:#64748b;font-size:9px}
-.actions{display:flex;justify-content:center;gap:9px;margin:0 auto 16px;max-width:1120px}
+.detail-cell{line-height:1.35}.item-detail{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 5px;padding:1px 0;margin:0;border:0}.item-detail b{display:inline;color:#263445;font-size:9px}.item-detail span{display:inline;color:#64748b;font-size:8px}
+.amount{direction:ltr;text-align:left;white-space:nowrap;font-weight:800;font-variant-numeric:tabular-nums}.paid{color:#176b43}.debt{color:#a45b0a}.balance{font-size:9px}.balance.debt{color:#a45b0a}.balance.credit{color:#176b43}
+.empty-row{text-align:center;padding:12px;color:#64748b;font-weight:700}
+.footer{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;padding-top:6px;border-top:1px solid #dfe7e1;color:#64748b;font-size:8px}
+.actions{display:flex;justify-content:center;gap:9px;margin:0 auto 12px;max-width:1120px}
 .action-btn{border:0;border-radius:10px;padding:10px 18px;background:#176b43;color:#fff;font-weight:800;font-family:Tahoma,Arial,sans-serif;cursor:pointer}
 .action-btn.secondary{background:#eef2f6;color:#344256;border:1px solid #d8e0e8}
-@page{size:A4 landscape;margin:9mm}
-@media print{body{padding:0}.actions{display:none!important}.report{max-width:none}.report-header,.meta,.kpis,.table-wrap,.footer{break-inside:avoid}tr{break-inside:avoid}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@page{size:A4 landscape;margin:6mm}
+@media print{
+ html,body{width:100%;height:auto;margin:0!important;padding:0!important;background:#fff!important}
+ .actions{display:none!important}
+ .report{max-width:none!important;width:100%!important;margin:0!important}
+ .report-header,.meta,.kpis,.footer{break-inside:avoid;page-break-inside:avoid}
+ .table-wrap{break-inside:auto!important;page-break-inside:auto!important;overflow:visible!important}
+ table{break-inside:auto;page-break-inside:auto}thead{display:table-header-group}tr{break-inside:avoid;page-break-inside:avoid}
+ th{-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#174d32!important;color:#fff!important}
+ .kpi-head,.kpi-compact-values>div:last-child,.move-badge,.meta-item{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .compact-one-page{font-size:8px}
+ .compact-one-page .report-header{padding-bottom:6px;margin-bottom:7px}
+ .compact-one-page .brand-logo{width:42px;height:42px}
+ .compact-one-page .brand h1{font-size:16px}
+ .compact-one-page .meta{margin-bottom:6px;gap:5px}
+ .compact-one-page .meta-item{padding:5px 7px}
+ .compact-one-page .section-title{margin:7px 0 4px;font-size:10px}
+ .compact-one-page .kpis{gap:5px;margin-bottom:6px}
+ .compact-one-page .kpi-head{padding:4px 6px;font-size:9px}
+ .compact-one-page .kpi-compact-values>div{padding:3px 6px;font-size:8px}
+ .compact-one-page .kpi-compact-values b{font-size:8px}
+ .compact-one-page th{padding:5px 4px;font-size:8px}
+ .compact-one-page td{padding:3px 4px;font-size:8px;line-height:1.2}
+ .compact-one-page .footer{margin-top:5px;padding-top:4px;font-size:7px}
+}
 @media(max-width:720px){body{padding:10px}.report-header{align-items:flex-start}.brand-logo{width:52px;height:52px}.brand h1{font-size:18px}.report-tag{font-size:9px}.meta{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr}.table-wrap{overflow-x:auto}table{min-width:850px}}
 </style>
 </head>
 <body>
 <div class="actions"><button class="action-btn" onclick="window.print()">طباعة / حفظ PDF</button><button class="action-btn secondary" onclick="window.close()">إغلاق</button></div>
-<main class="report">
+<main class="report ${records.length <= 12 ? 'compact-one-page' : 'multi-page'}">
     <header class="report-header">
         <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><div><h1>معمل أبو محمد</h1><p>كشف حساب المورد — تقرير مالي تفصيلي</p></div></div>
         <div class="report-tag">كشف رسمي · جميع العملات مستقلة</div>
