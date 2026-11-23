@@ -3341,13 +3341,43 @@
     }
 
     function getStaffCollectionCommissionRate(staff) {
-        const rawRate = staff?.collectionCommissionRate ?? staff?.commissionRate ??
-            staff?.collectionCommissionPercent ?? staff?.commissionPercent ?? staff?.collectionRate ?? 0;
-        const normalized = typeof rawRate === 'string'
-            ? rawRate.trim().replace(/[%٪\s]/g, '').replace(/[٫،]/g, '.')
-            : rawRate;
-        const rate = Number(normalized);
-        return Number.isFinite(rate) ? Math.max(0, Math.min(100, rate)) : 0;
+        if (!staff || typeof staff !== 'object') return 0;
+        // بعض ملفات الموظفين القديمة تحتوي collectionCommissionRate=0 افتراضيًا،
+        // بينما النسبة الحقيقية محفوظة في حقل قديم آخر مثل commissionRate.
+        // لا نجعل الصفر الافتراضي يحجب قيمة موجبة موجودة في الحقول البديلة.
+        const candidates = [
+            staff.collectionCommissionRate,
+            staff.collectionCommissionPercent,
+            staff.collectionCommissionPercentage,
+            staff.collectionPercent,
+            staff.commissionRate,
+            staff.commissionPercent,
+            staff.commissionPercentage,
+            staff.collectionRate,
+            staff.collection_rate,
+            staff.commission_rate,
+            staff.collection_commission_rate,
+            staff.collection_commission_percent
+        ];
+        const parseRate = value => {
+            if (value === undefined || value === null || String(value).trim() === '') return null;
+            const normalized = String(value)
+                .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+                .replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+                .replace(/[٪%\s]/g, '')
+                .replace(/[٫،]/g, '.')
+                .trim();
+            const parsed = Number(normalized);
+            return Number.isFinite(parsed) ? parsed : null;
+        };
+        let sawValidZero = false;
+        for (const candidate of candidates) {
+            const rate = parseRate(candidate);
+            if (rate === null) continue;
+            if (rate > 0) return Math.max(0, Math.min(100, rate));
+            if (rate === 0) sawValidZero = true;
+        }
+        return sawValidZero ? 0 : 0;
     }
 
     function getEmployeeProductionForPeriod(staffId, period = getCurrentPayrollPeriod()) {
@@ -6433,7 +6463,10 @@ function initMenuPermissionCheckboxes() {
         const select = document.getElementById('voucherCollectorStaffSelect');
         if (!select) return [];
         const previous = select.value;
-        const staff = getAllStaff().filter(item => isMonthlyCommissionStaff(item) && item.active !== false && getStaffCollectionCommissionRate(item) > 0);
+        const staff = getAllStaff().filter(item => {
+            const rate = getStaffCollectionCommissionRate(item);
+            return !isPieceworkStaff(item) && item.active !== false && rate > 0;
+        });
         select.innerHTML = staff.length
             ? '<option value="">بدون احتساب نسبة لموظف</option>' + staff.map(item =>
                 `<option value="${escapeEmployeeDuesHtml(item.id)}">${escapeEmployeeDuesHtml(item.fullName || 'موظف')} — ${getStaffCollectionCommissionRate(item)}%</option>`
@@ -7846,6 +7879,11 @@ function initMenuPermissionCheckboxes() {
             const patch = {
                 salary,
                 collectionCommissionRate,
+                // توحيد حقول النسبة القديمة حتى لا تعود نسبة متقادمة بعد إيقافها.
+                commissionRate: collectionCommissionRate,
+                collectionCommissionPercent: collectionCommissionRate,
+                commissionPercent: collectionCommissionRate,
+                collectionRate: collectionCommissionRate,
                 payType: collectionCommissionRate > 0 ? 'monthly_commission' : 'monthly'
             };
             if (staff.legacy) {
@@ -7854,6 +7892,12 @@ function initMenuPermissionCheckboxes() {
                 if (legacyAccount) Object.assign(legacyAccount, patch);
             } else {
                 await db.collection('staff').doc(staffId).update(patch);
+                // getAllStaff() يرجع نسخًا من سجلات state.staff؛ حدّث الأصل أيضًا
+                // حتى تتجدد قائمة سند القبض فورًا دون انتظار إعادة تحميل Firebase.
+                const storedStaff = (state.staff || []).find(item => String(item.id) === String(staffId));
+                if (storedStaff) Object.assign(storedStaff, patch);
+                const linkedAccount = getStaffLoginAccount(staff);
+                if (linkedAccount) Object.assign(linkedAccount, patch);
             }
             Object.assign(staff, patch);
             renderEmployeesTable();
