@@ -5962,6 +5962,25 @@ function initMenuPermissionCheckboxes() {
         return true;
     }
 
+    function getSupplierLedgerRecords(supplierId) {
+        return (state.purchases || [])
+            .filter(item => String(item.supplierId) === String(supplierId) && ['supplierPurchase', 'supplierPayment'].includes(item.kind))
+            .slice()
+            .sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.id || '').localeCompare(String(b.id || '')));
+    }
+
+    // اعرض الريال اليمني دائماً، وأظهر السعودي أو الدولار فقط عند وجود حركة فعلية بهما.
+    function getSupplierLedgerActiveCurrencies(records) {
+        const active = new Set(['YER']);
+        (Array.isArray(records) ? records : []).forEach(item => {
+            const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+            const purchaseAmount = item.kind === 'supplierPurchase' ? Number(item.amount || item.totalAmount || 0) : 0;
+            const paidAmount = item.kind === 'supplierPurchase' ? Number(item.paidAmount || 0) : Number(item.amount || 0);
+            if (purchaseAmount > 0 || paidAmount > 0) active.add(code);
+        });
+        return CURRENCY_CODES.filter(code => active.has(code));
+    }
+
     function renderSupplierLedger() {
         const select = document.getElementById('supplierLedgerSelect');
         const body = document.getElementById('supplierLedgerBody');
@@ -5971,8 +5990,12 @@ function initMenuPermissionCheckboxes() {
         const supplier = (state.suppliers || []).find(item => String(item.id) === selectedId);
         if (!supplier) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">اختر المورد لعرض كشف الحساب</td></tr>'; summary.innerHTML = ''; return; }
         const totals = supplierTotalsFor(supplier.id);
-        summary.innerHTML = CURRENCY_CODES.map(code => `<div class="mini-stat"><div class="mini-stat-label">المتبقي على المورد — ${code}</div><div class="mini-stat-val">${formatMoney(totals[code].due)}</div><div class="mini-stat-label">توريدات ${formatMoney(totals[code].purchases)} | مدفوع ${formatMoney(totals[code].initialPaid + totals[code].payments)}</div></div>`).join('');
-        const records = (state.purchases || []).filter(item => String(item.supplierId) === String(supplier.id) && ['supplierPurchase', 'supplierPayment'].includes(item.kind)).slice().sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.id).localeCompare(String(b.id)));
+        const records = getSupplierLedgerRecords(supplier.id);
+        const activeCurrencies = getSupplierLedgerActiveCurrencies(records);
+        summary.innerHTML = activeCurrencies.map(code => {
+            const t = totals[code] || { due: 0, purchases: 0, initialPaid: 0, payments: 0 };
+            return `<div class="mini-stat"><div class="mini-stat-label">المتبقي على المورد — ${code}</div><div class="mini-stat-val">${formatMoney(t.due)}</div><div class="mini-stat-label">توريدات ${formatMoney(t.purchases)} | مدفوع ${formatMoney(Number(t.initialPaid || 0) + Number(t.payments || 0))}</div></div>`;
+        }).join('');
         const running = { YER: 0, SAR: 0, USD: 0 };
         body.innerHTML = records.length ? records.map(item => {
             const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
@@ -5993,12 +6016,10 @@ function initMenuPermissionCheckboxes() {
         if (!supplier) { showToast('اختر المورد أولاً لعرض كشفه ثم اطبعه'); return; }
 
         const totals = supplierTotalsFor(supplier.id);
-        const records = (state.purchases || [])
-            .filter(item => String(item.supplierId) === String(supplier.id) && ['supplierPurchase', 'supplierPayment'].includes(item.kind))
-            .slice()
-            .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.id || '').localeCompare(String(b.id || '')));
+        const records = getSupplierLedgerRecords(supplier.id);
+        const activeCurrencies = getSupplierLedgerActiveCurrencies(records);
 
-        const summaryCards = CURRENCY_CODES.map(code => {
+        const summaryCards = activeCurrencies.map(code => {
             const t = totals[code] || { purchases: 0, initialPaid: 0, payments: 0, due: 0 };
             const paidTotal = Number(t.initialPaid || 0) + Number(t.payments || 0);
             return `<div class="kpi-card">
@@ -6126,7 +6147,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
 <main class="report ${records.length <= 12 ? 'compact-one-page' : 'multi-page'}">
     <header class="report-header">
         <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><div><h1>معمل أبو محمد</h1><p>كشف حساب المورد — تقرير مالي تفصيلي</p></div></div>
-        <div class="report-tag">كشف رسمي · جميع العملات مستقلة</div>
+        <div class="report-tag">كشف رسمي · الريال اليمني والعملات الأخرى عند وجود حركات</div>
     </header>
     <section class="meta">
         <div class="meta-item"><span>اسم المورد</span><strong>${supplierName}</strong></div>
@@ -6134,6 +6155,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         <div class="meta-item"><span>تاريخ استخراج الكشف</span><strong>${getLocalDateKey()}</strong></div>
     </section>
     <div class="section-title">ملخص حساب المورد حسب العملة</div>
+    <div style="font-size:8px;color:#64748b;margin:-2px 0 6px">يظهر الريال اليمني دائماً، وتظهر العملة السعودية أو الدولار عند وجود حركة مسجلة بها.</div>
     <section class="kpis">${summaryCards}</section>
     <div class="section-title">كشف الحركات التفصيلي</div>
     <div class="table-wrap"><table><colgroup><col style="width:10%"><col style="width:12%"><col style="width:28%"><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:14%"></colgroup>
