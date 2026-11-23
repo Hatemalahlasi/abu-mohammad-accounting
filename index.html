@@ -579,52 +579,6 @@
             }
         }
 
-        /* شاشة إدخال الكميات على الهاتف: اسم الصنف كامل مع قائمة اختيار قابلة للبحث */
-        .qty-entry-empty { padding:14px; text-align:center; color:var(--text-muted); font-size:12px; }
-        .qty-item-picker { min-width:210px; }
-        .qty-item-search {
-            width:100%; min-height:46px; resize:vertical; white-space:pre-wrap;
-            line-height:1.5; overflow-wrap:anywhere; font-family:'Cairo',sans-serif;
-        }
-        .qty-item-suggestions {
-            display:grid; gap:6px; margin-top:6px; max-height:230px; overflow-y:auto;
-            padding:6px; background:#fff; border:1px solid var(--border); border-radius:10px;
-        }
-        .qty-item-suggestion {
-            display:block; width:100%; text-align:right; white-space:normal; overflow-wrap:anywhere;
-            line-height:1.5; padding:9px 10px; background:#f8fafc; color:var(--text-main);
-            border:1px solid var(--border); border-radius:9px; font-family:'Cairo',sans-serif;
-        }
-        .qty-item-suggestion small { display:block; color:var(--text-muted); margin-top:2px; }
-        @media (max-width: 600px) {
-            #quantitiesTab .card-box { padding:11px; }
-            .qty-entry-table-wrap { overflow:visible; border:0; background:transparent; }
-            #qtyAdjustmentRows { display:grid; gap:10px; }
-            #qtyAdjustmentRows .batch-qty-row {
-                display:grid; grid-template-columns:minmax(0,1fr) 108px 38px;
-                align-items:center; gap:8px; padding:10px; border:1px solid var(--border); border-radius:13px;
-                background:#fff; box-shadow:0 3px 12px rgba(15,23,42,.04);
-            }
-            #qtyAdjustmentRows .batch-qty-row td { display:block; padding:0; border:0; min-width:0; }
-            #qtyAdjustmentRows .batch-qty-row td:first-child { grid-column:auto; }
-            #qtyAdjustmentRows .batch-qty-row td:nth-child(2)::before { content:'الكمية'; display:block; font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px; }
-            #qtyAdjustmentRows .qty-row-delete-cell { text-align:center; }
-            .qty-item-picker { min-width:0; }
-            .qty-item-search { min-height:58px; height:auto; font-size:15px; line-height:1.6; resize:none; white-space:pre-wrap; overflow-wrap:anywhere; }
-            #qtyAdjustmentRows .form-control { min-width:0; width:100%; }
-            #qtyAdjustmentRows .batch-qty-value { min-height:58px; text-align:center; font-size:17px; font-weight:800; }
-            .qty-row-delete { width:36px; height:40px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
-            .qty-item-suggestion { min-height:54px; padding:12px; }
-            .qty-item-suggestion strong { display:block; font-size:14px; line-height:1.55; white-space:normal; overflow-wrap:anywhere; }
-            #myQuantityHistoryCard .table-responsive { overflow:visible; }
-            #myQuantityHistoryCard table { min-width:0; table-layout:fixed; }
-            #myQuantityHistoryCard th, #myQuantityHistoryCard td { padding:9px 7px; font-size:12px; white-space:normal; overflow-wrap:anywhere; }
-            #myQuantityHistoryCard th:nth-child(1), #myQuantityHistoryCard td:nth-child(1) { width:27%; }
-            #myQuantityHistoryCard th:nth-child(3), #myQuantityHistoryCard td:nth-child(3) { width:27%; text-align:center; }
-            .qty-history-item-name { display:block; line-height:1.5; overflow-wrap:anywhere; }
-            .qty-history-amount { white-space:normal; }
-        }
-
         .summary-bar {
             background: #fff;
             border: 1.5px solid var(--primary);
@@ -1144,131 +1098,7 @@
             .mobile-cart-dock .btn{min-width:118px;padding:9px}
         }
 
-    
-
-        /* تحسين وضوح شاشة إدخال الكميات على الهاتف */
-        #quantitiesTab, #quantitiesTab * { font-family: 'Cairo', sans-serif; }
-        #quantitiesTab .card-box { min-width: 0; }
-        #qtyAdjustmentRows .batch-qty-row { vertical-align: top; }
-        .qty-item-picker { width: 100%; min-width: 0; }
-        .qty-item-search {
-            display:block; width:100%; min-height:76px; height:76px; padding:12px 14px;
-            resize:none; overflow-y:auto; white-space:pre-wrap; overflow-wrap:anywhere;
-            word-break:normal; text-align:right; direction:rtl; font-size:16px;
-            line-height:1.7; font-weight:700; color:#172033; background:#fff;
-            border:1.5px solid #cbd5e1; border-radius:12px;
-        }
-        .qty-item-search::placeholder { color:#64748b; font-weight:500; font-size:13px; }
-        .qty-item-suggestions {
-            width:100%; max-height:280px; padding:8px; gap:8px;
-            border:1.5px solid #cbd5e1; border-radius:12px; background:#fff;
-        }
-        .qty-item-suggestion {
-            width:100%; min-height:58px; padding:12px 14px; text-align:right;
-            white-space:normal; overflow-wrap:anywhere; word-break:normal;
-            font-size:15px; line-height:1.65; border-radius:11px; background:#f8fafc;
-        }
-        .qty-item-suggestion strong { display:block; font-size:15px; line-height:1.65; font-weight:800; }
-        .qty-item-suggestion small { display:block; font-size:12px; line-height:1.6; }
-        @media (max-width:600px) {
-            #quantitiesTab .grid-2 { grid-template-columns:minmax(0,1fr); gap:10px; }
-            #quantitiesTab .form-group label { display:block; margin-bottom:7px; font-size:14px; font-weight:800; }
-            #qtyAdjustmentRows { display:flex !important; flex-direction:column; width:100%; gap:12px; }
-            #qtyAdjustmentRows .batch-qty-row {
-                display:grid !important; width:100% !important; min-width:0;
-                grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
-                gap:12px !important; padding:13px !important; margin:0;
-                border:1px solid #d7e0e9 !important; border-radius:15px !important;
-                background:#fff !important; box-shadow:0 4px 14px rgba(15,23,42,.055);
-            }
-            #qtyAdjustmentRows .batch-qty-row td { display:block !important; width:100%; min-width:0; padding:0 !important; border:0 !important; }
-            #qtyAdjustmentRows .batch-qty-row td:first-child { grid-column:1 / -1 !important; }
-            #qtyAdjustmentRows .batch-qty-row td:nth-child(2)::before,
-            #qtyAdjustmentRows .batch-qty-row td:nth-child(3)::before {
-                display:block; margin:0 0 6px; color:#475569; font-size:12px; font-weight:800;
-            }
-            #qtyAdjustmentRows .batch-qty-row td:nth-child(2)::before { content:'الكمية المراد إضافتها'; }
-            #qtyAdjustmentRows .batch-qty-row td:nth-child(3)::before { content:'الرصيد الحالي'; }
-            #qtyAdjustmentRows .batch-qty-row td:nth-child(4) { grid-column:1 / -1 !important; text-align:left !important; }
-            #qtyAdjustmentRows .batch-qty-row td:nth-child(4) .btn { min-height:42px; }
-            #qtyAdjustmentRows .form-control { width:100%; min-width:0; min-height:48px; font-size:16px; }
-            #qtyAdjustmentRows .batch-qty-current { display:block; min-height:48px; padding:12px 10px; background:#f1f5f9; border-radius:10px; text-align:center; font-size:15px; }
-            .qty-item-search { min-height:82px; height:82px; font-size:16px; }
-            .qty-item-suggestion { min-height:64px; padding:12px; }
-            #qtyEntryEmptyState { line-height:1.8; font-size:13px; }
-            #quantitiesTab .btn-full { min-height:54px; font-size:16px; font-weight:800; }
-        }
-
-
-/* قائمة الأصناف: كل صنف في صف واضح، والاسم والكمية متجاوران */
-.item-list-grid{display:flex!important;flex-direction:column!important;gap:12px!important;margin-top:14px!important}
-.item-list-row-card{display:flex;flex-direction:column;gap:0;width:100%;background:#fff;border:1px solid #dbe6df;border-radius:15px;padding:13px 15px;box-shadow:0 3px 12px rgba(20,70,40,.055);min-width:0}
-.item-row-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(105px,.42fr);gap:12px;align-items:stretch;padding-bottom:11px;border-bottom:1px solid #e8eee9}
-.item-row-product,.item-row-quantity{display:flex;flex-direction:column;gap:4px;min-width:0}
-.item-row-product strong{font-size:17px;line-height:1.6;color:#102f25;overflow-wrap:anywhere;white-space:normal}
-.item-row-product small,.item-row-quantity small{font-size:12px;color:#65766d;font-weight:700}
-.item-row-label{font-size:11px;color:#718078;font-weight:800}
-.item-row-quantity{background:#eff8f1;border:1px solid #d8ecdd;border-radius:11px;padding:9px 11px;text-align:center;justify-content:center}
-.item-row-quantity strong{font-size:23px;line-height:1.2;color:#137044;font-weight:900;font-variant-numeric:tabular-nums}
-.item-row-detail,.item-row-source{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:9px 2px;border-bottom:1px solid #eef2ef;min-width:0}
-.item-row-detail span,.item-row-source span{font-size:12px;color:#68766e;font-weight:700;flex:0 0 auto}
-.item-row-detail b,.item-row-source b{font-size:13px;color:#1f2937;font-weight:800;text-align:left;overflow-wrap:anywhere;min-width:0}
-.item-row-source{margin:7px 0;padding:10px 11px;border:1px solid #dcebe0;border-radius:10px;background:#f3faf5;flex-direction:column;gap:4px}
-.item-row-source.source-unknown{background:#fff8eb;border-color:#f1e3c5}
-.item-row-total{margin-top:7px;background:#eff8f1;border-radius:9px;padding:10px}
-.item-row-total b{color:#137044;font-size:15px}
-.item-row-actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:11px}
-.item-row-actions .btn{flex:1;min-height:43px;white-space:normal}
-@media(max-width:520px){.item-list-row-card{padding:11px 12px}.item-row-main{grid-template-columns:minmax(0,1fr) 112px;gap:8px}.item-row-product strong{font-size:16px}.item-row-quantity{padding:8px 6px}.item-row-quantity strong{font-size:21px}.item-row-detail{align-items:center}.item-row-detail b{font-size:12px}.item-row-actions{flex-direction:column}.item-row-actions .btn{width:100%}}
-
-
-        /* واجهة إدخال الموظف: اختيار صنف + كمية فقط */
-        #qtyAdjustmentRows .batch-qty-current { display:none !important; }
-        @media (max-width:600px) {
-            #quantitiesTab #qtyAdjustmentRows .batch-qty-row {
-                display:grid !important;
-                grid-template-columns:minmax(0,1fr) 112px 38px !important;
-                align-items:center !important; gap:8px !important; padding:10px !important;
-            }
-            #quantitiesTab #qtyAdjustmentRows .batch-qty-row td { display:block !important; width:100% !important; min-width:0 !important; }
-            #quantitiesTab #qtyAdjustmentRows .batch-qty-row td:first-child { grid-column:auto !important; }
-            #quantitiesTab #qtyAdjustmentRows .batch-qty-row td:nth-child(2)::before {
-                content:'الكمية' !important; display:block !important; margin:0 0 5px !important;
-                font-size:11px !important; font-weight:800 !important; color:#475569 !important;
-            }
-            #quantitiesTab #qtyAdjustmentRows .batch-qty-row td:nth-child(3)::before { content:none !important; display:none !important; }
-            #quantitiesTab #qtyAdjustmentRows .qty-row-delete-cell { text-align:center !important; }
-            #quantitiesTab .qty-item-search { min-height:60px !important; height:auto !important; font-size:15px !important; line-height:1.6 !important; }
-            #quantitiesTab .batch-qty-value { min-height:60px !important; text-align:center !important; font-size:17px !important; }
-            #quantitiesTab .qty-row-delete { width:36px !important; min-height:42px !important; padding:0 !important; }
-            #quantitiesTab .qty-item-suggestion strong { white-space:normal !important; overflow-wrap:anywhere !important; line-height:1.6 !important; }
-            #myQuantityHistoryCard .table-responsive { overflow:visible !important; }
-            #myQuantityHistoryCard table { min-width:0 !important; width:100% !important; table-layout:fixed !important; }
-            #myQuantityHistoryCard th, #myQuantityHistoryCard td { white-space:normal !important; overflow-wrap:anywhere !important; padding:8px 6px !important; font-size:12px !important; }
-        }
-
-/* ضبط شاشة الهاتف: صفوف أفقية قصيرة وواضحة */
-@media(max-width:600px){
- #quantitiesTab .card-box{padding:10px!important;margin-bottom:10px!important}
- #quantitiesTab .card-title{font-size:15px!important;margin-bottom:8px!important}
- #quantitiesTab .grid-2{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important}
- #quantitiesTab .form-group{margin-bottom:5px!important;min-width:0!important}
- #quantitiesTab .form-group label{font-size:11px!important;margin-bottom:4px!important}
- #quantitiesTab .form-control{min-height:40px!important;height:40px!important;padding:6px 8px!important;font-size:13px!important}
- #quantitiesTab #qtyAdjustmentRows .batch-qty-row{grid-template-columns:minmax(0,1fr) 82px 30px!important;gap:5px!important;padding:6px!important;margin:0 0 6px!important;border-radius:9px!important}
- #quantitiesTab #qtyAdjustmentRows .batch-qty-row td{padding:0!important;margin:0!important;min-width:0!important}
- #quantitiesTab #qtyAdjustmentRows .qty-item-search{height:42px!important;min-height:42px!important;padding:5px 7px!important;font-size:12px!important;line-height:1.3!important}
- #quantitiesTab #qtyAdjustmentRows .qty-item-suggestion{min-height:38px!important;padding:5px 7px!important;font-size:11px!important}
- #quantitiesTab #qtyAdjustmentRows .qty-item-suggestion strong{font-size:12px!important;line-height:1.3!important}
- #quantitiesTab #qtyAdjustmentRows .batch-qty-value{height:42px!important;min-height:42px!important;padding:4px!important;font-size:14px!important}
- #quantitiesTab #qtyAdjustmentRows .batch-qty-row td:nth-child(2)::before{content:none!important;display:none!important}
- #quantitiesTab #qtyAdjustmentRows .qty-row-delete{width:30px!important;min-height:38px!important;height:38px!important;font-size:12px!important}
- #quantitiesTab .btn-full{min-height:43px!important;font-size:14px!important}
- #quantitiesTab .qty-entry-empty{font-size:11px!important;line-height:1.5!important;padding:8px!important}
- #myQuantityHistoryCard{padding:9px!important}
- #myQuantityHistoryCard th,#myQuantityHistoryCard td{font-size:11px!important;padding:6px 4px!important}
-}
-</style>
+    </style>
 </head>
 <body>
 
@@ -1371,10 +1201,6 @@
                 <button class="nav-tab" data-menu-key="warehouseTab" onclick="openFullPage('warehouseTab')">
                     <i class="fa-solid fa-boxes-stacked"></i>
                     <span>المخازن والفروع</span>
-                </button>
-                <button class="nav-tab accent-tab" data-menu-key="itemListTab" onclick="openFullPage('itemListTab')">
-                    <i class="fa-solid fa-list-check"></i>
-                    <span>قائمة الأصناف</span>
                 </button>
                 <button class="nav-tab" data-menu-key="customersTab" onclick="openFullPage('customersTab')">
                     <i class="fa-solid fa-users"></i>
@@ -1665,10 +1491,7 @@
         <section id="expenseEntryTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title" style="color:var(--danger);"><i class="fa-solid fa-money-bill-transfer"></i> تسجيل مصروف جديد</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button type="button" class="btn btn-outline btn-sm" onclick="refreshItemListFromFirestore()"><i class="fa-solid fa-rotate"></i> تحديث الأصناف</button>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
-                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
             </div>
             <div class="employee-permission-note" style="margin-bottom:12px;">سجّل ما اشتريته أو سبب المصروف والمبلغ والعملة والصندوق. لا يلزم إدخال اسم عميل أو مورد.</div>
             <div class="card-box">
@@ -1920,24 +1743,6 @@
             </div>
         </section>
 
-        <!-- قائمة الأصناف مع مصدر كل صنف وإدارة الكمية -->
-        <section id="itemListTab" class="tab-content hidden">
-            <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-list-check"></i> قائمة الأصناف</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
-            </div>
-            <div class="card-box">
-                <div class="card-title"><span>الأصناف ومصادرها</span><span class="badge badge-unit" id="itemListCount">0 صنف</span></div>
-                <div id="itemListSummary" class="item-list-summary"></div>
-                <div class="item-list-filters">
-                    <div class="form-group"><label for="itemListSearch">بحث باسم الصنف أو المورد أو المصدر</label><input id="itemListSearch" class="form-control" type="search" placeholder="اكتب اسم الصنف أو المورد..." oninput="renderItemList()"></div>
-                    <div class="form-group"><label for="itemListBranch">المخزن</label><select id="itemListBranch" class="form-control" onchange="renderItemList()"><option value="ALL">كل المخازن المسموحة</option></select></div>
-                </div>
-                <div id="itemListCards" class="item-list-grid"></div>
-            </div>
-            <div class="employee-permission-note">يعرض مصدر الصنف حسب بيانات التوريد أو الإضافة المسجلة. الأصناف القديمة التي لم يكن لها مصدر محفوظ ستظهر بعبارة «مصدر غير مسجل».</div>
-        </section>
-
         <!-- صفحة إضافة أصناف -->
         <section id="addItemTab" class="tab-content hidden">
             <div class="fullpage-topbar">
@@ -2009,7 +1814,7 @@
                         <label>الفرع / المخزن</label>
                         <select id="qtyBranchSelect" class="form-control" onchange="populateQuantityItems()"></select>
                     </div>
-                    <div class="form-group" id="qtyUpdateModeGroup">
+                    <div class="form-group">
                         <label>طريقة تحديث الكميات لكل الصفوف</label>
                         <select id="qtyUpdateMode" class="form-control">
                             <option value="add">إضافة إلى الرصيد الحالي (+)</option>
@@ -2019,26 +1824,15 @@
                     </div>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0;">
-                    <strong>أصناف الكميات</strong>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="addStockQuantityRow()"><i class="fa-solid fa-plus"></i> إضافة صنف</button>
+                    <strong>أصناف الكميات (أضف عدة صفوف ثم احفظها مرة واحدة)</strong>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="addStockQuantityRow()"><i class="fa-solid fa-plus"></i> إضافة صف</button>
                 </div>
-                <div class="table-responsive qty-entry-table-wrap">
-                    <table class="qty-entry-simple-table"><thead><tr><th>الصنف</th><th>الكمية المراد إضافتها</th><th></th></tr></thead><tbody id="qtyAdjustmentRows"></tbody></table>
-                    <div id="qtyEntryEmptyState" class="qty-entry-empty">اضغط «إضافة صنف» لإضافة صف جديد. بعد الحفظ تختفي صفوف الإدخال الفارغة وتظهر عملياتك المسجلة أسفل الصفحة.</div>
+                <div class="table-responsive">
+                    <table><thead><tr><th>الصنف</th><th>الكمية</th><th>المتاح حالياً</th><th>حذف</th></tr></thead><tbody id="qtyAdjustmentRows"></tbody></table>
                 </div>
                 <button id="saveQtyBtn" class="btn btn-accent btn-full" style="margin-top:12px;" onclick="saveStockQuantity()">
-                    <i class="fa-solid fa-floppy-disk"></i> حفظ الكميات المدخلة
+                    <i class="fa-solid fa-floppy-disk"></i> حفظ جميع صفوف الكميات
                 </button>
-            </div>
-
-            <div id="myQuantityHistoryCard" class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> الكميات التي أدخلتها</span><span class="badge badge-unit" id="myQuantityHistoryCount">0 عملية</span></div>
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr><th>التاريخ</th><th>الصنف الذي أضفته</th><th>الكمية</th></tr></thead>
-                        <tbody id="myQuantityHistoryBody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);">لا توجد عمليات مسجلة منك بعد</td></tr></tbody>
-                    </table>
-                </div>
             </div>
 
             <div id="quantitiesPreviewCard" class="card-box hidden">
@@ -2322,15 +2116,15 @@
                         <i class="fa-solid fa-user-check"></i> حفظ تعريف الموظف
                     </button>
                     <div class="employee-permission-note" style="margin-top:10px; margin-bottom:0;">
-                        هذه الصفحة مخصصة لتعريف الموظفين فقط: الاسم ونظام الأجر والراتب أو تسعيرات الأعمال والمخازن. حسابات الدخول وكلمات المرور والصلاحيات تُدار في صفحة مستقلة، ولا تظهر بيانات الدخول ضمن سجل الموظفين.
+                        عرّف الموظف هنا واختر نظام أجره. يمنع النظام تكرار اسم الموظف؛ عند وجوده استخدم أزرار التعديل. يسجل المشرف الكميات من زر «إضافة شغل للموظفين»، أما بيانات الدخول والصلاحيات فتُدار من قسم الأمان في صفحة «الصلاحيات»، ثم يُربط الحساب هنا بشكل مستقل.
                     </div>
                 </div>
 
                 <div class="card-box">
                     <div class="card-title">
-                        <span><i class="fa-solid fa-users"></i> الموظفون والرواتب فقط</span>
+                        <span><i class="fa-solid fa-users"></i> الموظفون والرواتب والحسابات المرتبطة</span>
                         <div style="display:flex;gap:7px;flex-wrap:wrap;">
-                            
+                            <button type="button" class="btn btn-outline btn-sm" onclick="migrateLegacyEmployeeAccountsToStaff()"><i class="fa-solid fa-shield-halved"></i> فصل بيانات الموظفين عن حسابات الدخول</button>
                             <button type="button" class="btn btn-warning btn-sm" onclick="removeDuplicateStaffProfiles()"><i class="fa-solid fa-filter-circle-xmark"></i> فحص وإزالة التكرار المتطابق</button>
                         </div>
                     </div>
@@ -2341,7 +2135,8 @@
                                     <th>اسم الموظف</th>
                                     <th>نظام الأجر</th>
                                     <th>الراتب / تسعيرة القطعة</th>
-                                    <th>المخازن المسموح بها</th>
+                                    <th>المخزن المحدد</th>
+                                    <th>حساب الدخول</th>
                                     <th>الحالة</th>
                                     <th>تحكم</th>
                                 </tr>
@@ -2351,89 +2146,91 @@
                     </div>
                 </div>
 
-                
+                <div class="card-box">
+                    <div class="card-title"><span><i class="fa-solid fa-link"></i> ربط حساب الدخول بملف الموظف</span></div>
+                    <div class="employee-permission-note">هذا ربط داخلي فقط: لا يتم إدخال الاسم أو الراتب أو التسعيرات في بيانات الدخول. يحتفظ حساب الأمان باسم المستخدم وكلمة المرور والدور والصلاحيات فقط، بينما تبقى بيانات الموظف في ملفه المستقل. بعد الربط يمكن للموظف تسجيل إنتاجه لنفسه إذا سمح المشرف بذلك.</div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>ملف الموظف</label>
+                            <select id="linkStaffSelect" class="form-control"><option value="">اختر الموظف</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label>حساب الدخول (الأمان)</label>
+                            <select id="linkAccountSelect" class="form-control"><option value="">اختر حساباً غير مرتبط</option></select>
+                        </div>
+                    </div>
+                    <button type="button" id="linkStaffAccountBtn" class="btn btn-accent btn-full" onclick="linkStaffToSecurityAccount()"><i class="fa-solid fa-link"></i> ربط الحساب بالموظف</button>
+                </div>
             </div>
         </section>
 
-        <!-- الصرف اليومي للعمال: سجل مستقل لا يخصم من الراتب أو مستحق الإنتاج -->
+        <!-- مصروفات الموظفين: تخصم من الراتب الشهري وتعرض المتبقي -->
         <section id="employeeExpensesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
-                <div class="fullpage-title"><i class="fa-solid fa-hand-holding-dollar"></i> الصرف اليومي للموظفين</div>
+                <div class="fullpage-title"><i class="fa-solid fa-money-bill-transfer"></i> مصروفات الموظفين والرواتب</div>
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
-            <div class="employee-permission-note" id="employeeExpensesPeriodLabel">
-                سجّل الصرفة اليومية التي تسلّمها للعامل. هذا السجل مستقل تماماً عن الراتب ومستحق الإنتاج، ولا يخصم منهما.
-            </div>
+            <div class="employee-permission-note" id="employeeExpensesPeriodLabel">يتم احتساب المصروفات والمتبقي من راتب الشهر الحالي.</div>
 
             <div class="card-box" id="employeeExpenseEntryCard">
-                <div class="card-title"><span><i class="fa-solid fa-money-bill-transfer"></i> تسجيل صرفة يومية لعامل</span></div>
-                <div class="grid-2">
+                <div class="card-title"><span><i class="fa-solid fa-hand-holding-dollar"></i> تسجيل مصروف أو سلفة من راتب موظف</span></div>
+                <div class="grid-3">
                     <div class="form-group">
-                        <label>اختر العامل</label>
-                        <select id="employeeExpenseStaffSelect" class="form-control" onchange="updateEmployeeExpensePreview(); setEmployeeDailyCurrencyFromStaff();">
-                            <option value="">اختر العامل</option>
+                        <label>اختر الموظف</label>
+                        <select id="employeeExpenseStaffSelect" class="form-control" onchange="updateEmployeeExpensePreview()">
+                            <option value="">اختر الموظف</option>
                         </select>
                     </div>
-                    <div class="form-group" style="grid-column:1/-1;">
-                        <label>نوع الصرفة</label>
-                        <select id="employeeDailyDisbursementMode" class="form-control" onchange="onEmployeeDisbursementModeChange()">
-                            <option value="daily">صرف يومي — لا يُخصم من الراتب أو المستحق</option>
-                            <option value="advance">سلفة / دفعة — تُخصم من راتب الموظف أو مستحق إنتاجه</option>
-                        </select>
-                        <small class="employee-permission-note">اختر «صرف يومي» للمبلغ المستقل، أو «سلفة / دفعة» إذا تريد احتساب المبلغ ضمن ما استلمه العامل وخصمه من مستحقه.</small>
-                    </div>
                     <div class="form-group">
-                        <label>المبلغ المصروف</label>
+                        <label>المبلغ المصروف / المدفوع للموظف</label>
                         <input type="number" step="0.01" min="0.01" id="employeeExpenseAmount" class="form-control num-input" placeholder="0.00" oninput="updateEmployeeExpensePreview()">
                     </div>
                     <div class="form-group">
-                        <label>العملة</label>
-                        <select id="employeeDailyDisbursementCurrency" class="form-control" onchange="filterEmployeeExpenseCashboxes(); updateEmployeeExpensePreview();">
-                            <option value="YER">ريال يمني (YER)</option>
-                            <option value="SAR">ريال سعودي (SAR)</option>
-                            <option value="USD">دولار أمريكي (USD)</option>
-                        </select>
+                        <label>البيان / سبب المصروف</label>
+                        <input type="text" id="employeeExpenseNote" class="form-control" placeholder="مثال: سلفة أو دفعة من المستحق">
                     </div>
                     <div class="form-group">
-                        <label>تاريخ الصرفة</label>
-                        <input type="date" id="employeeDailyDisbursementDate" class="form-control" onchange="updateEmployeeExpensePreview()">
-                    </div>
-                    <div class="form-group" style="grid-column:1/-1;">
-                        <label>بيان الصرفة اليومية / ماذا استلم العامل؟</label>
-                        <input type="text" id="employeeExpenseNote" class="form-control" placeholder="مثال: صرفة يومية، مواصلات، وجبة، مبلغ للعامل">
-                    </div>
-                    <div class="form-group" id="employeeDailyCashboxGroup" style="grid-column:1/-1;">
-                        <label>الصندوق الذي صُرفت منه (اختياري)</label>
-                        <select id="employeeExpenseCashboxSelect" class="form-control" onchange="updateEmployeeExpensePreview()"><option value="">بدون ربط بصندوق</option></select>
+                        <label>الصندوق الذي تم الصرف منه (اختياري)</label>
+                        <select id="employeeExpenseCashboxSelect" class="form-control"><option value="">بدون ربط بصندوق</option></select>
                     </div>
                 </div>
-                <div id="employeeExpensePreview" class="employee-permission-note">اختر العامل وأدخل مبلغ الصرفة اليومية.</div>
-                <div id="employeeExpenseEntryHint" class="employee-permission-note">الصرفة اليومية تُحفظ كسجل مستقل ولا تُخصم من راتب العامل أو مستحق إنتاجه.</div>
+                <div id="employeeExpensePreview" class="employee-permission-note">اختر الموظف لعرض راتبه أو مستحق إنتاجه والمتبقي له.</div>
+                <div id="employeeExpenseEntryHint" class="employee-permission-note">يمكنك تسجيل المبالغ المسموح لك بها.</div>
                 <button id="saveEmployeeExpenseBtn" class="btn btn-primary btn-full" onclick="recordEmployeeExpense()">
-                    <i class="fa-solid fa-floppy-disk"></i> حفظ الصرفة اليومية دون خصمها من مستحق العامل
+                    <i class="fa-solid fa-floppy-disk"></i> تسجيل المصروف / الدفعة وتحديث المتبقي
                 </button>
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-chart-column"></i> إجمالي الصرف والسلف لهذا الشهر</span></div>
-                <div id="employeeDailyDisbursementSummary" class="summary-strip"></div>
+                <div class="card-title"><span><i class="fa-solid fa-wallet"></i> ملخص مستحقات الموظفين والمتبقي لهذا الشهر</span></div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الموظف</th>
+                                <th>الراتب / مستحق الإنتاج</th>
+                                <th>المصروف / المدفوع</th>
+                                <th>المتبقي للموظف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeSalaryBalanceBody"></tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-list"></i> سجل الصرف اليومي للعمال</span></div>
+                <div class="card-title"><span><i class="fa-solid fa-list"></i> سجل مصروفات الموظفين</span></div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
                                 <th>التاريخ</th>
-                                <th>العامل</th>
-                                <th>نوع الصرف</th>
+                                <th>الموظف</th>
                                 <th>البيان</th>
                                 <th>المبلغ</th>
-                                <th>الصندوق</th>
-                                <th>سجل بواسطة</th>
+                                <th>المسجل بواسطة</th>
                                 <th>إجراء</th>
                             </tr>
                         </thead>
@@ -2441,7 +2238,6 @@
                     </table>
                 </div>
             </div>
-            <div class="employee-permission-note">يوجد نوعان: «صرف يومي» لا يخصم من حق العامل، و«سلفة / دفعة» تُسجل ضمن المبالغ التي استلمها وتُخصم من راتبه الشهري أو مستحق إنتاجه. في الحالتين، إذا رُبطت الحركة بصندوق فسيُخصم المبلغ من رصيد الصندوق.</div>
         </section>
 
         <!-- تسجيل إنتاج الموظفين الذين يعملون بنظام القطعة -->
@@ -2488,7 +2284,7 @@
                 </button>
             </div>
 
-            <div class="card-box" id="employeeProductionFinancialSummary">
+            <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-wallet"></i> مستحقات عمال القطعة لهذا الشهر</span></div>
                 <div class="table-responsive">
                     <table>
@@ -2619,32 +2415,12 @@
                             <div id="newUserWarehouseInfo" class="employee-permission-note" style="margin-top:5px;">حدد مخزناً أو أكثر. يستطيع الحساب النقل بين المخازن المحددة فقط.</div>
                         </div>
                     </div>
-                    <div class="employee-permission-note">بعد إنشاء الحساب، استخدم قسم «ربط حساب الدخول بملف الموظف» في هذه الصفحة للربط الداخلي فقط. تعريف الموظف وراتبه يظلان في صفحة الموظفون المستقلة.</div>
+                    <div class="employee-permission-note">بعد إنشاء الحساب، اربطه بملف الموظف من صفحة الموظفون. يرتبط الحساب بكل المخازن التي حددها المشرف في ملف الموظف، ويمكنه النقل بينها فقط.</div>
                     <button id="createEmployeeUserBtn" type="button" class="btn btn-accent btn-full" onclick="createEmployeeUser()">
                         <i class="fa-solid fa-user-plus"></i> إضافة حساب دخول
                     </button>
                 </div>
 
-                <div class="card-box" style="border:1px solid var(--border);">
-                    <div class="card-title"><span><i class="fa-solid fa-shield-halved"></i> أداة نقل البيانات القديمة (للاستخدام عند الحاجة فقط)</span></div>
-                    <div class="employee-permission-note">تستخدم هذه الأداة مرة واحدة فقط إذا كانت لديك بيانات موظفين قديمة محفوظة داخل حسابات الدخول قبل فصل السجلات. لا تستخدمها إذا كانت ملفات الموظفين منفصلة بالفعل.</div>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="migrateLegacyEmployeeAccountsToStaff()"><i class="fa-solid fa-database"></i> فصل بيانات الموظفين القديمة</button>
-                </div>
-                <div class="card-box">
-                    <div class="card-title"><span><i class="fa-solid fa-link"></i> ربط حساب الدخول بملف الموظف (ربط داخلي فقط)</span></div>
-                    <div class="employee-permission-note">هذه الخطوة تربط حساب الأمان بملف الموظف حتى يعرف النظام صاحب الحساب عند تسجيل الإنتاج. لا تُنشئ موظفًا جديدًا ولا تنقل الراتب أو التسعيرات إلى بيانات الدخول؛ تبقى بيانات الموظف في صفحة الموظفون المستقلة.</div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>ملف الموظف</label>
-                            <select id="linkStaffSelect" class="form-control"><option value="">اختر الموظف</option></select>
-                        </div>
-                        <div class="form-group">
-                            <label>حساب الدخول (الأمان)</label>
-                            <select id="linkAccountSelect" class="form-control"><option value="">اختر حساباً غير مرتبط</option></select>
-                        </div>
-                    </div>
-                    <button type="button" id="linkStaffAccountBtn" class="btn btn-accent btn-full" onclick="linkStaffToSecurityAccount()"><i class="fa-solid fa-link"></i> ربط الحساب بالموظف</button>
-                </div>
                 <div class="card-box">
                     <div class="card-title"><span><i class="fa-solid fa-user-shield"></i> تحديد صلاحيات مستخدم</span></div>
                     <div class="form-group">
@@ -2676,25 +2452,7 @@
                             حدد الأقسام التي تسمح لهذا الحساب بفتحها. جميع الأقسام مغلقة افتراضياً، ولا يظهر للموظف إلا ما تفعّله وتحفظه هنا:
                         </div>
                         <div id="permissionMenusGrid" class="menu-perms-grid"></div>
-                        <div class="employee-permission-note" style="margin-top:8px;">مهم: لإظهار زر «إضافة شغل للموظفين» فعّل القسم أدناه، ثم اختر الموظفين الذين يُسمح لهذا الحساب بتسجيل إنتاجهم. لا يلزم أن يكون الحساب مربوطاً بأحد هؤلاء الموظفين؛ الاختيار هنا يحدد الأسماء التي تظهر في قائمة تسجيل الإنتاج فقط.</div>
-                        <div class="card-box" style="margin-top:12px; margin-bottom:0;">
-                            <div class="card-title"><span><i class="fa-solid fa-people-group"></i> الموظفون المسموح بتسجيل إنتاجهم لهذا الحساب</span></div>
-                            <div class="employee-permission-note">حدد موظفاً واحداً أو عدة موظفين يعملون بالقطعة. الموظفون غير المحددين لن يظهروا لهذا الحساب في صفحة «إضافة شغل للموظفين» ولن يستطيع تسجيل إنتاج لهم.</div>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
-                                <button type="button" class="btn btn-outline btn-sm" onclick="setAllProductionStaffChoices(true)">تحديد كل الموظفين</button>
-                                <button type="button" class="btn btn-outline btn-sm" onclick="setAllProductionStaffChoices(false)">إلغاء التحديد</button>
-                            </div>
-                            <div id="permissionProductionStaffChoices" class="perm-box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));"></div>
-                        </div>
-                        <div class="card-box" style="margin-top:12px; margin-bottom:0;">
-                            <div class="card-title"><span><i class="fa-solid fa-hand-holding-dollar"></i> العمال المسموح بتسجيل الصرف اليومي لهم</span></div>
-                            <div class="employee-permission-note">اختر العمال الذين يستطيع هذا الحساب تسجيل الصرفة اليومية لهم. لا تؤثر هذه الصرفيات على الراتب أو مستحق الإنتاج. إذا لم تحدد أسماء فلن تظهر قائمة العمال لهذا الحساب.</div>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
-                                <button type="button" class="btn btn-outline btn-sm" onclick="setAllDailyDisbursementStaffChoices(true)">تحديد كل العمال</button>
-                                <button type="button" class="btn btn-outline btn-sm" onclick="setAllDailyDisbursementStaffChoices(false)">إلغاء التحديد</button>
-                            </div>
-                            <div id="permissionDailyDisbursementStaffChoices" class="perm-box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));"></div>
-                        </div>
+                        <div class="employee-permission-note" style="margin-top:8px;">مهم: لإظهار زر «إضافة شغل للموظفين» لهذا الحساب، فعّل هذا القسم ثم احفظ الصلاحيات. يجب ربط الحساب بملف الموظف من صفحة «الموظفون»؛ بعدها يستطيع الموظف تسجيل إنتاجه لنفسه فقط، ولا تظهر له ملفات بقية الموظفين.</div>
                         <div class="card-box" style="margin-top:12px; margin-bottom:0;">
                             <div class="card-title"><span><i class="fa-solid fa-warehouse"></i> المخازن المسموح بها للحساب المحدد</span></div>
                             <div class="employee-permission-note">يمكنك تعديل مخازن أي حساب موجود دون إنشاء حساب جديد. اختر صلاحية عامة، ثم حدد بشكل مستقل مخازن إدخال الكميات ومخازن النقل.</div>
@@ -2960,7 +2718,6 @@
         { key: 'vouchersTab', label: 'الأسناد' },
         { key: 'cashboxTab', label: 'الصندوق' },
         { key: 'warehouseTab', label: 'المخازن والفروع' },
-        { key: 'itemListTab', label: 'قائمة الأصناف' },
         { key: 'customersTab', label: 'العملاء' },
         { key: 'quantitiesTab', label: 'إدخال كميات الأصناف' },
         { key: 'addItemTab', label: 'إضافة أصناف' },
@@ -3005,7 +2762,6 @@
         employees: [],
         staff: [],
         employeeExpenses: [],
-        employeeDailyDisbursements: [],
         employeeProduction: [],
         warehouse: []
     };
@@ -3200,13 +2956,7 @@
     }
 
     function getEmployeeExpensesForPeriod(staffId, period = getCurrentPayrollPeriod()) {
-        const staff = getStaffById(staffId);
-        const currency = staff ? getStaffSalaryCurrency(staff) : 'YER';
-        return (state.employeeExpenses || []).filter(item =>
-            item.staffId === staffId &&
-            (item.period || String(item.date || '').slice(0, 7)) === period &&
-            (item.currency || currency) === currency
-        );
+        return state.employeeExpenses.filter(item => item.staffId === staffId && item.period === period);
     }
 
     function getEmployeePeriodSpent(staffId, period = getCurrentPayrollPeriod()) {
@@ -3239,18 +2989,13 @@
         return staff.filter(item => item.id === ownStaffId || item.userAccountId === currentUser?.id || item.legacyUserId === currentUser?.id);
     }
 
-    // الموظفون الذين يسمح المشرف لهذا الحساب بتسجيل إنتاجهم فقط.
-    // لا نوسّع نطاق مصروفات/رواتب الموظف؛ هذه القائمة خاصة بصفحة الإنتاج.
-    function getProductionVisibleStaff() {
-        const staff = getAllStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
-        if (canManageUsers() || hasFullAccess(currentUser)) return staff;
-        if (Array.isArray(currentUser?.productionStaffAccessIds)) {
-            const allowed = new Set(currentUser.productionStaffAccessIds.map(String));
-            return staff.filter(item => allowed.has(String(item.id)));
-        }
-        // توافق خلفي للحسابات القديمة: لا يظهر إلا ملف الموظف المرتبط بالحساب إن وجد.
-        const ownStaffId = currentUser?.staffId || `legacy_${currentUser?.id || ''}`;
-        return staff.filter(item => item.id === ownStaffId || item.userAccountId === currentUser?.id || item.legacyUserId === currentUser?.id);
+    // كشف المستحقات يحتاج صلاحية مستقلة: إذا منح المشرف الحساب قسم
+    // «مستحقات الموظفين وكشوف الحساب» يرى صاحبه جميع الموظفين في الكشف،
+    // بينما تبقى صلاحيات تسجيل الإنتاج/الدفعات مقيدة بالموظف المرتبط بالحساب.
+    function getVisibleEmployeeDuesStaff() {
+        const staff = getAllStaff();
+        if (hasFullAccess(currentUser) || canAccessMenu('employeeDuesTab')) return staff;
+        return getVisiblePayrollStaff();
     }
 
     async function migrateLegacyEmployeeAccountsToStaff() {
@@ -3612,69 +3357,6 @@ function initMenuPermissionCheckboxes() {
         return selector ? normalizeBranchIds(Array.from(document.querySelectorAll(selector)).map(cb => cb.value)) : [];
     }
 
-    function renderPermissionProductionStaffChoices(selectedIds = []) {
-        const container = document.getElementById('permissionProductionStaffChoices');
-        if (!container) return;
-        const selected = new Set((Array.isArray(selectedIds) ? selectedIds : []).map(String));
-        const staff = getAllStaff()
-            .filter(item => isPieceworkStaff(item) && item.active !== false)
-            .sort((a, b) => String(a.fullName || '').localeCompare(String(b.fullName || ''), 'ar'));
-        if (!staff.length) {
-            container.innerHTML = '<div class="employee-permission-note">لا توجد ملفات موظفين نشطة بنظام القطعة. عرّف الموظفين وتسعيراتهم أولاً من صفحة «الموظفون والرواتب».</div>';
-            return;
-        }
-        container.innerHTML = staff.map(item => {
-            const rates = (item.pieceRates || []).map(rate => rate.name).filter(Boolean).join('، ');
-            const label = `${item.fullName || 'موظف'}${rates ? ` — ${rates}` : ''}`;
-            return `<label class="perm-check" style="background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 10px;align-items:flex-start;">
-                <input type="checkbox" class="permission-production-staff-cb" value="${escapeUiText(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''}>
-                <span>${escapeUiText(label)}</span>
-            </label>`;
-        }).join('');
-    }
-
-    function setAllProductionStaffChoices(checked) {
-        document.querySelectorAll('#permissionProductionStaffChoices .permission-production-staff-cb').forEach(cb => {
-            cb.checked = Boolean(checked);
-        });
-    }
-
-    function getPermissionProductionStaffSelection() {
-        return Array.from(document.querySelectorAll('#permissionProductionStaffChoices .permission-production-staff-cb:checked'))
-            .map(cb => cb.value);
-    }
-
-    function renderPermissionDailyDisbursementStaffChoices(selectedIds = []) {
-        const container = document.getElementById('permissionDailyDisbursementStaffChoices');
-        if (!container) return;
-        const selected = new Set((Array.isArray(selectedIds) ? selectedIds : []).map(String));
-        const staff = getAllStaff()
-            .filter(item => item.active !== false)
-            .sort((a, b) => String(a.fullName || '').localeCompare(String(b.fullName || ''), 'ar'));
-        if (!staff.length) {
-            container.innerHTML = '<div class="employee-permission-note">لا توجد ملفات موظفين نشطة. عرّف العمال أولاً من صفحة الموظفون.</div>';
-            return;
-        }
-        container.innerHTML = staff.map(item => {
-            const payLabel = isPieceworkStaff(item) ? 'بالقطعة' : 'راتب شهري';
-            return `<label class="perm-check" style="background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 10px;align-items:flex-start;">
-                <input type="checkbox" class="permission-daily-disbursement-staff-cb" value="${escapeUiText(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''}>
-                <span>${escapeUiText(item.fullName || 'موظف')} — ${payLabel}</span>
-            </label>`;
-        }).join('');
-    }
-
-    function setAllDailyDisbursementStaffChoices(checked) {
-        document.querySelectorAll('#permissionDailyDisbursementStaffChoices .permission-daily-disbursement-staff-cb').forEach(cb => {
-            cb.checked = Boolean(checked);
-        });
-    }
-
-    function getPermissionDailyDisbursementStaffSelection() {
-        return Array.from(document.querySelectorAll('#permissionDailyDisbursementStaffChoices .permission-daily-disbursement-staff-cb:checked'))
-            .map(cb => cb.value);
-    }
-
     function loadEmployeePermissions() {
         const empId = document.getElementById('permissionEmployeeSelect')?.value || '';
         const emp = state.employees.find(e => e.id === empId);
@@ -3720,13 +3402,6 @@ function initMenuPermissionCheckboxes() {
         renderPermissionWarehouseChoices('general', generalIds);
         renderPermissionWarehouseChoices('quantity', quantityIds);
         renderPermissionWarehouseChoices('transfer', transferIds);
-        let productionStaffIds = Array.isArray(emp.productionStaffAccessIds) ? emp.productionStaffAccessIds : null;
-        if (productionStaffIds === null) {
-            const linkedStaff = getStaffLinkedToAccount(emp);
-            productionStaffIds = linkedStaff && isPieceworkStaff(linkedStaff) ? [linkedStaff.id] : [];
-        }
-        renderPermissionProductionStaffChoices(productionStaffIds);
-        renderPermissionDailyDisbursementStaffChoices(Array.isArray(emp.dailyDisbursementStaffAccessIds) ? emp.dailyDisbursementStaffAccessIds : []);
     }
 
     async function saveEmployeePermissions() {
@@ -3741,18 +3416,6 @@ function initMenuPermissionCheckboxes() {
         const warehouseBranchIds = getPermissionWarehouseSelection('general');
         const quantityBranchIds = getPermissionWarehouseSelection('quantity');
         const transferBranchIds = getPermissionWarehouseSelection('transfer');
-        const productionStaffAccessIds = getPermissionProductionStaffSelection();
-        const validProductionStaffIds = new Set(getAllStaff().filter(item => isPieceworkStaff(item) && item.active !== false).map(item => String(item.id)));
-        if (productionStaffAccessIds.some(id => !validProductionStaffIds.has(String(id)))) {
-            showToast('اختيار موظفي الإنتاج غير صالح؛ حدّث الصفحة ثم حاول مرة أخرى');
-            return;
-        }
-        const dailyDisbursementStaffAccessIds = getPermissionDailyDisbursementStaffSelection();
-        const validDailyStaffIds = new Set(getAllStaff().filter(item => item.active !== false).map(item => String(item.id)));
-        if (dailyDisbursementStaffAccessIds.some(id => !validDailyStaffIds.has(String(id)))) {
-            showToast('اختيار العمال للصرف اليومي غير صالح؛ حدّث الصفحة ثم حاول مرة أخرى');
-            return;
-        }
         const branchNames = getAllBranches().filter(branch => warehouseBranchIds.includes(branch.id)).map(branch => branch.name);
         const patch = {
             canEdit: document.getElementById('permissionCanEdit').checked,
@@ -3765,9 +3428,7 @@ function initMenuPermissionCheckboxes() {
             warehouseBranchIds,
             warehouseBranchName: branchNames.join('، ') || 'لا توجد مخازن',
             quantityBranchIds,
-            transferBranchIds,
-            productionStaffAccessIds,
-            dailyDisbursementStaffAccessIds
+            transferBranchIds
         };
         isBusy = true;
         const btn = document.getElementById('saveEmployeePermissionsBtn');
@@ -3785,9 +3446,7 @@ function initMenuPermissionCheckboxes() {
                 verifiedAccount.canSetStockQuantity !== patch.canSetStockQuantity ||
                 !same(verifiedAccount.warehouseBranchIds, warehouseBranchIds) ||
                 !same(verifiedAccount.quantityBranchIds, quantityBranchIds) ||
-                !same(verifiedAccount.transferBranchIds, transferBranchIds) ||
-                !same(verifiedAccount.productionStaffAccessIds, productionStaffAccessIds) ||
-                !same(verifiedAccount.dailyDisbursementStaffAccessIds, dailyDisbursementStaffAccessIds)) {
+                !same(verifiedAccount.transferBranchIds, transferBranchIds)) {
                 throw new Error('PERMISSIONS_NOT_VERIFIED');
             }
 
@@ -4056,15 +3715,9 @@ function initMenuPermissionCheckboxes() {
         if (tabId === 'warehouseTab' || tabId === 'transferTab') {
             populateTransferItems();
         }
-        if (tabId === 'itemListTab') {
-            populateItemListBranchFilter();
-            renderItemList();
-            refreshItemListFromFirestore();
-        }
         if (tabId === 'quantitiesTab') {
             applyQuantityUpdateModePermission();
             populateQuantityItems();
-            renderMyQuantityHistory();
             renderQuantitiesPreviewTable();
         }
         if (tabId === 'profitsTab') {
@@ -4083,8 +3736,6 @@ function initMenuPermissionCheckboxes() {
             renderUserDeletionTable();
         }
         if (tabId === 'employeeExpensesTab') {
-            const dailyDate = document.getElementById('employeeDailyDisbursementDate');
-            if (dailyDate && !dailyDate.value) dailyDate.value = getLocalDateKey();
             renderEmployeeExpenses();
         }
         if (tabId === 'employeeProductionTab') {
@@ -4189,7 +3840,7 @@ function initMenuPermissionCheckboxes() {
 
     function startRealtimeListeners() {
         stopRealtimeListeners();
-        const cols = ['branches', 'cashboxes', 'customers', 'suppliers', 'invoices', 'purchases', 'vouchers', 'employees', 'staff', 'employeeExpenses', 'employeeDailyDisbursements', 'employeeProduction', 'warehouse'];
+        const cols = ['branches', 'cashboxes', 'customers', 'suppliers', 'invoices', 'purchases', 'vouchers', 'employees', 'staff', 'employeeExpenses', 'employeeProduction', 'warehouse'];
         cols.forEach(colName => {
             const unsub = db.collection(colName).onSnapshot(
                 snap => {
@@ -4206,10 +3857,6 @@ function initMenuPermissionCheckboxes() {
                 },
                 err => {
                     console.warn(`Listener error on ${colName}:`, err);
-                    if (colName === 'employeeDailyDisbursements') {
-                        showToast('تعذر تحميل سجل الصرف اليومي. تحقق من صلاحية قراءة مجموعة employeeDailyDisbursements في Firestore.');
-                        return;
-                    }
                     isDemoMode = true;
                     const badge = document.getElementById('connectionStatusBadge');
                     if (badge) {
@@ -4327,11 +3974,8 @@ function initMenuPermissionCheckboxes() {
         const staffPaymentsOut = (state.employeeExpenses || [])
             .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
             .reduce((s, p) => s + Number(p.amount || 0), 0);
-        const dailyEmployeeDisbursementsOut = (state.employeeDailyDisbursements || [])
-            .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
-            .reduce((s, p) => s + Number(p.amount || 0), 0);
 
-        return opening + cashSales + receipts - payments - purchasesOut - staffPaymentsOut - dailyEmployeeDisbursementsOut;
+        return opening + cashSales + receipts - payments - purchasesOut - staffPaymentsOut;
     }
 
     function getVoucherCurrency(voucher) {
@@ -4386,17 +4030,9 @@ function initMenuPermissionCheckboxes() {
         return list;
     }
 
-    async function loadOptionalCollection(name) {
-        try { return await loadCollection(name); }
-        catch (error) {
-            console.warn(`Optional collection ${name} could not be read; the rest of the system will continue loading.`, error);
-            return [];
-        }
-    }
-
     async function reloadAllData(showMsg = false) {
         try {
-            const [branches, cashboxes, customers, suppliers, invoices, purchases, vouchers, employees, staff, employeeExpenses, employeeDailyDisbursements, employeeProduction, warehouse] = await Promise.all([
+            const [branches, cashboxes, customers, suppliers, invoices, purchases, vouchers, employees, staff, employeeExpenses, employeeProduction, warehouse] = await Promise.all([
                 loadCollection('branches'),
                 loadCollection('cashboxes'),
                 loadCollection('customers'),
@@ -4407,11 +4043,10 @@ function initMenuPermissionCheckboxes() {
                 loadCollection('employees'),
                 loadCollection('staff'),
                 loadCollection('employeeExpenses'),
-                loadOptionalCollection('employeeDailyDisbursements'),
                 loadCollection('employeeProduction'),
                 loadCollection('warehouse')
             ]);
-            state = { branches, cashboxes, customers, suppliers, invoices, purchases, vouchers, employees, staff, employeeExpenses, employeeDailyDisbursements, employeeProduction, warehouse };
+            state = { branches, cashboxes, customers, suppliers, invoices, purchases, vouchers, employees, staff, employeeExpenses, employeeProduction, warehouse };
             if (currentUser && currentUser.id) {
                 const updatedMe = state.employees.find(e => e.id === currentUser.id);
                 if (updatedMe) currentUser = updatedMe;
@@ -4537,7 +4172,6 @@ function initMenuPermissionCheckboxes() {
         renderBranchesChips();
         renderWarehouseTable();
         renderQuantitiesPreviewTable();
-        renderMyQuantityHistory();
         renderCustomersTable();
         if (activeStatementCustomerId) {
             renderCustomerStatement(activeStatementCustomerId, false);
@@ -4805,31 +4439,20 @@ function initMenuPermissionCheckboxes() {
         const branchId = document.getElementById('qtyBranchSelect')?.value || '';
         const container = document.getElementById('qtyAdjustmentRows');
         if (!container) return;
+        if (!container.querySelector('.batch-qty-row')) addStockQuantityRow();
         const items = isBranchAllowedForOperation(branchId, 'quantitiesTab')
             ? state.warehouse.filter(w => (w.branchId || 'main_branch') === branchId)
             : [];
         container.querySelectorAll('.batch-qty-row').forEach(row => {
             const select = row.querySelector('.batch-qty-item');
-            const search = row.querySelector('.qty-item-search');
-            if (!select) return;
             const previous = select.value;
             select.innerHTML = '<option value="">اختر الصنف</option>' + items.map(item =>
-                `<option value="${escapeUiText(item.id)}">${escapeUiText(item.name)} (${escapeUiText(item.unit || 'حبة')}) — متاح ${formatQty(item.qty || 0)}</option>`
+                `<option value="${item.id}">${item.name} (${item.unit || 'حبة'}) — متاح ${formatQty(item.qty || 0)}</option>`
             ).join('');
-            if (previous && items.some(item => item.id === previous)) {
-                select.value = previous;
-                const chosen = items.find(item => item.id === previous);
-                if (search && !search.value.trim()) search.value = `${chosen.name} (${chosen.unit || 'حبة'})`;
-            } else if (previous) {
-                select.value = '';
-                if (search) search.value = '';
-            }
+            if (previous && items.some(item => item.id === previous)) select.value = previous;
             updateStockQuantityRowInfo(select);
         });
-        const emptyState = document.getElementById('qtyEntryEmptyState');
-        if (emptyState) emptyState.classList.toggle('hidden', container.querySelectorAll('.batch-qty-row').length > 0);
         renderQuantitiesPreviewTable();
-        renderMyQuantityHistory();
     }
 
     function addStockQuantityRow() {
@@ -4838,101 +4461,20 @@ function initMenuPermissionCheckboxes() {
         const row = document.createElement('tr');
         row.className = 'batch-qty-row';
         row.innerHTML = `
-            <td>
-                <div class="qty-item-picker">
-                    <textarea rows="2" class="form-control qty-item-search" placeholder="اضغط لاختيار الصنف أو اكتب اسمه كاملاً" autocomplete="off" onfocus="renderStockQuantityItemSuggestions(this)" oninput="renderStockQuantityItemSuggestions(this)"></textarea>
-                    <select class="batch-qty-item hidden" tabindex="-1" aria-hidden="true"><option value="">اختر الصنف</option></select>
-                    <div class="qty-item-suggestions hidden"></div>
-                </div>
-            </td>
-            <td><input type="number" step="0.01" min="0.01" inputmode="decimal" class="form-control num-input batch-qty-value" placeholder="أدخل الكمية"></td>
-            <td class="qty-row-delete-cell"><button type="button" class="btn btn-danger btn-sm qty-row-delete" title="حذف الصف" aria-label="حذف الصف" onclick="removeStockQuantityRow(this)"><i class="fa-solid fa-trash"></i></button></td>`;
+            <td><select class="form-control batch-qty-item" onchange="updateStockQuantityRowInfo(this)"><option value="">اختر الصنف</option></select></td>
+            <td><input type="number" step="0.01" min="0.01" class="form-control num-input batch-qty-value" placeholder="الكمية"></td>
+            <td><span class="batch-qty-current mono">-</span></td>
+            <td><button type="button" class="btn btn-danger btn-sm" title="حذف الصف" onclick="this.closest('tr').remove(); if(!document.querySelector('#qtyAdjustmentRows .batch-qty-row')) addStockQuantityRow();"><i class="fa-solid fa-trash"></i></button></td>`;
         container.appendChild(row);
-        const emptyState = document.getElementById('qtyEntryEmptyState');
-        if (emptyState) emptyState.classList.add('hidden');
         populateQuantityItems();
     }
 
-    function removeStockQuantityRow(button) {
-        const row = button?.closest('.batch-qty-row');
-        if (row) row.remove();
-        const container = document.getElementById('qtyAdjustmentRows');
-        const emptyState = document.getElementById('qtyEntryEmptyState');
-        if (emptyState) emptyState.classList.toggle('hidden', Boolean(container?.querySelector('.batch-qty-row')));
-    }
-
-    function renderStockQuantityItemSuggestions(input) {
-        const row = input?.closest('.batch-qty-row');
-        const box = row?.querySelector('.qty-item-suggestions');
-        const branchId = document.getElementById('qtyBranchSelect')?.value || '';
-        if (!row || !box) return;
-        const query = String(input.value || '').trim().toLocaleLowerCase('ar');
-        const items = isBranchAllowedForOperation(branchId, 'quantitiesTab')
-            ? state.warehouse.filter(item => (item.branchId || 'main_branch') === branchId)
-            : [];
-        const filtered = query
-            ? items.filter(item => String(item.name || '').toLocaleLowerCase('ar').includes(query))
-            : items;
-        const shown = filtered.slice(0, 40);
-        const selectedId = row.querySelector('.batch-qty-item')?.value || '';
-        const selectedItem = items.find(item => item.id === selectedId);
-        const selectedLabel = selectedItem ? `${selectedItem.name} (${selectedItem.unit || 'حبة'})`.toLocaleLowerCase('ar') : '';
-        const effectiveQuery = selectedLabel && query === selectedLabel ? '' : query;
-        const effectiveFiltered = effectiveQuery
-            ? items.filter(item => String(item.name || '').toLocaleLowerCase('ar').includes(effectiveQuery))
-            : items;
-        const effectiveShown = effectiveFiltered.slice(0, 40);
-        box.innerHTML = effectiveShown.length ? effectiveShown.map(item => `
-            <button type="button" class="qty-item-suggestion" data-item-id="${escapeUiText(item.id)}" onclick="selectStockQuantityItem(this)">
-                <strong>${escapeUiText(item.name)}</strong>
-                <small>الوحدة: ${escapeUiText(item.unit || 'حبة')}</small>
-            </button>`).join('') : '<div class="qty-entry-empty">لا توجد أصناف مطابقة في هذا المخزن</div>';
-        box.classList.remove('hidden');
-    }
-
-    function selectStockQuantityItem(button) {
-        const row = button?.closest('.batch-qty-row');
-        const itemId = button?.dataset?.itemId || '';
-        if (!row || !itemId) return;
-        const item = state.warehouse.find(w => w.id === itemId);
-        const select = row.querySelector('.batch-qty-item');
-        const search = row.querySelector('.qty-item-search');
-        const box = row.querySelector('.qty-item-suggestions');
-        if (!item || !select) return;
-        select.value = itemId;
-        if (search) search.value = `${item.name} (${item.unit || 'حبة'})`;
-        box?.classList.add('hidden');
-        updateStockQuantityRowInfo(select);
-        row.querySelector('.batch-qty-value')?.focus();
-    }
-
     function updateStockQuantityRowInfo(select) {
-        // نموذج الموظف يعرض اختيار الصنف والكمية فقط، ولا يعرض الرصيد الحالي.
-        return;
-    }
-
-    function renderMyQuantityHistory() {
-        const tbody = document.getElementById('myQuantityHistoryBody');
-        const count = document.getElementById('myQuantityHistoryCount');
-        if (!tbody) return;
-        const actorId = String(currentUser?.id || '');
-        const actorName = normalizeStaffName(getAccountDisplayName(currentUser));
-        const logs = (state.warehouse || []).flatMap(item =>
-            (Array.isArray(item.quantityAdjustmentHistory) ? item.quantityAdjustmentHistory : []).map(log => ({
-                ...log, itemName: log.itemName || item.name || '', itemId: log.itemId || item.id,
-                branchName: log.branchName || item.branchName || '', branchId: log.branchId || item.branchId || 'main_branch', unit: log.unit || item.unit || 'حبة'
-            }))
-        ).filter(log => {
-            if (log.actorId && actorId) return String(log.actorId) === actorId;
-            return normalizeStaffName(log.actorName || '') === actorName;
-        }).sort((a,b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || ''))).slice(0, 60);
-        if (count) count.textContent = `${logs.length} عملية`;
-        tbody.innerHTML = logs.length ? logs.map(log => `
-            <tr>
-                <td>${escapeUiText(log.date || '-')}</td>
-                <td><strong class="qty-history-item-name">${escapeUiText(log.itemName || '-')}</strong><small style="display:block;color:var(--text-muted);">${escapeUiText(log.branchName || '')}</small></td>
-                <td><strong class="mono qty-history-amount">${formatQty(log.qty || 0)} ${escapeUiText(log.unit || '')}</strong></td>
-            </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:16px;">لا توجد عمليات إدخال كميات مسجلة منك بعد</td></tr>';
+        const row = select?.closest('.batch-qty-row');
+        if (!row) return;
+        const item = state.warehouse.find(w => w.id === select.value);
+        const current = row.querySelector('.batch-qty-current');
+        if (current) current.textContent = item ? `${formatQty(item.qty || 0)} ${item.unit || 'حبة'}` : '-';
     }
 
     function fillSelectedItemCurrentQty() {
@@ -4949,8 +4491,6 @@ function initMenuPermissionCheckboxes() {
         const note = document.getElementById('qtySetModePermissionNote');
         if (!select) return;
         const allowed = canSetStockQuantity(currentUser);
-        const modeGroup = document.getElementById('qtyUpdateModeGroup');
-        if (modeGroup) modeGroup.classList.toggle('hidden', !allowed);
         const setOption = select.querySelector('option[value="set"]');
         if (setOption) {
             setOption.disabled = !allowed;
@@ -5013,11 +4553,6 @@ function initMenuPermissionCheckboxes() {
                     if (markers.some(marker => marker?.key === markerKey)) return { duplicate: true };
                 }
                 const newQuantities = {};
-                const newLogs = {};
-                const nowIso = new Date().toISOString();
-                const todayKey = getLocalDateKey();
-                const actorId = String(currentUser?.id || currentUser?.username || 'unknown-user');
-                const actorName = getAccountDisplayName(currentUser) || currentUser?.username || 'مستخدم';
                 for (const data of snapshots) {
                     const current = data.snapshot.data() || {};
                     const currentQty = Number(current.qty || 0);
@@ -5026,49 +4561,21 @@ function initMenuPermissionCheckboxes() {
                     const markers = Array.isArray(current.__recentOperationMarkers) ? current.__recentOperationMarkers : [];
                     const recent = markers.filter(marker => marker && Number(marker.at || 0) > Date.now() - 10 * 60 * 1000);
                     recent.push({ key: markerKey, at: Date.now() });
-                    const branch = state.branches.find(b => b.id === branchId);
-                    const log = {
-                        id: `${markerKey}_${data.entry.itemId}`,
-                        operationId: markerKey,
-                        itemId: data.entry.itemId,
-                        itemName: current.name || state.warehouse.find(w => w.id === data.entry.itemId)?.name || '',
-                        branchId,
-                        branchName: current.branchName || branch?.name || '',
-                        qty: data.entry.qty,
-                        previousQty: currentQty,
-                        quantityAfter: nextQty,
-                        mode,
-                        actorId,
-                        actorName,
-                        date: todayKey,
-                        createdAt: nowIso
-                    };
-                    const priorHistory = Array.isArray(current.quantityAdjustmentHistory) ? current.quantityAdjustmentHistory : [];
-                    const history = [...priorHistory, log].slice(-200);
-                    newLogs[data.entry.itemId] = log;
-                    transaction.update(data.ref, { qty: nextQty, __recentOperationMarkers: recent.slice(-30), quantityAdjustmentHistory: history });
+                    transaction.update(data.ref, { qty: nextQty, __recentOperationMarkers: recent.slice(-30) });
                 }
-                return { duplicate: false, newQuantities, newLogs };
+                return { duplicate: false, newQuantities };
             });
             if (result.duplicate) { showToast('تم منع تكرار نفس عملية تحديث الكميات'); return; }
             Object.entries(result.newQuantities || {}).forEach(([itemId, qty]) => {
                 const localItem = state.warehouse.find(item => item.id === itemId);
-                if (localItem) {
-                    localItem.qty = qty;
-                    localItem.quantityAdjustmentHistory = [...(localItem.quantityAdjustmentHistory || []), result.newLogs?.[itemId]].filter(Boolean).slice(-200);
-                }
+                if (localItem) localItem.qty = qty;
             });
-            // بعد الحفظ أفرغ نموذج الإدخال بالكامل؛ لا يظهر صف فارغ تلقائياً.
-            const rowsContainer = document.getElementById('qtyAdjustmentRows');
-            if (rowsContainer) rowsContainer.innerHTML = '';
-            const emptyState = document.getElementById('qtyEntryEmptyState');
-            if (emptyState) emptyState.classList.remove('hidden');
+            document.querySelectorAll('#qtyAdjustmentRows .batch-qty-value').forEach(input => input.value = '');
             populateQuantityItems();
-            renderMyQuantityHistory();
             renderQuantitiesPreviewTable();
             renderWarehouseTable();
             renderStats();
-            showToast(`تم حفظ ${entries.length} صنفاً. تظهر عملياتك المسجلة أسفل النموذج`);
+            showToast(`تم حفظ ${entries.length} صفوف كميات بنجاح`);
         } catch (e) {
             console.warn('Bulk stock quantity error:', e);
             showToast(e?.message?.startsWith('STOCK_') ? 'تغير المخزن أثناء الحفظ؛ حدّث الصفحة وحاول مجدداً' : 'تعذر حفظ صفوف الكميات');
@@ -5467,9 +4974,9 @@ function initMenuPermissionCheckboxes() {
                 snapshots.forEach(entry => {
                     if (entry.snapshot.exists) {
                         const current = entry.snapshot.data() || {};
-                        transaction.update(entry.ref, { qty: Number(current.qty || 0) + entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, branchId, branchName: branch.name, name: current.name || entry.target.name, unit: entry.target.unit, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
+                        transaction.update(entry.ref, { qty: Number(current.qty || 0) + entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, branchId, branchName: branch.name, name: current.name || entry.target.name, unit: entry.target.unit });
                     } else {
-                        transaction.set(entry.ref, { id: entry.ref.id, branchId, branchName: branch.name, name: entry.target.name, unit: entry.target.unit, qty: entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
+                        transaction.set(entry.ref, { id: entry.ref.id, branchId, branchName: branch.name, name: entry.target.name, unit: entry.target.unit, qty: entry.target.qty, costPrice: entry.target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency });
                     }
                 });
                 return { created: true };
@@ -5478,8 +4985,8 @@ function initMenuPermissionCheckboxes() {
             record.id = docId; state.purchases = (state.purchases || []).concat(record);
             stockTargets.forEach(target => {
                 const local = state.warehouse.find(w => w.id === target.docId);
-                if (local) { local.qty = Number(local.qty || 0) + target.qty; local.costPrice = target.costPrice; local.costCurrency = currency; local.sourceType = 'supplierPurchase'; local.sourceName = record.supplierName; local.sourceDate = record.date; local.sourcePurchaseId = docId; local.sourceHidden = false; }
-                else state.warehouse.push({ id: target.docId, branchId, branchName: branch.name, name: target.name, unit: target.unit, qty: target.qty, costPrice: target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency, sourceType: 'supplierPurchase', sourceName: record.supplierName, sourceDate: record.date, sourcePurchaseId: docId, sourceHidden: false });
+                if (local) { local.qty = Number(local.qty || 0) + target.qty; local.costPrice = target.costPrice; local.costCurrency = currency; }
+                else state.warehouse.push({ id: target.docId, branchId, branchName: branch.name, name: target.name, unit: target.unit, qty: target.qty, costPrice: target.costPrice, costCurrency: currency, price: 0, priceCurrency: currency });
             });
             document.getElementById('supplierInvoiceItemsContainer').innerHTML = '';
             addSupplierInvoiceRow();
@@ -5730,8 +5237,11 @@ function initMenuPermissionCheckboxes() {
     }
 
     function populateEmployeeExpenseCashboxOptions() {
-        // الصندوق يظهر فقط لمن لديه صلاحية الاطلاع على الصناديق، وتُفلتر الخيارات حسب عملة الصرفة اليومية.
-        filterEmployeeExpenseCashboxes();
+        const select = document.getElementById('employeeExpenseCashboxSelect');
+        if (!select) return;
+        const previous = select.value;
+        select.innerHTML = '<option value="">بدون ربط بصندوق</option>' + state.cashboxes.map(c => `<option value="${c.id}">${c.name} (${c.currency || 'YER'})</option>`).join('');
+        if (previous && state.cashboxes.some(c => c.id === previous)) select.value = previous;
     }
 
     function addInvoiceItemRow(prefill = null) {
@@ -6303,9 +5813,7 @@ function initMenuPermissionCheckboxes() {
         state.vouchers.filter(item => item.cashboxId === cashbox.id && (item.currency || currency) === currency)
             .forEach(item => movements.push({ date: item.date || '', type: item.type === 'receipt' ? 'سند قبض' : 'سند صرف', note: item.note || `سند ${item.refNumber || item.id}`, incoming: item.type === 'receipt' ? Number(item.amount || 0) : 0, outgoing: item.type === 'payment' ? Number(item.amount || 0) : 0, actor: item.employee || '' }));
         (state.employeeExpenses || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
-            .forEach(item => movements.push({ date: item.date || '', type: item.source === 'dailyDisbursementAdvance' ? 'سلفة مخصومة من مستحق موظف' : 'دفعة من مستحق موظف', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
-        (state.employeeDailyDisbursements || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
-            .forEach(item => movements.push({ date: item.date || '', type: 'صرفة يومية لعامل', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
+            .forEach(item => movements.push({ date: item.date || '', type: 'دفعة موظف', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
         return movements.filter(item => item.date).sort((a,b) => String(a.date).localeCompare(String(b.date)));
     }
 
@@ -6493,7 +6001,7 @@ function initMenuPermissionCheckboxes() {
             } else {
                 const result = await createRecordOnce('warehouse', 'wh', {
                     action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
-                }, { branchId, branchName, name, unit, qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, sourceType: 'manual', sourceName: getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() }, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
+                }, { branchId, branchName, name, unit, qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency }, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
                 if (!result.created) { showToast('هذا الصنف موجود أو تمت إضافته للتو؛ لن يتكرر في المخزن.'); return; }
             }
             document.getElementById('newItemName').value = '';
@@ -6529,232 +6037,9 @@ function initMenuPermissionCheckboxes() {
             showToast('ليس لديك صلاحية الحذف');
             return;
         }
-        const item = (state.warehouse || []).find(entry => entry.id === itemId);
-        if (!item) { showToast('الصنف غير موجود'); return; }
-        if (!isBranchAllowedForOperation(item.branchId || 'main_branch', 'warehouseTab')) {
-            showToast('هذا المخزن غير مسموح لهذا الحساب');
-            return;
-        }
-        if (!confirm(`تأكيد حذف الصنف «${item.name || ''}» من المخزون؟`)) return;
-        try {
-            await db.collection('warehouse').doc(itemId).delete();
-            state.warehouse = (state.warehouse || []).filter(entry => entry.id !== itemId);
-            renderItemList();
-            renderWarehouseTable();
-            if (typeof renderWarehouseCatalogDropdown === 'function') renderWarehouseCatalogDropdown();
-            renderStats();
-            showToast('تم حذف الصنف');
-        } catch (error) {
-            console.warn('Delete warehouse item error:', error);
-            showToast('تعذر حذف الصنف');
-        }
-    }
-
-    function populateItemListBranchFilter() {
-        const select = document.getElementById('itemListBranch');
-        if (!select) return;
-        const previous = select.value || 'ALL';
-        const branches = getAccessibleBranchesForOperation('warehouseTab');
-        select.innerHTML = '<option value="ALL">كل المخازن المسموحة</option>' + branches.map(branch => `<option value="${escapeUiText(branch.id)}">${escapeUiText(branch.name)}</option>`).join('');
-        select.value = branches.some(branch => branch.id === previous) ? previous : 'ALL';
-    }
-
-    function getWarehouseItemSource(item) {
-        // إزالة المصدر من بطاقة الصنف لا تحذف الصنف ولا فاتورة المورد المالية.
-        if (item?.sourceHidden === true || item?.sourceType === 'sourceRemoved') {
-            return 'مصدر غير مسجل (تمت إزالة ارتباط المصدر من بطاقة الصنف)';
-        }
-        if (item?.sourceType === 'supplierPurchase' && item.sourceName) {
-            return `توريد من المورد: ${item.sourceName}${item.sourceDate ? ` — ${item.sourceDate}` : ''}`;
-        }
-        if (item?.sourceType === 'manual') {
-            return `إضافة مباشرة${item.sourceName ? ` بواسطة ${item.sourceName}` : ''}${item.sourceDate ? ` — ${item.sourceDate}` : ''}`;
-        }
-        const matches = (state.purchases || []).filter(purchase =>
-            purchase.kind === 'supplierPurchase' &&
-            (purchase.branchId || 'main_branch') === (item.branchId || 'main_branch') &&
-            (purchase.items || []).some(line =>
-                String(line.name || '').trim().toLowerCase() === String(item.name || '').trim().toLowerCase() &&
-                (line.unit || 'حبة') === (item.unit || 'حبة')
-            )
-        ).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-        if (matches.length) {
-            const latest = matches[0];
-            return `توريد من المورد: ${latest.supplierName || 'مورد غير محدد'}${latest.date ? ` — ${latest.date}` : ''}`;
-        }
-        const lastAdjustment = (item.quantityAdjustmentHistory || []).slice().sort((a, b) =>
-            String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || ''))
-        )[0];
-        if (lastAdjustment) return `آخر إدخال كمية بواسطة ${lastAdjustment.actorName || 'مستخدم'} — ${lastAdjustment.date || ''}`;
-        return 'مصدر غير مسجل (صنف قديم)';
-    }
-
-    async function removeWarehouseItemSource(itemId) {
-        if (isBusy || !canDeleteRecord()) {
-            showToast('ليس لديك صلاحية إزالة مصدر الصنف');
-            return;
-        }
-        const item = (state.warehouse || []).find(entry => entry.id === itemId);
-        if (!item) { showToast('الصنف غير موجود'); return; }
-        if (!isBranchAllowedForOperation(item.branchId || 'main_branch', 'warehouseTab')) {
-            showToast('هذا المخزن غير مسموح لهذا الحساب');
-            return;
-        }
-        const currentSource = getWarehouseItemSource(item);
-        if (currentSource.includes('مصدر غير مسجل') || item.sourceHidden === true) {
-            showToast('لا يوجد مصدر مسجل لهذا الصنف لإزالته');
-            return;
-        }
-        const ok = confirm(
-            `إزالة مصدر الصنف «${item.name || ''}»؟\n\n` +
-            'سيبقى الصنف والكمية وسعر التكلفة وسعر البيع كما هي.\n' +
-            'لن تُحذف فاتورة المورد أو حسابه المالي؛ ستُزال فقط إحالة المصدر من بطاقة الصنف.'
-        );
-        if (!ok) return;
-        isBusy = true;
-        try {
-            const patch = {
-                sourceHidden: true,
-                sourceType: 'sourceRemoved',
-                sourceName: '',
-                sourceDate: '',
-                sourceRemovedAt: getLocalDateKey(),
-                sourceRemovedBy: getAccountDisplayName(currentUser)
-            };
-            await db.collection('warehouse').doc(itemId).update(patch);
-            Object.assign(item, patch);
-            renderItemList();
-            renderWarehouseTable();
-            showToast('تمت إزالة مصدر الصنف فقط؛ الصنف وكميته لم يتغيرا');
-        } catch (error) {
-            console.warn('Remove warehouse source error:', error);
-            showToast('تعذر إزالة مصدر الصنف');
-        } finally {
-            isBusy = false;
-        }
-    }
-
-    async function refreshItemListFromFirestore() {
-        const host = document.getElementById('itemListCards');
-        if (!host) return;
-        if (!db || isDemoMode) {
-            renderItemList();
-            if (!(state.warehouse || []).length) {
-                host.innerHTML = '<div class="item-list-empty">تعذر تحديث المخزون من قاعدة البيانات. تحقق من الاتصال ثم اضغط «تحديث الأصناف».</div>';
-            }
-            return;
-        }
-        host.innerHTML = '<div class="item-list-empty"><i class="fa-solid fa-spinner fa-spin"></i> جارٍ تحميل الأصناف من المخازن...</div>';
-        try {
-            const freshWarehouse = await loadCollection('warehouse');
-            state.warehouse = freshWarehouse;
-            try { state.purchases = await loadCollection('purchases'); } catch (purchaseError) {
-                console.warn('Could not refresh purchase source data:', purchaseError);
-            }
-            populateItemListBranchFilter();
-            renderItemList();
-            if (!freshWarehouse.length) {
-                host.innerHTML = '<div class="item-list-empty">لم يتم العثور على سجلات أصناف في مجموعة المخزون بقاعدة البيانات. لم يتم حذف أو إنشاء أي صنف تلقائيًا. إذا حُذفت الأصناف سابقًا، استعد نسخة احتياطية قبل متابعة التعديلات.</div>';
-            }
-        } catch (error) {
-            console.warn('Refresh item list error:', error);
-            host.innerHTML = '<div class="item-list-empty">تعذر تحميل الأصناف. تحقق من اتصال Firebase وصلاحية قراءة المخزون، ثم اضغط «تحديث الأصناف».</div>';
-        }
-    }
-
-    async function editWarehouseItemQuantity(itemId) {
-        if (!canEditRecord()) { showToast('ليس لديك صلاحية تعديل الكمية'); return; }
-        const item = (state.warehouse || []).find(entry => entry.id === itemId);
-        if (!item) { showToast('الصنف غير موجود'); return; }
-        if (!isBranchAllowedForOperation(item.branchId || 'main_branch', 'warehouseTab')) { showToast('هذا المخزن غير مسموح لهذا الحساب'); return; }
-        const next = prompt(`أدخل الكمية الجديدة للصنف: ${item.name}\nالمخزون الحالي: ${formatQty(item.qty || 0)} ${item.unit || 'حبة'}`, String(item.qty ?? 0));
-        if (next === null) return;
-        const qty = Number(next);
-        if (!Number.isFinite(qty) || qty < 0) { showToast('أدخل كمية صحيحة غير سالبة'); return; }
-        try {
-            await db.collection('warehouse').doc(itemId).update({ qty });
-            item.qty = qty;
-            renderItemList(); renderWarehouseTable(); renderStats();
-            showToast('تم تعديل كمية الصنف');
-        } catch (error) {
-            console.warn('Edit item quantity error:', error);
-            showToast('تعذر تعديل كمية الصنف');
-        }
-    }
-
-    function renderItemList() {
-        const host = document.getElementById('itemListCards');
-        const count = document.getElementById('itemListCount');
-        const summary = document.getElementById('itemListSummary');
-        if (!host) return;
-        const query = (document.getElementById('itemListSearch')?.value || '').trim().toLowerCase();
-        const branchId = document.getElementById('itemListBranch')?.value || 'ALL';
-        const allWarehouse = Array.isArray(state.warehouse) ? state.warehouse : [];
-        const accessible = getScopedWarehouseItems();
-        let items = accessible.filter(item => branchId === 'ALL' || (item.branchId || 'main_branch') === branchId);
-        const sourceOf = item => getWarehouseItemSource(item);
-        const isSourceKnown = item => !sourceOf(item).includes('مصدر غير مسجل');
-        items = items.filter(item => {
-            const source = sourceOf(item).toLowerCase();
-            const branchName = item.branchName || getAllBranches().find(b => b.id === item.branchId)?.name || 'المخزن الرئيسي';
-            return !query || String(item.name || '').toLowerCase().includes(query) || source.includes(query) || String(branchName).toLowerCase().includes(query);
-        }).sort((a, b) => {
-            const branchA = a.branchName || getAllBranches().find(x => x.id === a.branchId)?.name || '';
-            const branchB = b.branchName || getAllBranches().find(x => x.id === b.branchId)?.name || '';
-            return String(branchA).localeCompare(String(branchB), 'ar') || String(a.name || '').localeCompare(String(b.name || ''), 'ar');
-        });
-        if (count) count.textContent = `${items.length} صنف`;
-        if (summary) {
-            const known = items.filter(isSourceKnown).length;
-            const unknown = items.length - known;
-            summary.innerHTML = `
-                <div class="item-list-stat"><span>الأصناف المعروضة</span><strong>${items.length}</strong></div>
-                <div class="item-list-stat"><span>مصدر معروف</span><strong class="known">${known}</strong></div>
-                <div class="item-list-stat"><span>مصدر غير مسجل</span><strong class="unknown">${unknown}</strong></div>`;
-        }
-        if (!items.length) {
-            let emptyMessage = 'لا توجد أصناف مطابقة للبحث أو المخزن المحدد.';
-            if (!allWarehouse.length) emptyMessage = 'قائمة المخزون فارغة في البيانات المحملة. اضغط «تحديث الأصناف». إذا سبق حذف الأصناف، استعد نسخة احتياطية حتى لا نعيد بناء كميات غير مؤكدة.';
-            else if (!accessible.length) emptyMessage = 'توجد أصناف في النظام، لكن لا توجد مخازن مسموحة لهذا الحساب. راجع صلاحيات المخازن مع المدير.';
-            host.innerHTML = `<div class="item-list-empty">${emptyMessage}</div>`;
-            return;
-        }
-        host.innerHTML = items.map(item => {
-            const branch = item.branchName || getAllBranches().find(b => b.id === item.branchId)?.name || 'المخزن الرئيسي';
-            const source = sourceOf(item);
-            const sourceKnown = isSourceKnown(item);
-            const qty = Number(item.qty || 0);
-            const unit = item.unit || 'حبة';
-            const costCurrency = item.costCurrency || item.priceCurrency || 'YER';
-            const saleCurrency = item.priceCurrency || 'YER';
-            const inventoryCost = qty * Number(item.costPrice ?? item.price ?? 0);
-            return `<article class="item-list-row-card">
-                <div class="item-row-main">
-                    <div class="item-row-product">
-                        <span class="item-row-label">اسم الصنف</span>
-                        <strong>${escapeUiText(item.name || 'صنف بدون اسم')}</strong>
-                        <small>الوحدة: ${escapeUiText(unit)}</small>
-                    </div>
-                    <div class="item-row-quantity">
-                        <span class="item-row-label">الكمية الحالية</span>
-                        <strong>${formatQty(qty)}</strong>
-                        <small>${escapeUiText(unit)}</small>
-                    </div>
-                </div>
-                <div class="item-row-detail"><span>المخزن</span><b>${escapeUiText(branch)}</b></div>
-                <div class="item-row-source ${sourceKnown ? 'source-known' : 'source-unknown'}">
-                    <span>المصدر</span><b>${escapeUiText(source.replace(/^مصدر الصنف:\s*/, '').replace(/^مصدر غير مسجل \(صنف قديم\)$/, 'لا توجد بيانات توريد أو إضافة محفوظة لهذا الصنف'))}</b>
-                </div>
-                <div class="item-row-detail"><span>سعر التكلفة</span><b>${formatMoney(item.costPrice ?? item.price ?? 0)} ${escapeUiText(costCurrency)}</b></div>
-                <div class="item-row-detail"><span>سعر البيع</span><b>${formatMoney(item.price || 0)} ${escapeUiText(saleCurrency)}</b></div>
-                <div class="item-row-detail item-row-total"><span>قيمة الكمية بالتكلفة</span><b>${formatMoney(inventoryCost)} ${escapeUiText(costCurrency)}</b></div>
-                <div class="item-row-actions">
-                    ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editWarehouseItemQuantity('${item.id}')"><i class="fa-solid fa-pen"></i> تعديل الكمية</button>` : ''}
-                    ${canDeleteRecord() && sourceKnown ? `<button type="button" class="btn btn-warning btn-sm" onclick="removeWarehouseItemSource('${item.id}')"><i class="fa-solid fa-link-slash"></i> إزالة مصدر التوريد</button>` : ''}
-                    ${(!canEditRecord() && !canDeleteRecord()) ? '<span class="item-list-readonly">عرض فقط</span>' : ''}
-                </div>
-            </article>`;
-        }).join('');
+        if (!confirm('تأكيد حذف الصنف من المخزون؟')) return;
+        await db.collection('warehouse').doc(itemId).delete();
+        showToast('تم حذف الصنف');
     }
 
     function renderWarehouseTable() {
@@ -7024,10 +6309,8 @@ function initMenuPermissionCheckboxes() {
             }).join('')
             : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">لا توجد فواتير لاحتساب الأرباح</td></tr>';
 
-        const dailyEmployeeDisbursements = (state.employeeDailyDisbursements || [])
-            .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-        const totalExpenses = purchasesTotal + paymentVouchers + dailyEmployeeDisbursements;
-        const netProfit = totalSales - purchasesTotal - paymentVouchers - dailyEmployeeDisbursements;
+        const totalExpenses = purchasesTotal + paymentVouchers;
+        const netProfit = totalSales - purchasesTotal - paymentVouchers;
 
         document.getElementById('profTotalSales').textContent = formatMoney(totalSales);
         document.getElementById('profTotalCost').textContent = formatMoney(estimatedCost);
@@ -7607,9 +6890,6 @@ function initMenuPermissionCheckboxes() {
                         (state.employeeExpenses || []).filter(item => item.staffId === oldId).forEach(item => {
                             transaction.update(db.collection('employeeExpenses').doc(item.id), { staffId: nextId, staffName: nextName });
                         });
-                        (state.employeeDailyDisbursements || []).filter(item => item.staffId === oldId).forEach(item => {
-                            transaction.update(db.collection('employeeDailyDisbursements').doc(item.id), { staffId: nextId, staffName: nextName });
-                        });
                     }
                 });
                 state.staff = state.staff.map(item => item.id === oldId ? nextRecord : item);
@@ -7622,9 +6902,6 @@ function initMenuPermissionCheckboxes() {
                     if (item.staffId === oldId) { item.staffId = nextId; item.staffName = nextName; }
                 });
                 (state.employeeExpenses || []).forEach(item => {
-                    if (item.staffId === oldId) { item.staffId = nextId; item.staffName = nextName; }
-                });
-                (state.employeeDailyDisbursements || []).forEach(item => {
                     if (item.staffId === oldId) { item.staffId = nextId; item.staffName = nextName; }
                 });
             }
@@ -7748,11 +7025,6 @@ function initMenuPermissionCheckboxes() {
                         record.staffId = canonical.id;
                         record.staffName = canonical.fullName;
                     }
-                    for (const record of (state.employeeDailyDisbursements || []).filter(item => item.staffId === duplicate.id)) {
-                        await db.collection('employeeDailyDisbursements').doc(record.id).update({ staffId: canonical.id, staffName: canonical.fullName });
-                        record.staffId = canonical.id;
-                        record.staffName = canonical.fullName;
-                    }
                     await db.collection('staff').doc(duplicate.id).delete();
                     state.staff = state.staff.filter(item => item.id !== duplicate.id);
                     state.employees = state.employees.filter(item => item.id !== linked?.id || item.staffId === canonical.id);
@@ -7792,7 +7064,9 @@ function initMenuPermissionCheckboxes() {
 
         tbody.innerHTML = staff.length ? staff.map(item => {
             const branchName = getStaffBranchNames(item);
-            const active = item.active !== false;
+            const account = getStaffLoginAccount(item);
+            const accountLabel = account ? `${account.username || 'حساب موجود'}` : 'لم تتم إضافة مستخدم';
+            const active = item.active !== false && (!account || account.active !== false);
             return `
                 <tr>
                     <td><strong>${item.fullName || '-'}</strong></td>
@@ -7801,6 +7075,7 @@ function initMenuPermissionCheckboxes() {
                         ? (item.pieceRates || []).map(rate => `${rate.name}: ${formatMoney(rate.rate)} ${getStaffSalaryCurrency(item)} / ${rate.unit}`).join('<br>') || '-'
                         : `<span class="mono">${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}</span>`}</td>
                     <td>${branchName}</td>
+                    <td>${account ? `<span class="badge badge-cash">${accountLabel}</span>` : `<span class="badge badge-unit">${accountLabel}</span>`}</td>
                     <td>${active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
                     <td style="white-space:nowrap;">
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeName('${item.id}')" title="تعديل اسم الموظف"><i class="fa-solid fa-user-pen"></i> تعديل الاسم</button>` : ''}
@@ -7810,7 +7085,7 @@ function initMenuPermissionCheckboxes() {
                     </td>
                 </tr>
             `;
-        }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون معرفون</td></tr>';
+        }).join('') : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا يوجد موظفون معرفون</td></tr>';
         populateEmployeePermissionOptions();
         populateNewUserStaffOptions();
     }
@@ -7870,358 +7145,89 @@ function initMenuPermissionCheckboxes() {
         }).join('') : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا توجد حسابات دخول</td></tr>';
     }
 
-    // قائمة العمال الذين يستطيع المستخدم تسجيل الصرف اليومي لهم.
-    // لا نربط هذه القائمة بالراتب أو مستحق الإنتاج؛ إنها سجل صرف تشغيلي مستقل.
-    function getDailyDisbursementStaff(user = currentUser) {
-        const allStaff = getAllStaff().filter(item => item.active !== false);
-        if (hasFullAccess(user)) return allStaff;
-        if (Array.isArray(user?.dailyDisbursementStaffAccessIds)) {
-            const allowedIds = new Set(user.dailyDisbursementStaffAccessIds.map(String));
-            return allStaff.filter(item => allowedIds.has(String(item.id)));
-        }
-        return [];
-    }
-
     function populateEmployeeExpenseStaffOptions() {
         const sel = document.getElementById('employeeExpenseStaffSelect');
         if (!sel) return;
         const previous = sel.value;
-        const staff = getDailyDisbursementStaff();
-        sel.innerHTML = '<option value="">اختر العامل</option>' + staff.map(item =>
-            `<option value="${escapeUiText(item.id)}">${escapeUiText(item.fullName || 'عامل')} — ${isPieceworkStaff(item) ? 'بالقطعة' : 'راتب شهري'}</option>`
+        const staff = getVisiblePayrollStaff();
+        sel.innerHTML = '<option value="">اختر الموظف</option>' + staff.map(item =>
+            `<option value="${item.id}">${item.fullName} — ${isPieceworkStaff(item) ? 'عامل بالقطعة' : `${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}`}</option>`
         ).join('');
         if (previous && staff.some(item => item.id === previous)) sel.value = previous;
         else if (staff.length === 1) sel.value = staff[0].id;
         const entryCard = document.getElementById('employeeExpenseEntryCard');
         if (entryCard) entryCard.classList.toggle('hidden', !canRecordEmployeePayment());
         const entryHint = document.getElementById('employeeExpenseEntryHint');
-        if (entryHint) {
-            if (canManageUsers()) entryHint.textContent = 'يمكنك تسجيل الصرفة اليومية لأي عامل. لا تُخصم من راتبه أو مستحق إنتاجه.';
-            else if (!staff.length) entryHint.textContent = 'لم يحدد لك المدير أو المشرف العمال المسموح بتسجيل الصرف اليومي لهم. اطلب منه تحديد الأسماء في صفحة الصلاحيات.';
-            else entryHint.textContent = 'يمكنك تسجيل الصرفة اليومية للعمال الذين حددهم لك المشرف. التسجيل لا يخصم من رواتبهم أو مستحقاتهم.';
-        }
-        const note = document.getElementById('employeeExpenseEntryHint');
-        if (note && !canRecordEmployeePayment()) note.textContent = 'ليست لديك صلاحية تسجيل الصرف اليومي.';
-        const dateInput = document.getElementById('employeeDailyDisbursementDate');
-        if (dateInput && !dateInput.value) dateInput.value = getLocalDateKey();
-        const cashboxGroup = document.getElementById('employeeDailyCashboxGroup');
-        const canSeeCashboxes = hasFullAccess() || canAccessMenu('cashboxTab');
-        if (cashboxGroup) cashboxGroup.classList.toggle('hidden', !canSeeCashboxes);
-        filterEmployeeExpenseCashboxes();
-        onEmployeeDisbursementModeChange();
-    }
-
-    function getEmployeeDisbursementMode() {
-        return document.getElementById('employeeDailyDisbursementMode')?.value === 'advance' ? 'advance' : 'daily';
-    }
-
-    function onEmployeeDisbursementModeChange() {
-        const mode = getEmployeeDisbursementMode();
-        const staff = getDailyDisbursementStaff().find(item => item.id === (document.getElementById('employeeExpenseStaffSelect')?.value || ''));
-        const currencySelect = document.getElementById('employeeDailyDisbursementCurrency');
-        const btn = document.getElementById('saveEmployeeExpenseBtn');
-        const hint = document.getElementById('employeeExpenseEntryHint');
-        if (mode === 'advance' && staff && currencySelect) {
-            currencySelect.value = getStaffSalaryCurrency(staff);
-            currencySelect.disabled = true;
-        } else if (currencySelect) {
-            currencySelect.disabled = false;
-        }
-        if (btn) btn.innerHTML = mode === 'advance'
-            ? '<i class="fa-solid fa-hand-holding-dollar"></i> حفظ السلفة وخصمها من مستحق العامل'
-            : '<i class="fa-solid fa-floppy-disk"></i> حفظ الصرفة اليومية دون خصمها من مستحق العامل';
-        if (hint) {
-            if (mode === 'advance') {
-                hint.textContent = staff
-                    ? (isPieceworkStaff(staff)
-                        ? 'هذه سلفة تُضاف إلى المبالغ التي استلمها العامل وتُخصم من مستحق إنتاجه لهذا الشهر. العملة مرتبطة بعملة أجره.'
-                        : 'هذه سلفة تُضاف إلى المبالغ التي استلمها العامل وتُخصم من راتبه الشهري. العملة مرتبطة بعملة راتبه.')
-                    : 'اختر العامل لتحديد هل تُخصم السلفة من راتبه الشهري أو من مستحق إنتاجه.';
-            } else {
-                hint.textContent = 'الصرفة اليومية تُحفظ مستقلة ولا تُخصم من الراتب أو مستحق الإنتاج.';
-            }
-        }
-        filterEmployeeExpenseCashboxes();
+        if (entryHint) entryHint.textContent = canManageUsers()
+            ? 'يمكنك تسجيل دفعة لأي موظف. ويمكنك تعديل السجلات السابقة من جدول المصروفات.'
+            : 'يمكنك تسجيل المبلغ الذي استلمته. سيظهر لك حسابك أنت فقط.';
         updateEmployeeExpensePreview();
     }
 
-    function setEmployeeDailyCurrencyFromStaff() {
-        const staff = getStaffById(document.getElementById('employeeExpenseStaffSelect')?.value || '');
-        const currencySelect = document.getElementById('employeeDailyDisbursementCurrency');
-        if (staff && currencySelect && getEmployeeDisbursementMode() === 'advance') {
-            currencySelect.value = getStaffSalaryCurrency(staff);
-        } else if (staff && currencySelect && getEmployeeDisbursementMode() === 'daily') {
-            currencySelect.value = getStaffSalaryCurrency(staff);
-        }
-        onEmployeeDisbursementModeChange();
-    }
-
-    function filterEmployeeExpenseCashboxes() {
-        const select = document.getElementById('employeeExpenseCashboxSelect');
-        if (!select) return;
-        const previous = select.value;
-        const currency = document.getElementById('employeeDailyDisbursementCurrency')?.value || 'YER';
-        const allowed = hasFullAccess() || canAccessMenu('cashboxTab');
-        const boxes = allowed ? state.cashboxes.filter(box => (box.currency || 'YER') === currency) : [];
-        select.innerHTML = '<option value="">بدون ربط بصندوق</option>' + boxes.map(box =>
-            `<option value="${escapeUiText(box.id)}">${escapeUiText(box.name)} — ${formatMoney(computeSystemCashboxBalance(box))} ${currency}</option>`
-        ).join('');
-        if (previous && boxes.some(box => box.id === previous)) select.value = previous;
-    }
-
     function updateEmployeeExpensePreview() {
-        const staff = getDailyDisbursementStaff().find(item => item.id === (document.getElementById('employeeExpenseStaffSelect')?.value || ''));
+        const staff = getStaffById(document.getElementById('employeeExpenseStaffSelect')?.value || '');
         const preview = document.getElementById('employeeExpensePreview');
         if (!preview) return;
         if (!staff) {
-            preview.textContent = 'اختر العامل، ثم أدخل المبلغ وسبب الصرفة.';
+            preview.textContent = 'اختر الموظف لعرض راتبه والمتبقي له.';
             return;
         }
-        const mode = getEmployeeDisbursementMode();
-        const currency = document.getElementById('employeeDailyDisbursementCurrency')?.value || 'YER';
-        const amount = Number(document.getElementById('employeeExpenseAmount')?.value || 0);
-        if (mode === 'advance') {
-            const date = document.getElementById('employeeDailyDisbursementDate')?.value || getLocalDateKey();
-            const period = String(date).slice(0, 7);
-            const dues = getEmployeeDuesData(staff, period);
-            const after = dues.remaining - (amount > 0 ? amount : 0);
-            const sourceLabel = isPieceworkStaff(staff) ? 'مستحق الإنتاج' : 'الراتب الشهري';
-            preview.textContent = amount > 0
-                ? `سلفة للعامل ${staff.fullName}: ${formatMoney(amount)} ${dues.currency}. ستُخصم من ${sourceLabel}. المتبقي بعد التسجيل: ${formatMoney(after)} ${dues.currency}.`
-                : `سيتم خصم السلفة من ${sourceLabel} (${dues.currency})، ولن تُخلط مع الصرف اليومي غير المخصوم.`;
-            return;
-        }
-        preview.textContent = amount > 0
-            ? `صرفة يومية للعامل ${staff.fullName}: ${formatMoney(amount)} ${currency}. تُسجل كمصروف مستقل ولا تغيّر رصيده المستحق.`
-            : `العامل المحدد: ${staff.fullName}. هذا التسجيل مستقل عن الراتب ومستحق الإنتاج.`;
+        const currency = getStaffSalaryCurrency(staff);
+        const entitlement = getEmployeePeriodEntitlement(staff);
+        const spent = getEmployeePeriodSpent(staff.id);
+        const remaining = entitlement - spent;
+        const label = isPieceworkStaff(staff) ? 'مستحق الإنتاج' : 'الراتب الشهري';
+        preview.textContent = `${label} لـ ${staff.fullName}: ${formatMoney(entitlement)} ${currency} | المصروف / المدفوع هذا الشهر: ${formatMoney(spent)} ${currency} | المتبقي له: ${formatMoney(remaining)} ${currency}`;
     }
 
     async function recordEmployeeExpense() {
         if (isBusy || !canRecordEmployeePayment()) {
-            showToast('لا تملك صلاحية تسجيل الصرف اليومي للموظفين');
+            showToast('لا تملك صلاحية تسجيل دفعات الموظفين');
             return;
         }
-        const staffId = document.getElementById('employeeExpenseStaffSelect')?.value || '';
-        const staff = getDailyDisbursementStaff().find(item => item.id === staffId);
-        const mode = getEmployeeDisbursementMode();
-        const amount = Number(document.getElementById('employeeExpenseAmount')?.value || 0);
-        const selectedCurrency = document.getElementById('employeeDailyDisbursementCurrency')?.value || 'YER';
-        const currency = mode === 'advance' && staff ? getStaffSalaryCurrency(staff) : selectedCurrency;
-        const note = document.getElementById('employeeExpenseNote')?.value.trim() || (mode === 'advance' ? 'سلفة تخصم من مستحق العامل' : 'صرفة يومية للعامل');
-        const date = document.getElementById('employeeDailyDisbursementDate')?.value || getLocalDateKey();
-        const cashboxId = (hasFullAccess() || canAccessMenu('cashboxTab')) ? (document.getElementById('employeeExpenseCashboxSelect')?.value || '') : '';
-        const cashbox = cashboxId ? state.cashboxes.find(box => box.id === cashboxId) : null;
+        const staffId = document.getElementById('employeeExpenseStaffSelect').value;
+        const staff = getVisiblePayrollStaff().find(item => item.id === staffId);
+        const amount = Number(document.getElementById('employeeExpenseAmount').value || 0);
+        const note = document.getElementById('employeeExpenseNote').value.trim();
+        const paymentCashboxId = document.getElementById('employeeExpenseCashboxSelect')?.value || '';
+        const paymentCashbox = paymentCashboxId ? state.cashboxes.find(c => c.id === paymentCashboxId) : null;
         const btn = document.getElementById('saveEmployeeExpenseBtn');
-        if (!staff) { showToast('اختر عاملاً مسموحاً لك بتسجيل الصرف له'); return; }
-        if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
-        if (!CURRENCY_CODES.includes(currency)) { showToast('اختر عملة صحيحة'); return; }
-        if (!date) { showToast('حدد تاريخ الصرفة'); return; }
-        if (cashboxId && !cashbox) { showToast('الصندوق المحدد غير موجود'); return; }
-        if (cashbox && (cashbox.currency || 'YER') !== currency) { showToast('عملة الصندوق لا تطابق عملة الصرفة'); return; }
-        if (cashbox && computeSystemCashboxBalance(cashbox) < amount) { showToast('رصيد الصندوق غير كافٍ'); return; }
-
+        if (!staff) { showToast('اختر الموظف أولاً'); return; }
+        if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً للمصروف'); return; }
+        const period = getCurrentPayrollPeriod();
+        const date = getLocalDateKey();
+        const entitlement = getEmployeePeriodEntitlement(staff, period);
+        const spent = getEmployeePeriodSpent(staff.id, period);
+        const remaining = entitlement - spent;
+        if (amount > remaining) { showToast(`المبلغ أكبر من المستحق المتبقي (${formatMoney(Math.max(0, remaining))} ${getStaffSalaryCurrency(staff)})`); return; }
+        if (paymentCashboxId && !paymentCashbox) { showToast('اختر صندوقاً صحيحاً'); return; }
+        if (paymentCashbox && (paymentCashbox.currency || 'YER') !== getStaffSalaryCurrency(staff)) { showToast('عملة الصندوق لا تطابق عملة مستحق الموظف'); return; }
+        if (paymentCashbox && computeSystemCashboxBalance(paymentCashbox) < amount) { showToast('رصيد الصندوق غير كافٍ'); return; }
         isBusy = true;
-        if (btn) btn.disabled = true;
+        btn.disabled = true;
         try {
             const record = {
-                staffId: staff.id,
-                staffName: staff.fullName,
-                amount,
-                currency,
-                note,
-                date,
-                period: String(date).slice(0, 7),
-                cashboxId: cashbox?.id || '',
-                cashboxName: cashbox?.name || '',
-                createdAt: new Date().toISOString(),
-                createdBy: getAccountDisplayName(currentUser) || currentUser?.username || 'مستخدم',
-                createdByUserId: currentUser?.id || ''
+                staffId: staff.id, staffName: staff.fullName, amount, currency: getStaffSalaryCurrency(staff),
+                cashboxId: document.getElementById('employeeExpenseCashboxSelect')?.value || '',
+                cashboxName: state.cashboxes.find(c => c.id === (document.getElementById('employeeExpenseCashboxSelect')?.value || ''))?.name || '',
+                note: note || (isPieceworkStaff(staff) ? 'دفعة من مستحق الإنتاج' : 'مصروف من الراتب'),
+                period, date, createdAt: new Date().toISOString(),
+                createdBy: getAccountDisplayName(currentUser) || 'الإدارة', createdByUserId: currentUser?.id || ''
             };
-            if (mode === 'advance') {
-                // السلفة تُحفظ ضمن الدفعات المستلمة، فتُخصم من راتب الموظف أو مستحق إنتاجه.
-                record.source = 'dailyDisbursementAdvance';
-                record.deductionSource = isPieceworkStaff(staff) ? 'production' : 'salary';
-                record.paymentType = 'advance';
-                const saved = await createRecordOnce('employeeExpenses', 'emp_advance', {
-                    staffId: record.staffId, amount: record.amount, currency: record.currency,
-                    note: record.note, date: record.date, cashboxId: record.cashboxId,
-                    source: record.source, actor: dedupeActorId(), operationToken: `${Date.now()}_${Math.random().toString(36).slice(2)}`
-                }, record);
-                if (!saved.created) { showToast('تم منع تكرار السلفة نفسها؛ يبدو أنها سُجلت قبل قليل.'); return; }
-                record.id = saved.id;
-                state.employeeExpenses = (state.employeeExpenses || []).filter(item => item.id !== saved.id).concat(record);
-            } else {
-                const saved = await createRecordOnce('employeeDailyDisbursements', 'emp_daily_out', {
-                    staffId: record.staffId, amount: record.amount, currency: record.currency,
-                    note: record.note, date: record.date, cashboxId: record.cashboxId,
-                    actor: dedupeActorId(), operationToken: `${Date.now()}_${Math.random().toString(36).slice(2)}`
-                }, record);
-                if (!saved.created) { showToast('تم منع تكرار الصرفة نفسها؛ يبدو أنها سُجلت قبل قليل.'); return; }
-                record.id = saved.id;
-                state.employeeDailyDisbursements = (state.employeeDailyDisbursements || []).filter(item => item.id !== saved.id).concat(record);
-            }
-            const amountInput = document.getElementById('employeeExpenseAmount');
-            const noteInput = document.getElementById('employeeExpenseNote');
-            if (amountInput) amountInput.value = '';
-            if (noteInput) noteInput.value = '';
+            const saved = await createRecordOnce('employeeExpenses', 'emp_exp', {
+                staffId: staff.id, amount, currency: record.currency, note: record.note, period, date,
+                actor: dedupeActorId()
+            }, record);
+            if (!saved.created) { showToast('تم منع تكرار المصروف نفسه؛ سجل هذا المبلغ قبل قليل.'); return; }
+            record.id = saved.id;
+            state.employeeExpenses = state.employeeExpenses.filter(item => item.id !== saved.id).concat(record);
+            document.getElementById('employeeExpenseAmount').value = '';
+            document.getElementById('employeeExpenseNote').value = '';
             renderEmployeeExpenses();
             renderCashboxesList();
-            if (document.getElementById('cashboxStatementBody')) renderCashboxStatement();
-            if (document.getElementById('employeeDuesSummaryBody')) renderEmployeeDues();
-            showToast(mode === 'advance'
-                ? `تم حفظ السلفة وخصمها من ${isPieceworkStaff(staff) ? 'مستحق إنتاج' : 'راتب'} العامل.`
-                : 'تم حفظ الصرفة اليومية دون خصمها من مستحق العامل.');
-        } catch (error) {
-            console.warn('Record employee disbursement error:', error);
-            showToast('تعذر حفظ الصرفة؛ تحقق من اتصال قاعدة البيانات');
-        } finally {
-            isBusy = false;
-            if (btn) btn.disabled = false;
-            onEmployeeDisbursementModeChange();
-        }
-    }
-
-    async function editEmployeeDisbursementRecord(recordId, recordKind) {
-        const isAdvance = recordKind === 'advance';
-        if (isAdvance) {
-            if (isBusy || !canManageUsers()) { showToast('تعديل السلف المخصومة متاح للمدير والمشرف فقط'); return; }
-            const item = (state.employeeExpenses || []).find(record => record.id === recordId && record.source === 'dailyDisbursementAdvance');
-            if (!item) return;
-            const amountText = prompt(`المبلغ الجديد لسلفة ${item.staffName || 'العامل'} (${item.currency || 'YER'}):`, String(item.amount || ''));
-            if (amountText === null) return;
-            const amount = Number(String(amountText).replace(/,/g, '').trim());
-            if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
-            if (item.cashboxId) {
-                const box = state.cashboxes.find(cashbox => cashbox.id === item.cashboxId);
-                if (box && amount > computeSystemCashboxBalance(box) + Number(item.amount || 0)) { showToast('رصيد الصندوق لا يكفي للمبلغ الجديد'); return; }
-            }
-            const note = prompt('بيان السلفة:', item.note || 'سلفة تخصم من مستحق العامل');
-            if (note === null) return;
-            if (!confirm('تأكيد تعديل السلفة؟ سيُعاد احتساب المبلغ المخصوم من راتب العامل أو مستحق إنتاجه.')) return;
-            isBusy = true;
-            try {
-                const patch = { amount, note: String(note).trim() || 'سلفة تخصم من مستحق العامل', updatedAt: new Date().toISOString(), updatedBy: getAccountDisplayName(currentUser) };
-                await db.collection('employeeExpenses').doc(recordId).update(patch);
-                state.employeeExpenses = state.employeeExpenses.map(record => record.id === recordId ? { ...record, ...patch } : record);
-                renderEmployeeExpenses(); renderCashboxesList();
-                if (document.getElementById('employeeDuesSummaryBody')) renderEmployeeDues();
-                showToast('تم تعديل السلفة وإعادة احتساب المتبقي');
-            } catch (error) { console.warn('Edit employee advance error:', error); showToast('تعذر تعديل السلفة'); }
-            finally { isBusy = false; }
-            return;
-        }
-        return editDailyEmployeeDisbursement(recordId);
-    }
-
-    async function deleteEmployeeDisbursementRecord(recordId, recordKind) {
-        const isAdvance = recordKind === 'advance';
-        if (isAdvance) {
-            if (isBusy || !canManageUsers()) { showToast('حذف السلف المخصومة متاح للمدير والمشرف فقط'); return; }
-            const item = (state.employeeExpenses || []).find(record => record.id === recordId && record.source === 'dailyDisbursementAdvance');
-            if (!item) return;
-            if (!confirm(`حذف سلفة ${item.staffName || 'العامل'} بمبلغ ${formatMoney(item.amount)} ${item.currency || 'YER'}؟ سيُعاد المبلغ إلى رصيد الصندوق إن كانت السلفة مرتبطة بصندوق، وسيُعاد احتساب مستحق العامل.`)) return;
-            isBusy = true;
-            try {
-                await db.collection('employeeExpenses').doc(recordId).delete();
-                state.employeeExpenses = state.employeeExpenses.filter(record => record.id !== recordId);
-                renderEmployeeExpenses(); renderCashboxesList();
-                if (document.getElementById('employeeDuesSummaryBody')) renderEmployeeDues();
-                showToast('تم حذف السلفة وإعادة احتساب مستحق العامل');
-            } catch (error) { console.warn('Delete employee advance error:', error); showToast('تعذر حذف السلفة'); }
-            finally { isBusy = false; }
-            return;
-        }
-        return deleteDailyEmployeeDisbursement(recordId);
-    }
-
-    async function editDailyEmployeeDisbursement(recordId) {
-        if (isBusy || !canManageUsers()) { showToast('تعديل الصرف اليومي متاح للمدير والمشرف فقط'); return; }
-        const item = (state.employeeDailyDisbursements || []).find(record => record.id === recordId);
-        if (!item) return;
-        const amountText = prompt(`المبلغ الجديد لصرفة ${item.staffName || 'العامل'} (${item.currency || 'YER'}):`, String(item.amount || ''));
-        if (amountText === null) return;
-        const amount = Number(String(amountText).replace(/,/g, '').trim());
-        if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
-        if (item.cashboxId) {
-            const box = state.cashboxes.find(cashbox => cashbox.id === item.cashboxId);
-            if (box && amount > computeSystemCashboxBalance(box) + Number(item.amount || 0)) {
-                showToast('رصيد الصندوق لا يكفي للمبلغ الجديد'); return;
-            }
-        }
-        const note = prompt('بيان الصرفة اليومية:', item.note || 'صرفة يومية للعامل');
-        if (note === null) return;
-        if (!confirm('تأكيد تعديل سجل الصرفة اليومية؟ هذا التعديل لا يؤثر على مستحق العامل.')) return;
-        isBusy = true;
-        try {
-            const patch = { amount, note: String(note).trim() || 'صرفة يومية للعامل', updatedAt: new Date().toISOString(), updatedBy: getAccountDisplayName(currentUser) };
-            await db.collection('employeeDailyDisbursements').doc(recordId).update(patch);
-            state.employeeDailyDisbursements = state.employeeDailyDisbursements.map(record => record.id === recordId ? { ...record, ...patch } : record);
-            renderEmployeeExpenses();
-            renderCashboxesList();
-            showToast('تم تعديل الصرفة اليومية دون تغيير مستحق العامل');
-        } catch (error) {
-            console.warn('Edit daily disbursement error:', error);
-            showToast('تعذر تعديل الصرفة اليومية');
-        } finally { isBusy = false; }
-    }
-
-    async function deleteDailyEmployeeDisbursement(recordId) {
-        if (isBusy || !canManageUsers()) { showToast('حذف الصرف اليومي متاح للمدير والمشرف فقط'); return; }
-        const item = (state.employeeDailyDisbursements || []).find(record => record.id === recordId);
-        if (!item) return;
-        if (!confirm(`حذف صرفة ${item.staffName || 'العامل'} بمبلغ ${formatMoney(item.amount)} ${item.currency || 'YER'}؟ سيعود المبلغ إلى رصيد الصندوق إن كانت الصرفة مرتبطة بصندوق.`)) return;
-        isBusy = true;
-        try {
-            await db.collection('employeeDailyDisbursements').doc(recordId).delete();
-            state.employeeDailyDisbursements = state.employeeDailyDisbursements.filter(record => record.id !== recordId);
-            renderEmployeeExpenses();
-            renderCashboxesList();
-            showToast('تم حذف سجل الصرفة اليومية');
-        } catch (error) {
-            console.warn('Delete daily disbursement error:', error);
-            showToast('تعذر حذف سجل الصرفة اليومية');
-        } finally { isBusy = false; }
-    }
-
-    function renderEmployeeExpenses() {
-        const period = getCurrentPayrollPeriod();
-        const label = document.getElementById('employeeExpensesPeriodLabel');
-        if (label) label.textContent = `الفترة الحالية: ${period}. اختر «صرف يومي» إذا لا تريد الخصم، أو «سلفة / دفعة» لخصم المبلغ من راتب العامل أو مستحق إنتاجه.`;
-        populateEmployeeExpenseStaffOptions();
-
-        const allowedStaffIds = new Set(getDailyDisbursementStaff().map(item => String(item.id)));
-        const allowedRecord = item => canManageUsers() || allowedStaffIds.has(String(item.staffId));
-        const dailyRecords = (state.employeeDailyDisbursements || [])
-            .filter(item => allowedRecord(item) && (item.period || String(item.date || '').slice(0, 7)) === period)
-            .map(item => ({ ...item, recordKind: 'daily' }));
-        const advanceRecords = (state.employeeExpenses || [])
-            .filter(item => item.source === 'dailyDisbursementAdvance' && allowedRecord(item) && (item.period || String(item.date || '').slice(0, 7)) === period)
-            .map(item => ({ ...item, recordKind: 'advance' }));
-        const records = [...dailyRecords, ...advanceRecords];
-        const summary = document.getElementById('employeeDailyDisbursementSummary');
-        if (summary) {
-            summary.innerHTML = CURRENCY_CODES.map(currency => {
-                const dailyTotal = dailyRecords.filter(item => (item.currency || 'YER') === currency).reduce((sum, item) => sum + Number(item.amount || 0), 0);
-                const advanceTotal = advanceRecords.filter(item => (item.currency || 'YER') === currency).reduce((sum, item) => sum + Number(item.amount || 0), 0);
-                return `<div class="mini-stat"><div class="mini-stat-label">صرف يومي غير مخصوم (${currency})</div><div class="mini-stat-val mono">${formatMoney(dailyTotal)} ${currency}</div></div><div class="mini-stat"><div class="mini-stat-label">سلف مخصومة من المستحق (${currency})</div><div class="mini-stat-val mono">${formatMoney(advanceTotal)} ${currency}</div></div>`;
-            }).join('');
-        }
-        const expenseBody = document.getElementById('employeeExpensesTableBody');
-        if (expenseBody) {
-            const sorted = records.slice().sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
-            expenseBody.innerHTML = sorted.length ? sorted.map(item => `
-                <tr>
-                    <td>${escapeUiText(item.date || '-')}</td>
-                    <td><strong>${escapeUiText(item.staffName || getStaffById(item.staffId)?.fullName || '-')}</strong></td>
-                    <td>${item.recordKind === 'advance' ? `<span class="badge badge-credit">${item.deductionSource === 'salary' ? 'سلفة تخصم من الراتب' : 'سلفة تخصم من مستحق الإنتاج'}</span>` : '<span class="badge badge-unit">صرف يومي غير مخصوم</span>'}</td>
-                    <td>${escapeUiText(item.note || '-')}</td>
-                    <td><strong class="mono">${formatMoney(item.amount || 0)} ${escapeUiText(item.currency || 'YER')}</strong></td>
-                    <td>${escapeUiText(item.cashboxName || 'غير مربوط بصندوق')}</td>
-                    <td>${escapeUiText(item.createdBy || '-')}</td>
-                    <td>${canManageUsers() ? `<div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="editEmployeeDisbursementRecord('${item.id}','${item.recordKind}')"><i class="fa-solid fa-pen"></i> تعديل</button><button class="btn btn-danger btn-sm" onclick="deleteEmployeeDisbursementRecord('${item.id}','${item.recordKind}')"><i class="fa-solid fa-trash"></i> حذف</button></div>` : '—'}</td>
-                </tr>
-            `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد صرفيات أو سلف مسجلة للعمال المسموح بهم خلال هذه الفترة</td></tr>';
-        }
+            showToast('تم تسجيل المبلغ وتحديث مستحق الموظف ورصيد الصندوق');
+        } catch (e) { console.warn('Record employee expense error:', e); showToast('تعذر تسجيل مصروف الموظف'); }
+        finally { isBusy = false; btn.disabled = false; }
     }
 
     function getSelectedProductionRate() {
@@ -8236,13 +7242,10 @@ function initMenuPermissionCheckboxes() {
         const sel = document.getElementById('productionStaffSelect');
         if (!sel) return;
         const previous = sel.value;
-        const staff = getProductionVisibleStaff();
-        sel.innerHTML = (staff.length
-            ? '<option value="">اختر الموظف الذي سمح به المشرف</option>'
-            : '<option value="">لم يحدد المشرف موظفين لهذا الحساب</option>') + staff.map(item =>
-            `<option value="${escapeUiText(item.id)}">${escapeUiText(item.fullName)} — ${getStaffSalaryCurrency(item)}</option>`
+        const staff = getVisiblePayrollStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
+        sel.innerHTML = '<option value="">اختر موظفاً يعمل بالقطعة</option>' + staff.map(item =>
+            `<option value="${item.id}">${item.fullName} — ${getStaffSalaryCurrency(item)}</option>`
         ).join('');
-        sel.disabled = staff.length === 0;
         if (previous && staff.some(item => item.id === previous)) sel.value = previous;
         else if (staff.length === 1) sel.value = staff[0].id;
         populateProductionRateOptions();
@@ -8288,7 +7291,7 @@ function initMenuPermissionCheckboxes() {
         const date = document.getElementById('productionDate').value || getLocalDateKey();
         const note = document.getElementById('productionNote').value.trim();
         const btn = document.getElementById('saveProductionBtn');
-        if (!staff || !isPieceworkStaff(staff) || !getProductionVisibleStaff().some(item => item.id === staff.id)) { showToast('هذا الموظف غير موجود ضمن قائمة الموظفين التي سمح لك المشرف بتسجيل إنتاجهم'); return; }
+        if (!staff || !isPieceworkStaff(staff) || !getVisiblePayrollStaff().some(item => item.id === staff.id)) { showToast('يمكنك تسجيل الإنتاج لملفك المرتبط فقط، أو اختر موظفاً ضمن صلاحياتك'); return; }
         if (!rate) { showToast('اختر نوع العمل أو القطعة'); return; }
         if (!Number.isFinite(quantity) || quantity <= 0) { showToast('أدخل كمية صحيحة أكبر من صفر'); return; }
         const amount = quantity * Number(rate.rate || 0);
@@ -8339,7 +7342,7 @@ function initMenuPermissionCheckboxes() {
     async function deleteEmployeeProduction(productionId) {
         if (isBusy) return;
         const item = (state.employeeProduction || []).find(record => record.id === productionId);
-        const ownIds = new Set(getProductionVisibleStaff().map(staff => staff.id));
+        const ownIds = new Set(getVisiblePayrollStaff().map(staff => staff.id));
         if (!canManageUsers() && (!canDeleteRecord() || !item || !ownIds.has(item.staffId))) { showToast('ليس لديك صلاحية حذف هذا السجل'); return; }
         if (!item) return;
         if (!confirm(`حذف إنتاج ${item.staffName || 'الموظف'} (${item.quantity} ${item.unit}) بقيمة ${formatMoney(item.amount)} ${item.currency || 'YER'}؟`)) return;
@@ -8405,19 +7408,14 @@ function initMenuPermissionCheckboxes() {
     function renderEmployeeProduction() {
         if (!canAccessMenu('employeeProductionTab')) return;
         const period = getCurrentPayrollPeriod();
-        const isManagementView = hasFullAccess(currentUser);
         const label = document.getElementById('employeeProductionPeriodLabel');
-        if (label) label.textContent = isManagementView
-            ? `الفترة الحالية: ${period}. اختر أحد الموظفين الذين سمح لك المشرف بتسجيل إنتاجهم؛ وسيُحسب المستحق وفق تسعيرة العمل المحددة له.`
-            : `الفترة الحالية: ${period}. يظهر هنا الإنتاج الذي سجلته أنت فقط، مع قيمة كل تسجيل حسب الكمية التي أدخلتها. لا يظهر في هذه الصفحة إجمالي الرصيد المتبقي أو المبالغ المصروفة.`;
+        if (label) label.textContent = `الفترة الحالية: ${period}. أدخل كمية العمل التي أنجزتها؛ وسيُحسب المستحق وفق السعر الذي حدده المدير.`;
         const dateInput = document.getElementById('productionDate');
         if (dateInput && !dateInput.value) dateInput.value = getLocalDateKey();
         populateProductionStaffOptions();
-        const staff = getProductionVisibleStaff();
-        const summaryCard = document.getElementById('employeeProductionFinancialSummary');
-        if (summaryCard) summaryCard.classList.toggle('hidden', !isManagementView);
+        const staff = getVisiblePayrollStaff().filter(item => isPieceworkStaff(item) && item.active !== false);
         const summaryBody = document.getElementById('employeeProductionSummaryBody');
-        if (summaryBody && isManagementView) {
+        if (summaryBody) {
             summaryBody.innerHTML = staff.length ? staff.map(item => {
                 const earned = getEmployeePeriodProductionEarnings(item.id, period);
                 const paid = getEmployeePeriodSpent(item.id, period);
@@ -8429,42 +7427,25 @@ function initMenuPermissionCheckboxes() {
                     <td><span class="mono">${formatMoney(paid)} ${currency}</span></td>
                     <td><strong class="mono" style="color:${balance < 0 ? 'var(--danger)' : 'var(--success)'}">${formatMoney(balance)} ${currency}</strong></td>
                 </tr>`;
-            }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لم يحدد المشرف موظفين لهذا الحساب. اطلب من المدير فتح «حسابات الدخول والصلاحيات» واختيار الموظفين المسموح بتسجيل إنتاجهم.</td></tr>';
+            }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا يوجد ملف موظف مرتبط بحسابك، أو لا يوجد موظف يعمل بالقطعة</td></tr>';
         }
         const visibleIds = new Set(staff.map(item => item.id));
-        const actorId = String(currentUser?.id || '');
-        const actorNames = new Set([
-            normalizeStaffName(getAccountDisplayName(currentUser)),
-            normalizeStaffName(currentUser?.username || '')
-        ].filter(Boolean));
-        const rows = (state.employeeProduction || []).filter(item => {
-            const staffAllowed = isManagementView || visibleIds.has(item.staffId);
-            if (!staffAllowed) return false;
-            if (isManagementView) return true;
-            // الموظف يرى فقط السجلات التي أدخلها بحسابه، وليس إنتاج بقية من يستطيع تسجيلهم.
-            if (item.createdByUserId) return String(item.createdByUserId) === actorId;
-            return actorNames.has(normalizeStaffName(item.createdBy || ''));
-        }).slice().sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
+        const rows = (state.employeeProduction || []).filter(item => hasFullAccess(currentUser) || visibleIds.has(item.staffId)).slice()
+            .sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
         const tbody = document.getElementById('employeeProductionTableBody');
-        const tableHead = document.querySelector('#employeeProductionTab .card-box:last-child thead tr');
-        if (tableHead && !isManagementView) {
-            tableHead.innerHTML = '<th>التاريخ</th><th>الموظف</th><th>نوع العمل</th><th>الكمية التي سجلتها</th><th>سعر الوحدة</th><th>مستحق هذا التسجيل</th>';
-        } else if (tableHead && isManagementView) {
-            tableHead.innerHTML = '<th>التاريخ</th><th>الموظف</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th><th>سجل بواسطة</th><th>إجراء</th>';
-        }
         if (tbody) {
-            tbody.innerHTML = rows.length ? rows.map(item => {
-                const commonCells = `
+            tbody.innerHTML = rows.length ? rows.map(item => `
+                <tr>
                     <td>${item.date || '-'}</td>
                     <td>${item.staffName || getStaffById(item.staffId)?.fullName || '-'}</td>
                     <td>${item.workName || '-'} (${item.unit || '-'})</td>
                     <td><span class="mono">${formatQty(item.quantity || 0)}</span></td>
                     <td><span class="mono">${formatMoney(item.unitRate || 0)} ${item.currency || 'YER'}</span></td>
-                    <td><strong class="mono">${formatMoney(Number(item.quantity || 0) * Number(item.unitRate || 0))} ${item.currency || 'YER'}</strong></td>`;
-                const managementCells = `<td>${item.createdBy || '-'}</td>
-                    <td>${canManageUsers() || (canDeleteRecord() && visibleIds.has(item.staffId)) ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeProduction('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button>` : '<span style="color:var(--text-muted);">—</span>'}</td>`;
-                return `<tr>${commonCells}${isManagementView ? managementCells : ''}</tr>`;
-            }).join('') : `<tr><td colspan="${isManagementView ? 8 : 6}" style="text-align:center; color:var(--text-muted);">${isManagementView ? 'لا يوجد إنتاج مسجل في الحساب المسموح لك' : 'لا توجد سجلات إنتاج سجلتها بهذا الحساب خلال الفترة الحالية'}</td></tr>`;
+                    <td><strong class="mono">${formatMoney(item.amount || 0)} ${item.currency || 'YER'}</strong></td>
+                    <td>${item.createdBy || '-'}</td>
+                    <td>${canManageUsers() || (canDeleteRecord() && visibleIds.has(item.staffId)) ? `<button class="btn btn-danger btn-sm" onclick="deleteEmployeeProduction('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button>` : '<span style="color:var(--text-muted);">—</span>'}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا يوجد إنتاج مسجل في الحساب المسموح لك</td></tr>';
         }
         updateProductionPreview();
     }
@@ -8478,12 +7459,10 @@ function initMenuPermissionCheckboxes() {
         const production = (state.employeeProduction || []).filter(item =>
             item.staffId === staff.id && (item.period || String(item.date || '').slice(0, 7)) === period
         ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
-        const currency = getStaffSalaryCurrency(staff);
         const expenses = (state.employeeExpenses || []).filter(item =>
-            item.staffId === staff.id &&
-            (item.period || String(item.date || '').slice(0, 7)) === period &&
-            (item.currency || currency) === currency
+            item.staffId === staff.id && (item.period || String(item.date || '').slice(0, 7)) === period
         ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+        const currency = getStaffSalaryCurrency(staff);
         const productionTotal = isPieceworkStaff(staff)
             ? production.reduce((sum, item) => sum + Number(item.amount || 0), 0)
             : 0;
@@ -8509,7 +7488,7 @@ function initMenuPermissionCheckboxes() {
         const select = document.getElementById('employeeDuesStaffSelect');
         if (!select) return [];
         const previous = select.value;
-        const staff = getVisiblePayrollStaff();
+        const staff = getVisibleEmployeeDuesStaff();
         select.innerHTML = '<option value="">اختر الموظف</option>' + staff.map(item =>
             `<option value="${escapeEmployeeDuesHtml(item.id)}">${escapeEmployeeDuesHtml(item.fullName || 'موظف')} — ${isPieceworkStaff(item) ? 'بالقطعة' : 'راتب شهري'}</option>`
         ).join('');
@@ -8587,7 +7566,7 @@ function initMenuPermissionCheckboxes() {
         const target = document.getElementById('employeeDuesSelectedDetail');
         if (!target) return;
         const staffId = document.getElementById('employeeDuesStaffSelect')?.value || '';
-        const staff = getVisiblePayrollStaff().find(item => item.id === staffId);
+        const staff = getVisibleEmployeeDuesStaff().find(item => item.id === staffId);
         if (!staff) {
             target.innerHTML = '<div class="employee-permission-note">اختر الموظف لعرض تفاصيل إنتاجه ومستحقاته والمبالغ التي استلمها.</div>';
             return;
@@ -8610,8 +7589,7 @@ function initMenuPermissionCheckboxes() {
             earned: Number(item.amount || 0), paid: 0, actor: item.createdBy || '-'
         }));
         data.expenses.forEach(item => ledgerRows.push({
-            date: item.date || '-', order: item.createdAt || '',
-            type: item.source === 'dailyDisbursementAdvance' ? (isPieceworkStaff(staff) ? 'سلفة مخصومة من مستحق الإنتاج' : 'سلفة مخصومة من الراتب') : 'استلام / دفعة',
+            date: item.date || '-', order: item.createdAt || '', type: 'استلام / دفعة',
             details: item.note || 'مبلغ مستلم', quantity: '-', rate: '-',
             earned: 0, paid: Number(item.amount || 0), actor: item.createdBy || '-'
         }));
@@ -8693,7 +7671,7 @@ function initMenuPermissionCheckboxes() {
     function exportEmployeeDuesPdf(allStaff = false) {
         if (employeeDuesPdfBusy) return;
         const period = getSelectedEmployeeDuesPeriod();
-        const available = getVisiblePayrollStaff();
+        const available = getVisibleEmployeeDuesStaff();
         const selectedId = document.getElementById('employeeDuesStaffSelect')?.value || '';
         const selected = available.find(item => item.id === selectedId);
         const staffList = allStaff ? available : (selected ? [selected] : []);
@@ -8747,147 +7725,6 @@ body{padding:0}
 thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avoid}
 @page{size:A4 portrait;margin:9mm}
 @media print{html,body{width:100%;height:auto}.employee-dues-pdf-sheet{width:100%;padding:3mm}.employee-dues-pdf-sheet:not(:last-child){break-after:page;page-break-after:always}}
-
-        .item-list-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:4px 0 14px}
-        .item-list-stat{background:#f7fafc;border:1px solid var(--border);border-radius:13px;padding:11px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
-        .item-list-stat span{font-size:11px;color:var(--text-muted);font-weight:700}
-        .item-list-stat strong{font-size:21px;color:var(--primary);font-weight:900;font-variant-numeric:tabular-nums}
-        .item-list-stat strong.known{color:#15803d}.item-list-stat strong.unknown{color:#b45309}
-        .item-list-filters{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;align-items:end}
-        .item-list-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:12px;align-items:stretch}
-        .item-list-card{min-width:0;background:#fff;border:1px solid #dce5ed;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:13px;box-shadow:0 5px 18px rgba(15,40,70,.055)}
-        .item-list-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:11px;border-bottom:1px solid #edf1f5}
-        .item-list-name-wrap{min-width:0;display:flex;flex-direction:column;gap:4px}
-        .item-list-kicker{font-size:10px;color:var(--text-muted);font-weight:800}
-        .item-list-card-head strong{font-size:18px;line-height:1.65;overflow-wrap:anywhere;word-break:normal;color:var(--navy)}
-        .item-list-unit{flex:0 0 auto;padding:7px 11px;border-radius:999px;background:#e8f1f8;color:var(--primary);font-size:12px;font-weight:800;white-space:nowrap}
-        .item-list-qty-panel{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-        .item-list-qty-panel>div{background:#f7fafc;border:1px solid #e8edf2;border-radius:12px;padding:11px;display:flex;flex-direction:column;gap:5px;min-width:0}
-        .item-list-qty-panel span{font-size:11px;color:var(--text-muted);font-weight:700}
-        .item-list-qty-panel b{font-size:14px;color:var(--text-main);overflow-wrap:anywhere}
-        .item-list-qty-panel .item-list-qty-number{font-size:21px;color:#087a50;font-weight:900;font-variant-numeric:tabular-nums}
-        .item-list-qty-number small{font-size:11px;font-weight:700}
-        .item-list-source{font-size:13px;line-height:1.8;padding:11px 12px;border-radius:12px;overflow-wrap:anywhere;word-break:break-word}
-        .item-list-source.source-known{color:#245b42;background:#eff8f1;border:1px solid #d9eddf}
-        .item-list-source.source-unknown{color:#825316;background:#fff8e9;border:1px solid #f2e4c5}
-        .item-list-source-title{display:flex;align-items:center;gap:7px;font-size:11px;margin-bottom:4px}
-        .item-list-source-text{font-weight:700}
-        .item-list-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-        .item-list-price-box{background:#fbfcfd;border:1px solid #edf1f5;border-radius:11px;padding:10px;display:flex;flex-direction:column;gap:5px;min-width:0}
-        .item-list-price-box span{font-size:11px;color:var(--text-muted);font-weight:700}
-        .item-list-price-box b{font-size:14px;color:var(--text-main);font-weight:900;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-        .item-list-price-box small{font-size:10px;color:var(--text-muted)}
-        .item-list-total-box{grid-column:1/-1;background:#f4f8fc}
-        .item-list-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:3px}
-        .item-list-actions .btn{min-height:42px}
-        .item-list-readonly{font-size:12px;color:var(--text-muted)}
-        .item-list-empty{grid-column:1/-1;text-align:center;padding:24px;color:var(--text-muted);background:var(--bg-surface);border-radius:12px}
-        @media(max-width:700px){.item-list-summary{gap:6px}.item-list-stat{padding:9px 8px}.item-list-stat span{font-size:10px}.item-list-stat strong{font-size:18px}.item-list-filters{grid-template-columns:1fr;gap:4px}.item-list-grid{grid-template-columns:1fr;gap:12px}.item-list-card{padding:15px;border-radius:16px}.item-list-card-head strong{font-size:19px;line-height:1.75}.item-list-qty-panel .item-list-qty-number{font-size:23px}.item-list-source{font-size:14px}.item-list-price-box b{font-size:15px}.item-list-actions .btn{flex:1;min-height:46px;font-size:13px}}
-        @media(max-width:360px){.item-list-summary{grid-template-columns:1fr 1fr}.item-list-stat:first-child{grid-column:1/-1}.item-list-qty-panel{grid-template-columns:1fr}.item-list-card{padding:12px}}
-
-
-/* قائمة الأصناف: عرض صفوف واضح ومنظم على الهاتف والكمبيوتر */
-.item-list-grid{
-  display:flex !important;
-  flex-direction:column !important;
-  gap:12px !important;
-  margin-top:14px !important;
-  align-items:stretch !important;
-}
-.item-list-card{
-  display:flex !important;
-  flex-direction:column !important;
-  width:100% !important;
-  max-width:100% !important;
-  padding:16px !important;
-  gap:12px !important;
-  border:1px solid #d8e4dc !important;
-  border-radius:16px !important;
-  background:#fff !important;
-  box-shadow:0 3px 12px rgba(20,70,40,.06) !important;
-}
-.item-list-card-head{
-  display:flex !important;
-  flex-direction:row !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  gap:10px !important;
-  padding:0 0 12px !important;
-  border-bottom:2px solid #edf3ef !important;
-}
-.item-list-name-wrap{flex:1 1 auto !important;min-width:0 !important;}
-.item-list-kicker{font-size:12px !important;color:#64748b !important;}
-.item-list-card-head strong{
-  display:block !important;
-  font-size:19px !important;
-  line-height:1.65 !important;
-  white-space:normal !important;
-  overflow:visible !important;
-  text-overflow:clip !important;
-  overflow-wrap:anywhere !important;
-  word-break:normal !important;
-  -webkit-line-clamp:unset !important;
-}
-.item-list-unit{font-size:13px !important;padding:8px 13px !important;}
-.item-list-qty-panel,
-.item-list-price-grid{
-  display:flex !important;
-  flex-direction:column !important;
-  gap:0 !important;
-  width:100% !important;
-}
-.item-list-qty-panel>div,
-.item-list-price-box{
-  display:flex !important;
-  flex-direction:row !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  gap:12px !important;
-  width:100% !important;
-  min-height:48px !important;
-  padding:10px 12px !important;
-  background:#f8fafc !important;
-  border:0 !important;
-  border-bottom:1px solid #e8edf2 !important;
-  border-radius:0 !important;
-}
-.item-list-qty-panel>div:first-child,
-.item-list-price-box:first-child{border-radius:10px 10px 0 0 !important;}
-.item-list-qty-panel>div:last-child,
-.item-list-price-box:last-child{border-radius:0 0 10px 10px !important;border-bottom:0 !important;}
-.item-list-qty-panel span,
-.item-list-price-box span{font-size:13px !important;font-weight:700 !important;color:#526174 !important;}
-.item-list-qty-panel b,
-.item-list-price-box b{
-  text-align:left !important;
-  font-size:15px !important;
-  font-weight:900 !important;
-  color:#172033 !important;
-  overflow-wrap:anywhere !important;
-}
-.item-list-qty-panel .item-list-qty-number{font-size:20px !important;color:#087a50 !important;}
-.item-list-source{width:100% !important;padding:13px !important;font-size:14px !important;line-height:1.8 !important;}
-.item-list-source-title{font-size:13px !important;}
-.item-list-source-text{font-size:14px !important;}
-.item-list-total-box{
-  grid-column:auto !important;
-  background:#eff8f1 !important;
-  border-top:1px solid #dceee1 !important;
-  border-bottom:0 !important;
-  border-radius:10px !important;
-  margin-top:8px !important;
-}
-.item-list-total-box b{color:#126338 !important;font-size:16px !important;}
-.item-list-actions{display:flex !important;flex-direction:row !important;gap:9px !important;width:100% !important;margin-top:2px !important;}
-.item-list-actions .btn{flex:1 1 0 !important;min-height:48px !important;font-size:13px !important;white-space:normal !important;}
-@media(max-width:700px){
-  .item-list-card{padding:13px !important;gap:10px !important;}
-  .item-list-card-head strong{font-size:18px !important;}
-  .item-list-qty-panel>div,.item-list-price-box{min-height:46px !important;padding:9px 10px !important;}
-  .item-list-actions{flex-direction:column !important;}
-  .item-list-actions .btn{width:100% !important;}
-}
-
 </style>
 </head>
 <body>${safeSheets}
@@ -8916,12 +7753,125 @@ window.addEventListener('load',function(){
         }
     }
 
+    async function editEmployeeExpense(expenseId) {
+        if (isBusy || !canManageUsers()) {
+            showToast('تعديل مصروفات الموظفين متاح للمشرف والمدير فقط');
+            return;
+        }
+        const item = (state.employeeExpenses || []).find(expense => expense.id === expenseId);
+        if (!item) { showToast('لم يتم العثور على سجل المصروف'); return; }
+        const staff = getStaffById(item.staffId);
+        if (!staff) { showToast('تعذر العثور على الموظف المرتبط بالسجل'); return; }
+
+        const amountText = prompt(`المبلغ الجديد للموظف ${item.staffName || staff.fullName} (${item.currency || 'YER'}):`, String(item.amount || ''));
+        if (amountText === null) return;
+        const newAmount = Number(String(amountText).replace(/,/g, '').trim());
+        if (!Number.isFinite(newAmount) || newAmount <= 0) {
+            showToast('أدخل مبلغاً صحيحاً أكبر من صفر');
+            return;
+        }
+        const noteText = prompt('البيان / سبب الصرف:', item.note || '');
+        if (noteText === null) return;
+        const period = item.period || String(item.date || '').slice(0, 7) || getCurrentPayrollPeriod();
+        const entitlement = getEmployeePeriodEntitlement(staff, period);
+        const totalSpent = getEmployeePeriodSpent(staff.id, period);
+        const availableBeforeThisRecord = entitlement - (totalSpent - Number(item.amount || 0));
+        if (newAmount > availableBeforeThisRecord) {
+            showToast(`المبلغ يتجاوز المتاح لهذا الموظف (${formatMoney(Math.max(0, availableBeforeThisRecord))} ${item.currency || getStaffSalaryCurrency(staff)})`);
+            return;
+        }
+        if (!confirm(`تأكيد تعديل المبلغ من ${formatMoney(item.amount || 0)} إلى ${formatMoney(newAmount)} ${item.currency || 'YER'}؟`)) return;
+
+        isBusy = true;
+        try {
+            const updated = {
+                amount: newAmount,
+                note: String(noteText).trim() || 'دفعة من المستحق',
+                updatedAt: new Date().toISOString(),
+                updatedBy: currentUser?.fullName || 'المشرف',
+                updatedByUserId: currentUser?.id || ''
+            };
+            await db.collection('employeeExpenses').doc(expenseId).update(updated);
+            state.employeeExpenses = (state.employeeExpenses || []).map(expense =>
+                expense.id === expenseId ? { ...expense, ...updated } : expense
+            );
+            renderEmployeeExpenses();
+            if (!document.getElementById('employeeDuesTab')?.classList.contains('hidden')) renderEmployeeDues();
+            showToast('تم تعديل الدفعة وتحديث مستحق الموظف');
+        } catch (error) {
+            console.warn('Edit employee expense error:', error);
+            showToast('تعذر تعديل الدفعة؛ تحقق من اتصال قاعدة البيانات');
+        } finally {
+            isBusy = false;
+        }
+    }
+
+    async function deleteEmployeeExpense(expenseId) {
+        if (isBusy || !canManageUsers()) return;
+        const item = state.employeeExpenses.find(expense => expense.id === expenseId);
+        if (!item) return;
+        if (!confirm(`حذف مصروف / دفعة ${item.staffName || 'الموظف'} بمبلغ ${formatMoney(item.amount)} ${item.currency || 'YER'}؟`)) return;
+        isBusy = true;
+        try {
+            await db.collection('employeeExpenses').doc(expenseId).delete();
+            state.employeeExpenses = state.employeeExpenses.filter(expense => expense.id !== expenseId);
+            renderEmployeeExpenses();
+            showToast('تم حذف المبلغ وإرجاعه إلى مستحق الموظف المتبقي');
+        } catch (e) {
+            showToast('تعذر حذف المصروف');
+        } finally {
+            isBusy = false;
+        }
+    }
+
+    function renderEmployeeExpenses() {
+        const period = getCurrentPayrollPeriod();
+        const label = document.getElementById('employeeExpensesPeriodLabel');
+        if (label) label.textContent = `الفترة الحالية: ${period}. يتم خصم المدفوعات من راتب الموظف الشهري أو من مستحق إنتاجه بالقطعة، حسب نظام الأجر.`;
+        populateEmployeeExpenseStaffOptions();
+        const staff = getVisiblePayrollStaff();
+        const balanceBody = document.getElementById('employeeSalaryBalanceBody');
+        if (balanceBody) {
+            balanceBody.innerHTML = staff.length ? staff.map(item => {
+                const currency = getStaffSalaryCurrency(item);
+                const entitlement = getEmployeePeriodEntitlement(item, period);
+                const spent = getEmployeePeriodSpent(item.id, period);
+                const remaining = entitlement - spent;
+                return `<tr>
+                    <td><strong>${item.fullName || '-'}</strong><br><small>${isPieceworkStaff(item) ? 'أجر حسب الإنتاج' : 'راتب شهري'}</small></td>
+                    <td><span class="mono">${formatMoney(entitlement)} ${currency}</span></td>
+                    <td><span class="mono">${formatMoney(spent)} ${currency}</span></td>
+                    <td><strong class="mono" style="color:${remaining < 0 ? 'var(--danger)' : 'var(--success)'};">${formatMoney(remaining)} ${currency}</strong></td>
+                </tr>`;
+            }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">لا توجد بيانات رواتب لعرضها</td></tr>';
+        }
+        const allowedIds = new Set(staff.map(item => item.id));
+        const expenses = state.employeeExpenses
+            .filter(item => canManageUsers() || allowedIds.has(item.staffId))
+            .slice()
+            .sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
+        const expenseBody = document.getElementById('employeeExpensesTableBody');
+        if (expenseBody) {
+            expenseBody.innerHTML = expenses.length ? expenses.map(item => `
+                <tr>
+                    <td>${item.date || '-'}</td>
+                    <td>${item.staffName || getStaffById(item.staffId)?.fullName || '-'}</td>
+                    <td>${item.note || '-'}</td>
+                    <td><strong class="mono">${formatMoney(item.amount || 0)} ${item.currency || 'YER'}</strong></td>
+                    <td>${item.createdBy || '-'}</td>
+                    <td>${canManageUsers() ? `<div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="editEmployeeExpense('${item.id}')"><i class="fa-solid fa-pen"></i> تعديل</button><button class="btn btn-danger btn-sm" onclick="deleteEmployeeExpense('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button></div>` : '-'}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد مصروفات مسجلة في هذه القائمة</td></tr>';
+        }
+        updateEmployeeExpensePreview();
+    }
+
     // النسخ الاحتياطي: يشمل كل مجموعات البيانات التي يستخدمها النظام حالياً.
     const SYSTEM_BACKUP_FORMAT = 'abu-mohammad-accounting-backup';
     const SYSTEM_BACKUP_VERSION = 1;
     const SYSTEM_BACKUP_COLLECTIONS = [
         'branches', 'cashboxes', 'customers', 'suppliers', 'invoices', 'purchases',
-        'vouchers', 'employees', 'staff', 'employeeExpenses', 'employeeDailyDisbursements', 'employeeProduction', 'warehouse'
+        'vouchers', 'employees', 'staff', 'employeeExpenses', 'employeeProduction', 'warehouse'
     ];
 
     function encodeBackupValue(value) {
@@ -9090,6 +8040,7 @@ window.addEventListener('load',function(){
     toggleEmployeePayTypeFields();
     initMenuPermissionCheckboxes();
     if (document.getElementById('cashboxStatementPeriod')) document.getElementById('cashboxStatementPeriod').value = getCurrentPayrollPeriod();
+    if (document.getElementById('qtyAdjustmentRows')) addStockQuantityRow();
     toggleInvoicePaymentFields();
     togglePurchasePaymentFields();
 </script>
