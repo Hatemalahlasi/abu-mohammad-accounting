@@ -1830,9 +1830,9 @@
                 <div class="form-group hidden" id="voucherCollectorGroup">
                     <label>الموظف المسؤول عن التحصيل (اختياري)</label>
                     <select id="voucherCollectorStaffSelect" class="form-control">
-                        <option value="">بدون احتساب نسبة لموظف</option>
+                        <option value="">لا يوجد موظف مفعّل له نسبة تحصيل</option>
                     </select>
-                    <small class="employee-permission-note">اختر الموظف الذي تُحسب له النسبة من هذا التحصيل. تُحسب النسبة من جميع العملاء، حسب المبلغ المقبوض فعليًا وعملة السند.</small>
+                    <small id="voucherCollectorHint" class="employee-permission-note">اختر الموظف الذي قام بالتحصيل حتى تُحسب نسبته. تُحتسب العمولة على المبالغ المقبوضة فعليًا فقط.</small>
                 </div>
                 <div class="form-group">
                     <label>البيان لكشف الحساب (رقم السند)</label>
@@ -2362,10 +2362,10 @@
                                 <option value="USD">دولار أمريكي (USD)</option>
                             </select>
                         </div>
-                        <div class="form-group hidden" id="newEmpCollectionCommissionGroup" style="margin-bottom:0;">
-                            <label>نسبة الموظف من تحصيل العملاء (%)</label>
-                            <input type="number" id="newEmpCollectionCommissionRate" class="form-control num-input" min="0.01" max="100" step="0.01" inputmode="decimal" value="1" placeholder="مثال: 2.5">
-                            <small class="employee-permission-note">تُحسب من سندات القبض الفعلية لجميع العملاء التي تسجل باسم هذا الموظف، وكل عملة تُحسب وحدها.</small>
+                        <div class="form-group" id="newEmpCollectionCommissionGroup" style="margin-bottom:0;">
+                            <label>نسبة الموظف من تحصيل العملاء (%) — اختيارية</label>
+                            <input type="number" id="newEmpCollectionCommissionRate" class="form-control num-input" min="0" max="100" step="0.01" inputmode="decimal" value="0" placeholder="اترك 0 إذا ما له نسبة — مثال: 2.5">
+                            <small class="employee-permission-note">اكتب النسبة حتى لو الموظف يستلم راتبًا شهريًا ثابتًا. اتركها 0 إذا راتبه فقط. تُحسب من سندات القبض الفعلية المسجلة باسمه، وكل عملة تُحسب وحدها.</small>
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label>المخازن المسموح بها للموظف بواسطة المشرف</label>
@@ -3306,7 +3306,8 @@
     }
 
     function isMonthlyCommissionStaff(staff) {
-        return staff?.payType === 'monthly_commission';
+        if (!staff || isPieceworkStaff(staff)) return false;
+        return staff.payType === 'monthly_commission' || getStaffCollectionCommissionRate(staff) > 0;
     }
 
     function getStaffCollectionCommissionRate(staff) {
@@ -6323,18 +6324,25 @@ function initMenuPermissionCheckboxes() {
         if (!select) return [];
         const previous = select.value;
         const staff = getAllStaff().filter(item => isMonthlyCommissionStaff(item) && item.active !== false && getStaffCollectionCommissionRate(item) > 0);
-        select.innerHTML = '<option value="">بدون احتساب نسبة لموظف</option>' + staff.map(item =>
-            `<option value="${escapeEmployeeDuesHtml(item.id)}">${escapeEmployeeDuesHtml(item.fullName || 'موظف')} — ${getStaffCollectionCommissionRate(item)}%</option>`
-        ).join('');
+        select.innerHTML = staff.length
+            ? '<option value="">بدون احتساب نسبة لموظف</option>' + staff.map(item =>
+                `<option value="${escapeEmployeeDuesHtml(item.id)}">${escapeEmployeeDuesHtml(item.fullName || 'موظف')} — ${getStaffCollectionCommissionRate(item)}%</option>`
+            ).join('')
+            : '<option value="">لا يوجد موظف مفعّل له نسبة تحصيل</option>';
         if (previous && staff.some(item => item.id === previous)) select.value = previous;
+        const hint = document.getElementById('voucherCollectorHint');
+        if (hint) hint.textContent = staff.length
+            ? 'اختر الموظف الذي قام بالتحصيل. تُحسب النسبة من المبلغ المقبوض فعليًا وبعملة السند.'
+            : 'لا يوجد موظف مفعّل له نسبة بعد. من صفحة الموظفين أدخل نسبة أكبر من 0% بجانب راتبه الشهري.';
         return staff;
     }
 
     function toggleVoucherCustomerField() {
         const isReceipt = document.getElementById('voucherType').value === 'receipt';
         document.getElementById('voucherCustomerGroup').classList.toggle('hidden', !isReceipt);
-        const staff = populateVoucherCollectorOptions();
-        document.getElementById('voucherCollectorGroup')?.classList.toggle('hidden', !isReceipt || !staff.length);
+        populateVoucherCollectorOptions();
+        // أظهر خانة الموظف في سند القبض حتى لو لم يُفعّل أي موظف النسبة بعد.
+        document.getElementById('voucherCollectorGroup')?.classList.toggle('hidden', !isReceipt);
     }
 
     async function createVoucher() {
@@ -7297,10 +7305,10 @@ function initMenuPermissionCheckboxes() {
     function toggleEmployeePayTypeFields() {
         const payType = document.getElementById('newEmpPayType')?.value || 'monthly';
         const isPiecework = payType === 'piecework';
-        const hasCollectionCommission = payType === 'monthly_commission';
         document.getElementById('newEmpSalaryGroup')?.classList.toggle('hidden', isPiecework);
         document.getElementById('newEmpPieceRatesPanel')?.classList.toggle('hidden', !isPiecework);
-        document.getElementById('newEmpCollectionCommissionGroup')?.classList.toggle('hidden', !hasCollectionCommission);
+        // نسبة التحصيل إضافة اختيارية للراتب الشهري، وليست نوع أجر منفصلًا فقط.
+        document.getElementById('newEmpCollectionCommissionGroup')?.classList.toggle('hidden', isPiecework);
         const label = document.getElementById('newEmpCurrencyLabel');
         if (label) label.textContent = isPiecework ? 'عملة أجر القطعة' : 'عملة الراتب';
         const container = document.getElementById('newEmpPieceRatesContainer');
@@ -7428,10 +7436,11 @@ function initMenuPermissionCheckboxes() {
         const btn = document.getElementById('saveEmployeeBtn');
         const fullName = document.getElementById('newEmpFullName').value.trim();
         const nameKey = normalizeStaffName(fullName);
-        const payType = document.getElementById('newEmpPayType')?.value || 'monthly';
-        const salary = payType === 'piecework' ? 0 : Number(document.getElementById('newEmpSalary').value || 0);
+        const selectedPayType = document.getElementById('newEmpPayType')?.value || 'monthly';
+        const salary = selectedPayType === 'piecework' ? 0 : Number(document.getElementById('newEmpSalary').value || 0);
         const salaryCurrency = document.getElementById('newEmpSalaryCurrency').value || 'YER';
-        const collectionCommissionRate = payType === 'monthly_commission' ? Number(document.getElementById('newEmpCollectionCommissionRate')?.value || 0) : 0;
+        const collectionCommissionRate = selectedPayType === 'piecework' ? 0 : Number(document.getElementById('newEmpCollectionCommissionRate')?.value || 0);
+        const payType = selectedPayType === 'piecework' ? 'piecework' : (collectionCommissionRate > 0 ? 'monthly_commission' : 'monthly');
         const enteredPieceRates = payType === 'piecework' ? collectEmployeePieceRates() : [];
         const pieceRateValidationError = payType === 'piecework' ? validateEmployeePieceRates(enteredPieceRates) : '';
         const pieceRates = enteredPieceRates.map(({ _rowNumber, ...rate }) => rate);
@@ -7454,8 +7463,12 @@ function initMenuPermissionCheckboxes() {
             showToast('أدخل راتباً شهرياً صحيحاً');
             return;
         }
-        if (payType === 'monthly_commission' && (!Number.isFinite(collectionCommissionRate) || collectionCommissionRate <= 0 || collectionCommissionRate > 100)) {
-            showToast('أدخل نسبة تحصيل أكبر من صفر ولا تتجاوز 100%');
+        if (payType !== 'piecework' && (!Number.isFinite(collectionCommissionRate) || collectionCommissionRate < 0 || collectionCommissionRate > 100)) {
+            showToast('أدخل نسبة صحيحة من 0 إلى 100%');
+            return;
+        }
+        if (selectedPayType === 'monthly_commission' && collectionCommissionRate <= 0) {
+            showToast('أدخل نسبة تحصيل أكبر من صفر، أو اختر راتباً شهرياً فقط');
             return;
         }
         if (payType === 'piecework' && pieceRateValidationError) {
@@ -7508,7 +7521,7 @@ function initMenuPermissionCheckboxes() {
             document.getElementById('newEmpFullName').value = '';
             document.getElementById('newEmpSalary').value = '0.00';
             document.getElementById('newEmpSalaryCurrency').value = 'YER';
-            if (document.getElementById('newEmpCollectionCommissionRate')) document.getElementById('newEmpCollectionCommissionRate').value = '1';
+            if (document.getElementById('newEmpCollectionCommissionRate')) document.getElementById('newEmpCollectionCommissionRate').value = '0';
             document.getElementById('newEmpWarehouseBranch').selectedIndex = -1;
             setNewEmployeeBranches(false);
             document.getElementById('newEmpPayType').value = 'monthly';
@@ -7700,33 +7713,46 @@ function initMenuPermissionCheckboxes() {
             openEmployeePieceRatesEditor(staffId);
             return;
         }
-        if (isMonthlyCommissionStaff(staff)) return editEmployeeMonthlyCommissionSettings(staffId);
-        return editEmployeeSalary(staffId);
+        // كل موظف براتب شهري يمكن تفعيل نسبة التحصيل له أو إيقافها من هنا.
+        return editEmployeeMonthlyCommissionSettings(staffId);
     }
 
     async function editEmployeeMonthlyCommissionSettings(staffId) {
         if (isBusy || !canManageUsers()) return;
         const staff = getStaffById(staffId);
-        if (!staff || !isMonthlyCommissionStaff(staff)) return;
+        if (!staff || isPieceworkStaff(staff)) return;
         const salaryText = prompt(`تعديل الراتب الشهري (${staff.fullName}) — ${getStaffSalaryCurrency(staff)}:`, Number(staff.salary || 0).toFixed(2));
         if (salaryText === null) return;
         const salary = Number(salaryText);
         if (!Number.isFinite(salary) || salary < 0) { showToast('أدخل راتباً شهرياً صحيحاً'); return; }
-        const rateText = prompt(`نسبة الموظف من تحصيل جميع العملاء (%):`, String(getStaffCollectionCommissionRate(staff)));
+        const rateText = prompt(`نسبة الموظف من تحصيل جميع العملاء (%). اكتب 0 لإلغاء النسبة:`, String(getStaffCollectionCommissionRate(staff)));
         if (rateText === null) return;
         const collectionCommissionRate = Number(rateText);
-        if (!Number.isFinite(collectionCommissionRate) || collectionCommissionRate <= 0 || collectionCommissionRate > 100) {
-            showToast('أدخل نسبة أكبر من صفر ولا تتجاوز 100%'); return;
+        if (!Number.isFinite(collectionCommissionRate) || collectionCommissionRate < 0 || collectionCommissionRate > 100) {
+            showToast('أدخل نسبة من 0 إلى 100%'); return;
         }
         isBusy = true;
         try {
-            const patch = { salary, collectionCommissionRate };
-            if (staff.legacy) await db.collection('employees').doc(staff.legacyUserId).update(patch);
-            else await db.collection('staff').doc(staffId).update(patch);
+            const patch = {
+                salary,
+                collectionCommissionRate,
+                payType: collectionCommissionRate > 0 ? 'monthly_commission' : 'monthly'
+            };
+            if (staff.legacy) {
+                await db.collection('employees').doc(staff.legacyUserId).update(patch);
+                const legacyAccount = state.employees.find(item => item.id === staff.legacyUserId);
+                if (legacyAccount) Object.assign(legacyAccount, patch);
+            } else {
+                await db.collection('staff').doc(staffId).update(patch);
+            }
             Object.assign(staff, patch);
             renderEmployeesTable();
+            populateVoucherCollectorOptions();
+            renderVouchersTable();
             renderEmployeeDues();
-            showToast('تم تحديث الراتب ونسبة التحصيل. النسبة الجديدة تُطبق على سندات القبض القادمة.');
+            showToast(collectionCommissionRate > 0
+                ? 'تم تحديث الراتب وتفعيل نسبة التحصيل. اختر الموظف في سند القبض القادم.'
+                : 'تم تحديث الراتب وإيقاف نسبة التحصيل لهذا الموظف.');
         } catch (e) {
             console.warn('Update employee salary/commission error:', e);
             showToast('تعذر تحديث الراتب ونسبة التحصيل');
@@ -8107,7 +8133,7 @@ function initMenuPermissionCheckboxes() {
                     <td style="white-space:nowrap;">
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeName('${item.id}')" title="تعديل اسم الموظف"><i class="fa-solid fa-user-pen"></i> تعديل الاسم</button>` : ''}
                         ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeeWarehouse('${item.id}')" title="تحديد المخازن العامة ومخازن إدخال الكميات ومخازن النقل بشكل مستقل"><i class="fa-solid fa-warehouse"></i> صلاحيات المخازن</button>` : ''}
-                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeePaySettings('${item.id}')" title="تعديل الراتب أو النسبة أو التسعيرة"><i class="fa-solid fa-pen"></i> ${isPieceworkStaff(item) ? 'التسعيرة' : isMonthlyCommissionStaff(item) ? 'الراتب والنسبة' : 'الراتب'}</button>` : ''}
+                        ${allowManage ? `<button class="btn btn-outline btn-sm" onclick="editEmployeePaySettings('${item.id}')" title="تعديل الراتب أو النسبة أو التسعيرة"><i class="fa-solid fa-pen"></i> ${isPieceworkStaff(item) ? 'التسعيرة' : 'الراتب والنسبة'}</button>` : ''}
                         ${allowManage ? `<button class="btn btn-danger btn-sm" onclick="deleteStaffDefinition('${item.id}')" title="حذف تعريف الموظف"><i class="fa-solid fa-trash"></i> حذف</button>` : ''}
                     </td>
                 </tr>
@@ -9543,6 +9569,7 @@ window.addEventListener('load',function(){
         if (event.target === this) closeEmployeePieceRatesEditor();
     });
     toggleEmployeePayTypeFields();
+    toggleVoucherCustomerField();
     initMenuPermissionCheckboxes();
     if (document.getElementById('cashboxStatementPeriod')) document.getElementById('cashboxStatementPeriod').value = getCurrentPayrollPeriod();
     toggleInvoicePaymentFields();
