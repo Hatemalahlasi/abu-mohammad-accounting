@@ -1016,6 +1016,8 @@
         .supplier-invoice-row{display:grid;grid-template-columns:2fr .75fr .8fr 1fr 1fr auto;gap:7px;align-items:end;padding:10px;background:#f8fafc;border:1px solid var(--border);border-radius:12px;margin-bottom:8px}
         .supplier-invoice-row label{display:block;font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:4px}
         .supplier-invoice-row .form-control{padding:8px;font-size:12px}
+        .supplier-invoice-row .supplier-item-catalog{min-height:42px;font-weight:700;background:#fff}
+        .supplier-invoice-row .supplier-item-unit[readonly]{background:#f1f5f9;color:#475569}
         .supplier-line-total{font-weight:800;color:var(--primary);font-size:12px;padding:10px 5px;text-align:center;background:#fff;border:1px solid var(--border);border-radius:9px;min-width:70px}
         .supplier-invoice-totals{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;background:var(--primary-soft);border:1px solid #d7e4f0;border-radius:13px;padding:12px}
         .supplier-invoice-totals div{display:flex;flex-direction:column;gap:3px}
@@ -1661,7 +1663,7 @@
                 <div class="card-title"><span><i class="fa-solid fa-file-invoice"></i> تسجيل فاتورة توريد من مورد</span><span class="badge badge-sup">تُضاف الأصناف للمخزن تلقائياً</span></div>
                 <div class="grid-3">
                     <div class="form-group"><label>المورد</label><select id="supplierInvoiceSupplier" class="form-control"></select></div>
-                    <div class="form-group"><label>المخزن المستلم</label><select id="supplierInvoiceBranch" class="form-control"></select></div>
+                    <div class="form-group"><label>المخزن المستلم</label><select id="supplierInvoiceBranch" class="form-control" onchange="refreshSupplierInvoiceCatalogOptions()"></select></div>
                     <div class="form-group"><label>العملة</label><select id="supplierInvoiceCurrency" class="form-control" onchange="filterSupplierInvoiceCashboxes(); recalculateSupplierInvoiceTotal();"><option value="YER">ريال يمني (YER)</option><option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option></select></div>
                 </div>
                 <div class="supplier-invoice-lines-head"><strong>أصناف التوريد</strong><button type="button" class="btn btn-outline btn-sm" onclick="addSupplierInvoiceRow()"><i class="fa-solid fa-plus"></i> إضافة صنف</button></div>
@@ -1684,7 +1686,7 @@
                     <small>مفعّل تلقائياً. أزل الصح إذا تريد تسجيل الفاتورة وحساب المورد فقط بدون إدخال الكميات للمخزن.</small>
                 </div>
                 <button id="saveSupplierInvoiceBtn" class="btn btn-primary btn-full" onclick="saveSupplierInvoice()"><i class="fa-solid fa-floppy-disk"></i> حفظ فاتورة المورد</button>
-                <div class="employee-permission-note" style="margin-top:9px;">أضف كل صنف في صف مستقل، واكتب الكمية وسعر تكلفة الوحدة. يحسب إجمالي كل صف وإجمالي فاتورة المورد تلقائياً. إذا كانت علامة «إدخال البضاعة إلى المخزن» مفعّلة تُضاف الكميات للمخزن، وإذا أزلت الصح تُحفظ الفاتورة وحساب المورد بدون تغيير المخزون. الدفعات النقدية والآجلة والجزئية تظهر منفصلة حسب العملة.</div>
+                <div class="employee-permission-note" style="margin-top:9px;">أضف كل صنف في صف مستقل واختره من القائمة المسجلة في صفحة «إضافة أصناف»، ثم أدخل الكمية وسعر التكلفة. تُحمّل الوحدة واسم الصنف تلقائياً، ويحسب إجمالي كل صف وإجمالي فاتورة المورد تلقائياً. إذا كانت علامة «إدخال البضاعة إلى المخزن» مفعّلة تُضاف الكميات للمخزن، وإذا أزلت الصح تُحفظ الفاتورة وحساب المورد بدون تغيير المخزون. الدفعات النقدية والآجلة والجزئية تظهر منفصلة حسب العملة.</div>
             </div>
             </div>
 
@@ -4388,6 +4390,7 @@ function initMenuPermissionCheckboxes() {
                     const list = [];
                     snap.forEach(doc => list.push({ ...doc.data(), id: doc.id }));
                     state[colName] = list;
+                    if (colName === 'warehouse' && typeof refreshSupplierInvoiceCatalogOptions === 'function') refreshSupplierInvoiceCatalogOptions();
                     isDemoMode = false;
                     const badge = document.getElementById('connectionStatusBadge');
                     if (badge) {
@@ -5566,20 +5569,143 @@ function initMenuPermissionCheckboxes() {
         if (old && list.some(box => box.id === old)) select.value = old;
     }
 
+    function supplierCatalogKey(name, unit) {
+        const normalizedName = String(name || '').trim().toLocaleLowerCase('ar');
+        const normalizedUnit = String(unit || 'حبة').trim();
+        return encodeURIComponent(`${normalizedName}|${normalizedUnit}`);
+    }
+
+    function getSupplierInvoiceCatalogItems() {
+        const branchId = document.getElementById('supplierInvoiceBranch')?.value || '';
+        const source = Array.isArray(state.warehouse) ? state.warehouse : [];
+        const catalog = new Map();
+        source.forEach(item => {
+            const name = String(item?.name || '').trim();
+            const unit = String(item?.unit || 'حبة').trim() || 'حبة';
+            if (!name || item.deleted === true || item.active === false) return;
+            const normalizedName = name.toLocaleLowerCase('ar');
+            const mapKey = `${normalizedName}|${unit}`;
+            const current = catalog.get(mapKey);
+            const candidate = {
+                name,
+                unit,
+                key: supplierCatalogKey(name, unit),
+                branchId: String(item.branchId || 'main_branch'),
+                costPrice: Number(item.costPrice ?? 0),
+                salePrice: Number(item.price ?? item.salePrice ?? 0),
+                costCurrency: item.costCurrency || item.priceCurrency || 'YER',
+                saleCurrency: item.priceCurrency || item.costCurrency || 'YER',
+                updatedAt: String(item.updatedAt || item.sourceDate || item.createdAt || '')
+            };
+            // فضّل سجل المخزن المحدد، وإلا احتفظ بأحدث تعريف متاح للصنف.
+            const candidatePreferred = candidate.branchId === branchId;
+            const currentPreferred = current?.branchId === branchId;
+            if (!current || (candidatePreferred && !currentPreferred) || (candidatePreferred === currentPreferred && candidate.updatedAt > current.updatedAt)) {
+                catalog.set(mapKey, candidate);
+            }
+        });
+        return Array.from(catalog.values()).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+    }
+
+    function applySupplierInvoiceCatalogItem(row, item, fillPrices = true) {
+        if (!row || !item) return;
+        const nameInput = row.querySelector('.supplier-item-name-input');
+        const unitInput = row.querySelector('.supplier-item-unit');
+        if (nameInput) nameInput.value = item.name;
+        if (unitInput) unitInput.value = item.unit || 'حبة';
+        row.dataset.catalogKey = item.key;
+        if (!fillPrices) return;
+        const invoiceCurrency = document.getElementById('supplierInvoiceCurrency')?.value || 'YER';
+        const costInput = row.querySelector('.supplier-item-cost');
+        const saleInput = row.querySelector('.supplier-item-sale-price');
+        const storedCost = Number(item.costPrice || 0);
+        const storedSale = Number(item.salePrice || 0);
+        if (costInput) costInput.value = item.costCurrency === invoiceCurrency && storedCost > 0 ? storedCost.toFixed(2) : '';
+        if (saleInput) saleInput.value = item.saleCurrency === invoiceCurrency && storedSale > 0 ? storedSale.toFixed(2) : '';
+        const note = row.querySelector('.supplier-item-catalog-note');
+        if (note) {
+            const hasPrice = (item.costCurrency === invoiceCurrency && storedCost > 0) || (item.saleCurrency === invoiceCurrency && storedSale > 0);
+            note.textContent = hasPrice
+                ? `تم تحميل بيانات الصنف من تعريف المخزون (${item.costCurrency || invoiceCurrency})`
+                : `الصنف محفوظ، أدخل سعر التكلفة بعملة الفاتورة ${invoiceCurrency}`;
+        }
+        recalculateSupplierInvoiceTotal();
+    }
+
+    function refreshSupplierInvoiceCatalogOptions() {
+        const rows = document.querySelectorAll('#supplierInvoiceItemsContainer .supplier-invoice-row');
+        const catalog = getSupplierInvoiceCatalogItems();
+        rows.forEach(row => {
+            const select = row.querySelector('.supplier-item-catalog');
+            if (!select) return;
+            const previous = select.value;
+            select.innerHTML = '<option value="">' + (catalog.length ? 'اختر الصنف المسجل' : 'لا توجد أصناف معرفة بعد') + '</option>' +
+                catalog.map(item => `<option value="${item.key}">${escapeUiText(item.name)} — ${escapeUiText(item.unit)}</option>`).join('');
+            if (previous && catalog.some(item => item.key === previous)) {
+                select.value = previous;
+                const selected = catalog.find(item => item.key === previous);
+                applySupplierInvoiceCatalogItem(row, selected, false);
+            } else if (previous) {
+                select.value = '';
+                row.dataset.catalogKey = '';
+                const nameInput = row.querySelector('.supplier-item-name-input');
+                if (nameInput) nameInput.value = '';
+            }
+            select.disabled = catalog.length === 0;
+        });
+    }
+
+    function handleSupplierInvoiceCatalogSelection(select) {
+        const row = select?.closest('.supplier-invoice-row');
+        const key = select?.value || '';
+        if (!row) return;
+        const item = key ? getSupplierInvoiceCatalogItems().find(entry => entry.key === key) : null;
+        row.dataset.catalogKey = key;
+        if (!item) {
+            row.querySelector('.supplier-item-name-input').value = '';
+            row.querySelector('.supplier-item-unit').value = '';
+            row.querySelector('.supplier-item-cost').value = '';
+            row.querySelector('.supplier-item-sale-price').value = '';
+            const note = row.querySelector('.supplier-item-catalog-note');
+            if (note) note.textContent = 'اختر الصنف من الأصناف المعرفة في صفحة «إضافة أصناف»';
+            recalculateSupplierInvoiceTotal();
+            return;
+        }
+        applySupplierInvoiceCatalogItem(row, item, true);
+    }
+
     function addSupplierInvoiceRow(prefill = null) {
         const container = document.getElementById('supplierInvoiceItemsContainer');
         if (!container) return;
         const row = document.createElement('div');
         row.className = 'supplier-invoice-row';
         row.innerHTML = `
-            <div class="supplier-item-name"><label>اسم الصنف</label><input class="form-control supplier-item-name-input" value="${escapeUiText(prefill?.name || '')}" placeholder="اسم الصنف أو المادة"></div>
-            <div><label>الوحدة</label><select class="form-control supplier-item-unit"><option value="حبة" ${prefill?.unit === 'حبة' || !prefill?.unit ? 'selected' : ''}>حبة</option><option value="شدة" ${prefill?.unit === 'شدة' ? 'selected' : ''}>شدة</option><option value="وار" ${prefill?.unit === 'وار' ? 'selected' : ''}>وار</option></select></div>
+            <div class="supplier-item-name">
+                <label>الصنف من القائمة</label>
+                <select class="form-control supplier-item-catalog" onchange="handleSupplierInvoiceCatalogSelection(this)">
+                    <option value="">جاري تحميل الأصناف...</option>
+                </select>
+                <input type="hidden" class="supplier-item-name-input" value="">
+                <small class="supplier-item-catalog-note" style="display:block;color:var(--text-muted);font-size:10px;margin-top:4px;">اختر الصنف من الأصناف المعرفة في صفحة «إضافة أصناف»</small>
+            </div>
+            <div><label>الوحدة</label><input class="form-control supplier-item-unit" type="text" value="" readonly placeholder="تلقائي"></div>
             <div><label>الكمية</label><input class="form-control num-input supplier-item-qty" type="number" min="0.01" step="0.01" value="${prefill?.qty || 1}" oninput="recalculateSupplierInvoiceTotal()"></div>
             <div><label>سعر التكلفة</label><input class="form-control num-input supplier-item-cost" type="number" min="0.01" step="0.01" value="${prefill?.costPrice || ''}" placeholder="0.00" oninput="recalculateSupplierInvoiceTotal()"></div>
             <div><label>سعر البيع</label><input class="form-control num-input supplier-item-sale-price" type="number" min="0" step="0.01" value="${prefill?.salePrice || ''}" placeholder="0.00"></div>
             <div class="supplier-item-total"><label>الإجمالي</label><div class="supplier-line-total">0.00</div></div>
             <div><label>&nbsp;</label><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.supplier-invoice-row').remove(); recalculateSupplierInvoiceTotal();"><i class="fa-solid fa-trash"></i></button></div>`;
         container.appendChild(row);
+        refreshSupplierInvoiceCatalogOptions();
+        if (prefill?.name) {
+            const key = supplierCatalogKey(prefill.name, prefill.unit || 'حبة');
+            const select = row.querySelector('.supplier-item-catalog');
+            if (Array.from(select.options).some(option => option.value === key)) {
+                select.value = key;
+                handleSupplierInvoiceCatalogSelection(select);
+                if (prefill.costPrice) row.querySelector('.supplier-item-cost').value = Number(prefill.costPrice).toFixed(2);
+                if (prefill.salePrice) row.querySelector('.supplier-item-sale-price').value = Number(prefill.salePrice).toFixed(2);
+            }
+        }
         recalculateSupplierInvoiceTotal();
     }
 
@@ -5641,7 +5767,7 @@ function initMenuPermissionCheckboxes() {
         let paidAmount = paymentType === 'cash' ? total : paymentType === 'credit' ? 0 : Number(document.getElementById('supplierInvoicePaid')?.value || 0);
         if (!supplier) { showToast('اختر المورد أولاً'); return; }
         if (!branch || !isBranchAllowed(branchId)) { showToast('اختر مخزناً مسموحاً لحسابك'); return; }
-        if (!lines.length || lines.some(item => !item.name || !Number.isFinite(item.qty) || item.qty <= 0 || !Number.isFinite(item.costPrice) || item.costPrice <= 0)) { showToast('أدخل اسم كل صنف وكمية وسعر تكلفة صحيح'); return; }
+        if (!lines.length || lines.some(item => !item.name || !Number.isFinite(item.qty) || item.qty <= 0 || !Number.isFinite(item.costPrice) || item.costPrice <= 0)) { showToast('اختر كل صنف من القائمة، وأدخل الكمية وسعر التكلفة الصحيح'); return; }
         if (!Number.isFinite(total) || total <= 0 || paidAmount < 0 || paidAmount > total) { showToast('تحقق من إجمالي الفاتورة والمبلغ المدفوع'); return; }
         const cashboxId = paidAmount > 0 ? (document.getElementById('supplierInvoiceCashbox')?.value || '') : '';
         const cashbox = cashboxId ? state.cashboxes.find(box => box.id === cashboxId) : null;
@@ -5943,6 +6069,7 @@ function initMenuPermissionCheckboxes() {
         }
         filterSupplierInvoiceCashboxes();
         filterSupplierPaymentCashboxes();
+        refreshSupplierInvoiceCatalogOptions();
     }
 
     function populateCashboxStatementOptions() {
@@ -6751,18 +6878,25 @@ function initMenuPermissionCheckboxes() {
                 String(w.name || '').trim().toLowerCase() === name.toLowerCase() &&
                 (w.unit || 'حبة') === unit
             );
+            const itemPatch = { qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, unit, branchId, branchName, name, sourceType: existing?.sourceType || 'manual', sourceName: existing?.sourceName || getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() };
             if (existing) {
                 if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل على المخزون'); return; }
                 const updated = await updateDocumentOnce('warehouse', existing.id, {
                     action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
-                }, () => ({ qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, unit, branchId, branchName }));
+                }, () => itemPatch);
                 if (!updated) { showToast('تم منع تكرار حفظ الصنف نفسه خلال وقت قصير.'); return; }
+                Object.assign(existing, itemPatch);
             } else {
                 const result = await createRecordOnce('warehouse', 'wh', {
                     action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
-                }, { branchId, branchName, name, unit, qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, sourceType: 'manual', sourceName: getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() }, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
+                }, itemPatch, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
                 if (!result.created) { showToast('هذا الصنف موجود أو تمت إضافته للتو؛ لن يتكرر في المخزن.'); return; }
+                state.warehouse = Array.isArray(state.warehouse) ? state.warehouse : [];
+                state.warehouse.push({ ...itemPatch, id: result.id });
             }
+            refreshSupplierInvoiceCatalogOptions();
+            renderWarehouseTable();
+            renderStats();
             document.getElementById('newItemName').value = '';
             document.getElementById('newItemQty').value = '1';
             document.getElementById('newItemPrice').value = '0.00';
