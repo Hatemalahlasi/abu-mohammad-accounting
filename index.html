@@ -2766,6 +2766,15 @@
                             <div id="permissionDailyDisbursementStaffChoices" class="perm-box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));"></div>
                         </div>
                         <div class="card-box" style="margin-top:12px; margin-bottom:0;">
+                            <div class="card-title"><span><i class="fa-solid fa-file-invoice-dollar"></i> الموظفون المسموح بعرض مستحقاتهم لهذا الحساب</span></div>
+                            <div class="employee-permission-note">حدد أسماء الموظفين الذين يسمح لهذا الحساب برؤية مستحقاتهم وكشوف حساباتهم. هذه الصلاحية مستقلة عن صلاحية تسجيل الإنتاج أو الصرف اليومي. لن تظهر له إلا الأسماء المحددة هنا.</div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="setAllEmployeeDuesStaffChoices(true)">تحديد كل الموظفين</button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="setAllEmployeeDuesStaffChoices(false)">إلغاء التحديد</button>
+                            </div>
+                            <div id="permissionEmployeeDuesStaffChoices" class="perm-box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));"></div>
+                        </div>
+                        <div class="card-box" style="margin-top:12px; margin-bottom:0;">
                             <div class="card-title"><span><i class="fa-solid fa-warehouse"></i> المخازن المسموح بها للحساب المحدد</span></div>
                             <div class="employee-permission-note">يمكنك تعديل مخازن أي حساب موجود دون إنشاء حساب جديد. اختر صلاحية عامة، ثم حدد بشكل مستقل مخازن إدخال الكميات ومخازن النقل.</div>
                             <div class="form-group">
@@ -3354,10 +3363,41 @@
         });
     }
 
-    function getVisibleEmployeeDuesStaff() {
+    function getVisibleEmployeeDuesStaff(user = currentUser) {
         const staff = getAllStaff();
-        if (hasEmployeeDuesViewPermission(currentUser)) return staff;
-        return getVisiblePayrollStaff();
+        if (!user) return [];
+        if (hasFullAccess(user)) return staff;
+        if (!hasEmployeeDuesViewPermission(user)) return [];
+
+        // القائمة المستقلة التي يحددها المشرف لهذا الحساب. وجود مصفوفة فارغة
+        // يعني عدم السماح بعرض أي موظف؛ أما الحسابات القديمة فترى ملفها المرتبط فقط.
+        let allowedIds;
+        if (Array.isArray(user.employeeDuesStaffAccessIds)) {
+            allowedIds = new Set(user.employeeDuesStaffAccessIds.map(String));
+        } else {
+            const ownIds = [user.staffId, `legacy_${user.id}`].filter(Boolean).map(String);
+            staff.forEach(item => {
+                if (item.userAccountId === user.id || item.legacyUserId === user.id) ownIds.push(String(item.id));
+            });
+            allowedIds = new Set(ownIds);
+        }
+        return staff.filter(item => allowedIds.has(String(item.id)));
+    }
+
+    function populateEmployeeDuesStaffOptions() {
+        const select = document.getElementById('employeeDuesStaffSelect');
+        if (!select) return [];
+        const previous = select.value;
+        const staff = getVisibleEmployeeDuesStaff()
+            .slice()
+            .sort((a, b) => String(a.fullName || '').localeCompare(String(b.fullName || ''), 'ar'));
+        select.innerHTML = '<option value="">اختر الموظف</option>' + staff.map(item => {
+            const payLabel = isPieceworkStaff(item) ? 'بالقطعة' : isMonthlyCommissionStaff(item) ? 'راتب + نسبة تحصيل' : 'راتب شهري';
+            return `<option value="${escapeEmployeeDuesHtml(item.id)}">${escapeEmployeeDuesHtml(item.fullName || 'موظف')} — ${payLabel}</option>`;
+        }).join('');
+        if (previous && staff.some(item => String(item.id) === String(previous))) select.value = previous;
+        else if (staff.length) select.value = staff[0].id;
+        return staff;
     }
 
 
@@ -3797,6 +3837,37 @@ function initMenuPermissionCheckboxes() {
             .map(cb => cb.value);
     }
 
+    function renderPermissionEmployeeDuesStaffChoices(selectedIds = []) {
+        const container = document.getElementById('permissionEmployeeDuesStaffChoices');
+        if (!container) return;
+        const selected = new Set((Array.isArray(selectedIds) ? selectedIds : []).map(String));
+        const staff = getAllStaff()
+            .filter(item => item && item.active !== false)
+            .sort((a, b) => String(a.fullName || '').localeCompare(String(b.fullName || ''), 'ar'));
+        if (!staff.length) {
+            container.innerHTML = '<div class="employee-permission-note">لا توجد ملفات موظفين نشطة لتحديدها.</div>';
+            return;
+        }
+        container.innerHTML = staff.map(item => {
+            const payLabel = isPieceworkStaff(item) ? 'بالقطعة' : isMonthlyCommissionStaff(item) ? 'راتب + نسبة تحصيل' : 'راتب شهري';
+            return `<label class="perm-check" style="background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 10px;align-items:flex-start;">
+                <input type="checkbox" class="permission-employee-dues-staff-cb" value="${escapeUiText(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''}>
+                <span>${escapeUiText(item.fullName || 'موظف')} — ${payLabel}</span>
+            </label>`;
+        }).join('');
+    }
+
+    function setAllEmployeeDuesStaffChoices(checked) {
+        document.querySelectorAll('#permissionEmployeeDuesStaffChoices .permission-employee-dues-staff-cb').forEach(cb => {
+            cb.checked = Boolean(checked);
+        });
+    }
+
+    function getPermissionEmployeeDuesStaffSelection() {
+        return Array.from(document.querySelectorAll('#permissionEmployeeDuesStaffChoices .permission-employee-dues-staff-cb:checked'))
+            .map(cb => cb.value);
+    }
+
     function loadEmployeePermissions() {
         const empId = document.getElementById('permissionEmployeeSelect')?.value || '';
         const emp = state.employees.find(e => e.id === empId);
@@ -3849,6 +3920,11 @@ function initMenuPermissionCheckboxes() {
         }
         renderPermissionProductionStaffChoices(productionStaffIds);
         renderPermissionDailyDisbursementStaffChoices(Array.isArray(emp.dailyDisbursementStaffAccessIds) ? emp.dailyDisbursementStaffAccessIds : []);
+        const linkedDuesStaff = getStaffLinkedToAccount(emp);
+        const employeeDuesStaffIds = Array.isArray(emp.employeeDuesStaffAccessIds)
+            ? emp.employeeDuesStaffAccessIds
+            : (linkedDuesStaff ? [linkedDuesStaff.id] : []);
+        renderPermissionEmployeeDuesStaffChoices(employeeDuesStaffIds);
     }
 
     async function saveEmployeePermissions() {
@@ -3875,6 +3951,12 @@ function initMenuPermissionCheckboxes() {
             showToast('اختيار العمال للصرف اليومي غير صالح؛ حدّث الصفحة ثم حاول مرة أخرى');
             return;
         }
+        const employeeDuesStaffAccessIds = getPermissionEmployeeDuesStaffSelection();
+        const validDuesStaffIds = new Set(getAllStaff().filter(item => item.active !== false).map(item => String(item.id)));
+        if (employeeDuesStaffAccessIds.some(id => !validDuesStaffIds.has(String(id)))) {
+            showToast('اختيار الموظفين لعرض المستحقات غير صالح؛ حدّث الصفحة ثم حاول مرة أخرى');
+            return;
+        }
         const branchNames = getAllBranches().filter(branch => warehouseBranchIds.includes(branch.id)).map(branch => branch.name);
         const patch = {
             canEdit: document.getElementById('permissionCanEdit').checked,
@@ -3889,7 +3971,8 @@ function initMenuPermissionCheckboxes() {
             quantityBranchIds,
             transferBranchIds,
             productionStaffAccessIds,
-            dailyDisbursementStaffAccessIds
+            dailyDisbursementStaffAccessIds,
+            employeeDuesStaffAccessIds
         };
         isBusy = true;
         const btn = document.getElementById('saveEmployeePermissionsBtn');
@@ -3909,7 +3992,8 @@ function initMenuPermissionCheckboxes() {
                 !same(verifiedAccount.quantityBranchIds, quantityBranchIds) ||
                 !same(verifiedAccount.transferBranchIds, transferBranchIds) ||
                 !same(verifiedAccount.productionStaffAccessIds, productionStaffAccessIds) ||
-                !same(verifiedAccount.dailyDisbursementStaffAccessIds, dailyDisbursementStaffAccessIds)) {
+                !same(verifiedAccount.dailyDisbursementStaffAccessIds, dailyDisbursementStaffAccessIds) ||
+                !same(verifiedAccount.employeeDuesStaffAccessIds, employeeDuesStaffAccessIds)) {
                 throw new Error('PERMISSIONS_NOT_VERIFIED');
             }
 
@@ -8954,7 +9038,7 @@ function initMenuPermissionCheckboxes() {
                     <td><div style="color:${negative ? 'var(--danger)' : 'var(--success)'}">${formatDuesCurrencyMap(remainingMap, data.salaryCurrency)}</div></td>
                     <td><button type="button" class="btn btn-outline btn-sm" onclick="selectEmployeeDuesStaff('${escapeEmployeeDuesHtml(item.id)}')"><i class="fa-solid fa-eye"></i> كشف الحساب</button></td>
                 </tr>`;
-            }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد بيانات موظفين لعرضها</td></tr>';
+            }).join('') : `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">${hasFullAccess(currentUser) ? 'لا توجد ملفات موظفين مسجلة.' : 'لم يحدد المشرف موظفين لعرض مستحقاتهم لهذا الحساب. اطلب من المشرف فتح «صلاحيات الموظفين» وتحديد الأسماء المسموح بها في خانة «الموظفون المسموح بعرض مستحقاتهم» ثم حفظ الصلاحيات.'}</td></tr>`;
         }
         renderEmployeeDuesDetail();
     }
@@ -9111,7 +9195,7 @@ function initMenuPermissionCheckboxes() {
     function exportEmployeeDuesPdf(allStaff = false) {
         if (employeeDuesPdfBusy) return;
         const period = getSelectedEmployeeDuesPeriod();
-        const available = getVisiblePayrollStaff();
+        const available = getVisibleEmployeeDuesStaff();
         const selectedId = document.getElementById('employeeDuesStaffSelect')?.value || '';
         const selected = available.find(item => item.id === selectedId);
         const staffList = allStaff ? available : (selected ? [selected] : []);
