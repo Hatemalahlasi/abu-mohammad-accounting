@@ -2005,7 +2005,11 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span>إصدار سند قبض / صرف</span></div>
+                <div class="card-title"><span id="voucherFormTitle">إصدار سند قبض / صرف</span></div>
+                <div id="voucherEditModeBanner" class="employee-permission-note hidden" style="display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;border-right:4px solid #16834a;background:#edf8f1;">
+                    <strong>أنت تعدّل سنداً محفوظاً. راجع النوع والصندوق والعميل والمبلغ والموظف قبل الحفظ.</strong>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="cancelVoucherEditMode()"><i class="fa-solid fa-xmark"></i> إلغاء التعديل</button>
+                </div>
                 <div class="grid-3">
                     <div class="form-group">
                         <label>نوع السند</label>
@@ -2022,6 +2026,10 @@
                         <label>العملة</label>
                         <select id="voucherCurrency" class="form-control" onchange="updateVoucherCashboxOptions()"><option value="YER">ريال يمني (YER)</option><option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option></select>
                     </div>
+                </div>
+                <div class="form-group hidden" id="voucherEditDateGroup" style="max-width:260px;">
+                    <label for="voucherEditDate">تاريخ السند</label>
+                    <input type="date" id="voucherEditDate" class="form-control">
                 </div>
                 <div class="form-group hidden" id="voucherProfitTreatmentGroup">
                     <label>تصنيف سند الصرف في حساب الأرباح</label>
@@ -3521,6 +3529,8 @@
     let activeStatementCustomerId = null;
     let editingInvoiceId = null;
     let editingInvoiceSnapshot = null;
+    let editingVoucherId = null;
+    let editingVoucherSnapshot = null;
 
     let currentUser = null;
     let recycleBinItems = [];
@@ -8377,8 +8387,117 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (isReceipt) populateVoucherCollectionStaffOptions();
     }
 
+    function setVoucherEditModeUI(enabled) {
+        const banner = document.getElementById('voucherEditModeBanner');
+        if (banner) {
+            banner.classList.toggle('hidden', !enabled);
+            banner.style.display = enabled ? 'flex' : 'none';
+        }
+        const dateGroup = document.getElementById('voucherEditDateGroup');
+        if (dateGroup) dateGroup.classList.toggle('hidden', !enabled);
+        const title = document.getElementById('voucherFormTitle');
+        if (title) title.textContent = enabled ? 'تعديل سند محفوظ' : 'إصدار سند قبض / صرف';
+        const save = document.getElementById('saveVoucherBtn');
+        if (save) save.innerHTML = enabled
+            ? '<i class="fa-solid fa-floppy-disk"></i> حفظ تعديلات السند'
+            : '<i class="fa-solid fa-check"></i> حفظ السند';
+    }
+
+    function resetVoucherEditorForm() {
+        const type = document.getElementById('voucherType'); if (type) type.value = 'receipt';
+        const currency = document.getElementById('voucherCurrency'); if (currency) currency.value = 'YER';
+        const amount = document.getElementById('voucherAmount'); if (amount) amount.value = '';
+        const ref = document.getElementById('voucherRefNumber'); if (ref) ref.value = '';
+        const customer = document.getElementById('voucherCustomerSelect'); if (customer) customer.value = '';
+        const staff = document.getElementById('voucherCollectionStaffSelect'); if (staff) staff.value = '';
+        const treatment = document.getElementById('voucherProfitTreatment'); if (treatment) treatment.value = 'unclassified';
+        const date = document.getElementById('voucherEditDate'); if (date) date.value = '';
+        toggleVoucherCustomerField();
+        updateVoucherCashboxOptions();
+        updateVoucherStatementPreview();
+    }
+
+    function finishVoucherEditMode(resetForm = true) {
+        editingVoucherId = null;
+        editingVoucherSnapshot = null;
+        setVoucherEditModeUI(false);
+        if (resetForm) resetVoucherEditorForm();
+    }
+
+    function cancelVoucherEditMode() {
+        if (!editingVoucherId) return;
+        if (!confirm('إلغاء تعديل السند والعودة إلى إصدار سند جديد؟ لن يتم حفظ التغييرات الحالية.')) return;
+        finishVoucherEditMode(true);
+        showToast('تم إلغاء تعديل السند');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function editVoucherRecord(vchId) {
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل'); return; }
+        if (!canAccessMenu('vouchersTab', currentUser)) { showToast('ليس لديك صلاحية فتح شاشة الأسناد'); return; }
+        const voucher = (state.vouchers || []).find(item => String(item.id) === String(vchId));
+        if (!voucher) { showToast('لم يتم العثور على السند'); return; }
+        if (editingVoucherId && String(editingVoucherId) !== String(vchId)) {
+            if (!confirm('هناك سند آخر قيد التعديل. إلغاء التغييرات الحالية وفتح السند المحدد؟')) return;
+        }
+        editingVoucherId = String(voucher.id);
+        editingVoucherSnapshot = JSON.parse(JSON.stringify(voucher));
+        openFullPage('vouchersTab');
+        populateDropdowns();
+
+        const type = document.getElementById('voucherType');
+        if (type) type.value = voucher.type === 'payment' ? 'payment' : 'receipt';
+        const currency = document.getElementById('voucherCurrency');
+        if (currency) currency.value = getVoucherCurrency(voucher);
+        toggleVoucherCustomerField();
+        updateVoucherCashboxOptions();
+
+        const cashboxSelect = document.getElementById('voucherCashboxSelect');
+        if (cashboxSelect && Array.from(cashboxSelect.options).some(option => String(option.value) === String(voucher.cashboxId))) {
+            cashboxSelect.value = voucher.cashboxId;
+        }
+
+        const customerSelect = document.getElementById('voucherCustomerSelect');
+        if (customerSelect) {
+            if (voucher.customerId && !Array.from(customerSelect.options).some(option => String(option.value) === String(voucher.customerId))) {
+                const fallback = document.createElement('option');
+                fallback.value = voucher.customerId;
+                fallback.textContent = voucher.customerName || 'عميل سابق';
+                customerSelect.appendChild(fallback);
+            }
+            customerSelect.value = voucher.customerId || '';
+        }
+
+        const staffSelect = document.getElementById('voucherCollectionStaffSelect');
+        if (staffSelect && voucher.collectionStaffId && !Array.from(staffSelect.options).some(option => String(option.value) === String(voucher.collectionStaffId))) {
+            const fallbackStaff = document.createElement('option');
+            fallbackStaff.value = voucher.collectionStaffId;
+            fallbackStaff.textContent = `${voucher.collectionStaffName || 'موظف سابق'} — النسبة المحفوظة ${Number(voucher.collectionCommissionRate || 0).toFixed(2)}%`;
+            staffSelect.appendChild(fallbackStaff);
+        }
+        if (staffSelect) staffSelect.value = voucher.type === 'receipt' ? (voucher.collectionStaffId || '') : '';
+
+        const amount = document.getElementById('voucherAmount'); if (amount) amount.value = Number(voucher.amount || 0);
+        const ref = document.getElementById('voucherRefNumber'); if (ref) ref.value = voucher.refNumber || '';
+        const treatment = document.getElementById('voucherProfitTreatment');
+        if (treatment) treatment.value = ['unclassified', 'operatingExpense', 'nonExpense'].includes(voucher.profitTreatment) ? voucher.profitTreatment : 'unclassified';
+        const date = document.getElementById('voucherEditDate');
+        if (date) date.value = /^\d{4}-\d{2}-\d{2}$/.test(String(voucher.date || '')) ? voucher.date : getLocalDateKey();
+
+        setVoucherEditModeUI(true);
+        updateVoucherStatementPreview();
+        showToast(`تم فتح السند ${voucher.refNumber || voucher.id} بكامل بياناته للتعديل`);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // التوافق مع أزرار النسخ القديمة: زر التعديل يفتح السند كاملاً الآن.
+    async function editVoucherNote(vchId) {
+        return editVoucherRecord(vchId);
+    }
+
     async function createVoucher() {
         if (isBusy) return;
+        if (editingVoucherId) return updateExistingVoucher(editingVoucherId);
         const btn = document.getElementById('saveVoucherBtn');
         const type = document.getElementById('voucherType').value;
         const cashboxId = document.getElementById('voucherCashboxSelect').value;
@@ -8397,11 +8516,11 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             : 'notApplicable';
         const refNum = (document.getElementById('voucherRefNumber')?.value || '').trim();
         const cashbox = state.cashboxes.find(c => c.id === cashboxId);
-        if (!cashbox || amount <= 0) { showToast('اختر الصندوق وأدخل مبلغاً صحيحاً'); return; }
+        if (!cashbox || amount <= 0 || !Number.isFinite(amount)) { showToast('اختر الصندوق وأدخل مبلغاً صحيحاً'); return; }
         const currentCbBal = computeSystemCashboxBalance(cashbox, currency);
         if (type === 'payment' && currentCbBal < amount) { showToast('رصيد الصندوق غير كافٍ'); return; }
         isBusy = true;
-        btn.disabled = true;
+        if (btn) btn.disabled = true;
         try {
             const customer = customerId ? state.customers.find(c => c.id === customerId) : null;
             const note = type === 'receipt' ? `لكم سند قبض برقم ${refNum || '—'}` : `عليكم سند صرف برقم ${refNum || '—'}`;
@@ -8424,24 +8543,113 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             updateVoucherStatementPreview();
             showToast('تم حفظ السند');
         } catch (e) { console.warn('Create voucher error:', e); showToast('تعذر حفظ السند'); }
-        finally { isBusy = false; btn.disabled = false; }
+        finally { isBusy = false; if (btn) btn.disabled = false; }
     }
 
-    async function editVoucherNote(vchId) {
-        if (!canEditRecord()) {
-            showToast('ليس لديك صلاحية التعديل');
+    async function updateExistingVoucher(vchId) {
+        if (isBusy) return;
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل'); return; }
+        const original = editingVoucherSnapshot || (state.vouchers || []).find(item => String(item.id) === String(vchId));
+        if (!original || String(original.id) !== String(vchId)) { showToast('تعذر العثور على بيانات السند الأصلية'); return; }
+
+        const btn = document.getElementById('saveVoucherBtn');
+        const type = document.getElementById('voucherType')?.value || 'receipt';
+        const cashboxId = document.getElementById('voucherCashboxSelect')?.value || '';
+        const currency = document.getElementById('voucherCurrency')?.value || 'YER';
+        const customerId = type === 'receipt' ? (document.getElementById('voucherCustomerSelect')?.value || '') : '';
+        const collectionStaffId = type === 'receipt' ? (document.getElementById('voucherCollectionStaffSelect')?.value || '') : '';
+        const selectedCollectionStaff = collectionStaffId ? getAllStaff().find(item => String(item.id) === String(collectionStaffId)) : null;
+        let collectionCommissionRate = selectedCollectionStaff ? getStaffCollectionRate(selectedCollectionStaff) : 0;
+        let collectionStaffName = selectedCollectionStaff?.fullName || '';
+        if (collectionStaffId && (!selectedCollectionStaff || collectionCommissionRate <= 0)) {
+            if (String(collectionStaffId) === String(original.collectionStaffId || '') && Number(original.collectionCommissionRate || 0) > 0) {
+                collectionCommissionRate = Number(original.collectionCommissionRate || 0);
+                collectionStaffName = original.collectionStaffName || 'موظف سابق';
+            } else {
+                showToast('نسبة تحصيل الموظف غير مفعّلة. اختر موظفاً لديه نسبة تحصيل أكبر من صفر.');
+                return;
+            }
+        }
+        const amount = Number(document.getElementById('voucherAmount')?.value || 0);
+        const refNum = (document.getElementById('voucherRefNumber')?.value || '').trim();
+        const date = document.getElementById('voucherEditDate')?.value || original.date || getLocalDateKey();
+        const profitTreatment = type === 'payment' ? (document.getElementById('voucherProfitTreatment')?.value || 'unclassified') : 'notApplicable';
+        const cashbox = (state.cashboxes || []).find(item => String(item.id) === String(cashboxId));
+        if (!['receipt', 'payment'].includes(type)) { showToast('نوع السند غير صحيح'); return; }
+        if (!CURRENCY_CODES.includes(currency)) { showToast('عملة السند غير صحيحة'); return; }
+        if (!cashbox) { showToast('اختر صندوقاً صحيحاً'); return; }
+        if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { showToast('أدخل تاريخ سند صحيحاً'); return; }
+        if (refNum && (state.vouchers || []).some(item => String(item.id) !== String(vchId) && String(item.type) === type && String(item.refNumber || '') === refNum)) {
+            showToast('رقم السند مستخدم في سند آخر من النوع نفسه؛ اختر رقماً مختلفاً'); return;
+        }
+        const customer = customerId ? (state.customers || []).find(item => String(item.id) === String(customerId)) : null;
+        if (customerId && !customer) { showToast('العميل المحدد لم يعد موجوداً؛ اختر عميلاً آخر'); return; }
+        const oldCurrency = getVoucherCurrency(original);
+        const sameCashboxCurrency = String(original.cashboxId) === String(cashbox.id) && String(oldCurrency) === String(currency);
+        const oldCashEffect = original.type === 'receipt' ? Number(original.amount || 0) : -Number(original.amount || 0);
+        const availableWithoutOldVoucher = computeSystemCashboxBalance(cashbox, currency) - (sameCashboxCurrency ? oldCashEffect : 0);
+        if (type === 'payment' && availableWithoutOldVoucher < amount) {
+            showToast(`رصيد الصندوق غير كافٍ بعد استبعاد السند القديم. المتاح: ${formatMoney(Math.max(0, availableWithoutOldVoucher))} ${currency}`);
             return;
         }
-        const v = state.vouchers.find(x => x.id === vchId);
-        if (!v) return;
-        const nextRef = prompt('تعديل رقم السند في البيان:', v.refNumber || '');
-        if (nextRef === null) return;
-        const cleanRef = nextRef.trim();
-        const nextNote = v.type === 'receipt'
-            ? `لكم سند قبض برقم ${cleanRef || '—'}`
-            : `عليكم سند صرف برقم ${cleanRef || '—'}`;
-        await db.collection('vouchers').doc(vchId).update({ refNumber: cleanRef, note: nextNote });
-        showToast('تم تعديل السند');
+
+        const updatedVoucher = {
+            ...original,
+            type,
+            date,
+            cashboxId: cashbox.id,
+            cashboxName: cashbox.name,
+            currency,
+            customerId: customer?.id || '',
+            customerName: customer?.name || 'عام',
+            collectionStaffId: selectedCollectionStaff ? selectedCollectionStaff.id : (collectionStaffId || ''),
+            collectionStaffName: selectedCollectionStaff ? selectedCollectionStaff.fullName : (collectionStaffId ? collectionStaffName : ''),
+            collectionCommissionRate: type === 'receipt' && collectionStaffId ? collectionCommissionRate : 0,
+            profitTreatment,
+            amount,
+            refNumber: refNum,
+            note: type === 'receipt' ? `لكم سند قبض برقم ${refNum || '—'}` : `عليكم سند صرف برقم ${refNum || '—'}`,
+            editedBy: currentUser?.fullName || '',
+            editedAt: new Date().toISOString()
+        };
+
+        isBusy = true;
+        if (btn) btn.disabled = true;
+        try {
+            const voucherRef = db.collection('vouchers').doc(vchId);
+            const voucherSignature = item => JSON.stringify({
+                type: item.type || 'receipt', date: item.date || '', cashboxId: item.cashboxId || '',
+                currency: getVoucherCurrency(item), customerId: item.customerId || '',
+                amount: Number(item.amount || 0), refNumber: item.refNumber || '',
+                collectionStaffId: item.collectionStaffId || '',
+                collectionCommissionRate: Number(item.collectionCommissionRate || 0),
+                profitTreatment: item.profitTreatment || 'notApplicable'
+            });
+            await db.runTransaction(async transaction => {
+                const snapshot = await transaction.get(voucherRef);
+                if (!snapshot.exists) throw new Error('VOUCHER_MISSING');
+                const latest = { ...snapshot.data(), id: snapshot.id };
+                if (voucherSignature(latest) !== voucherSignature(original)) throw new Error('VOUCHER_CHANGED');
+                const { __recentOperationMarkers, ...voucherPatch } = updatedVoucher;
+                transaction.update(voucherRef, { ...voucherPatch, id: vchId });
+            });
+
+            const index = (state.vouchers || []).findIndex(item => String(item.id) === String(vchId));
+            if (index >= 0) state.vouchers[index] = updatedVoucher;
+            finishVoucherEditMode(true);
+            renderAllViews();
+            showToast('تم حفظ تعديلات السند وتحديث أرصدة الصندوق والعميل وعمولات التحصيل');
+        } catch (error) {
+            console.warn('Update voucher error:', error);
+            const message = String(error?.message || '');
+            if (message === 'VOUCHER_MISSING') showToast('السند غير موجود؛ ربما تم حذفه من جهاز آخر');
+            else if (message === 'VOUCHER_CHANGED') showToast('تم تعديل هذا السند من جهاز آخر. حدّث الصفحة وافتحه من جديد قبل التعديل');
+            else showToast('تعذر تعديل السند. لم يتم تغيير الأرصدة');
+        } finally {
+            isBusy = false;
+            if (btn) btn.disabled = false;
+        }
     }
 
     async function deleteVoucherRecord(vchId) {
@@ -8479,7 +8687,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                         <td><span class="mono">${formatMoney(v.amount)} ${getVoucherCurrency(v)}</span></td>
                         <td>${v.employee || '-'}</td>
                         <td>
-                            ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editVoucherNote('${v.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+                            ${canEditRecord() ? `<button class="btn btn-outline btn-sm" title="تعديل السند كاملاً" onclick="editVoucherRecord('${v.id}')"><i class="fa-solid fa-pen-to-square"></i> تعديل</button>` : ''}
                             ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteVoucherRecord('${v.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
                             ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
                         </td>
