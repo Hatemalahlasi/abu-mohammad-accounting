@@ -1609,12 +1609,12 @@
                 </div>
 
                 <div class="grid-2" style="margin-top:8px;">
-                    <div class="form-group">
+                    <div class="form-group" id="invSalesStaffGroup">
                         <label>موظف المبيعات</label>
                         <select id="invSalesEmployeeSelect" class="form-control" onchange="updateInvoiceSalesCommission()"><option value="">بدون موظف / لا تحتسب نسبة</option></select>
-                        <small style="display:block;color:var(--text-muted);margin-top:5px;">اختر الموظف المسؤول عن الفاتورة؛ تظهر هنا فقط أسماء الموظفين الذين لديهم نسبة مبيعات محددة في بيانات الموظف.</small>
+                        <small style="display:block;color:var(--text-muted);margin-top:5px;">اختر الموظف الذي أعد الفاتورة لتوثيقها باسمه. عمولة المبيعات تُحسب للنقدي فقط، أما الآجل فتُسند عمولة تحصيله عند سند القبض.</small>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="invSalesCommissionGroup">
                         <label>نسبة الموظف من المبيعات (%)</label>
                         <input type="number" step="0.01" min="0" max="100" inputmode="decimal" id="invSalesCommissionRate" class="form-control num-input" value="0" readonly aria-readonly="true" title="تُؤخذ النسبة تلقائياً من بيانات الموظف">
                         <small id="invSalesCommissionSource" style="display:block;color:var(--text-muted);font-weight:700;margin-top:5px;">اختر الموظف لإسناد الفاتورة إليه؛ تُسحب نسبة المبيعات، أو نسبة التحصيل عند عدم وجود نسبة مبيعات مستقلة، تلقائياً من بيانات الموظف.</small>
@@ -3774,8 +3774,10 @@
     }
 
     function getVisibleEmployeeDuesStaff(period = getSelectedEmployeeDuesPeriod()) {
+        // أبقِ جميع ملفات الموظفين النشطة في قائمة الاختيار؛ لا تُخفِ الموظف لمجرد أن
+        // نوع استحقاقه مختلف. تفاصيل الكشف نفسها تعرض الراتب/الإنتاج/العمولة عند وجودها فقط.
         const staff = hasEmployeeDuesViewPermission(currentUser) ? getAllStaff() : getVisiblePayrollStaff();
-        return staff.filter(item => hasEmployeeDuesCompensationProfile(item, period));
+        return staff.filter(item => item && item.active !== false);
     }
 
     function getExplicitStaffSalesCommissionRate(staff) {
@@ -7348,9 +7350,20 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
     }
 
     function toggleInvoicePaymentFields() {
-        const isCash = document.getElementById('invPaymentType').value === 'cash';
-        document.getElementById('invCashboxGroup').classList.toggle('hidden', !isCash);
+        const isCash = document.getElementById('invPaymentType')?.value === 'cash';
+        document.getElementById('invCashboxGroup')?.classList.toggle('hidden', !isCash);
         document.getElementById('invCashCustomerNameGroup')?.classList.toggle('hidden', !isCash);
+        // يبقى اختيار الموظف ظاهراً لتوثيق من أعد الفاتورة نقداً أو آجلاً.
+        // نخفي نسبة وعمولة المبيعات فقط في الآجل؛ عمولة الآجل تُسند عند سند القبض.
+        document.getElementById('invSalesCommissionGroup')?.classList.toggle('hidden', !isCash);
+        if (!isCash) {
+            const rate = document.getElementById('invSalesCommissionRate');
+            if (rate) rate.value = '0.00';
+            const preview = document.getElementById('invSalesCommissionPreview');
+            if (preview) preview.textContent = 'لا تُحسب عمولة مبيعات على الفاتورة الآجلة؛ تُسند عمولة التحصيل عند سند القبض.';
+        } else {
+            updateInvoiceSalesCommission();
+        }
         updateInvoiceCashboxOptions();
     }
 
@@ -7609,9 +7622,13 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const select = document.getElementById('invSalesEmployeeSelect');
         if (!select) return;
         const previous = select.value;
-        // مثل إسناد موظف التحصيل: اعرض الموظفين النشطين الذين لديهم نسبة مبيعات أو نسبة تحصيل محفوظة بملف الموظف.
-        const staff = getAllStaff().filter(item => item && item.active !== false && getStaffSalesCommissionRate(item) > 0);
-        select.innerHTML = '<option value="">بدون موظف / لا تُسند الفاتورة لموظف</option>' + staff.map(item => `<option value="${escapeUiText(item.id)}">${escapeUiText(item.fullName || 'موظف')} — النسبة المعتمدة ${getStaffSalesCommissionRate(item).toFixed(2)}%</option>`).join('');
+        // اعرض كل الموظفين النشطين حتى يمكن توثيق من أعد الفاتورة، سواء له عمولة أم لا.
+        const staff = getAllStaff().filter(item => item && item.active !== false);
+        select.innerHTML = '<option value="">بدون موظف / لا تُسند الفاتورة لموظف</option>' + staff.map(item => {
+            const rate = getStaffSalesCommissionRate(item);
+            const rateLabel = rate > 0 ? `النسبة المعتمدة ${rate.toFixed(2)}%` : 'بدون نسبة مبيعات';
+            return `<option value="${escapeUiText(item.id)}">${escapeUiText(item.fullName || 'موظف')} — ${rateLabel}</option>`;
+        }).join('');
         const own = currentUser?.staffId || '';
         if (previous && staff.some(item => String(item.id) === String(previous))) select.value = previous;
         else if (own && staff.some(item => String(item.id) === String(own))) select.value = own;
@@ -7622,7 +7639,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const select = document.getElementById('invSalesEmployeeSelect');
         const rate = document.getElementById('invSalesCommissionRate');
         if (!select || !rate) return;
-        const staff = getStaffById(select.value);
+        const isCash = document.getElementById('invPaymentType')?.value === 'cash';
+        const staff = isCash ? getStaffById(select.value) : null;
         const staffRate = staff ? getStaffSalesCommissionRate(staff) : 0;
         rate.value = staffRate.toFixed(2);
         const source = document.getElementById('invSalesCommissionSource');
@@ -7734,10 +7752,11 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const selectedCustomerId = document.getElementById('invCustomerSelect').value;
         const directCustomerName = (document.getElementById('invCashCustomerName')?.value || '').trim();
         const discount = Number(document.getElementById('invDiscount').value || 0);
+        // احفظ الموظف الذي أعد الفاتورة في النقدي والآجل؛ العمولة للمبيعات النقدية فقط.
         const salesStaffId = document.getElementById('invSalesEmployeeSelect')?.value || '';
         const salesStaff = salesStaffId ? getStaffById(salesStaffId) : null;
-        // النسبة المعتمدة تُقرأ مباشرة من ملف الموظف، ولا نعتمد على قيمة واجهة الفاتورة.
-        const salesCommissionRate = salesStaff ? getStaffSalesCommissionRate(salesStaff) : 0;
+        // الفاتورة الآجلة لا تأخذ عمولة مبيعات؛ تُحسب عمولة التحصيل عند سند القبض.
+        const salesCommissionRate = paymentType === 'cash' && salesStaff ? getStaffSalesCommissionRate(salesStaff) : 0;
         const refNum = (document.getElementById('invRefNumber')?.value || '').trim();
         const notes = `عليكم فاتورة مبيعات برقم ${refNum || '—'}`;
         const rawItems = [];
@@ -7752,8 +7771,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             showToast('أكمل اسم الصنف والكمية، وأدخل سعر بيع أكبر من صفر بعملة الفاتورة المختارة'); return;
         }
         if (!Number.isFinite(discount) || discount < 0) { showToast('أدخل خصماً صحيحاً'); return; }
-        if (!Number.isFinite(salesCommissionRate) || salesCommissionRate < 0 || salesCommissionRate > 100) { showToast('نسبة الموظف من المبيعات يجب أن تكون من 0 إلى 100'); return; }
-        if (salesStaff && salesCommissionRate <= 0) { showToast('هذا الموظف ليس لديه نسبة مبيعات معتمدة في بيانات الموظف'); return; }
+        if (paymentType === 'cash' && (!Number.isFinite(salesCommissionRate) || salesCommissionRate < 0 || salesCommissionRate > 100)) { showToast('نسبة الموظف من المبيعات يجب أن تكون من 0 إلى 100'); return; }
         const items = [];
         const stockRequirements = new Map();
         for (const row of rawItems) {
@@ -9128,6 +9146,13 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             (!recordCustId && recordCustName && cust.name && String(recordCustName).trim() === String(cust.name).trim());
 
         const entries = [];
+        const openingBalance = Math.max(0, Number(cust.openingBalance || 0));
+        if (openingBalance > 0) {
+            entries.push({
+                date: 'افتتاحي', ref: 'OPENING', desc: 'الرصيد الافتتاحي للعميل',
+                currency: 'YER', debit: openingBalance, credit: 0, sortKey: '00000000000000000000'
+            });
+        }
         (state.invoices || [])
             .filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName))
             .forEach(i => {
@@ -9153,7 +9178,11 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                     sortKey: String(v.id || '')
                 });
             });
-        entries.sort((a, b) => String(a.date).localeCompare(String(b.date)) || a.sortKey.localeCompare(b.sortKey));
+        entries.sort((a, b) => {
+            if (a.ref === 'OPENING') return -1;
+            if (b.ref === 'OPENING') return 1;
+            return String(a.date).localeCompare(String(b.date)) || a.sortKey.localeCompare(b.sortKey);
+        });
 
         const totals = {
             YER: { debit: 0, credit: 0 },
@@ -11054,7 +11083,9 @@ tbody tr:nth-child(even){background:#f8fbf9}
             return { ...v, commissionRate: rate, commissionAmount: rate > 0 ? amount * rate / 100 : 0, commissionCurrency: code };
         }).filter(v => v.commissionAmount > 0);
 
-        const salesCommissions = (state.invoices || []).filter(inv => inv.salesStaffId === staff.id && String(inv.date || '').slice(0, 7) === period).map(inv => {
+        const salesCommissions = (state.invoices || []).filter(inv =>
+            (inv.paymentType || 'cash') === 'cash' && inv.salesStaffId === staff.id && String(inv.date || '').slice(0, 7) === period
+        ).map(inv => {
             const rate = Number(inv.salesCommissionRate || getStaffSalesCommissionRate(staff) || 0);
             const amount = Number(inv.netTotal || 0);
             const code = CURRENCY_CODES.includes(inv.salesCommissionCurrency || inv.currency) ? (inv.salesCommissionCurrency || inv.currency) : 'YER';
@@ -11106,10 +11137,11 @@ tbody tr:nth-child(even){background:#f8fbf9}
     }
 
     function getPayrollSettlementStaff(period = getPayrollSettlementPeriod()) {
-        return getPayrollSettlementAllStaff().filter(staff => {
-            if (Array.isArray(staff.payrollHiddenPeriods) && staff.payrollHiddenPeriods.includes(period)) return false;
-            return hasPayrollSettlementActivity(getEmployeeDuesData(staff, period));
-        });
+        // القائمة تحتوي كل الموظفين النشطين؛ يمكن اختيار أي موظف، لكن أقسام كشفه
+        // لا تظهر إلا عندما يكون لديه راتب أو إنتاج أو عمولة أو حركة فعلية.
+        return getPayrollSettlementAllStaff().filter(staff =>
+            !(Array.isArray(staff.payrollHiddenPeriods) && staff.payrollHiddenPeriods.includes(period))
+        );
     }
 
 
@@ -11502,9 +11534,13 @@ tbody tr:nth-child(even){background:#f8fbf9}
             tbody.innerHTML = staff.length ? staff.map(item => {
                 const data = getEmployeeDuesData(item, period);
                 const system = getEmployeeDuesCompensationLabel(item);
-                const detail = isPieceworkStaff(item)
-                    ? `${data.production.length} سجل إنتاج`
-                    : (data.commissions.length ? `راتب + ${data.commissions.length} عمولة تحصيل` : 'استحقاق الراتب الشهري');
+                const detailParts = [];
+                if (!isPieceworkStaff(item) && data.baseEntitlement > 0.009) detailParts.push('راتب شهري');
+                if (data.production.length) detailParts.push(`${data.production.length} سجل إنتاج`);
+                if (data.commissions.length) detailParts.push(`${data.commissions.length} عمولة تحصيل`);
+                if (data.salesCommissions.length) detailParts.push(`${data.salesCommissions.length} عمولة مبيعات`);
+                if (data.expenses.length) detailParts.push(`${data.expenses.length} دفعة مستلمة`);
+                const detail = detailParts.join(' + ') || 'لا توجد حركة أو استحقاق في هذا الشهر';
                 return `<tr>
                     <td><strong>${escapeEmployeeDuesHtml(item.fullName || '-')}</strong><br><small>${detail}</small></td>
                     <td>${system}</td>
@@ -11536,7 +11572,13 @@ tbody tr:nth-child(even){background:#f8fbf9}
         }
         const data = getEmployeeDuesData(staff, getSelectedEmployeeDuesPeriod());
         const title = escapeEmployeeDuesHtml(staff.fullName || 'الموظف');
-        const earnedLabel = isPieceworkStaff(staff) ? 'إجمالي قيمة الإنتاج والعمولات' : 'الراتب وعمولات التحصيل';
+        const hasSalary = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009;
+        const earnedParts = [];
+        if (hasSalary) earnedParts.push('الراتب');
+        if (data.production.length) earnedParts.push('الإنتاج');
+        if (data.commissions.length) earnedParts.push('عمولات التحصيل');
+        if (data.salesCommissions.length) earnedParts.push('عمولات المبيعات');
+        const earnedLabel = earnedParts.length ? `إجمالي ${earnedParts.join(' و')}` : 'إجمالي المستحق';
         const workRows = data.byWork.length ? data.byWork.map(item => `
             <tr><td>${escapeEmployeeDuesHtml(item.name)}</td><td>${escapeEmployeeDuesHtml(item.unit)}</td><td><span class="mono">${formatQty(item.quantity)}</span></td><td><span class="mono">${formatMoney(item.unitRate)} ${data.currency}</span></td><td><strong class="mono">${formatMoney(item.amount)} ${data.currency}</strong></td><td>${item.records}</td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا يوجد إنتاج مسجل في هذه الفترة</td></tr>';
@@ -11545,7 +11587,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
             <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td><span class="mono">${formatMoney(item.amount || 0)} ${item.commissionCurrency}</span></td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td><strong class="mono">${formatMoney(item.commissionAmount)} ${item.commissionCurrency}</strong></td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد سندات قبض مسجلة باسم هذا الموظف خلال هذه الفترة</td></tr>';
         const ledgerRows = [];
-        if (!isPieceworkStaff(staff)) ledgerRows.push({ date: `${data.period}-01`, order: '0', type: 'استحقاق راتب', details: 'الراتب الشهري', quantity: '-', rate: '-', earned: data.baseEntitlement, paid: 0, currency: data.currency, actor: 'النظام' });
+        if (!isPieceworkStaff(staff) && data.baseEntitlement > 0.009) ledgerRows.push({ date: `${data.period}-01`, order: '0', type: 'استحقاق راتب', details: 'الراتب الشهري', quantity: '-', rate: '-', earned: data.baseEntitlement, paid: 0, currency: data.currency, actor: 'النظام' });
         data.production.forEach(item => ledgerRows.push({
             date: item.date || '-', order: item.createdAt || '', type: 'إنتاج',
             details: `${item.workName || 'عمل'} (${item.unit || '-'})${item.note ? ` — ${item.note}` : ''}`,
@@ -11578,7 +11620,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         const hasNegative = CURRENCY_CODES.some(code => data.remainingByCurrency[code] < 0);
         target.innerHTML = `
             <div class="employee-dues-detail-head">
-                <div><strong style="font-size:16px;color:var(--primary);">${title}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${isPieceworkStaff(staff) ? 'موظف بنظام الأجر بالقطعة' : (getStaffCollectionRate(staff) > 0 ? 'راتب شهري مع نسبة تحصيل' : 'موظف براتب شهري')} — الفترة ${data.period}</div></div>
+                <div><strong style="font-size:16px;color:var(--primary);">${title}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${escapeEmployeeDuesHtml(getEmployeeDuesCompensationLabel(staff))} — الفترة ${data.period}</div></div>
                 <span class="badge ${hasNegative ? 'badge-expense' : 'badge-cash'}">${hasNegative ? 'يوجد رصيد سالب بعملة' : 'مستحق للموظف'}</span>
             </div>
             <div class="employee-dues-kpis">
@@ -11587,8 +11629,8 @@ tbody tr:nth-child(even){background:#f8fbf9}
                 <div class="employee-dues-kpi"><span>المتبقي له</span>${formatEmployeeCurrencyMapHtml(data.remainingByCurrency, data.currency)}</div>
             </div>
             ${isPieceworkStaff(staff) ? `<div class="card-box" style="padding:12px;"><div class="card-title"><span>تفصيل ما أنجزه حسب نوع العمل</span></div><div class="table-responsive"><table><thead><tr><th>نوع العمل</th><th>الوحدة</th><th>إجمالي الكمية</th><th>سعر الوحدة</th><th>قيمة الإنتاج</th><th>عدد العمليات</th></tr></thead><tbody>${workRows}</tbody></table></div></div>` : ''}
-            <div class="card-box" style="padding:12px;"><div class="card-title"><span>عمولات سندات القبض</span></div><div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>رقم السند</th><th>العميل</th><th>المبلغ المحصل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${commissionRows}</tbody></table></div></div>
-            <div class="card-box" style="padding:12px;"><div class="card-title"><span>عمولات المبيعات</span></div><div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>رقم الفاتورة</th><th>العميل</th><th>صافي المبيعات</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${salesCommissionRows}</tbody></table></div></div>
+            ${data.commissions.length ? `<div class="card-box" style="padding:12px;"><div class="card-title"><span>عمولات سندات القبض</span></div><div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>رقم السند</th><th>العميل</th><th>المبلغ المحصل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${commissionRows}</tbody></table></div></div>` : ''}
+            ${data.salesCommissions.length ? `<div class="card-box" style="padding:12px;"><div class="card-title"><span>عمولات المبيعات</span></div><div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>رقم الفاتورة</th><th>العميل</th><th>صافي المبيعات</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${salesCommissionRows}</tbody></table></div></div>` : ''}
             <div class="card-box" style="padding:12px;"><div class="card-title"><span>كشف الحركة التفصيلي</span></div><div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>البيان</th><th>الكمية</th><th>سعر الوحدة / المبلغ</th><th>مستحق</th><th>مستلم</th><th>سجل بواسطة</th></tr></thead><tbody>${historyRows}</tbody></table></div></div>
         `;
     }
@@ -11609,7 +11651,11 @@ tbody tr:nth-child(even){background:#f8fbf9}
         const commissionRows = data.commissions.length ? data.commissions.map(item => `
             <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td>${formatMoney(item.amount || 0)} ${item.commissionCurrency}</td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td>${formatMoney(item.commissionAmount || 0)} ${item.commissionCurrency}</td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;">لا توجد عمولات تحصيل لهذه الفترة</td></tr>';
-        const salaryRow = !isPieceworkStaff(staff) ? `<tr><td>${period}-01</td><td>الراتب الشهري المستحق</td><td>${formatMoney(data.baseEntitlement)} ${data.currency}</td><td>النظام</td></tr>` : '';
+        const salaryRow = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009 ? `<tr><td>${period}-01</td><td>الراتب الشهري المستحق</td><td>${formatMoney(data.baseEntitlement)} ${data.currency}</td><td>النظام</td></tr>` : '';
+        const salarySection = salaryRow ? `<h3>استحقاق الراتب الشهري</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>المصدر</th></tr></thead><tbody>${salaryRow}</tbody></table>` : '';
+        const productionSection = data.production.length ? `<h3>الأعمال والإنتاج</h3><table><thead><tr><th>التاريخ</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th><th>سجل بواسطة</th></tr></thead><tbody>${productionRows}</tbody></table>` : '';
+        const collectionSection = data.commissions.length ? `<h3>عمولات سندات القبض</h3><table><thead><tr><th>التاريخ</th><th>رقم السند</th><th>العميل</th><th>المبلغ المحصل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${commissionRows}</tbody></table>` : '';
+        const paymentSection = data.expenses.length ? `<h3>سجل المبالغ المصروفة / المستلمة</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>سجل بواسطة</th></tr></thead><tbody>${expenseRows}</tbody></table>` : '';
         return `
             <div class="employee-dues-pdf-sheet">
                 <div class="employee-dues-pdf-header">
@@ -11626,9 +11672,8 @@ tbody tr:nth-child(even){background:#f8fbf9}
                     <div class="employee-dues-pdf-kpi"><small>إجمالي المبالغ المستلمة حسب العملة</small><b>${formatEmployeeCurrencyMapHtml(data.paidByCurrency, data.currency)}</b></div>
                     <div class="employee-dues-pdf-kpi"><small>المتبقي حسب العملة</small><b>${formatEmployeeCurrencyMapHtml(data.remainingByCurrency, data.currency)}</b></div>
                 </div>
-                ${isPieceworkStaff(staff) ? `<h3>ملخص الإنتاج حسب نوع العمل</h3><table><thead><tr><th>نوع العمل</th><th>الوحدة</th><th>إجمالي الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th><th>عدد السجلات</th></tr></thead><tbody>${workSummaryRows}</tbody></table><h3>سجل الإنتاج التفصيلي</h3><table><thead><tr><th>التاريخ</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th><th>سجل بواسطة</th></tr></thead><tbody>${productionRows}</tbody></table>` : `<h3>استحقاق الراتب الشهري</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>المصدر</th></tr></thead><tbody>${salaryRow}</tbody></table>`}
-                <h3>عمولات سندات القبض</h3><table><thead><tr><th>التاريخ</th><th>رقم السند</th><th>العميل</th><th>المبلغ المحصل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${commissionRows}</tbody></table>
-                <h3>سجل المبالغ المصروفة / المستلمة</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>سجل بواسطة</th></tr></thead><tbody>${expenseRows}</tbody></table>
+                ${isPieceworkStaff(staff) && data.production.length ? `<h3>ملخص الإنتاج حسب نوع العمل</h3><table><thead><tr><th>نوع العمل</th><th>الوحدة</th><th>إجمالي الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th><th>عدد السجلات</th></tr></thead><tbody>${workSummaryRows}</tbody></table>` : ''}
+                ${salarySection}${productionSection}${collectionSection}${data.salesCommissions.length ? `<h3>عمولات المبيعات</h3><table><thead><tr><th>التاريخ</th><th>الفاتورة</th><th>العميل</th><th>صافي المبيعات</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${salesRows}</tbody></table>` : ''}${paymentSection}
                 <div class="employee-dues-pdf-footer">تم استخراج هذا الكشف من نظام معمل أبو محمد — جميع المبالغ حسب عملتها دون تحويل أو خلط.</div>
             </div>
         `;
