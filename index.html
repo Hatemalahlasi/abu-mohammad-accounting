@@ -803,17 +803,17 @@
 
         /* تصميم فاتورة المبيعات النظامية - A4 عمودي */
         .invoice-print-card { width: min(900px, 96vw); max-width: 900px; padding: 22px; direction: rtl; color: #18352a; background: #fff; border: 1px solid #d7e7dd; border-top: 7px solid #147a45; }
-        .invoice-letterhead { display:flex; justify-content:center; align-items:center; padding:2px 0 13px; border-bottom:3px solid #18834e; margin-bottom:12px; text-align:center; }
-        .invoice-bilingual-contact{display:grid;grid-template-columns:1fr 1fr;gap:18px;direction:ltr;padding:0 2px 9px;margin:0 0 12px;border-bottom:1px solid #b9d8c4;color:#244b35;font-size:10px;line-height:1.6;font-weight:800}.invoice-bilingual-contact .en{text-align:left;direction:ltr}.invoice-bilingual-contact .ar{text-align:right;direction:rtl}.invoice-bilingual-contact strong{display:block;color:#105f35;font-size:11px;font-weight:950}
+        .invoice-letterhead { display:flex; justify-content:center; align-items:center; padding:5px 0 14px; border-bottom:3px solid #18834e; margin-bottom:12px; text-align:center; }
+        .invoice-bilingual-contact{display:grid;grid-template-columns:1fr 1fr;gap:18px;direction:ltr;padding:0 3px 10px;margin:0 0 10px;border-bottom:1px solid #b9d8c4;color:#244b35;font-size:10px;line-height:1.7;font-weight:800}.invoice-bilingual-contact .en{text-align:left;direction:ltr}.invoice-bilingual-contact .ar{text-align:right;direction:rtl}.invoice-bilingual-contact strong{display:block;color:#105f35;font-size:12px;font-weight:950;margin-bottom:2px}
         .invoice-brand-block { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-width:0; width:100%; text-align:center; }
-        .invoice-brand-logo { display:block; width:100px; height:100px; object-fit:contain; border:1px solid #c9dfd0; border-radius:12px; padding:5px; background:#fff; margin:0 auto 2px; }
         .invoice-brand-text { text-align:center; }
-        .invoice-brand-text h1 { margin:0; font-size:27px; line-height:1.3; font-weight:950; color:#105f35; }
-        .invoice-brand-text p { margin:4px 0 3px; font-size:21px; line-height:1.35; font-weight:950; color:#174d32; }
+        .invoice-brand-text h1 { margin:0 0 5px; font-size:29px; line-height:1.35; font-weight:950; color:#105f35; letter-spacing:.1px; }
+        .invoice-brand-logo { display:block; width:92px; height:92px; object-fit:contain; border:1px solid #c9dfd0; border-radius:50%; padding:5px; background:#fff; margin:0 auto 3px; box-shadow:0 2px 8px rgba(16,95,53,.10); }
+        .invoice-brand-text p { margin:2px 0 3px; font-size:21px; line-height:1.35; font-weight:950; color:#174d32; }
         .invoice-brand-subtitle { display:inline-block; font-size:10px; font-weight:900; color:#176b43; background:#eaf5ee; border:1px solid #c5dfcd; padding:3px 12px; border-radius:20px; }
         .invoice-reference-box { background:#eff7f1; border:1px solid #bdd9c6; border-radius:10px; padding:9px 11px; margin:0 0 13px; }
         .invoice-reference-title { color:#105f35; font-weight:950; font-size:13px; padding-bottom:6px; margin-bottom:7px; border-bottom:1px solid #c8dfcf; }
-        .invoice-reference-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+        .invoice-reference-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
         .invoice-reference-row { display:flex; flex-direction:column; justify-content:center; gap:4px; min-width:0; padding:7px 8px; font-size:10px; border:1px solid #d5e6da; border-radius:7px; background:#fff; }
         .invoice-reference-row span { color:#52705e; font-weight:800; }
         .invoice-reference-row strong { color:#183d2a; text-align:right; overflow-wrap:anywhere; font-size:11px; }
@@ -849,7 +849,7 @@
             #printInvoiceModal .invoice-bilingual-contact { break-inside: avoid; page-break-inside: avoid; }
             #printInvoiceModal .invoice-letterhead { display:flex !important; justify-content:center !important; }
             #printInvoiceModal .invoice-brand-logo { width:27mm !important; height:27mm !important; }
-            #printInvoiceModal .invoice-reference-grid { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+            #printInvoiceModal .invoice-reference-grid { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
             #printInvoiceModal .invoice-parties-grid { grid-template-columns: 1.4fr 1fr 1fr !important; }
             #printInvoiceModal .invoice-items-table thead { display: table-header-group; }
             #printInvoiceModal .invoice-items-table tr { break-inside: avoid; page-break-inside: avoid; }
@@ -3365,9 +3365,11 @@
         <div class="invoice-bilingual-contact"><div class="en" dir="ltr"><strong>Sana'a - Al-Tahrir</strong>Behind Taj Saba Hotel<br>Tel: 777166131 | 77187913</div><div class="ar" dir="rtl"><strong>صنعاء - التحرير</strong>خلف فندق تاج سبأ<br>الرقم: 777166131 | 77187913</div></div>
         <div class="invoice-letterhead">
             <div class="invoice-brand-block">
-                <img class="invoice-brand-logo" src="https://abu-mohammad-accounting.vercel.app/logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'">
                 <div class="invoice-brand-text">
                     <h1>معمل أبو محمد</h1>
+                </div>
+                <img class="invoice-brand-logo" src="https://abu-mohammad-accounting.vercel.app/logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'">
+                <div class="invoice-brand-text">
                     <p>فاتورة مبيعات</p>
                     <span class="invoice-brand-subtitle">فاتورة مبيعات نظامية</span>
                 </div>
@@ -3378,7 +3380,6 @@
             <div class="invoice-reference-grid">
                 <div class="invoice-reference-row"><span>رقم الفاتورة</span><strong class="mono" id="prInvId">-</strong></div>
                 <div class="invoice-reference-row"><span>التاريخ</span><strong class="mono" id="prInvDate">-</strong></div>
-                <div class="invoice-reference-row"><span>الفرع</span><strong id="prInvBranch">-</strong></div>
                 <div class="invoice-reference-row"><span>العملة</span><strong id="prInvCurrency">ريال يمني</strong></div>
             </div>
         </div>
@@ -7799,7 +7800,6 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (!inv) return;
         document.getElementById('prInvId').textContent = inv.id || '-';
         document.getElementById('prInvDate').textContent = inv.date || '-';
-        document.getElementById('prInvBranch').textContent = inv.branchName || 'الفرع الرئيسي';
         document.getElementById('prInvCustomer').textContent = inv.customerName || '-';
         document.getElementById('prInvType').textContent = inv.paymentType === 'cash' ? `نقدي (${inv.cashboxName || 'الصندوق'})` : 'آجل';
         document.getElementById('prInvEmp').textContent = inv.employee || '-';
