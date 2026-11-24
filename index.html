@@ -3758,15 +3758,48 @@
         });
     }
 
-    // كشوف المستحقات وصرفها مخصصة للموظفين الذين لديهم نسبة تحصيل أو مبيعات.
-    // الموظف الذي لا توجد له نسبة معتمدة لا يظهر في قوائم الكشوف، ولا تتأثر بياناته أو سجلاته الأخرى.
-    function hasEmployeeDuesCommissionRate(staff) {
-        return !!staff && (getStaffCollectionRate(staff) > 0 || getStaffSalesCommissionRate(staff) > 0);
+    // إظهار الموظف في كشوف المستحقات إذا كان له راتب شهري أو نسبة معتمدة،
+    // أو كان يعمل بالقطعة وسجّل إنتاجاً فعلياً في الشهر المحدد.
+    // لا نظهر الموظف الذي لا راتب له ولا نسبة ولا إنتاجاً مستحقاً.
+    function hasEmployeeDuesCompensationProfile(staff, period = getSelectedEmployeeDuesPeriod()) {
+        if (!staff || staff.active === false) return false;
+        const hasMonthlySalary = !isPieceworkStaff(staff) && Number(staff.salary || 0) > 0.009;
+        const hasCommissionRate = getStaffCollectionRate(staff) > 0 || getStaffSalesCommissionRate(staff) > 0;
+        const hasPiecework = isPieceworkStaff(staff) && (state.employeeProduction || []).some(item =>
+            item.staffId === staff.id &&
+            (item.period || String(item.date || '').slice(0, 7)) === period &&
+            (Number(item.quantity || 0) > 0 || Number(item.amount || 0) > 0)
+        );
+        return hasMonthlySalary || hasCommissionRate || hasPiecework;
     }
 
-    function getVisibleEmployeeDuesStaff() {
+    function getVisibleEmployeeDuesStaff(period = getSelectedEmployeeDuesPeriod()) {
         const staff = hasEmployeeDuesViewPermission(currentUser) ? getAllStaff() : getVisiblePayrollStaff();
-        return staff.filter(hasEmployeeDuesCommissionRate);
+        return staff.filter(item => hasEmployeeDuesCompensationProfile(item, period));
+    }
+
+    function getExplicitStaffSalesCommissionRate(staff) {
+        if (!staff) return 0;
+        const account = getStaffLoginAccount(staff);
+        for (const source of [staff, account]) {
+            if (!source) continue;
+            for (const key of ['salesCommissionRate', 'salesRate', 'salesPercentage']) {
+                const value = Number(String(source[key] ?? '').replace('%', '').trim());
+                if (Number.isFinite(value) && value > 0 && value <= 100) return value;
+            }
+        }
+        return 0;
+    }
+
+    function getEmployeeDuesCompensationLabel(staff) {
+        const parts = [];
+        if (isPieceworkStaff(staff)) parts.push('بالقطعة');
+        else if (Number(staff?.salary || 0) > 0.009) parts.push('راتب شهري');
+        const collectionRate = getStaffCollectionRate(staff);
+        const salesRate = getExplicitStaffSalesCommissionRate(staff);
+        if (collectionRate > 0) parts.push(`نسبة تحصيل ${collectionRate.toFixed(2)}%`);
+        if (salesRate > 0) parts.push(`نسبة مبيعات ${salesRate.toFixed(2)}%`);
+        return parts.join(' + ') || 'استحقاق حسب الحركة';
     }
 
 
@@ -11063,7 +11096,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
     }
 
     function getPayrollSettlementAllStaff() {
-        return getVisibleEmployeeDuesStaff();
+        return getVisibleEmployeeDuesStaff(getPayrollSettlementPeriod());
     }
 
     function getPayrollSettlementHiddenStaff(period = getPayrollSettlementPeriod()) {
@@ -11143,7 +11176,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         const body = document.getElementById('payrollSettlementSummaryBody');
         if (body) body.innerHTML = staff.length ? staff.map(item => {
             const data = getEmployeeDuesData(item, period);
-            const system = isPieceworkStaff(item) ? 'بالقطعة' : (getStaffCollectionRate(item) > 0 ? `راتب + نسبة تحصيل ${getStaffCollectionRate(item).toFixed(2)}%` : 'راتب شهري');
+            const system = getEmployeeDuesCompensationLabel(item);
             const remainingText = formatPayrollCurrencyMapHtml(data.remainingByCurrency);
             const earnedText = formatPayrollCurrencyMapHtml(data.earnedByCurrency);
             const paidText = formatPayrollCurrencyMapHtml(data.paidByCurrency);
@@ -11468,7 +11501,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         if (tbody) {
             tbody.innerHTML = staff.length ? staff.map(item => {
                 const data = getEmployeeDuesData(item, period);
-                const system = isPieceworkStaff(item) ? 'بالقطعة' : (getStaffCollectionRate(item) > 0 ? `راتب + ${getStaffCollectionRate(item).toFixed(2)}% تحصيل` : 'راتب شهري');
+                const system = getEmployeeDuesCompensationLabel(item);
                 const detail = isPieceworkStaff(item)
                     ? `${data.production.length} سجل إنتاج`
                     : (data.commissions.length ? `راتب + ${data.commissions.length} عمولة تحصيل` : 'استحقاق الراتب الشهري');
