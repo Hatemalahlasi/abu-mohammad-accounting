@@ -2299,7 +2299,7 @@
 
             <div class="card-box">
                 <div class="card-title"><span>إضافة عميل</span></div>
-                <div class="grid-3">
+                <div class="grid-2">
                     <div class="form-group" style="margin-bottom:0;">
                         <label>اسم العميل</label>
                         <input type="text" id="newCustomerName" class="form-control" placeholder="اسم العميل">
@@ -2311,6 +2311,10 @@
                     <div class="form-group" style="margin-bottom:0;">
                         <label>حد الائتمان</label>
                         <input type="number" step="0.01" inputmode="decimal" id="newCustomerLimit" class="form-control num-input" value="100000.00" min="0">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>الرصيد الافتتاحي (ريال يمني)</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="newCustomerOpeningBalance" class="form-control num-input" value="0" min="0" placeholder="0.00">
                     </div>
                 </div>
                 <button id="saveCustomerBtn" class="btn btn-primary btn-full" onclick="createCustomer()" style="margin-top:12px;">
@@ -4754,6 +4758,9 @@ function initMenuPermissionCheckboxes() {
         const matchesCustomer = (recordCustId, recordCustName) =>
             (cust.id && recordCustId === cust.id) ||
             (!recordCustId && recordCustName && cust.name && recordCustName.trim() === cust.name.trim());
+
+        // الرصيد الافتتاحي للعميل يُسجل كرصيد مدين بعملة الريال اليمني.
+        totals.YER += Math.max(0, Number(cust.openingBalance || 0));
 
         state.invoices
             .filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName))
@@ -8243,7 +8250,9 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const name = document.getElementById('newCustomerName').value.trim();
         const phone = document.getElementById('newCustomerPhone').value.trim();
         const creditLimit = Number(document.getElementById('newCustomerLimit').value || 0);
+        const openingBalance = Number(document.getElementById('newCustomerOpeningBalance').value || 0);
         if (!name) { showToast('أدخل اسم العميل'); return; }
+        if (!Number.isFinite(openingBalance) || openingBalance < 0) { showToast('أدخل رصيداً افتتاحياً صحيحاً'); return; }
         const normalizedName = name.replace(/\s+/g, ' ').toLowerCase();
         if ((state.customers || []).some(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalizedName && String(item.phone || '-') === (phone || '-'))) {
             showToast('هذا العميل موجود بالفعل بنفس رقم الهاتف؛ لم تتم إضافته مرة أخرى.'); return;
@@ -8253,11 +8262,12 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         try {
             const result = await createRecordOnce('customers', 'cust', {
                 name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-', creditLimit, actor: dedupeActorId()
-            }, { name, phone: phone || '-', creditLimit, balance: 0 }, `cust_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-' })}`);
+            }, { name, phone: phone || '-', creditLimit, balance: openingBalance, openingBalance, openingBalanceDate: getLocalDateKey() }, `cust_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-' })}`);
             if (!result.created) { showToast('هذا العميل مسجل مسبقاً؛ لم تتم إضافة نسخة أخرى.'); return; }
             document.getElementById('newCustomerName').value = '';
             document.getElementById('newCustomerPhone').value = '';
-            showToast('تم حفظ العميل');
+            document.getElementById('newCustomerOpeningBalance').value = '0';
+            showToast(openingBalance > 0 ? `تم حفظ العميل والرصيد الافتتاحي ${formatMoney(openingBalance)} YER` : 'تم حفظ العميل');
         } catch (e) { console.warn('Create customer error:', e); showToast('تعذر حفظ العميل'); }
         finally { isBusy = false; btn.disabled = false; }
     }
@@ -8349,6 +8359,18 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             (!recordCustId && recordCustName && cust.name && recordCustName.trim() === cust.name.trim());
 
         const entries = [];
+        const openingBalance = Math.max(0, Number(cust.openingBalance || 0));
+        if (openingBalance > 0) {
+            entries.push({
+                date: 'افتتاحي',
+                ref: 'OPENING',
+                desc: 'الرصيد الافتتاحي للعميل',
+                currency: 'YER',
+                debit: openingBalance,
+                credit: 0,
+                sortKey: '00000000000000000000'
+            });
+        }
         state.invoices
             .filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName))
             .forEach(i => {
@@ -8380,6 +8402,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             });
 
         entries.sort((a, b) => {
+            if (a.ref === 'OPENING') return -1;
+            if (b.ref === 'OPENING') return 1;
             const dCmp = String(a.date).localeCompare(String(b.date));
             if (dCmp !== 0) return dCmp;
             return a.sortKey.localeCompare(b.sortKey);
