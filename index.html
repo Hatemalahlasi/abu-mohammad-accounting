@@ -800,6 +800,7 @@
         .hidden { display: none !important; }
 
         @media print {
+            @page { size: A4 portrait; margin: 8mm; }
             body {
                 background: #fff !important;
                 padding: 0 !important;
@@ -1366,6 +1367,14 @@
                 linear-gradient(118deg, rgba(250, 222, 222, 0.96) 0%, rgba(255, 246, 246, 0.94) 34%, rgba(255, 255, 255, 0.90) 49%, rgba(242, 249, 243, 0.95) 68%, rgba(218, 239, 223, 0.97) 100%);
         }
 
+        .trash-bin-list{display:grid;grid-template-columns:1fr;gap:10px}
+        .trash-bin-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border:1px solid #eadede;border-right:4px solid #bd3434;border-radius:12px;background:linear-gradient(110deg,#fffafa,#fff 65%,#f7fcf8)}
+        .trash-bin-item-title{font-weight:900;color:#253247;font-size:14px;margin-bottom:4px;overflow-wrap:anywhere}
+        .trash-bin-item-meta{display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11px;color:#64748b;line-height:1.8}
+        .trash-bin-item-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+        .trash-bin-item-actions .btn{min-height:36px}
+        .trash-pill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#fff0f0;color:#a12626;font-size:10px;font-weight:800}
+        @media(max-width:600px){.trash-bin-item{grid-template-columns:1fr}.trash-bin-item-actions{justify-content:flex-start}.trash-bin-item-actions .btn{flex:1}}
     </style>
 <!-- Supplier payment ledger repair 2026-11-23-D -->
 </head>
@@ -1510,6 +1519,10 @@
                 <button class="nav-tab expense-tab" data-menu-key="backupTab" onclick="openFullPage('backupTab')">
                     <i class="fa-solid fa-database"></i>
                     <span>النسخ الاحتياطي واستعادة البيانات</span>
+                </button>
+                <button class="nav-tab" data-menu-key="trashTab" onclick="openFullPage('trashTab')" style="border-color:#f1c8c8;background:linear-gradient(135deg,#fff7f7,#fff);color:#a12626;">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>سلة المهملات</span>
                 </button>
             </div>
         </div>
@@ -3208,7 +3221,7 @@
             <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-file-export"></i> إنشاء نسخة احتياطية كاملة</span></div>
                 <p style="font-size:13px;color:var(--text-muted);line-height:1.9;margin-bottom:13px;">
-                    ينزّل النظام ملف JSON يحتوي بيانات الفروع والمخازن والأصناف والفواتير والعملاء والموردين والصناديق والسندات والموظفين والإنتاج والمصروفات.
+                    ينزّل النظام ملف JSON يحتوي بيانات الفروع والمخازن والأصناف والفواتير والعملاء والموردين والصناديق والسندات والموظفين والإنتاج والمصروفات وأسعار الصرف وسلة المهملات.
                 </p>
                 <button id="downloadBackupBtn" type="button" class="btn btn-primary btn-full" onclick="downloadSystemBackup()">
                     <i class="fa-solid fa-download"></i> تنزيل نسخة احتياطية الآن
@@ -3232,6 +3245,26 @@
             <div class="card-box" style="border-color:#f0c5c5;background:#fffafa;">
                 <div class="card-title" style="color:var(--danger);"><span><i class="fa-solid fa-shield-halved"></i> تنبيه حماية البيانات</span></div>
                 <p style="font-size:13px;line-height:1.9;color:#7f1d1d;">ملف النسخة يحتوي بيانات مالية وسجلات حسابات الدخول، وقد يحتوي كلمات مرور الحسابات القديمة. لا ترسله لأحد ولا تحفظه في مكان عام. احتفظ به في جهاز أو وحدة تخزين موثوقة.</p>
+            </div>
+        </section>
+
+        <!-- سلة المهملات: الاحتفاظ بالمحذوفات سبعة أيام ثم تنظيفها تلقائياً عند نشاط النظام -->
+        <section id="trashTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-trash-can" style="color:#b42323"></i> سلة المهملات</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+            </div>
+            <div class="card-box" style="border:1px solid #f1d2d2;background:linear-gradient(135deg,#fffafa,#fff 65%,#f5fbf6);">
+                <div class="card-title"><span><i class="fa-solid fa-shield-halved" style="color:#a12626"></i> استعادة المحذوفات</span></div>
+                <p style="font-size:13px;line-height:1.9;color:#596579;margin:0;">أي سجل تحذفه من النظام ينتقل إلى هنا بدلاً من حذفه نهائياً. يمكنك استعادته خلال <strong style="color:#a12626">7 أيام</strong>، وبعد انتهاء المدة يحذفه النظام نهائياً عند تسجيل دخول المدير أو المشرف، أو فتح سلة المهملات. الاستعادة تعيد السجل إلى مكانه الأصلي بنفس رقمه وبياناته.</p>
+            </div>
+            <div class="card-box">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                    <div class="card-title" style="margin:0;"><span><i class="fa-solid fa-box-archive"></i> السجلات المحذوفة</span></div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="renderTrashBin()"><i class="fa-solid fa-rotate"></i> تحديث</button>
+                </div>
+                <div id="trashBinStatus" class="employee-permission-note" style="margin-bottom:12px;">جاري تحميل سلة المهملات...</div>
+                <div id="trashBinList" class="trash-bin-list"></div>
             </div>
         </section>
 
@@ -3363,7 +3396,8 @@
         { key: 'employeeProductionTab', label: 'إضافة شغل للموظفين' },
         { key: 'employeeDuesTab', label: 'مستحقات الموظفين وكشوف الحساب' },
         { key: 'payrollSettlementTab', label: 'صرف مستحقات الموظفين' },
-        { key: 'backupTab', label: 'النسخ الاحتياطي واستعادة البيانات' }
+        { key: 'backupTab', label: 'النسخ الاحتياطي واستعادة البيانات' },
+        { key: 'trashTab', label: 'سلة المهملات' }
     ];
 
     const firebaseConfig = {
@@ -3385,6 +3419,8 @@
     let activeStatementCustomerId = null;
 
     let currentUser = null;
+    let recycleBinItems = [];
+    let trashPurgeInterval = null;
     let state = {
         branches: [],
         cashboxes: [],
@@ -3969,7 +4005,7 @@
 function initMenuPermissionCheckboxes() {
         const grid = document.getElementById('permissionMenusGrid');
         if (!grid) return;
-        const employeeAssignableMenus = MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab', 'backupTab'].includes(m.key));
+        const employeeAssignableMenus = MAIN_MENU_ITEMS.filter(m => !['employeesTab', 'employeePermissionsTab', 'backupTab', 'trashTab'].includes(m.key));
         grid.innerHTML = employeeAssignableMenus.map(m => `
             <label class="perm-check">
                 <input type="checkbox" class="emp-menu-cb" value="${m.key}">
@@ -4464,7 +4500,7 @@ function initMenuPermissionCheckboxes() {
             const match = MAIN_MENU_ITEMS.find(item => item.key === value || item.label === value);
             return match?.key || '';
         }).filter(Boolean);
-        const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab'];
+        const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab', 'trashTab'];
         return [...new Set(resolved)].filter(key => !adminOnly.includes(key));
     }
 
@@ -4526,7 +4562,7 @@ function initMenuPermissionCheckboxes() {
     function applyHomeMenuPermissions() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-menu-key]').forEach(btn => {
             const key = btn.getAttribute('data-menu-key');
-            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab'].includes(key);
+            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab', 'trashTab'].includes(key);
             btn.classList.toggle('hidden', (adminOnly && !canManageUsers(currentUser)) || !canAccessMenu(key, currentUser));
         });
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-inventory-hub]').forEach(btn => {
@@ -4562,7 +4598,7 @@ function initMenuPermissionCheckboxes() {
     }
 
     function openFullPage(tabId) {
-        if (['employeesTab', 'employeePermissionsTab', 'backupTab'].includes(tabId) && !canManageUsers(currentUser)) {
+        if (['employeesTab', 'employeePermissionsTab', 'backupTab', 'trashTab'].includes(tabId) && !canManageUsers(currentUser)) {
             showToast('إدارة الموظفين والصلاحيات للمشرف العام والمدير فقط');
             return;
         }
@@ -4663,6 +4699,7 @@ function initMenuPermissionCheckboxes() {
             const status = document.getElementById('backupExportStatus');
             if (status) status.textContent = 'جاهز لإنشاء نسخة احتياطية من جميع بيانات النظام.';
         }
+        if (tabId === 'trashTab') { renderTrashBin(); }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -4721,7 +4758,7 @@ function initMenuPermissionCheckboxes() {
         if (related.length) { showToast('هذا المورد مرتبط بفواتير أو دفعات؛ لا يمكن حذف حسابه حتى لا تضيع الحركات. يمكنك تعديل اسمه، أو حذف دفعات السداد من كشف الحساب بصلاحية المدير.'); return; }
         if (!confirm(`حذف حساب المورد «${supplier.name}»؟`)) return;
         try {
-            await db.collection('suppliers').doc(supplierId).delete();
+            await moveRecordToTrash('suppliers', supplierId);
             state.suppliers = (state.suppliers || []).filter(item => item.id !== supplierId);
             renderSupplierBalances(); populateDropdowns(); showToast('تم حذف حساب المورد');
         } catch (e) { console.warn('Delete supplier error:', e); showToast('تعذر حذف حساب المورد'); }
@@ -5272,6 +5309,7 @@ function initMenuPermissionCheckboxes() {
 
             renderAllViews();
             startRealtimeListeners();
+            startTrashPurgeScheduler();
         } finally {
             isBusy = false;
             btn.disabled = false;
@@ -5286,6 +5324,7 @@ function initMenuPermissionCheckboxes() {
 
     function handleLogout() {
         stopRealtimeListeners();
+        stopTrashPurgeScheduler();
         currentUser = null;
         activeStatementCustomerId = null;
         document.getElementById('loginUser').value = '';
@@ -6284,6 +6323,183 @@ function initMenuPermissionCheckboxes() {
         }
     }
 
+    // سلة المهملات: نحفظ السجل الأصلي بمعرّفه ومجموعته ثم نحذفه من مجموعته في معاملة واحدة.
+    const TRASH_RETENTION_DAYS = 7;
+    const TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    const TRASH_ALLOWED_COLLECTIONS = new Set(['suppliers','purchases','invoices','vouchers','branches','warehouse','customers','employees','staff','employeeExpenses','employeeDailyDisbursements','employeeProduction']);
+
+    function getTrashRecordTitle(collectionName, data = {}) {
+        const map = {
+            suppliers: data.name || 'حساب مورد', customers: data.name || 'عميل', branches: data.name || 'فرع',
+            warehouse: data.name || 'صنف مخزون', invoices: `فاتورة ${data.refNumber || data.id || ''}`,
+            vouchers: data.note || `سند ${data.refNumber || ''}`, purchases: data.title || data.notes || (data.kind === 'supplierPayment' ? `سداد المورد ${data.supplierName || ''}` : 'حركة مالية'),
+            employees: `حساب دخول ${data.fullName || data.username || ''}`, staff: data.fullName || 'ملف موظف',
+            employeeExpenses: data.note || `مستحق / سلفة ${data.staffName || ''}`,
+            employeeDailyDisbursements: `صرفة ${data.staffName || 'موظف'}`,
+            employeeProduction: `إنتاج ${data.staffName || 'موظف'} — ${data.workName || ''}`
+        };
+        return String(map[collectionName] || 'سجل محذوف').trim();
+    }
+
+    function trashDateValue(value) {
+        if (!value) return 0;
+        if (typeof value.toMillis === 'function') return value.toMillis();
+        if (typeof value.toDate === 'function') return value.toDate().getTime();
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+    }
+
+    function trashDateLabel(value) {
+        const ms = trashDateValue(value);
+        return ms ? new Date(ms).toLocaleString('ar-YE') : 'غير محدد';
+    }
+
+    async function moveRecordToTrash(collectionName, recordId, options = {}) {
+        if (!TRASH_ALLOWED_COLLECTIONS.has(collectionName)) throw new Error('TRASH_COLLECTION_NOT_ALLOWED');
+        const sourceRef = db.collection(collectionName).doc(String(recordId));
+        const trashRef = db.collection('recycleBin').doc();
+        await db.runTransaction(async transaction => {
+            const sourceSnap = await transaction.get(sourceRef);
+            if (!sourceSnap.exists) throw new Error('RECORD_NOT_FOUND');
+            const originalData = sourceSnap.data() || {};
+            if (typeof options.beforeDelete === 'function') await options.beforeDelete(transaction, originalData);
+            const now = Date.now();
+            transaction.set(trashRef, {
+                originalCollection: collectionName,
+                originalId: String(recordId),
+                originalData,
+                title: getTrashRecordTitle(collectionName, originalData),
+                deletedAt: new Date(now),
+                expiresAt: new Date(now + TRASH_RETENTION_MS),
+                deletedBy: getAccountDisplayName(currentUser) || 'مستخدم النظام'
+            });
+            transaction.delete(sourceRef);
+        });
+        return trashRef.id;
+    }
+
+    async function purgeExpiredTrashItems(silent = true) {
+        if (!canManageUsers(currentUser)) return 0;
+        try {
+            const snapshot = await db.collection('recycleBin').get();
+            const now = Date.now();
+            const expired = snapshot.docs.filter(doc => {
+                const data = doc.data() || {};
+                const expiry = trashDateValue(data.expiresAt) || (trashDateValue(data.deletedAt) ? trashDateValue(data.deletedAt) + TRASH_RETENTION_MS : 0);
+                return expiry > 0 && expiry <= now;
+            });
+            let removed = 0;
+            for (let i = 0; i < expired.length; i += 400) {
+                const batch = db.batch();
+                expired.slice(i, i + 400).forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                removed += Math.min(400, expired.length - i);
+            }
+            if (removed && !silent) showToast(`تم الحذف النهائي لـ ${removed} سجل انتهت مدة الاحتفاظ به`);
+            return removed;
+        } catch (error) {
+            console.warn('Trash expiration cleanup error:', error);
+            if (!silent) showToast('تعذر تنظيف السجلات المنتهية؛ تحقق من صلاحية سلة المهملات');
+            return 0;
+        }
+    }
+
+    function startTrashPurgeScheduler() {
+        stopTrashPurgeScheduler();
+        if (!canManageUsers(currentUser)) return;
+        purgeExpiredTrashItems(true);
+        trashPurgeInterval = setInterval(() => purgeExpiredTrashItems(true), 6 * 60 * 60 * 1000);
+    }
+
+    function stopTrashPurgeScheduler() {
+        if (trashPurgeInterval) clearInterval(trashPurgeInterval);
+        trashPurgeInterval = null;
+    }
+
+    async function renderTrashBin() {
+        if (!canManageUsers(currentUser)) { showToast('سلة المهملات للمدير والمشرف العام فقط'); return; }
+        const status = document.getElementById('trashBinStatus');
+        const list = document.getElementById('trashBinList');
+        if (!list) return;
+        if (status) status.textContent = 'جاري فحص مدة الاحتفاظ وتحميل المحذوفات...';
+        await purgeExpiredTrashItems(true);
+        try {
+            const snapshot = await db.collection('recycleBin').get();
+            recycleBinItems = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
+                .sort((a,b) => trashDateValue(b.deletedAt) - trashDateValue(a.deletedAt));
+            if (status) status.textContent = recycleBinItems.length ? `عدد السجلات المحذوفة: ${recycleBinItems.length} — تبقى لكل سجل مدة تصل إلى 7 أيام من تاريخ حذفه.` : 'سلة المهملات فارغة حالياً.';
+            list.innerHTML = recycleBinItems.length ? recycleBinItems.map(item => {
+                const expires = trashDateValue(item.expiresAt) || trashDateValue(item.deletedAt) + TRASH_RETENTION_MS;
+                const remainingDays = Math.max(0, Math.ceil((expires - Date.now()) / (24 * 60 * 60 * 1000)));
+                const recordLabel = escapeUiText(item.title || getTrashRecordTitle(item.originalCollection, item.originalData || {}));
+                const collectionLabel = escapeUiText(({suppliers:'الموردون',customers:'العملاء',branches:'الفروع',warehouse:'المخزون',invoices:'فواتير المبيعات',vouchers:'السندات',purchases:'الموردون والمصروفات',employees:'حسابات الدخول',staff:'ملفات الموظفين',employeeExpenses:'مصروفات الموظفين',employeeDailyDisbursements:'الصرف اليومي',employeeProduction:'الإنتاج'})[item.originalCollection] || item.originalCollection || 'سجل');
+                const amount = Number(item.originalData?.amount || item.originalData?.netTotal || 0);
+                const currency = escapeUiText(item.originalData?.currency || 'YER');
+                return `<article class="trash-bin-item"><div><div class="trash-bin-item-title">${recordLabel}</div><div class="trash-bin-item-meta"><span class="trash-pill">${collectionLabel}</span><span>حُذف: ${escapeUiText(trashDateLabel(item.deletedAt))}</span><span>بواسطة: ${escapeUiText(item.deletedBy || '-')}</span>${amount ? `<span>المبلغ: ${formatMoney(amount)} ${currency}</span>` : ''}<span>الحذف النهائي بعد: ${remainingDays} يوم</span></div></div><div class="trash-bin-item-actions"><button type="button" class="btn btn-primary btn-sm" onclick="restoreTrashItem('${item.id}')"><i class="fa-solid fa-rotate-left"></i> استعادة</button><button type="button" class="btn btn-danger btn-sm" onclick="permanentlyDeleteTrashItem('${item.id}')"><i class="fa-solid fa-trash-can"></i> حذف نهائي</button></div></article>`;
+            }).join('') : '<div class="employee-permission-note" style="text-align:center;padding:22px;border:1px dashed #d7e2da;border-radius:12px;">لا توجد سجلات في سلة المهملات.</div>';
+        } catch (error) {
+            console.warn('Render trash error:', error);
+            if (status) status.textContent = 'تعذر تحميل سلة المهملات. تحقق من صلاحية القراءة والكتابة في مجموعة recycleBin.';
+            list.innerHTML = '';
+        }
+    }
+
+    async function restoreTrashItem(trashId) {
+        if (!canManageUsers(currentUser) || isBusy) { showToast('استعادة المحذوفات للمدير والمشرف العام فقط'); return; }
+        const trashRef = db.collection('recycleBin').doc(String(trashId));
+        isBusy = true;
+        try {
+            await db.runTransaction(async transaction => {
+                const trashSnap = await transaction.get(trashRef);
+                if (!trashSnap.exists) throw new Error('TRASH_ITEM_NOT_FOUND');
+                const item = trashSnap.data() || {};
+                const collectionName = String(item.originalCollection || '');
+                const recordId = String(item.originalId || '');
+                if (!TRASH_ALLOWED_COLLECTIONS.has(collectionName) || !recordId || !item.originalData || typeof item.originalData !== 'object') throw new Error('TRASH_ITEM_INVALID');
+                const originalRef = db.collection(collectionName).doc(recordId);
+                const originalSnap = await transaction.get(originalRef);
+                if (originalSnap.exists) throw new Error('RESTORE_TARGET_EXISTS');
+                let linkedRef = null, linkedSnap = null;
+                if (collectionName === 'staff' && item.originalData.userAccountId) {
+                    linkedRef = db.collection('employees').doc(String(item.originalData.userAccountId));
+                    linkedSnap = await transaction.get(linkedRef);
+                    if (linkedSnap.exists && linkedSnap.data()?.staffId && String(linkedSnap.data().staffId) !== recordId) throw new Error('RESTORE_LINK_CONFLICT');
+                } else if (collectionName === 'employees' && item.originalData.staffId) {
+                    linkedRef = db.collection('staff').doc(String(item.originalData.staffId));
+                    linkedSnap = await transaction.get(linkedRef);
+                    if (linkedSnap.exists && linkedSnap.data()?.userAccountId && String(linkedSnap.data().userAccountId) !== recordId) throw new Error('RESTORE_LINK_CONFLICT');
+                }
+                transaction.set(originalRef, item.originalData);
+                if (linkedRef && linkedSnap?.exists) {
+                    if (collectionName === 'staff') transaction.update(linkedRef, { staffId: recordId });
+                    else transaction.update(linkedRef, { userAccountId: recordId, username: item.originalData.username || '' });
+                }
+                transaction.delete(trashRef);
+            });
+            await reloadAllData(false);
+            await renderTrashBin();
+            renderAllViews();
+            showToast('تمت استعادة السجل إلى مكانه الأصلي');
+        } catch (error) {
+            console.warn('Restore trash item error:', error);
+            showToast(error?.message === 'RESTORE_TARGET_EXISTS' ? 'لا يمكن الاستعادة لأن سجلاً بنفس المعرّف موجود حالياً؛ لم يتم استبداله.' : (error?.message === 'RESTORE_LINK_CONFLICT' ? 'تعذرت الاستعادة لأن حساب الدخول مرتبط حالياً بملف موظف آخر.' : 'تعذرت استعادة السجل؛ تحقق من صلاحيات قاعدة البيانات'));
+        } finally { isBusy = false; }
+    }
+
+    async function permanentlyDeleteTrashItem(trashId) {
+        if (!canManageUsers(currentUser) || isBusy) { showToast('الحذف النهائي للمدير والمشرف العام فقط'); return; }
+        if (!confirm('سيُحذف هذا السجل نهائياً ولن يمكن استعادته. هل تريد المتابعة؟')) return;
+        isBusy = true;
+        try {
+            await db.collection('recycleBin').doc(String(trashId)).delete();
+            await renderTrashBin();
+            showToast('تم الحذف النهائي من سلة المهملات');
+        } catch (error) {
+            console.warn('Permanently delete trash item error:', error);
+            showToast('تعذر الحذف النهائي؛ تحقق من صلاحيات قاعدة البيانات');
+        } finally { isBusy = false; }
+    }
+
     async function deletePurchaseRecord(purId) {
         if (isBusy) return;
         if (!canDeleteRecord()) {
@@ -6296,7 +6512,7 @@ function initMenuPermissionCheckboxes() {
 
         isBusy = true;
         try {
-            await db.collection('purchases').doc(purId).delete();
+            await moveRecordToTrash('purchases', purId);
             showToast('تم حذف السجل');
         } finally {
             isBusy = false;
@@ -6805,7 +7021,7 @@ function initMenuPermissionCheckboxes() {
         if (!confirm(`حذف حركة سداد ${formatMoney(payment.amount || 0)} ${payment.currency || 'YER'} للمورد ${payment.supplierName || ''}؟ سيتم إعادة المبلغ إلى رصيد الصندوق فقط إذا كان قد خُصم منه عند التسجيل.`)) return;
         isBusy = true;
         try {
-            await db.collection('purchases').doc(String(paymentId)).delete();
+            await moveRecordToTrash('purchases', String(paymentId));
             state.purchases = (state.purchases || []).filter(item => String(item.id) !== String(paymentId));
             renderSupplierBalances(); renderPurchasesTable(); renderCashboxesList(); renderStats();
             showToast('تم حذف حركة السداد وتحديث كشف المورد والصندوق');
@@ -7007,7 +7223,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
 .actions{display:flex;justify-content:center;gap:9px;margin:0 auto 12px;max-width:1120px}
 .action-btn{border:0;border-radius:10px;padding:10px 18px;background:#176b43;color:#fff;font-weight:800;font-family:Tahoma,Arial,sans-serif;cursor:pointer}
 .action-btn.secondary{background:#eef2f6;color:#344256;border:1px solid #d8e0e8}
-@page{size:A4 landscape;margin:6mm}
+@page{size:A4 portrait;margin:7mm}
 @media print{
  html,body{width:100%;height:auto;margin:0!important;padding:0!important;background:#fff!important}
  .actions{display:none!important}
@@ -7036,7 +7252,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
 </style>
 </head>
 <body>
-<div class="actions"><button class="action-btn" onclick="window.print()">طباعة / حفظ PDF</button><button class="action-btn secondary" onclick="window.close()">إغلاق</button></div>
+<div class="actions"><button class="action-btn" onclick="window.print()">طباعة / حفظ PDF</button><button class="action-btn secondary" onclick="window.close()">إغلاق الكشف</button></div>
 <main class="report ${records.length <= 12 ? 'compact-one-page' : 'multi-page'}">
     <header class="report-header">
         <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><div><h1>معمل أبو محمد</h1><p>كشف حساب المورد — تقرير مالي تفصيلي</p></div></div>
@@ -7643,7 +7859,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
 
         isBusy = true;
         try {
-            await db.collection('invoices').doc(invId).delete();
+            await moveRecordToTrash('invoices', invId);
             showToast('تم حذف الفاتورة وتحديث الأرصدة');
         } catch (e) {
             showToast('تعذر حذف الفاتورة');
@@ -7778,7 +7994,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
 
         isBusy = true;
         try {
-            await db.collection('vouchers').doc(vchId).delete();
+            await moveRecordToTrash('vouchers', vchId);
             showToast('تم حذف السند');
         } finally {
             isBusy = false;
@@ -7969,7 +8185,10 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const table = document.getElementById('cashboxStatementBody')?.closest('table')?.outerHTML || '';
         const win = window.open('', '_blank', 'width=1000,height=800');
         if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لطباعة الكشف'); return; }
-        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>كشف حساب ${cashbox.name}</title><style>body{font-family:Tahoma,Arial;padding:24px;color:#111}h2{text-align:center;color:#0f4c81}.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}.mini-stat{border:1px solid #ddd;padding:10px;border-radius:8px}.mini-stat-label{font-size:12px;color:#555}.mini-stat-val{font-weight:bold;margin-top:5px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #ccc;padding:8px;text-align:right;font-size:12px}th{background:#eef2f6}@media print{button{display:none}}</style></head><body><h2>معمل أبو محمد — كشف حساب الصندوق</h2><p>الصندوق: ${escapeUiText(cashbox.name)} | العملة: ${currency} | الفترة: ${period}</p><div class="summary-strip">${summary}</div>${table}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+        win.document.open();
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>كشف حساب ${escapeUiText(cashbox.name)}</title><style>
+        *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#1f2937;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{padding:12px}.toolbar{display:flex;justify-content:center;gap:8px;margin:0 auto 14px}.toolbar button{border:0;border-radius:8px;padding:9px 16px;font:800 12px Tahoma;cursor:pointer;background:#176b43;color:#fff}.toolbar .close{background:#f1f5f9;color:#344256;border:1px solid #d8e0e8}.report{max-width:900px;margin:auto}.head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px;margin-bottom:12px}.head h2{margin:0;color:#174d32;font-size:20px}.head p{margin:5px 0 0;color:#64748b;font-size:11px}.logo{width:55px;height:55px;object-fit:contain}.summary-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.mini-stat{border:1px solid #d9e7dd;padding:10px;border-radius:9px;background:#f8fbf9}.mini-stat-label{font-size:11px;color:#64748b}.mini-stat-val{font-weight:900;margin-top:5px;color:#174d32;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:12px;table-layout:fixed}th,td{border:1px solid #dce5df;padding:7px;text-align:right;font-size:10px;overflow-wrap:anywhere}th{background:#174d32;color:#fff;font-weight:900}tbody tr:nth-child(even){background:#f4f8f5}tbody td:nth-child(4){color:#176b43;font-weight:800}tbody td:nth-child(5){color:#b42323;font-weight:800}@page{size:A4 portrait;margin:8mm}@media print{body{padding:0}.toolbar{display:none!important}.report{max-width:none}.summary-strip,.head{break-inside:avoid}thead{display:table-header-group}tr{break-inside:avoid}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+        </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div><main class="report"><header class="head"><div><h2>معمل أبو محمد — كشف حساب الصندوق</h2><p>الصندوق: ${escapeUiText(cashbox.name)} | العملة: ${currency} | الفترة: ${period}</p></div><img class="logo" src="https://abu-mohammad-accounting.vercel.app/logo.png" onerror="this.style.display='none'"></header><div class="summary-strip">${summary}</div>${table}</main><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
         win.document.close();
     }
 
@@ -8047,7 +8266,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
 
         isBusy = true;
         try {
-            await db.collection('branches').doc(branchId).delete();
+            await moveRecordToTrash('branches', branchId);
             showToast('تم حذف الفرع');
         } finally {
             isBusy = false;
@@ -8171,7 +8390,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         }
         if (!confirm(`تأكيد حذف الصنف «${item.name || ''}» من المخزون؟`)) return;
         try {
-            await db.collection('warehouse').doc(itemId).delete();
+            await moveRecordToTrash('warehouse', itemId);
             state.warehouse = (state.warehouse || []).filter(entry => entry.id !== itemId);
             renderItemList();
             renderWarehouseTable();
@@ -8556,7 +8775,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         .report-header img{width:54px;height:54px;object-fit:contain}.report-header h1{font-size:20px;color:#174d32;margin:0}.report-header p{font-size:11px;color:#64748b;margin:5px 0 0}
         h2{font-size:16px;color:#174d32;margin:0 0 10px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:10px}tbody tr:nth-child(even){background:#f1f7f3;-webkit-print-color-adjust:exact;print-color-adjust:exact}th{background:#174d32;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}th,td{border:1px solid #dbe5de;padding:7px;text-align:right;vertical-align:top}tr{break-inside:avoid}.report-note{font-size:10px;color:#64748b;margin-top:8px}
         @page{size:A4 portrait;margin:10mm}@media print{html,body{background:#fff}.toolbar{display:none!important}.report-page{max-width:none;margin:0;padding:0;box-shadow:none;min-height:0}.report-page-break{break-before:page;page-break-before:always}.report-page{break-after:page;page-break-after:always}.report-page:last-child{break-after:auto;page-break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-        </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button onclick="window.close()" class="close">إغلاق</button></div>${content}</body></html>`);
+        </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button onclick="window.close()" class="close">إغلاق الكشف</button></div>${content}</body></html>`);
         win.document.close();
         return win;
     }
@@ -8707,7 +8926,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             return;
         }
         if (!confirm('تأكيد حذف العميل؟')) return;
-        await db.collection('customers').doc(custId).delete();
+        await moveRecordToTrash('customers', custId);
         if (activeStatementCustomerId === custId) {
             closeCustomerStatement();
         }
@@ -9003,7 +9222,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
 <button id="shareReadyBtn" class="action-btn share-action" style="display:none" onclick="sharePreparedCustomerPdf()">مشاركة ملف PDF</button>
 <button id="openPdfBtn" class="action-btn secondary" style="display:none" onclick="openPreparedCustomerPdf()">فتح PDF</button>
 <button id="downloadPdfBtn" class="action-btn secondary" style="display:none" onclick="downloadPreparedCustomerPdf()">تنزيل PDF</button>
-<button class="action-btn secondary" onclick="window.close()">إغلاق</button>
+<button class="action-btn secondary" onclick="window.close()">إغلاق الكشف</button>
 </div>
 <p id="shareStatus" role="status" aria-live="polite" style="display:none;max-width:820px;margin:0 auto 12px;padding:10px 12px;border:1px solid #dce7df;border-radius:10px;background:#f8fbf9;color:#315344;font:700 12px/1.7 Tahoma,Arial,sans-serif;text-align:center"></p>
 <main class="report">
@@ -9821,18 +10040,15 @@ tbody tr:nth-child(even){background:#f8fbf9}
         const linkedStaffId = emp.staffId || state.staff.find(item => item.userAccountId === empId)?.id || '';
         isBusy = true;
         try {
-            await db.runTransaction(async transaction => {
-                const accountRef = db.collection('employees').doc(empId);
-                const accountSnap = await transaction.get(accountRef);
-                if (!accountSnap.exists) throw new Error('ACCOUNT_NOT_FOUND');
-                const savedAccount = accountSnap.data() || {};
-                const staffIdToClear = savedAccount.staffId || linkedStaffId;
-                if (staffIdToClear) {
-                    const staffRef = db.collection('staff').doc(staffIdToClear);
-                    const staffSnap = await transaction.get(staffRef);
-                    if (staffSnap.exists) transaction.update(staffRef, { userAccountId: '', username: '' });
+            await moveRecordToTrash('employees', empId, {
+                beforeDelete: async (transaction, savedAccount) => {
+                    const staffIdToClear = savedAccount.staffId || linkedStaffId;
+                    if (staffIdToClear) {
+                        const staffRef = db.collection('staff').doc(staffIdToClear);
+                        const staffSnap = await transaction.get(staffRef);
+                        if (staffSnap.exists) transaction.update(staffRef, { userAccountId: '', username: '' });
+                    }
                 }
-                transaction.delete(accountRef);
             });
             state.employees = state.employees.filter(item => item.id !== empId);
             if (linkedStaffId) {
@@ -9967,10 +10183,16 @@ tbody tr:nth-child(even){background:#f8fbf9}
 سيتم الاحتفاظ بسجلات الإنتاج (${relatedProduction}) والمصروفات (${relatedExpenses}) كسجلات تاريخية.`)) return;
         isBusy = true;
         try {
-            const batch = db.batch();
-            batch.delete(db.collection('staff').doc(staff.id));
-            if (account) batch.update(db.collection('employees').doc(account.id), { staffId: firebase.firestore.FieldValue.delete() });
-            await batch.commit();
+            await moveRecordToTrash('staff', staff.id, {
+                beforeDelete: async (transaction, savedStaff) => {
+                    const linkedAccountId = savedStaff.userAccountId || account?.id || '';
+                    if (linkedAccountId) {
+                        const accountRef = db.collection('employees').doc(linkedAccountId);
+                        const accountSnap = await transaction.get(accountRef);
+                        if (accountSnap.exists) transaction.update(accountRef, { staffId: firebase.firestore.FieldValue.delete() });
+                    }
+                }
+            });
             state.staff = state.staff.filter(item => item.id !== staff.id);
             if (account) delete account.staffId;
             renderEmployeesTable();
@@ -10421,7 +10643,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
             if (!confirm(`حذف سلفة ${item.staffName || 'العامل'} بمبلغ ${formatMoney(item.amount)} ${item.currency || 'YER'}؟ سيُعاد المبلغ إلى رصيد الصندوق إن كانت السلفة مرتبطة بصندوق، وسيُعاد احتساب مستحق العامل.`)) return;
             isBusy = true;
             try {
-                await db.collection('employeeExpenses').doc(recordId).delete();
+                await moveRecordToTrash('employeeExpenses', recordId);
                 state.employeeExpenses = state.employeeExpenses.filter(record => record.id !== recordId);
                 renderEmployeeExpenses(); renderCashboxesList();
                 if (document.getElementById('employeeDuesSummaryBody')) renderEmployeeDues();
@@ -10471,7 +10693,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         if (!confirm(`حذف صرفة ${item.staffName || 'العامل'} بمبلغ ${formatMoney(item.amount)} ${item.currency || 'YER'}؟ سيعود المبلغ إلى رصيد الصندوق إن كانت الصرفة مرتبطة بصندوق.`)) return;
         isBusy = true;
         try {
-            await db.collection('employeeDailyDisbursements').doc(recordId).delete();
+            await moveRecordToTrash('employeeDailyDisbursements', recordId);
             state.employeeDailyDisbursements = state.employeeDailyDisbursements.filter(record => record.id !== recordId);
             renderEmployeeExpenses();
             renderCashboxesList();
@@ -10644,7 +10866,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         if (!confirm(`حذف إنتاج ${item.staffName || 'الموظف'} (${item.quantity} ${item.unit}) بقيمة ${formatMoney(item.amount)} ${item.currency || 'YER'}؟`)) return;
         isBusy = true;
         try {
-            await db.collection('employeeProduction').doc(productionId).delete();
+            await moveRecordToTrash('employeeProduction', productionId);
             state.employeeProduction = state.employeeProduction.filter(record => record.id !== productionId);
             renderEmployeeProduction();
             renderEmployeeExpenses();
@@ -10684,10 +10906,8 @@ tbody tr:nth-child(even){background:#f8fbf9}
         if (!confirm(`تم العثور على ${duplicates.length} سجل إنتاج مطابق مكرر. سيتم الإبقاء على نسخة واحدة من كل عملية وحذف النسخ الزائدة فقط. إذا كان تكرار الشغل مقصوداً، اضغط إلغاء. متابعة؟`)) return;
         isBusy = true;
         try {
-            for (let i = 0; i < duplicates.length; i += 400) {
-                const batch = db.batch();
-                duplicates.slice(i, i + 400).forEach(item => batch.delete(db.collection('employeeProduction').doc(item.id)));
-                await batch.commit();
+            for (const item of duplicates) {
+                await moveRecordToTrash('employeeProduction', item.id);
             }
             const ids = new Set(duplicates.map(item => item.id));
             state.employeeProduction = (state.employeeProduction || []).filter(item => !ids.has(item.id));
@@ -11161,7 +11381,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         const salesSection = data.salesCommissions.length ? `<section class="section sales"><h3>عمولات المبيعات</h3><table><thead><tr><th>التاريخ</th><th>الفاتورة</th><th>العميل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${salesRows}</tbody></table></section>` : '';
         const paymentsSection = data.expenses.length ? `<section class="section payments"><h3>المبالغ التي استلمها الموظف</h3><table><thead><tr><th>التاريخ</th><th>النوع</th><th>البيان</th><th>المبلغ</th></tr></thead><tbody>${paymentRows}</tbody></table></section>` : '';
         win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>كشف مستحقات ${name} — ${period}</title><style>
-            *{box-sizing:border-box}body{margin:0;padding:9mm;font-family:Tahoma,Arial,sans-serif;color:#243244;direction:rtl;font-size:12px;background:#fff}
+            *{box-sizing:border-box}body{margin:0;padding:9mm;font-family:Tahoma,Arial,sans-serif;color:#243244;direction:rtl;font-size:12px;background:#fff}.report-toolbar{display:flex;justify-content:center;gap:8px;margin:0 auto 12px}.report-toolbar button{border:0;border-radius:8px;padding:9px 16px;background:#176b43;color:#fff;font:800 12px Tahoma;cursor:pointer}.report-toolbar .close{background:#eef2f6;color:#344256;border:1px solid #d8e0e8}
             .head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #547b68;padding-bottom:10px;margin-bottom:14px}.head h1{margin:0 0 5px;color:#345b49;font-size:21px}.head p{margin:0;color:#667788}.logo{width:65px;height:65px;object-fit:contain}
             .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f2f6f4;border:1px solid #d8e3dc;padding:10px;border-radius:8px;margin-bottom:12px}
             h3{font-size:14px;color:#385d4b;margin:0 0 7px;padding:7px 9px;background:#edf3ef;border-right:4px solid #759784;border-radius:4px}
@@ -11169,8 +11389,9 @@ tbody tr:nth-child(even){background:#f8fbf9}
             table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:10.5px}th{background:#e9efeb;color:#344d3e;font-weight:700}th,td{border:1px solid #d6dfd9;padding:7px;text-align:right;vertical-align:top}
             .summary th{background:#e4eee8}.summary td{background:#fbfcfb}.remaining-cell{font-weight:bold;background:#f3f7f4!important}.currency-sar th{background:#f5f0e5}.currency-usd th{background:#eef0f7}
             .sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:42px}.sign div{border-top:1px solid #48545e;padding-top:9px;text-align:center;min-height:42px;font-weight:bold}
-            .foot{margin-top:20px;border-top:1px solid #d9e0dc;padding-top:7px;text-align:center;color:#77838c;font-size:9px}@page{size:A4 portrait;margin:7mm}thead{display:table-header-group}tr{break-inside:avoid}
+            .foot{margin-top:20px;border-top:1px solid #d9e0dc;padding-top:7px;text-align:center;color:#77838c;font-size:9px}@page{size:A4 portrait;margin:7mm}thead{display:table-header-group}tr{break-inside:avoid}@media print{.report-toolbar{display:none!important}}
             </style></head><body>
+            <div class="report-toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div>
             <div class="head"><div><h1>معمل أبو محمد</h1><p>كشف مستحقات وصرف موظف — ${period}</p></div><img class="logo" src="${logo}" onerror="this.style.display='none'"></div>
             <div class="meta"><div><b>اسم الموظف:</b> ${name}</div><div><b>الشهر:</b> ${period}</div><div><b>نظام الاستحقاق:</b> ${isPieceworkStaff(staff) ? 'بالقطعة' : 'راتب شهري'}</div><div><b>تاريخ استخراج الكشف:</b> ${getLocalDateKey()}</div></div>
             <section class="section summary-section"><h3>ملخص المستحق والمستلم والمتبقي</h3><table class="summary"><thead><tr><th>العملة</th><th>إجمالي المستحق</th><th>إجمالي المستلم</th><th>المتبقي</th></tr></thead><tbody>${totals}</tbody></table></section>
@@ -11433,7 +11654,8 @@ body{padding:0}
 .employee-dues-pdf-footer{margin-top:17px;padding-top:8px;border-top:1px solid #e5e7eb;color:#64748b;font-size:9px;text-align:center}
 thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avoid}
 @page{size:A4 portrait;margin:9mm}
-@media print{html,body{width:100%;height:auto}.employee-dues-pdf-sheet{width:100%;padding:3mm}.employee-dues-pdf-sheet:not(:last-child){break-after:page;page-break-after:always}}
+@media print{html,body{width:100%;height:auto}.employee-dues-pdf-sheet{width:100%;padding:3mm}.employee-dues-pdf-sheet:not(:last-child){break-after:page;page-break-after:always}.report-toolbar{display:none!important}}
+.report-toolbar{position:sticky;top:0;z-index:10;display:flex;justify-content:center;gap:8px;padding:10px;background:#174d32;margin:0 0 10px}.report-toolbar button{border:0;border-radius:8px;padding:9px 16px;background:#fff;color:#174d32;font:800 12px Tahoma;cursor:pointer}.report-toolbar .close{background:#e8edf0;color:#334155}
 
         .item-list-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:4px 0 14px}
         .item-list-stat{background:#f7fafc;border:1px solid var(--border);border-radius:13px;padding:11px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -11640,7 +11862,7 @@ thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avo
         }
 </style>
 </head>
-<body>${safeSheets}
+<body><div class="report-toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div>${safeSheets}
 <script>
 window.addEventListener('load',function(){
   var imgs=Array.from(document.images);
@@ -11671,7 +11893,7 @@ window.addEventListener('load',function(){
     const SYSTEM_BACKUP_VERSION = 1;
     const SYSTEM_BACKUP_COLLECTIONS = [
         'branches', 'cashboxes', 'customers', 'suppliers', 'invoices', 'purchases',
-        'vouchers', 'employees', 'staff', 'employeeExpenses', 'employeeDailyDisbursements', 'employeeProduction', 'warehouse'
+        'vouchers', 'employees', 'staff', 'employeeExpenses', 'employeeDailyDisbursements', 'employeeProduction', 'warehouse', 'appSettings', 'recycleBin'
     ];
 
     function encodeBackupValue(value) {
@@ -11702,6 +11924,16 @@ window.addEventListener('load',function(){
             return out;
         }
         return value;
+    }
+
+    function readBackupFileAsText(file) {
+        if (file && typeof file.text === 'function') return file.text();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(reader.error || new Error('FILE_READ_FAILED'));
+            reader.readAsText(file, 'UTF-8');
+        });
     }
 
     function showSelectedBackupFile() {
@@ -11767,10 +11999,10 @@ window.addEventListener('load',function(){
         const status = document.getElementById('backupRestoreStatus');
         const button = document.getElementById('restoreBackupBtn');
         if (!file) { showToast('اختر ملف النسخة الاحتياطية أولاً'); return; }
-        if (file.size > 50 * 1024 * 1024) { showToast('حجم النسخة أكبر من 50 ميجابايت؛ لا يمكن استعادتها من المتصفح'); return; }
+        if (file.size > 100 * 1024 * 1024) { showToast('حجم النسخة أكبر من 100 ميجابايت؛ لا يمكن استعادتها من المتصفح'); return; }
         let backup;
         try {
-            backup = JSON.parse(await file.text());
+            backup = JSON.parse(await readBackupFileAsText(file));
         } catch (error) {
             showToast('الملف ليس JSON صالحاً');
             return;
@@ -11809,16 +12041,32 @@ window.addEventListener('load',function(){
         if (button) button.disabled = true;
         if (status) status.textContent = 'جاري استعادة البيانات على دفعات... لا تغلق الصفحة.';
         try {
-            const chunkSize = 400; // حد آمن أقل من حد Firestore البالغ 500 عملية لكل batch.
-            for (let start = 0; start < plan.length; start += chunkSize) {
-                const batch = db.batch();
-                const chunk = plan.slice(start, start + chunkSize);
-                chunk.forEach(item => {
-                    const ref = db.collection(item.collectionName).doc(item.id);
-                    batch.set(ref, item.data);
-                });
+            // تجزئة حسب عدد السجلات وحجم البيانات لحماية الاستعادة من حد طلب Firestore (10MB).
+            const maxBatchDocs = 120;
+            const maxBatchBytes = 3 * 1024 * 1024;
+            let batch = db.batch();
+            let batchDocs = 0;
+            let batchBytes = 0;
+            let restored = 0;
+            for (const item of plan) {
+                const serialized = JSON.stringify(item.data);
+                const itemBytes = new Blob([serialized]).size + 512;
+                if (itemBytes > maxBatchBytes) throw new Error(`RESTORE_DOCUMENT_TOO_LARGE:${item.collectionName}/${item.id}`);
+                if (batchDocs && (batchDocs >= maxBatchDocs || batchBytes + itemBytes > maxBatchBytes)) {
+                    await batch.commit();
+                    restored += batchDocs;
+                    if (status) status.textContent = `تمت استعادة ${restored} من ${plan.length} سجل...`;
+                    batch = db.batch(); batchDocs = 0; batchBytes = 0;
+                }
+                const ref = db.collection(item.collectionName).doc(item.id);
+                batch.set(ref, item.data);
+                batchDocs++;
+                batchBytes += itemBytes;
+            }
+            if (batchDocs) {
                 await batch.commit();
-                if (status) status.textContent = `تمت استعادة ${Math.min(start + chunk.length, plan.length)} من ${plan.length} سجل...`;
+                restored += batchDocs;
+                if (status) status.textContent = `تمت استعادة ${restored} من ${plan.length} سجل...`;
             }
             await reloadAllData(false);
             if (status) status.textContent = `اكتملت الاستعادة والدمج بنجاح. تمت معالجة ${count} سجل. السجلات التي لم تكن في النسخة لم تُحذف.`;
@@ -11826,8 +12074,9 @@ window.addEventListener('load',function(){
             showToast('اكتملت استعادة النسخة الاحتياطية');
         } catch (error) {
             console.error('Backup restore error:', error);
-            if (status) status.textContent = 'توقفت الاستعادة بسبب خطأ في الاتصال أو صلاحيات Firestore. بعض الدفعات السابقة قد تكون حفظت؛ أعد الفحص ونزّل نسخة حالية.';
-            showToast('لم تكتمل الاستعادة؛ راجع اتصال Firebase والصلاحيات');
+            const reason = error?.code || error?.message || 'خطأ غير معروف';
+            if (status) status.textContent = `لم تكتمل الاستعادة: ${reason}. قد تكون دفعات سابقة قد حُفظت؛ راجع السجلات ثم أعد المحاولة.`;
+            showToast(`تعذرت الاستعادة (${error?.code || 'راجع رسالة الحالة'})`);
         } finally {
             isBusy = false;
             if (button) button.disabled = false;
