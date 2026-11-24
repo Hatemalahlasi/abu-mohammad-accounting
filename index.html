@@ -1339,7 +1339,30 @@
         #payrollSettlementTab .payroll-currency-value{margin:2px 0;}
         #payrollSettlementTab .payroll-currency-sar{color:#806a3f;}
         #payrollSettlementTab .payroll-currency-usd{color:#59688b;}
-</style>
+
+
+        /* خلفية أنيقة وخفيفة للقائمة الرئيسية فقط */
+        body:has(#mainAppView:not(.hidden) #homeMenuContainer:not(.hidden)) {
+            background:
+                radial-gradient(ellipse at 96% 4%, rgba(185, 28, 28, 0.075) 0%, rgba(185, 28, 28, 0) 34%),
+                radial-gradient(ellipse at 4% 96%, rgba(21, 128, 61, 0.075) 0%, rgba(21, 128, 61, 0) 36%),
+                linear-gradient(145deg, #fbf8f8 0%, #f8faf8 52%, #f7faf8 100%);
+        }
+
+        .app-shell:has(#mainAppView:not(.hidden) #homeMenuContainer:not(.hidden)) {
+            background:
+                radial-gradient(ellipse at 100% 0%, rgba(185, 28, 28, 0.035) 0%, transparent 32%),
+                radial-gradient(ellipse at 0% 100%, rgba(21, 128, 61, 0.035) 0%, transparent 34%),
+                #ffffff;
+            border-color: rgba(190, 198, 190, 0.72);
+            box-shadow: 0 18px 44px -22px rgba(75, 84, 75, 0.20);
+        }
+
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer {
+            border-radius: 18px;
+        }
+
+    </style>
 <!-- Supplier payment ledger repair 2026-11-23-D -->
 </head>
 <body>
