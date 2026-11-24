@@ -3758,10 +3758,15 @@
         });
     }
 
+    // كشوف المستحقات وصرفها مخصصة للموظفين الذين لديهم نسبة تحصيل أو مبيعات.
+    // الموظف الذي لا توجد له نسبة معتمدة لا يظهر في قوائم الكشوف، ولا تتأثر بياناته أو سجلاته الأخرى.
+    function hasEmployeeDuesCommissionRate(staff) {
+        return !!staff && (getStaffCollectionRate(staff) > 0 || getStaffSalesCommissionRate(staff) > 0);
+    }
+
     function getVisibleEmployeeDuesStaff() {
-        const staff = getAllStaff();
-        if (hasEmployeeDuesViewPermission(currentUser)) return staff;
-        return getVisiblePayrollStaff();
+        const staff = hasEmployeeDuesViewPermission(currentUser) ? getAllStaff() : getVisiblePayrollStaff();
+        return staff.filter(hasEmployeeDuesCommissionRate);
     }
 
 
