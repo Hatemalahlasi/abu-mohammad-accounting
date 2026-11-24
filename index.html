@@ -1514,7 +1514,7 @@
                     <div class="form-group">
                         <label>نسبة الموظف من المبيعات (%)</label>
                         <input type="number" step="0.01" min="0" max="100" inputmode="decimal" id="invSalesCommissionRate" class="form-control num-input" value="0" readonly aria-readonly="true" title="تُؤخذ النسبة تلقائياً من بيانات الموظف">
-                        <small id="invSalesCommissionSource" style="display:block;color:var(--text-muted);font-weight:700;margin-top:5px;">اختر الموظف لإسناد الفاتورة إليه؛ النسبة تُسحب تلقائياً من بيانات الموظف.</small>
+                        <small id="invSalesCommissionSource" style="display:block;color:var(--text-muted);font-weight:700;margin-top:5px;">اختر الموظف لإسناد الفاتورة إليه؛ تُسحب نسبة المبيعات، أو نسبة التحصيل عند عدم وجود نسبة مبيعات مستقلة، تلقائياً من بيانات الموظف.</small>
                         <small id="invSalesCommissionPreview" style="display:block;color:var(--success);font-weight:800;margin-top:5px;">عمولة الموظف: 0.00 YER</small>
                     </div>
                     <div class="form-group">
@@ -3423,8 +3423,9 @@
         return CURRENCY_CODES.includes(staff?.salaryCurrency) ? staff.salaryCurrency : 'YER';
     }
 
-    // قراءة نسبة التحصيل من ملف الموظف أو حساب الدخول القديم، مع تجاهل الصفر الافتراضي
-    // حتى لا يحجب نسبة صحيحة محفوظة في حقل متوافق آخر.
+    // نسبة المبيعات: استخدم النسبة المخصصة للمبيعات أولاً، وإن لم تكن محددة
+    // فاعتمد نسبة الموظف المسجلة للتحصيل؛ فهذا يحافظ على ملفات الموظفين القديمة
+    // التي لديها نسبة 5% في بيانات الموظف دون حقل مستقل للمبيعات.
     function getStaffSalesCommissionRate(staff) {
         if (!staff) return 0;
         const account = getStaffLoginAccount(staff);
@@ -3435,7 +3436,8 @@
                 if (Number.isFinite(parsed) && parsed > 0 && parsed <= 100) return parsed;
             }
         }
-        return 0;
+        // في حال عدم وجود نسبة مبيعات مستقلة، استخدم نسبة التحصيل المعروفة للموظف.
+        return getStaffCollectionRate(staff);
     }
 
     function getStaffCollectionRate(staff) {
@@ -6935,9 +6937,9 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const select = document.getElementById('invSalesEmployeeSelect');
         if (!select) return;
         const previous = select.value;
-        // مثل إسناد موظف التحصيل: اعرض فقط الموظفين النشطين الذين عُرّفت لهم نسبة مبيعات من بيانات الموظف.
+        // مثل إسناد موظف التحصيل: اعرض الموظفين النشطين الذين لديهم نسبة مبيعات أو نسبة تحصيل محفوظة بملف الموظف.
         const staff = getAllStaff().filter(item => item && item.active !== false && getStaffSalesCommissionRate(item) > 0);
-        select.innerHTML = '<option value="">بدون موظف / لا تُسند الفاتورة لموظف</option>' + staff.map(item => `<option value="${escapeUiText(item.id)}">${escapeUiText(item.fullName || 'موظف')} — نسبة المبيعات ${getStaffSalesCommissionRate(item).toFixed(2)}%</option>`).join('');
+        select.innerHTML = '<option value="">بدون موظف / لا تُسند الفاتورة لموظف</option>' + staff.map(item => `<option value="${escapeUiText(item.id)}">${escapeUiText(item.fullName || 'موظف')} — النسبة المعتمدة ${getStaffSalesCommissionRate(item).toFixed(2)}%</option>`).join('');
         const own = currentUser?.staffId || '';
         if (previous && staff.some(item => String(item.id) === String(previous))) select.value = previous;
         else if (own && staff.some(item => String(item.id) === String(own))) select.value = own;
@@ -6953,7 +6955,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         rate.value = staffRate.toFixed(2);
         const source = document.getElementById('invSalesCommissionSource');
         if (source) source.textContent = staff
-            ? `النسبة المعتمدة للموظف ${staff.fullName}: ${staffRate.toFixed(2)}% — تُعدل من بيانات الموظف.`
+            ? `النسبة المعتمدة للموظف ${staff.fullName}: ${staffRate.toFixed(2)}% — مأخوذة من بيانات الموظف.`
             : 'النسبة مأخوذة تلقائياً من بيانات الموظف.';
         recalculateInvoiceTotal();
     }
