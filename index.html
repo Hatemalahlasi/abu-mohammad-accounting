@@ -1507,6 +1507,16 @@
 
                 <div class="grid-2" style="margin-top:8px;">
                     <div class="form-group">
+                        <label>موظف المبيعات</label>
+                        <select id="invSalesEmployeeSelect" class="form-control" onchange="updateInvoiceSalesCommission()"><option value="">بدون موظف / لا تحتسب نسبة</option></select>
+                        <small style="display:block;color:var(--text-muted);margin-top:5px;">تُحسب النسبة من صافي الفاتورة بعد الخصم.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>نسبة الموظف من المبيعات (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" inputmode="decimal" id="invSalesCommissionRate" class="form-control num-input" value="0" oninput="recalculateInvoiceTotal()">
+                        <small id="invSalesCommissionPreview" style="display:block;color:var(--success);font-weight:800;margin-top:5px;">عمولة الموظف: 0.00 YER</small>
+                    </div>
+                    <div class="form-group">
                         <label>عملة الفاتورة</label>
                         <select id="invCurrency" class="form-control" onchange="handleInvoiceCurrencyChange()">
                             <option value="YER">ريال يمني</option>
@@ -2301,10 +2311,6 @@
                         <label>حد الائتمان</label>
                         <input type="number" step="0.01" inputmode="decimal" id="newCustomerLimit" class="form-control num-input" value="100000.00" min="0">
                     </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>الرصيد الافتتاحي</label>
-                        <input type="number" step="0.01" inputmode="decimal" id="newCustomerOpeningBalance" class="form-control num-input" value="0" min="0" placeholder="0.00">
-                    </div>
                 </div>
                 <button id="saveCustomerBtn" class="btn btn-primary btn-full" onclick="createCustomer()" style="margin-top:12px;">
                     <i class="fa-solid fa-check"></i> حفظ العميل
@@ -2497,6 +2503,11 @@
                             <label>نسبة الموظف من تحصيل العملاء (%) — اختيارية</label>
                             <input type="number" step="0.01" min="0" max="100" inputmode="decimal" id="newEmpCollectionRate" class="form-control num-input" value="0" placeholder="مثال: 5">
                             <small style="display:block;color:var(--text-muted);margin-top:5px;">تحسب من سندات القبض الفعلية المسجلة باسم الموظف، وبعملة السند نفسها. اتركها 0 إذا لا توجد عمولة.</small>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>نسبة الموظف من المبيعات (%) — اختيارية</label>
+                            <input type="number" step="0.01" min="0" max="100" inputmode="decimal" id="newEmpSalesRate" class="form-control num-input" value="0" placeholder="مثال: 5">
+                            <small style="display:block;color:var(--text-muted);margin-top:5px;">تُحسب من صافي فاتورة المبيعات بعد الخصم.</small>
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label>المخازن المسموح بها للموظف بواسطة المشرف</label>
@@ -3413,6 +3424,19 @@
 
     // قراءة نسبة التحصيل من ملف الموظف أو حساب الدخول القديم، مع تجاهل الصفر الافتراضي
     // حتى لا يحجب نسبة صحيحة محفوظة في حقل متوافق آخر.
+    function getStaffSalesCommissionRate(staff) {
+        if (!staff) return 0;
+        const account = getStaffLoginAccount(staff);
+        for (const source of [staff, account]) {
+            if (!source) continue;
+            for (const key of ['salesCommissionRate','salesRate','salesPercentage']) {
+                const parsed = Number(String(source[key] ?? '').replace('%','').trim());
+                if (Number.isFinite(parsed) && parsed > 0 && parsed <= 100) return parsed;
+            }
+        }
+        return 0;
+    }
+
     function getStaffCollectionRate(staff) {
         if (!staff) return 0;
         const account = getStaffLoginAccount(staff);
@@ -4728,9 +4752,6 @@ function initMenuPermissionCheckboxes() {
             (cust.id && recordCustId === cust.id) ||
             (!recordCustId && recordCustName && cust.name && recordCustName.trim() === cust.name.trim());
 
-        // الرصيد الافتتاحي للعميل يُسجل كرصيد مدين بعملة الريال اليمني.
-        totals.YER += Math.max(0, Number(cust.openingBalance || 0));
-
         state.invoices
             .filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName))
             .forEach(i => {
@@ -4913,6 +4934,7 @@ function initMenuPermissionCheckboxes() {
         if (qtyShortcut) qtyShortcut.classList.toggle('hidden', !canAccessMenu('quantitiesTab'));
         populateDropdowns();
         populateVoucherCollectionStaffOptions();
+        populateInvoiceSalesEmployeeOptions();
         renderStats();
         renderInvoicesTable();
         renderPurchasesTable();
@@ -6899,9 +6921,34 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         });
         const discount = Number(document.getElementById('invDiscount').value || 0);
         const net = Math.max(0, subtotal - discount);
-        document.getElementById('invNetTotalDisplay').textContent = `${formatMoney(net)} ${document.getElementById('invCurrency')?.value || 'YER'}`;
+        const currency = document.getElementById('invCurrency')?.value || 'YER';
+        document.getElementById('invNetTotalDisplay').textContent = `${formatMoney(net)} ${currency}`;
+        const rate = Number(document.getElementById('invSalesCommissionRate')?.value || 0);
+        const preview = document.getElementById('invSalesCommissionPreview');
+        if (preview) preview.textContent = `عمولة الموظف: ${formatMoney(net * Math.max(0, Math.min(100, Number.isFinite(rate) ? rate : 0)) / 100)} ${currency}`;
         updateMobileCartDock();
         return net;
+    }
+
+    function populateInvoiceSalesEmployeeOptions() {
+        const select = document.getElementById('invSalesEmployeeSelect');
+        if (!select) return;
+        const previous = select.value;
+        const staff = getAllStaff().filter(item => item && item.active !== false);
+        select.innerHTML = '<option value="">بدون موظف / لا تحتسب نسبة</option>' + staff.map(item => `<option value="${escapeUiText(item.id)}">${escapeUiText(item.fullName || 'موظف')} — ${getStaffSalesCommissionRate(item).toFixed(2)}%</option>`).join('');
+        const own = currentUser?.staffId || '';
+        if (previous && staff.some(item => String(item.id) === String(previous))) select.value = previous;
+        else if (own && staff.some(item => String(item.id) === String(own))) select.value = own;
+        updateInvoiceSalesCommission();
+    }
+
+    function updateInvoiceSalesCommission() {
+        const select = document.getElementById('invSalesEmployeeSelect');
+        const rate = document.getElementById('invSalesCommissionRate');
+        if (!select || !rate) return;
+        const staff = getStaffById(select.value);
+        rate.value = staff ? getStaffSalesCommissionRate(staff).toFixed(2) : '0';
+        recalculateInvoiceTotal();
     }
 
     function updateMobileCartDock() {
@@ -7006,6 +7053,9 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const selectedCustomerId = document.getElementById('invCustomerSelect').value;
         const directCustomerName = (document.getElementById('invCashCustomerName')?.value || '').trim();
         const discount = Number(document.getElementById('invDiscount').value || 0);
+        const salesStaffId = document.getElementById('invSalesEmployeeSelect')?.value || '';
+        const salesStaff = salesStaffId ? getStaffById(salesStaffId) : null;
+        const salesCommissionRate = Number(document.getElementById('invSalesCommissionRate')?.value || 0);
         const refNum = (document.getElementById('invRefNumber')?.value || '').trim();
         const notes = `عليكم فاتورة مبيعات برقم ${refNum || '—'}`;
         const rawItems = [];
@@ -7020,6 +7070,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             showToast('أكمل اسم الصنف والكمية، وأدخل سعر بيع أكبر من صفر بعملة الفاتورة المختارة'); return;
         }
         if (!Number.isFinite(discount) || discount < 0) { showToast('أدخل خصماً صحيحاً'); return; }
+        if (!Number.isFinite(salesCommissionRate) || salesCommissionRate < 0 || salesCommissionRate > 100) { showToast('نسبة الموظف من المبيعات يجب أن تكون من 0 إلى 100'); return; }
+        if (salesCommissionRate > 0 && !salesStaff) { showToast('اختر موظف المبيعات أولاً'); return; }
         const items = [];
         const stockRequirements = new Map();
         for (const row of rawItems) {
@@ -7074,9 +7126,11 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 customerId: customer?.id || '', customerName,
                 paymentType, currency, currencyName: CURRENCY_NAMES[currency],
                 cashboxId: cashbox ? cashbox.id : '', cashboxName: cashbox ? cashbox.name : 'آجل',
-                items, discount, netTotal, employee: currentUser.fullName, employeeRole: currentUser.role, notes
+                items, discount, netTotal, employee: currentUser.fullName, employeeRole: currentUser.role,
+                salesStaffId: salesStaff?.id || '', salesStaffName: salesStaff?.fullName || '', salesCommissionRate,
+                salesCommissionAmount: netTotal * salesCommissionRate / 100, salesCommissionCurrency: currency, notes
             };
-            const signature = { refNum, date, branchId, customerId: invoiceDoc.customerId, customerName, paymentType, currency, cashboxId: invoiceDoc.cashboxId, items, discount, netTotal, actor: dedupeActorId() };
+            const signature = { refNum, date, branchId, customerId: invoiceDoc.customerId, customerName, paymentType, currency, cashboxId: invoiceDoc.cashboxId, items, discount, netTotal, salesStaffId: invoiceDoc.salesStaffId, salesCommissionRate, actor: dedupeActorId() };
             const bucket = Math.floor(Date.now() / CREATE_DEDUPE_WINDOW_MS);
             const invoiceDocId = refNum
                 ? `INV-${refNum.replace(/[^\w\u0600-\u06FF-]/g, '_').slice(0, 90)}`
@@ -7116,6 +7170,9 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             document.getElementById('invDiscount').value = '0.00';
             document.getElementById('invRefNumber').value = '';
             document.getElementById('invCashCustomerName').value = '';
+            if (document.getElementById('invSalesEmployeeSelect')) document.getElementById('invSalesEmployeeSelect').value = '';
+            if (document.getElementById('invSalesCommissionRate')) document.getElementById('invSalesCommissionRate').value = '0';
+            updateInvoiceSalesCommission();
             updateInvoiceStatementPreview();
             renderInvoicesTable(); renderWarehouseTable(); renderWarehouseCatalogDropdown(); renderStats();
             showToast('تم حفظ الفاتورة وخصم الكميات المتاحة بدقة');
@@ -8176,9 +8233,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const name = document.getElementById('newCustomerName').value.trim();
         const phone = document.getElementById('newCustomerPhone').value.trim();
         const creditLimit = Number(document.getElementById('newCustomerLimit').value || 0);
-        const openingBalance = Number(document.getElementById('newCustomerOpeningBalance').value || 0);
         if (!name) { showToast('أدخل اسم العميل'); return; }
-        if (!Number.isFinite(openingBalance) || openingBalance < 0) { showToast('أدخل رصيداً افتتاحياً صحيحاً'); return; }
         const normalizedName = name.replace(/\s+/g, ' ').toLowerCase();
         if ((state.customers || []).some(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalizedName && String(item.phone || '-') === (phone || '-'))) {
             showToast('هذا العميل موجود بالفعل بنفس رقم الهاتف؛ لم تتم إضافته مرة أخرى.'); return;
@@ -8188,12 +8243,11 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         try {
             const result = await createRecordOnce('customers', 'cust', {
                 name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-', creditLimit, actor: dedupeActorId()
-            }, { name, phone: phone || '-', creditLimit, balance: openingBalance, openingBalance }, `cust_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-' })}`);
+            }, { name, phone: phone || '-', creditLimit, balance: 0 }, `cust_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-' })}`);
             if (!result.created) { showToast('هذا العميل مسجل مسبقاً؛ لم تتم إضافة نسخة أخرى.'); return; }
             document.getElementById('newCustomerName').value = '';
             document.getElementById('newCustomerPhone').value = '';
-            document.getElementById('newCustomerOpeningBalance').value = '0';
-            showToast(openingBalance > 0 ? `تم حفظ العميل والرصيد الافتتاحي ${formatMoney(openingBalance)} YER` : 'تم حفظ العميل');
+            showToast('تم حفظ العميل');
         } catch (e) { console.warn('Create customer error:', e); showToast('تعذر حفظ العميل'); }
         finally { isBusy = false; btn.disabled = false; }
     }
@@ -8285,18 +8339,6 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             (!recordCustId && recordCustName && cust.name && recordCustName.trim() === cust.name.trim());
 
         const entries = [];
-        const openingBalance = Math.max(0, Number(cust.openingBalance || 0));
-        if (openingBalance > 0) {
-            entries.push({
-                date: String(cust.openingBalanceDate || cust.createdAt || 'افتتاحي'),
-                ref: 'OPENING',
-                desc: 'الرصيد الافتتاحي للعميل',
-                currency: 'YER',
-                debit: openingBalance,
-                credit: 0,
-                sortKey: '00000000000000000000'
-            });
-        }
         state.invoices
             .filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName))
             .forEach(i => {
@@ -8948,6 +8990,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         const salary = payType === 'piecework' ? 0 : Number(document.getElementById('newEmpSalary').value || 0);
         const salaryCurrency = document.getElementById('newEmpSalaryCurrency').value || 'YER';
         const collectionCommissionRate = payType === 'piecework' ? 0 : Number(document.getElementById('newEmpCollectionRate')?.value || 0);
+        const salesCommissionRate = Number(document.getElementById('newEmpSalesRate')?.value || 0);
         const enteredPieceRates = payType === 'piecework' ? collectEmployeePieceRates() : [];
         const pieceRateValidationError = payType === 'piecework' ? validateEmployeePieceRates(enteredPieceRates) : '';
         const pieceRates = enteredPieceRates.map(({ _rowNumber, ...rate }) => rate);
@@ -8972,6 +9015,10 @@ tbody tr:nth-child(even){background:#f8fbf9}
         }
         if (payType !== 'piecework' && (!Number.isFinite(collectionCommissionRate) || collectionCommissionRate < 0 || collectionCommissionRate > 100)) {
             showToast('نسبة التحصيل يجب أن تكون من 0 إلى 100');
+            return;
+        }
+        if (!Number.isFinite(salesCommissionRate) || salesCommissionRate < 0 || salesCommissionRate > 100) {
+            showToast('نسبة المبيعات يجب أن تكون من 0 إلى 100');
             return;
         }
         if (payType === 'piecework' && pieceRateValidationError) {
@@ -9001,6 +9048,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
                 salaryCurrency,
                 collectionCommissionRate,
                 commissionRate: collectionCommissionRate,
+                salesCommissionRate,
                 pieceRates,
                 warehouseBranchId,
                 warehouseBranchIds,
@@ -9235,9 +9283,16 @@ tbody tr:nth-child(even){background:#f8fbf9}
             showToast('نسبة التحصيل يجب أن تكون من 0 إلى 100');
             return;
         }
+        const nextSalesRate = prompt(`نسبة الموظف من المبيعات (${staff.fullName}) — اكتب 0 لإلغاء النسبة:`, String(getStaffSalesCommissionRate(staff)));
+        if (nextSalesRate === null) return;
+        const parsedSalesRate = Number(String(nextSalesRate).replace('%', '').trim());
+        if (!Number.isFinite(parsedSalesRate) || parsedSalesRate < 0 || parsedSalesRate > 100) {
+            showToast('نسبة المبيعات يجب أن تكون من 0 إلى 100');
+            return;
+        }
         isBusy = true;
         try {
-            const patch = { salary: parsed, collectionCommissionRate: parsedRate, commissionRate: parsedRate };
+            const patch = { salary: parsed, collectionCommissionRate: parsedRate, commissionRate: parsedRate, salesCommissionRate: parsedSalesRate };
             if (staff.legacy) {
                 await db.collection('employees').doc(staff.legacyUserId).update(patch);
                 const account = state.employees.find(item => item.id === staff.legacyUserId);
@@ -9253,7 +9308,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
             renderEmployeesTable();
             populateVoucherCollectionStaffOptions();
             if (document.getElementById('employeeDuesSummaryBody')) renderEmployeeDues();
-            showToast('تم تحديث الراتب ونسبة التحصيل');
+            showToast('تم تحديث الراتب ونسبة التحصيل والمبيعات');
         } catch (e) {
             console.warn('Update employee salary/commission error:', e);
             showToast('تعذر تحديث الراتب والنسبة؛ تحقق من اتصال Firebase وصلاحية الكتابة');
@@ -9598,7 +9653,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
                     <td>${isPieceworkStaff(item) ? '<span class="badge badge-sup">بالقطعة</span>' : (getStaffCollectionRate(item) > 0 ? '<span class="badge badge-cash">راتب + نسبة تحصيل</span>' : '<span class="badge badge-cash">راتب شهري</span>')}</td>
                     <td>${isPieceworkStaff(item)
                         ? (item.pieceRates || []).map(rate => `${rate.name}: ${formatMoney(rate.rate)} ${getStaffSalaryCurrency(item)} / ${rate.unit}`).join('<br>') || '-'
-                        : `<span class="mono">${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}</span>${getStaffCollectionRate(item) > 0 ? `<br><small style="color:var(--success);font-weight:800;">نسبة التحصيل: ${getStaffCollectionRate(item).toFixed(2)}%</small>` : ''}`}</td>
+                        : `<span class="mono">${formatMoney(item.salary || 0)} ${getStaffSalaryCurrency(item)}</span>${getStaffCollectionRate(item) > 0 ? `<br><small style="color:var(--success);font-weight:800;">نسبة التحصيل: ${getStaffCollectionRate(item).toFixed(2)}%</small>` : ''}${getStaffSalesCommissionRate(item) > 0 ? `<br><small style="color:var(--primary);font-weight:800;">نسبة المبيعات: ${getStaffSalesCommissionRate(item).toFixed(2)}%</small>` : ''}`}</td>
                     <td>${branchName}</td>
                     <td>${active ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>'}</td>
                     <td style="white-space:nowrap;">
@@ -10296,10 +10351,18 @@ tbody tr:nth-child(even){background:#f8fbf9}
             return { ...v, commissionRate: rate, commissionAmount: rate > 0 ? amount * rate / 100 : 0, commissionCurrency: code };
         }).filter(v => v.commissionAmount > 0);
 
+        const salesCommissions = (state.invoices || []).filter(inv => inv.salesStaffId === staff.id && String(inv.date || '').slice(0, 7) === period).map(inv => {
+            const rate = Number(inv.salesCommissionRate || getStaffSalesCommissionRate(staff) || 0);
+            const amount = Number(inv.netTotal || 0);
+            const code = CURRENCY_CODES.includes(inv.salesCommissionCurrency || inv.currency) ? (inv.salesCommissionCurrency || inv.currency) : 'YER';
+            return { ...inv, commissionRate: rate, commissionAmount: Number(inv.salesCommissionAmount ?? (amount * rate / 100)), commissionCurrency: code };
+        }).filter(v => v.commissionAmount > 0);
+
         const earnedByCurrency = { YER: 0, SAR: 0, USD: 0 };
         const paidByCurrency = { YER: 0, SAR: 0, USD: 0 };
         earnedByCurrency[currency] += baseEntitlement;
         commissions.forEach(v => { earnedByCurrency[v.commissionCurrency] += v.commissionAmount; });
+        salesCommissions.forEach(v => { earnedByCurrency[v.commissionCurrency] += v.commissionAmount; });
         expenses.forEach(item => {
             const code = CURRENCY_CODES.includes(item.currency) ? item.currency : currency;
             paidByCurrency[code] += Number(item.amount || 0);
@@ -10321,7 +10384,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
             group.amount += Number(item.amount || 0);
             group.records++;
         });
-        return { staff, period, currency, production, expenses, commissions, baseEntitlement, productionTotal, entitlement, paid, remaining, earnedByCurrency, paidByCurrency, remainingByCurrency, byWork: [...byWork.values()] };
+        return { staff, period, currency, production, expenses, commissions, salesCommissions, baseEntitlement, productionTotal, entitlement, paid, remaining, earnedByCurrency, paidByCurrency, remainingByCurrency, byWork: [...byWork.values()] };
     }
 
     function populateEmployeeDuesStaffOptions() {
@@ -10421,6 +10484,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         const workRows = data.byWork.length ? data.byWork.map(item => `
             <tr><td>${escapeEmployeeDuesHtml(item.name)}</td><td>${escapeEmployeeDuesHtml(item.unit)}</td><td><span class="mono">${formatQty(item.quantity)}</span></td><td><span class="mono">${formatMoney(item.unitRate)} ${data.currency}</span></td><td><strong class="mono">${formatMoney(item.amount)} ${data.currency}</strong></td><td>${item.records}</td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا يوجد إنتاج مسجل في هذه الفترة</td></tr>';
+        const salesCommissionRows = data.salesCommissions.length ? data.salesCommissions.map(item => `<tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td><span class="mono">${formatMoney(item.netTotal || 0)} ${item.commissionCurrency}</span></td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td><strong class="mono">${formatMoney(item.commissionAmount)} ${item.commissionCurrency}</strong></td></tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد عمولات مبيعات خلال هذه الفترة</td></tr>';
         const commissionRows = data.commissions.length ? data.commissions.map(item => `
             <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td><span class="mono">${formatMoney(item.amount || 0)} ${item.commissionCurrency}</span></td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td><strong class="mono">${formatMoney(item.commissionAmount)} ${item.commissionCurrency}</strong></td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد سندات قبض مسجلة باسم هذا الموظف خلال هذه الفترة</td></tr>';
@@ -10437,6 +10501,12 @@ tbody tr:nth-child(even){background:#f8fbf9}
             date: item.date || '-', order: item.createdAt || '', type: 'عمولة تحصيل',
             details: `سند قبض ${item.refNumber || item.id || ''} — العميل ${item.customerName || 'عام'} — نسبة ${Number(item.commissionRate).toFixed(2)}%`,
             quantity: '-', rate: `${formatMoney(item.amount || 0)} ${item.commissionCurrency}`,
+            earned: Number(item.commissionAmount || 0), paid: 0, currency: item.commissionCurrency, actor: item.employee || '-'
+        }));
+        data.salesCommissions.forEach(item => ledgerRows.push({
+            date: item.date || '-', order: item.createdAt || '', type: 'عمولة مبيعات',
+            details: `فاتورة مبيعات ${item.refNumber || item.id || ''} — العميل ${item.customerName || 'عام'} — نسبة ${Number(item.commissionRate).toFixed(2)}%`,
+            quantity: '-', rate: `${formatMoney(item.netTotal || 0)} ${item.commissionCurrency}`,
             earned: Number(item.commissionAmount || 0), paid: 0, currency: item.commissionCurrency, actor: item.employee || '-'
         }));
         data.expenses.forEach(item => ledgerRows.push({
@@ -10462,6 +10532,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
             </div>
             ${isPieceworkStaff(staff) ? `<div class="card-box" style="padding:12px;"><div class="card-title"><span>تفصيل ما أنجزه حسب نوع العمل</span></div><div class="table-responsive"><table><thead><tr><th>نوع العمل</th><th>الوحدة</th><th>إجمالي الكمية</th><th>سعر الوحدة</th><th>قيمة الإنتاج</th><th>عدد العمليات</th></tr></thead><tbody>${workRows}</tbody></table></div></div>` : ''}
             <div class="card-box" style="padding:12px;"><div class="card-title"><span>عمولات سندات القبض</span></div><div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>رقم السند</th><th>العميل</th><th>المبلغ المحصل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${commissionRows}</tbody></table></div></div>
+            <div class="card-box" style="padding:12px;"><div class="card-title"><span>عمولات المبيعات</span></div><div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>رقم الفاتورة</th><th>العميل</th><th>صافي المبيعات</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${salesCommissionRows}</tbody></table></div></div>
             <div class="card-box" style="padding:12px;"><div class="card-title"><span>كشف الحركة التفصيلي</span></div><div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الحركة</th><th>البيان</th><th>الكمية</th><th>سعر الوحدة / المبلغ</th><th>مستحق</th><th>مستلم</th><th>سجل بواسطة</th></tr></thead><tbody>${historyRows}</tbody></table></div></div>
         `;
     }
