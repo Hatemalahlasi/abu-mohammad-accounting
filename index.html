@@ -9091,18 +9091,9 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
     }
 
     function getCustomerInvoiceStatementDescription(invoice, refDisplay) {
-        const itemLines = Array.isArray(invoice?.items) ? invoice.items : [];
-        const itemsText = itemLines.map(item => {
-            const itemName = String(item?.name || 'صنف').trim();
-            const qty = formatQty(Number(item?.qty || 0));
-            const unit = String(item?.unit || 'حبة');
-            return `${itemName} × ${qty} ${unit}`;
-        }).filter(Boolean).join('، ');
-        const noteText = String(invoice?.notes || invoice?.note || '').trim();
-        const details = [];
-        if (itemsText) details.push(`الأصناف: ${itemsText}`);
-        if (noteText) details.push(`البيان: ${noteText}`);
-        return details.length ? details.join(' — ') : `عليكم فاتورة مبيعات برقم ${refDisplay || invoice?.id || '—'}`;
+        // في كشف العميل نعرض البيان المختصر فقط دون سرد الأصناف أو ملاحظات الفاتورة.
+        const invoiceNumber = String(refDisplay || invoice?.refNumber || invoice?.id || '—').trim();
+        return `عليكم فاتورة مبيعات برقم ${invoiceNumber}`;
     }
 
     function renderCustomerStatement(custId, shouldScroll = false) {
