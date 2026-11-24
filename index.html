@@ -1436,13 +1436,9 @@
                     <i class="fa-solid fa-user-tie"></i>
                     <span>الموظفون</span>
                 </button>
-                <button class="nav-tab" data-menu-key="employeePermissionsTab" onclick="openFullPage('employeePermissionsTab')">
-                    <i class="fa-solid fa-user-shield"></i>
+                <button class="nav-tab" data-security-hub="true" onclick="openSecurityAccountsHub()">
+                    <i class="fa-solid fa-shield-halved"></i>
                     <span>الأمان وحسابات الدخول</span>
-                </button>
-                <button class="nav-tab" data-menu-key="userDeletionTab" onclick="openFullPage('userDeletionTab')">
-                    <i class="fa-solid fa-user-xmark"></i>
-                    <span>حذف حسابات المستخدمين</span>
                 </button>
                 <button class="nav-tab expense-tab" data-menu-key="employeeExpensesTab" onclick="openFullPage('employeeExpensesTab')">
                     <i class="fa-solid fa-money-bill-transfer"></i>
@@ -2791,10 +2787,33 @@
             <div id="employeeDuesPdfArea" class="employee-dues-pdf-area" aria-hidden="true"></div>
         </section>
 
+        <section id="securityAccountsHubTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-shield-halved"></i> الأمان وحسابات الدخول</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-lock"></i> إدارة الأمان والحسابات</span></div>
+                <div class="employee-permission-note">اختر القسم المطلوب. يمكنك إدارة حسابات الدخول والصلاحيات أو فتح قسم حذف حسابات المستخدمين، وكل قسم يحتفظ بصلاحياته المستقلة.</div>
+                <div style="display:grid;grid-template-columns:1fr;gap:12px;max-width:560px;margin:14px auto 4px;">
+                    <button type="button" id="securityAccountManagementButton" class="nav-tab" style="width:100%;min-height:76px;flex-direction:row;justify-content:flex-start;padding:16px 20px;" onclick="openFullPage('employeePermissionsTab')">
+                        <i class="fa-solid fa-user-shield" style="font-size:24px;"></i>
+                        <span>حسابات الدخول والصلاحيات</span>
+                    </button>
+                    <button type="button" id="securityAccountDeletionButton" class="nav-tab expense-tab" style="width:100%;min-height:76px;flex-direction:row;justify-content:flex-start;padding:16px 20px;" onclick="openFullPage('userDeletionTab')">
+                        <i class="fa-solid fa-user-xmark" style="font-size:24px;"></i>
+                        <span>حذف حسابات المستخدمين</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
         <section id="employeePermissionsTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-user-shield"></i> حسابات الدخول والصلاحيات</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                <button type="button" class="btn btn-outline btn-sm" onclick="openSecurityAccountsHub()">
                     <i class="fa-solid fa-arrow-right"></i> رجوع
                 </button>
             </div>
@@ -3022,7 +3041,7 @@
         <section id="userDeletionTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-user-xmark"></i> حذف حسابات المستخدمين</div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="openSecurityAccountsHub()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
             </div>
             <div class="employee-permission-note">
                 تظهر هذه الصفحة فقط للحسابات التي منحها المدير صلاحية «حذف حسابات المستخدمين». حذف الحساب يزيل بيانات الدخول والصلاحيات فقط، ويُبقي ملف الموظف والراتب والإنتاج والمصروفات محفوظة.
@@ -4359,7 +4378,27 @@ function initMenuPermissionCheckboxes() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-inventory-hub]').forEach(btn => {
             btn.classList.toggle('hidden', !canOpenInventoryHub(currentUser));
         });
+        document.querySelectorAll('#homeMenuContainer .nav-tab[data-security-hub]').forEach(btn => {
+            btn.classList.toggle('hidden', !(canManageUsers(currentUser) || canDeleteUserAccounts(currentUser)));
+        });
         applyDashboardWidgetPermissions();
+    }
+
+    function openSecurityAccountsHub() {
+        if (!(canManageUsers(currentUser) || canDeleteUserAccounts(currentUser))) {
+            showToast('ليس لديك صلاحية الدخول إلى الأمان وحسابات الدخول');
+            return;
+        }
+        closeMobileInvoiceCart();
+        document.body.classList.remove('sales-page-active');
+        document.getElementById('homeMenuContainer').classList.add('hidden');
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        const managementButton = document.getElementById('securityAccountManagementButton');
+        const deletionButton = document.getElementById('securityAccountDeletionButton');
+        if (managementButton) managementButton.classList.toggle('hidden', !(canManageUsers(currentUser) && canAccessMenu('employeePermissionsTab', currentUser)));
+        if (deletionButton) deletionButton.classList.toggle('hidden', !canDeleteUserAccounts(currentUser));
+        document.getElementById('securityAccountsHubTab').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function openFullPage(tabId) {
