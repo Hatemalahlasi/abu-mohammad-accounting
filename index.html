@@ -804,6 +804,7 @@
         /* تصميم فاتورة المبيعات النظامية - A4 عمودي */
         .invoice-print-card { width: min(900px, 96vw); max-width: 900px; padding: 22px; direction: rtl; color: #18352a; background: #fff; border: 1px solid #d7e7dd; border-top: 7px solid #147a45; }
         .invoice-letterhead { display: grid; grid-template-columns: 1fr minmax(230px, 290px); gap: 18px; align-items: stretch; padding: 0 0 17px; border-bottom: 3px solid #18834e; margin-bottom: 16px; }
+        .invoice-bilingual-contact{display:grid;grid-template-columns:1fr 1fr;gap:14px;direction:ltr;padding:0 0 8px;margin:0 0 12px;border-bottom:1px solid #d7e5dc;color:#315542;font-size:9px;line-height:1.5;font-weight:800}.invoice-bilingual-contact .en{text-align:left;direction:ltr}.invoice-bilingual-contact .ar{text-align:right;direction:rtl}.invoice-bilingual-contact strong{display:block;color:#176b43;font-size:10px}
         .invoice-brand-block { display: flex; align-items: center; gap: 14px; min-width: 0; }
         .invoice-brand-logo { width: 86px; height: 86px; object-fit: contain; border: 1px solid #d7e7dd; border-radius: 14px; padding: 5px; background: #fff; }
         .invoice-brand-text h1 { margin: 0; font-size: 26px; line-height: 1.35; font-weight: 950; color: #126b3d; }
@@ -842,6 +843,7 @@
             @page { size: A4 portrait; margin: 9mm; }
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             #printInvoiceModal .invoice-print-card { width: 100% !important; max-width: none !important; min-height: 0 !important; padding: 7mm !important; border: 1px solid #c8ddcf !important; border-top: 6px solid #176c40 !important; border-radius: 0 !important; }
+            #printInvoiceModal .invoice-bilingual-contact { break-inside: avoid; page-break-inside: avoid; }
             #printInvoiceModal .invoice-letterhead { grid-template-columns: 1fr 72mm !important; }
             #printInvoiceModal .invoice-parties-grid { grid-template-columns: 1.4fr 1fr 1fr !important; }
             #printInvoiceModal .invoice-items-table thead { display: table-header-group; }
@@ -3355,6 +3357,7 @@
 <!-- نافذة طباعة الفاتورة النظامية -->
 <div id="printInvoiceModal" class="modal-backdrop hidden">
     <div class="modal-card invoice-print-card">
+        <div class="invoice-bilingual-contact"><div class="en" dir="ltr"><strong>Sana'a - Al-Tahrir</strong>Behind Taj Saba Hotel<br>Tel: 777166131 | 77187913</div><div class="ar" dir="rtl"><strong>صنعاء - التحرير</strong>خلف فندق تاج سبأ<br>الرقم: 777166131 | 77187913</div></div>
         <div class="invoice-letterhead">
             <div class="invoice-brand-block">
                 <img class="invoice-brand-logo" src="https://abu-mohammad-accounting.vercel.app/logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'">
@@ -5711,6 +5714,23 @@ function initMenuPermissionCheckboxes() {
         return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
     }
 
+    // ترويسة التواصل الموحدة: الإنجليزية يسار الصفحة والعربية يمينها.
+    function bilingualContactHeaderHtml() {
+        return `<div class="bilingual-contact-header">
+            <div class="bilingual-contact-en" dir="ltr"><strong>Sana'a - Al-Tahrir</strong><span>Behind Taj Saba Hotel</span><span>Tel: 777166131 | 77187913</span></div>
+            <div class="bilingual-contact-ar" dir="rtl"><strong>صنعاء - التحرير</strong><span>خلف فندق تاج سبأ</span><span>الرقم: 777166131 | 77187913</span></div>
+        </div>`;
+    }
+
+    function bilingualContactHeaderCss() {
+        return `.bilingual-contact-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:center;direction:ltr;width:100%;padding:0 0 8px;margin:0 0 10px;border-bottom:1px solid #d7e5dc;color:#315542;font-family:Tahoma,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .bilingual-contact-en,.bilingual-contact-ar{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:9px;line-height:1.45;font-weight:700}
+        .bilingual-contact-en{text-align:left;direction:ltr;align-items:flex-start}.bilingual-contact-ar{text-align:right;direction:rtl;align-items:flex-end}
+        .bilingual-contact-en strong,.bilingual-contact-ar strong{font-size:10px;font-weight:900;color:#176b43}
+        @media(max-width:520px){.bilingual-contact-header{gap:8px}.bilingual-contact-en,.bilingual-contact-ar{font-size:8px}.bilingual-contact-en strong,.bilingual-contact-ar strong{font-size:9px}}
+        @media print{.bilingual-contact-header{break-inside:avoid;page-break-inside:avoid}}`;
+    }
+
     function addStockProductToInvoice(stockId) {
         const item = (state.warehouse || []).find(w => w.id === stockId);
         if (!item) { showToast('لم يتم العثور على الصنف'); return; }
@@ -7305,6 +7325,7 @@ function initMenuPermissionCheckboxes() {
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:#fff;color:#172033;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+${bilingualContactHeaderCss()}
 body{padding:18px}
 .report{max-width:1120px;margin:0 auto;background:#fff}
 .report-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 0 10px;border-bottom:3px solid #176b43;margin-bottom:10px}
@@ -7373,6 +7394,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
 <body>
 <div class="actions"><button class="action-btn" onclick="window.print()">طباعة / حفظ PDF</button><button class="action-btn secondary" onclick="window.close()">إغلاق الكشف</button></div>
 <main class="report ${records.length <= 12 ? 'compact-one-page' : 'multi-page'}">
+    ${bilingualContactHeaderHtml()}
     <header class="report-header">
         <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><div><h1>معمل أبو محمد</h1><p>كشف حساب المورد — تقرير مالي تفصيلي</p></div></div>
         <div class="report-tag">كشف رسمي · الريال اليمني والعملات الأخرى عند وجود حركات</div>
@@ -8636,6 +8658,42 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         }
     }
 
+    function printVoucherById(vchId) {
+        const voucher = (state.vouchers || []).find(item => String(item.id) === String(vchId));
+        if (!voucher) { showToast('لم يتم العثور على السند المطلوب طباعته'); return; }
+        const isReceipt = voucher.type === 'receipt';
+        const currency = getVoucherCurrency(voucher);
+        const amount = Number(voucher.amount || 0);
+        const reference = escapeUiText(voucher.refNumber || voucher.id || '—');
+        const date = escapeUiText(voucher.date || '-');
+        const cashboxName = escapeUiText(voucher.cashboxName || state.cashboxes.find(item => String(item.id) === String(voucher.cashboxId))?.name || '-');
+        const partyName = escapeUiText(voucher.customerName && voucher.customerName !== 'عام' ? voucher.customerName : (voucher.partyName || '—'));
+        const staffName = escapeUiText(voucher.collectionStaffName || voucher.employee || '—');
+        const issuerName = escapeUiText(voucher.employee || currentUser?.fullName || '—');
+        const note = escapeUiText(voucher.note || (isReceipt ? `لكم سند قبض برقم ${voucher.refNumber || '—'}` : `عليكم سند صرف برقم ${voucher.refNumber || '—'}`));
+        const title = isReceipt ? 'سند قبض' : 'سند صرف';
+        const logoUrl = 'https://abu-mohammad-accounting.vercel.app/logo.png';
+        const win = window.open('', '_blank', 'width=900,height=900');
+        if (!win) { showToast('اسمح بفتح النوافذ المنبثقة حتى تتمكن من طباعة السند'); return; }
+        win.document.open();
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} ${reference}</title><style>
+        *{box-sizing:border-box}html,body{margin:0;padding:0;background:#edf3ef;color:#1e3026;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{padding:16px}.toolbar{display:flex;justify-content:center;gap:8px;margin:0 auto 14px}.toolbar button{border:0;border-radius:8px;padding:10px 17px;font:800 12px Tahoma;cursor:pointer;background:#176b43;color:#fff}.toolbar .close{background:#fff;color:#344256;border:1px solid #d8e0e8}.voucher-paper{max-width:780px;min-height:250mm;margin:0 auto;background:#fff;border:1px solid #cbded1;border-top:7px solid #176b43;padding:16mm 14mm;box-shadow:0 6px 24px rgba(20,70,40,.09)}
+        ${bilingualContactHeaderCss()}
+        .voucher-brand{display:flex;align-items:center;justify-content:center;gap:14px;padding:5px 0 14px;border-bottom:3px solid #176b43;margin-bottom:18px}.voucher-brand img{width:74px;height:74px;object-fit:contain}.voucher-brand h1{margin:0;color:#145b35;font-size:25px;font-weight:900}.voucher-brand p{margin:4px 0 0;color:#4d735b;font-size:12px;font-weight:800}.voucher-title{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#eaf5ed;border:1px solid #c9e3d1;border-right:5px solid #176b43;border-radius:10px;padding:12px 15px;margin:15px 0}.voucher-title h2{margin:0;color:#145b35;font-size:22px}.voucher-ref{font-size:13px;font-weight:900;color:#214b32}.voucher-meta{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:13px 0}.voucher-meta div{border:1px solid #dce8df;border-radius:8px;background:#fbfdfb;padding:10px}.voucher-meta span{display:block;font-size:10px;color:#688071;margin-bottom:4px;font-weight:700}.voucher-meta strong{display:block;font-size:13px;color:#203d2b;font-weight:900;overflow-wrap:anywhere}.party-line{border:1px solid #dce8df;border-radius:9px;background:#fff;padding:13px 14px;margin:13px 0;font-size:14px;line-height:1.9}.party-line b{color:#145b35}.amount-panel{margin:20px 0;padding:18px 15px;text-align:center;border:2px solid #176b43;border-radius:12px;background:#f0f8f2}.amount-panel span{display:block;color:#4d735b;font-weight:800;font-size:12px;margin-bottom:8px}.amount-panel strong{display:block;color:#145b35;font-size:27px;font-weight:950;direction:ltr}.amount-panel small{display:block;color:#668070;margin-top:6px;font-weight:800}.statement-note{border:1px dashed #b8d3c0;border-radius:8px;padding:10px 12px;color:#385d45;font-size:12px;line-height:1.8;margin-top:14px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:35px;margin-top:55px}.signatures div{text-align:center;border-top:1px solid #5b6d60;padding-top:9px;min-height:45px;color:#385342;font-size:12px;font-weight:900}.voucher-footer{margin-top:25px;padding-top:9px;border-top:1px solid #dce8df;text-align:center;color:#6b8173;font-size:9px}
+        @page{size:A4 portrait;margin:10mm}@media print{html,body{background:#fff!important;padding:0!important}.toolbar{display:none!important}.voucher-paper{max-width:none;width:100%;min-height:0;margin:0;padding:5mm;border:0;border-top:5px solid #176b43;box-shadow:none}.voucher-meta,.voucher-title,.amount-panel,.signatures{break-inside:avoid;page-break-inside:avoid}}
+        @media(max-width:560px){body{padding:7px}.voucher-paper{padding:12px;min-height:0}.voucher-meta{grid-template-columns:1fr 1fr}.voucher-brand img{width:58px;height:58px}.voucher-brand h1{font-size:20px}.voucher-title h2{font-size:18px}.amount-panel strong{font-size:23px}}
+        </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق السند</button></div>
+        <main class="voucher-paper">${bilingualContactHeaderHtml()}<header class="voucher-brand"><img src="${logoUrl}" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><div><h1>معمل أبو محمد</h1><p>نظام الحسابات والمخزون</p></div></header>
+        <div class="voucher-title"><h2>${title}</h2><div class="voucher-ref">رقم السند: ${reference}</div></div>
+        <section class="voucher-meta"><div><span>التاريخ</span><strong>${date}</strong></div><div><span>نوع السند</span><strong>${title}</strong></div><div><span>الصندوق</span><strong>${cashboxName}</strong></div><div><span>العملة</span><strong>${escapeUiText(CURRENCY_NAMES[currency] || currency)} (${currency})</strong></div><div><span>الموظف المسؤول</span><strong>${staffName}</strong></div><div><span>سجل بواسطة</span><strong>${issuerName}</strong></div></section>
+        <div class="party-line"><b>${isReceipt ? 'استلمنا من العميل / الجهة:' : 'اسم المستلم / الجهة:'}</b> ${partyName}</div>
+        <div class="amount-panel"><span>${isReceipt ? 'المبلغ المستلم' : 'المبلغ المصروف'}</span><strong>${formatMoney(amount)} ${currency}</strong><small>${escapeUiText(CURRENCY_NAMES[currency] || currency)}</small></div>
+        <div class="statement-note"><b>البيان في كشف الحساب:</b> ${note}</div>
+        <div class="signatures"><div>${isReceipt ? 'توقيع المستلم' : 'توقيع مستلم المبلغ'}</div><div>توقيع المحاسب / المسؤول</div></div>
+        <div class="voucher-footer">معمل أبو محمد — يرجى الاحتفاظ بنسخة من السند للرجوع إليها</div></main><script>window.onload=()=>setTimeout(()=>{window.focus();window.print()},350)<\/script></body></html>`);
+        win.document.close();
+    }
+
     function renderVouchersTable() {
         const list = state.vouchers.slice().reverse();
         document.getElementById('vouchersTableBody').innerHTML = list.length
@@ -8651,7 +8709,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                         <td style="font-weight:700;">${v.note || defaultNote}</td>
                         <td><span class="mono">${formatMoney(v.amount)} ${getVoucherCurrency(v)}</span></td>
                         <td>${v.employee || '-'}</td>
-                        <td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn btn-outline btn-sm" title="طباعة السند مع الترويسة والشعار" onclick="printVoucherById('${v.id}')"><i class="fa-solid fa-print"></i> طباعة</button>
                             ${canEditRecord() ? `<button class="btn btn-outline btn-sm" title="تعديل السند كاملاً" onclick="editVoucherRecord('${v.id}')"><i class="fa-solid fa-pen-to-square"></i> تعديل</button>` : ''}
                             ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteVoucherRecord('${v.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
                             ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
@@ -8822,8 +8881,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لطباعة الكشف'); return; }
         win.document.open();
         win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>كشف حساب ${escapeUiText(cashbox.name)}</title><style>
-        *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#1f2937;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{padding:12px}.toolbar{display:flex;justify-content:center;gap:8px;margin:0 auto 14px}.toolbar button{border:0;border-radius:8px;padding:9px 16px;font:800 12px Tahoma;cursor:pointer;background:#176b43;color:#fff}.toolbar .close{background:#f1f5f9;color:#344256;border:1px solid #d8e0e8}.report{max-width:900px;margin:auto}.head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px;margin-bottom:12px}.head h2{margin:0;color:#174d32;font-size:20px}.head p{margin:5px 0 0;color:#64748b;font-size:11px}.logo{width:55px;height:55px;object-fit:contain}.summary-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.mini-stat{border:1px solid #d9e7dd;padding:10px;border-radius:9px;background:#f8fbf9}.mini-stat-label{font-size:11px;color:#64748b}.mini-stat-val{font-weight:900;margin-top:5px;color:#174d32;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:12px;table-layout:fixed}th,td{border:1px solid #dce5df;padding:7px;text-align:right;font-size:10px;overflow-wrap:anywhere}th{background:#174d32;color:#fff;font-weight:900}tbody tr:nth-child(even){background:#f4f8f5}tbody td:nth-child(4){color:#176b43;font-weight:800}tbody td:nth-child(5){color:#b42323;font-weight:800}@page{size:A4 portrait;margin:8mm}@media print{body{padding:0}.toolbar{display:none!important}.report{max-width:none}.summary-strip,.head{break-inside:avoid}thead{display:table-header-group}tr{break-inside:avoid}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-        </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div><main class="report"><header class="head"><div><h2>معمل أبو محمد — كشف حساب الصندوق</h2><p>الصندوق: ${escapeUiText(cashbox.name)} | العملة: ${currency} | الفترة: ${period}</p></div><img class="logo" src="https://abu-mohammad-accounting.vercel.app/logo.png" onerror="this.style.display='none'"></header><div class="summary-strip">${summary}</div>${table}</main><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+        *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#1f2937;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}${bilingualContactHeaderCss()}body{padding:12px}.toolbar{display:flex;justify-content:center;gap:8px;margin:0 auto 14px}.toolbar button{border:0;border-radius:8px;padding:9px 16px;font:800 12px Tahoma;cursor:pointer;background:#176b43;color:#fff}.toolbar .close{background:#f1f5f9;color:#344256;border:1px solid #d8e0e8}.report{max-width:900px;margin:auto}.head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px;margin-bottom:12px}.head h2{margin:0;color:#174d32;font-size:20px}.head p{margin:5px 0 0;color:#64748b;font-size:11px}.logo{width:55px;height:55px;object-fit:contain}.summary-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.mini-stat{border:1px solid #d9e7dd;padding:10px;border-radius:9px;background:#f8fbf9}.mini-stat-label{font-size:11px;color:#64748b}.mini-stat-val{font-weight:900;margin-top:5px;color:#174d32;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:12px;table-layout:fixed}th,td{border:1px solid #dce5df;padding:7px;text-align:right;font-size:10px;overflow-wrap:anywhere}th{background:#174d32;color:#fff;font-weight:900}tbody tr:nth-child(even){background:#f4f8f5}tbody td:nth-child(4){color:#176b43;font-weight:800}tbody td:nth-child(5){color:#b42323;font-weight:800}@page{size:A4 portrait;margin:8mm}@media print{body{padding:0}.toolbar{display:none!important}.report{max-width:none}.summary-strip,.head{break-inside:avoid}thead{display:table-header-group}tr{break-inside:avoid}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+        </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div><main class="report">${bilingualContactHeaderHtml()}<header class="head"><div><h2>معمل أبو محمد — كشف حساب الصندوق</h2><p>الصندوق: ${escapeUiText(cashbox.name)} | العملة: ${currency} | الفترة: ${period}</p></div><img class="logo" src="https://abu-mohammad-accounting.vercel.app/logo.png" onerror="this.style.display='none'"></header><div class="summary-strip">${summary}</div>${table}</main><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
         win.document.close();
     }
 
@@ -9403,6 +9462,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         win.document.open();
         win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title><style>
         *{box-sizing:border-box}html,body{margin:0;padding:0;background:#f1f5f2;color:#172033;font-family:Tahoma,Arial,sans-serif;direction:rtl}
+        ${bilingualContactHeaderCss()}
         .toolbar{position:sticky;top:0;z-index:5;display:flex;gap:10px;justify-content:center;padding:12px;background:#174d32;box-shadow:0 2px 8px #0002}
         .toolbar button{border:0;border-radius:8px;padding:10px 18px;font:700 14px Tahoma;cursor:pointer;background:#fff;color:#174d32}.toolbar .close{background:#e8edf0;color:#334155}
         .report-page{background:#fff;max-width:1120px;margin:18px auto;padding:18px;box-shadow:0 2px 12px #0001;break-after:page;page-break-after:always}
@@ -9416,7 +9476,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
     }
 
     function inventoryReportHeader(title, subtitle='') {
-        return `<section class="report-page"><header class="report-header"><img src="https://abu-mohammad-accounting.vercel.app/logo.png"><div><h1>معمل أبو محمد — ${escapeUiText(title)}</h1>${subtitle ? `<p>${escapeUiText(subtitle)}</p>` : ''}</div></header>`;
+        return `<section class="report-page">${bilingualContactHeaderHtml()}<header class="report-header"><img src="https://abu-mohammad-accounting.vercel.app/logo.png"><div><h1>معمل أبو محمد — ${escapeUiText(title)}</h1>${subtitle ? `<p>${escapeUiText(subtitle)}</p>` : ''}</div></header>`;
     }
 
     function buildInventoryItemListPrintSection() {
@@ -9823,6 +9883,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:#f1f5f2;color:#172033;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+${bilingualContactHeaderCss()}
 body{padding:18px}
 .actions{display:flex;justify-content:center;gap:9px;margin:0 auto 14px;max-width:820px}
 .action-btn{border:0;border-radius:10px;padding:10px 18px;background:#176b43;color:#fff;font-weight:800;font-family:Tahoma,Arial,sans-serif;cursor:pointer}
@@ -9872,6 +9933,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
 </div>
 <p id="shareStatus" role="status" aria-live="polite" style="display:none;max-width:820px;margin:0 auto 12px;padding:10px 12px;border:1px solid #dce7df;border-radius:10px;background:#f8fbf9;color:#315344;font:700 12px/1.7 Tahoma,Arial,sans-serif;text-align:center"></p>
 <main class="report">
+${bilingualContactHeaderHtml()}
 <header class="report-header"><div class="brand"><img class="brand-logo" src="${logoUrl}" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><div><h1>معمل أبو محمد</h1><p>كشف حساب العميل — تقرير مالي تفصيلي</p></div></div></header>
 <section class="meta"><div class="meta-item"><span>اسم العميل</span><strong>${customerName}</strong></div><div class="meta-item"><span>رقم الهاتف</span><strong>${customerPhone}</strong></div><div class="meta-item"><span>تاريخ استخراج الكشف</span><strong>${getLocalDateKey()}</strong></div></section>
 <div class="section-title">كشف الحركات التفصيلي</div>
@@ -12028,7 +12090,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         const salesSection = data.salesCommissions.length ? `<section class="section sales"><h3>عمولات المبيعات</h3><table><thead><tr><th>التاريخ</th><th>الفاتورة</th><th>العميل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${salesRows}</tbody></table></section>` : '';
         const paymentsSection = data.expenses.length ? `<section class="section payments"><h3>المبالغ التي استلمها الموظف</h3><table><thead><tr><th>التاريخ</th><th>النوع</th><th>البيان</th><th>المبلغ</th></tr></thead><tbody>${paymentRows}</tbody></table></section>` : '';
         win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>كشف مستحقات ${name} — ${period}</title><style>
-            *{box-sizing:border-box}body{margin:0;padding:9mm;font-family:Tahoma,Arial,sans-serif;color:#243244;direction:rtl;font-size:12px;background:#fff}.report-toolbar{display:flex;justify-content:center;gap:8px;margin:0 auto 12px}.report-toolbar button{border:0;border-radius:8px;padding:9px 16px;background:#176b43;color:#fff;font:800 12px Tahoma;cursor:pointer}.report-toolbar .close{background:#eef2f6;color:#344256;border:1px solid #d8e0e8}
+            *{box-sizing:border-box}body{margin:0;padding:9mm;font-family:Tahoma,Arial,sans-serif;color:#243244;direction:rtl;font-size:12px;background:#fff}${bilingualContactHeaderCss()}.report-toolbar{display:flex;justify-content:center;gap:8px;margin:0 auto 12px}.report-toolbar button{border:0;border-radius:8px;padding:9px 16px;background:#176b43;color:#fff;font:800 12px Tahoma;cursor:pointer}.report-toolbar .close{background:#eef2f6;color:#344256;border:1px solid #d8e0e8}
             .head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #547b68;padding-bottom:10px;margin-bottom:14px}.head h1{margin:0 0 5px;color:#345b49;font-size:21px}.head p{margin:0;color:#667788}.logo{width:65px;height:65px;object-fit:contain}
             .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f2f6f4;border:1px solid #d8e3dc;padding:10px;border-radius:8px;margin-bottom:12px}
             h3{font-size:14px;color:#385d4b;margin:0 0 7px;padding:7px 9px;background:#edf3ef;border-right:4px solid #759784;border-radius:4px}
@@ -12039,6 +12101,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
             .foot{margin-top:20px;border-top:1px solid #d9e0dc;padding-top:7px;text-align:center;color:#77838c;font-size:9px}@page{size:A4 portrait;margin:7mm}thead{display:table-header-group}tr{break-inside:avoid}@media print{.report-toolbar{display:none!important}}
             </style></head><body>
             <div class="report-toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div>
+            ${bilingualContactHeaderHtml()}
             <div class="head"><div><h1>معمل أبو محمد</h1><p>كشف مستحقات وصرف موظف — ${period}</p></div><img class="logo" src="${logo}" onerror="this.style.display='none'"></div>
             <div class="meta"><div><b>اسم الموظف:</b> ${name}</div><div><b>الشهر:</b> ${period}</div><div><b>نظام الاستحقاق:</b> ${isPieceworkStaff(staff) ? 'بالقطعة' : 'راتب شهري'}</div><div><b>تاريخ استخراج الكشف:</b> ${getLocalDateKey()}</div></div>
             <section class="section summary-section"><h3>ملخص المستحق والمستلم والمتبقي</h3><table class="summary"><thead><tr><th>العملة</th><th>إجمالي المستحق</th><th>إجمالي المستلم</th><th>المتبقي</th></tr></thead><tbody>${totals}</tbody></table></section>
@@ -12235,6 +12298,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         const paymentSection = data.expenses.length ? `<h3>سجل المبالغ المصروفة / المستلمة</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>سجل بواسطة</th></tr></thead><tbody>${expenseRows}</tbody></table>` : '';
         return `
             <div class="employee-dues-pdf-sheet">
+                ${bilingualContactHeaderHtml()}
                 <div class="employee-dues-pdf-header">
                     <div><h2>معمل أبو محمد</h2><p>كشف حساب ومستحقات موظف — ${period}</p></div>
                     <img class="employee-dues-pdf-brand" src="logo.png" alt="شعار المعمل" onerror="this.style.display='none'">
@@ -12295,6 +12359,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
 html,body{margin:0;padding:0;background:#fff;color:#111827;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{padding:0}
 .employee-dues-pdf-sheet{direction:rtl;font-family:Tahoma,Arial,sans-serif;width:100%;padding:8mm;background:#fff;color:#111827;page-break-after:always;break-after:page}
+${bilingualContactHeaderCss()}
 .employee-dues-pdf-sheet:last-child{page-break-after:auto;break-after:auto}
 .employee-dues-pdf-header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #1d7045;margin-bottom:16px}
 .employee-dues-pdf-header h2{color:#174d32;font-size:21px;margin:0 0 5px}
