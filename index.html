@@ -1513,7 +1513,8 @@
                     </div>
                     <div class="form-group">
                         <label>نسبة الموظف من المبيعات (%)</label>
-                        <input type="number" step="0.01" min="0" max="100" inputmode="decimal" id="invSalesCommissionRate" class="form-control num-input" value="0" oninput="recalculateInvoiceTotal()">
+                        <input type="number" step="0.01" min="0" max="100" inputmode="decimal" id="invSalesCommissionRate" class="form-control num-input" value="0" readonly aria-readonly="true" title="تُؤخذ النسبة تلقائياً من بيانات الموظف">
+                        <small id="invSalesCommissionSource" style="display:block;color:var(--text-muted);font-weight:700;margin-top:5px;">النسبة مأخوذة تلقائياً من بيانات الموظف.</small>
                         <small id="invSalesCommissionPreview" style="display:block;color:var(--success);font-weight:800;margin-top:5px;">عمولة الموظف: 0.00 YER</small>
                     </div>
                     <div class="form-group">
@@ -2505,9 +2506,9 @@
                             <small style="display:block;color:var(--text-muted);margin-top:5px;">تحسب من سندات القبض الفعلية المسجلة باسم الموظف، وبعملة السند نفسها. اتركها 0 إذا لا توجد عمولة.</small>
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
-                            <label>نسبة الموظف من المبيعات (%) — اختيارية</label>
+                            <label>نسبة الموظف من المبيعات (%) — تُحدد من بيانات الموظف</label>
                             <input type="number" step="0.01" min="0" max="100" inputmode="decimal" id="newEmpSalesRate" class="form-control num-input" value="0" placeholder="مثال: 5">
-                            <small style="display:block;color:var(--text-muted);margin-top:5px;">تُحسب من صافي فاتورة المبيعات بعد الخصم.</small>
+                            <small style="display:block;color:var(--text-muted);margin-top:5px;">اكتب نسبة الموظف هنا عند تعريفه. عند اختيار الموظف في فاتورة المبيعات تُسحب النسبة تلقائياً ولا تُكتب من الفاتورة.</small>
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label>المخازن المسموح بها للموظف بواسطة المشرف</label>
@@ -6947,7 +6948,12 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const rate = document.getElementById('invSalesCommissionRate');
         if (!select || !rate) return;
         const staff = getStaffById(select.value);
-        rate.value = staff ? getStaffSalesCommissionRate(staff).toFixed(2) : '0';
+        const staffRate = staff ? getStaffSalesCommissionRate(staff) : 0;
+        rate.value = staffRate.toFixed(2);
+        const source = document.getElementById('invSalesCommissionSource');
+        if (source) source.textContent = staff
+            ? `النسبة المعتمدة للموظف ${staff.fullName}: ${staffRate.toFixed(2)}% — تُعدل من بيانات الموظف.`
+            : 'النسبة مأخوذة تلقائياً من بيانات الموظف.';
         recalculateInvoiceTotal();
     }
 
