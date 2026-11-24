@@ -1456,6 +1456,10 @@
                     <i class="fa-solid fa-file-invoice-dollar"></i>
                     <span>مستحقات الموظفين وكشوف الحساب</span>
                 </button>
+                <button class="nav-tab expense-tab" data-menu-key="payrollSettlementTab" data-payroll-settlement="true" onclick="openFullPage('payrollSettlementTab')">
+                    <i class="fa-solid fa-money-check-dollar"></i>
+                    <span>صرف مستحقات الموظفين</span>
+                </button>
                 <button class="nav-tab expense-tab" data-menu-key="backupTab" onclick="openFullPage('backupTab')">
                     <i class="fa-solid fa-database"></i>
                     <span>النسخ الاحتياطي واستعادة البيانات</span>
@@ -2768,6 +2772,48 @@
             </div>
         </section>
 
+        <!-- صرف مستحقات الموظفين وإقفال الشهر دون حذف السجلات -->
+        <section id="payrollSettlementTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-money-check-dollar"></i> صرف مستحقات الموظفين</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+            </div>
+            <div class="employee-permission-note" id="payrollSettlementPeriodLabel">
+                كشف كل موظف يشمل الراتب أو الإنتاج وعمولات التحصيل والمبيعات والسلف والدفعات. عند تسجيل الصرف ينخفض المتبقي، وتبدأ الفترة الجديدة بحساب مستقل دون حذف كشوف الشهور السابقة.
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-calendar-check"></i> اختر شهر الصرف والموظف</span></div>
+                <div class="grid-2">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>الشهر المطلوب تصفيته</label>
+                        <input type="month" id="payrollSettlementPeriod" class="form-control" onchange="renderPayrollSettlementPage(false)">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>اسم الموظف</label>
+                        <select id="payrollSettlementStaffSelect" class="form-control" onchange="renderPayrollSettlementDetail()"><option value="">اختر الموظف</option></select>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+                    <button type="button" class="btn btn-outline" onclick="renderPayrollSettlementPage(true)"><i class="fa-solid fa-rotate"></i> تحديث الكشوف</button>
+                    <button type="button" class="btn btn-accent" onclick="printPayrollSettlementStatement()"><i class="fa-solid fa-file-pdf"></i> طباعة كشف الموظف مع التوقيع</button>
+                </div>
+                <div class="employee-permission-note" style="margin-top:10px;">كل عملة مستقلة عن الأخرى. الصرف المسجل هنا يظهر في كشف الموظف ويؤثر في رصيد الصندوق عند اختيار صندوق مطابق للعملة.</div>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-users"></i> ملخص مستحقات جميع الموظفين</span></div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>الموظف</th><th>نوع الاستحقاق</th><th>إجمالي المستحق</th><th>ما استلمه</th><th>المتبقي</th><th>الحالة</th><th>الكشف</th></tr></thead>
+                        <tbody id="payrollSettlementSummaryBody"><tr><td colspan="7" style="text-align:center;">جارٍ تحميل بيانات الموظفين...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-box" id="payrollSettlementDetailCard">
+                <div class="card-title"><span><i class="fa-solid fa-file-invoice-dollar"></i> كشف الموظف وتسجيل الصرف</span></div>
+                <div id="payrollSettlementDetail"><div class="employee-permission-note">اختر الموظف لعرض ما عمله ومستحقاته وما استلمه والمتبقي له.</div></div>
+            </div>
+        </section>
+
         <!-- مستحقات الموظفين وكشوف الحساب -->
         <section id="employeeDuesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
@@ -3265,6 +3311,7 @@
         { key: 'employeeExpensesTab', label: 'مصروفات الموظفين' },
         { key: 'employeeProductionTab', label: 'إضافة شغل للموظفين' },
         { key: 'employeeDuesTab', label: 'مستحقات الموظفين وكشوف الحساب' },
+        { key: 'payrollSettlementTab', label: 'صرف مستحقات الموظفين' },
         { key: 'backupTab', label: 'النسخ الاحتياطي واستعادة البيانات' }
     ];
 
@@ -4439,6 +4486,9 @@ function initMenuPermissionCheckboxes() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-exchange-rates]').forEach(btn => {
             btn.classList.toggle('hidden', !canManageUsers(currentUser));
         });
+        document.querySelectorAll('#homeMenuContainer .nav-tab[data-payroll-settlement]').forEach(btn => {
+            btn.classList.toggle('hidden', !canManageUsers(currentUser));
+        });
         applyDashboardWidgetPermissions();
     }
 
@@ -4462,6 +4512,10 @@ function initMenuPermissionCheckboxes() {
     function openFullPage(tabId) {
         if (['employeesTab', 'employeePermissionsTab', 'backupTab'].includes(tabId) && !canManageUsers(currentUser)) {
             showToast('إدارة الموظفين والصلاحيات للمشرف العام والمدير فقط');
+            return;
+        }
+        if (tabId === 'payrollSettlementTab' && !canManageUsers(currentUser)) {
+            showToast('صرف مستحقات الموظفين وإقفال الشهر متاح للمدير والمشرف العام فقط');
             return;
         }
         if (!canAccessMenu(tabId, currentUser)) {
@@ -4549,6 +4603,9 @@ function initMenuPermissionCheckboxes() {
         }
         if (tabId === 'employeeDuesTab') {
             renderEmployeeDues();
+        }
+        if (tabId === 'payrollSettlementTab') {
+            renderPayrollSettlementPage(false);
         }
         if (tabId === 'backupTab') {
             const status = document.getElementById('backupExportStatus');
@@ -5220,6 +5277,7 @@ function initMenuPermissionCheckboxes() {
         if (!document.getElementById('employeeExpensesTab')?.classList.contains('hidden')) renderEmployeeExpenses();
         if (!document.getElementById('employeeProductionTab')?.classList.contains('hidden')) renderEmployeeProduction();
         if (!document.getElementById('employeeDuesTab')?.classList.contains('hidden')) renderEmployeeDues();
+        if (!document.getElementById('payrollSettlementTab')?.classList.contains('hidden') && !document.activeElement?.closest('#payrollSettlementDetail')) renderPayrollSettlementPage(true);
     }
 
     function renderNewEmployeeWarehouseChoices(preserve = true) {
@@ -10722,6 +10780,256 @@ tbody tr:nth-child(even){background:#f8fbf9}
         return { staff, period, currency, production, expenses, commissions, salesCommissions, baseEntitlement, productionTotal, entitlement, paid, remaining, earnedByCurrency, paidByCurrency, remainingByCurrency, byWork: [...byWork.values()] };
     }
 
+    function getPayrollSettlementPeriod() {
+        const value = document.getElementById('payrollSettlementPeriod')?.value || '';
+        return /^\d{4}-\d{2}$/.test(value) ? value : getCurrentPayrollPeriod();
+    }
+
+    function getPayrollSettlementStaff() {
+        return getVisibleEmployeeDuesStaff();
+    }
+
+    function getPayrollSettlementCashboxOptions(currency, selectedId = '') {
+        const boxes = (hasFullAccess() || canAccessMenu('cashboxTab'))
+            ? (state.cashboxes || []).filter(box => (CURRENCY_CODES.includes(box.currency) ? box.currency : 'YER') === currency)
+            : [];
+        return '<option value="">بدون ربط بصندوق</option>' + boxes.map(box => {
+            const balance = computeSystemCashboxBalance(box, currency);
+            return `<option value="${escapeEmployeeDuesHtml(box.id)}" ${box.id === selectedId ? 'selected' : ''}>${escapeEmployeeDuesHtml(box.name || 'صندوق')} — ${formatMoney(balance)} ${currency}</option>`;
+        }).join('');
+    }
+
+    function renderPayrollSettlementPage(preserveInputs = true) {
+        const periodInput = document.getElementById('payrollSettlementPeriod');
+        if (periodInput && !periodInput.value) periodInput.value = getCurrentPayrollPeriod();
+        const period = getPayrollSettlementPeriod();
+        const select = document.getElementById('payrollSettlementStaffSelect');
+        if (!select) return;
+        const previousStaffId = select.value;
+        const savedInputs = {};
+        if (preserveInputs) CURRENCY_CODES.forEach(code => {
+            savedInputs[code] = {
+                amount: document.getElementById(`payrollPayAmount_${code}`)?.value,
+                cashboxId: document.getElementById(`payrollPayCashbox_${code}`)?.value || ''
+            };
+        });
+        const staff = getPayrollSettlementStaff();
+        select.innerHTML = '<option value="">اختر الموظف</option>' + staff.map(item =>
+            `<option value="${escapeEmployeeDuesHtml(item.id)}">${escapeEmployeeDuesHtml(item.fullName || 'موظف')}</option>`
+        ).join('');
+        select.value = staff.some(item => item.id === previousStaffId) ? previousStaffId : (staff[0]?.id || '');
+        const label = document.getElementById('payrollSettlementPeriodLabel');
+        if (label) label.textContent = `كشف وصرف مستحقات شهر ${period}. تُحسب الرواتب والإنتاج وعمولات التحصيل والمبيعات، وتُخصم السلف والدفعات السابقة. لا تُحذف الحركات عند الانتقال إلى شهر جديد.`;
+
+        const body = document.getElementById('payrollSettlementSummaryBody');
+        if (body) body.innerHTML = staff.length ? staff.map(item => {
+            const data = getEmployeeDuesData(item, period);
+            const system = isPieceworkStaff(item) ? 'بالقطعة' : (getStaffCollectionRate(item) > 0 ? `راتب + نسبة تحصيل ${getStaffCollectionRate(item).toFixed(2)}%` : 'راتب شهري');
+            const remainingText = formatEmployeeCurrencyMapHtml(data.remainingByCurrency, data.currency);
+            const earnedText = formatEmployeeCurrencyMapHtml(data.earnedByCurrency, data.currency);
+            const paidText = formatEmployeeCurrencyMapHtml(data.paidByCurrency, data.currency);
+            const hasOutstanding = CURRENCY_CODES.some(code => data.remainingByCurrency[code] > 0.009);
+            const status = hasOutstanding ? '<span class="badge badge-expense">باقي مستحقات</span>' : '<span class="badge badge-cash">مصفّى</span>';
+            return `<tr>
+                <td><strong>${escapeEmployeeDuesHtml(item.fullName || '-')}</strong></td>
+                <td>${system}</td>
+                <td>${earnedText}</td><td>${paidText}</td><td><strong>${remainingText}</strong></td>
+                <td>${status}</td>
+                <td><button type="button" class="btn btn-outline btn-sm" onclick="selectPayrollSettlementStaff('${escapeEmployeeDuesHtml(item.id)}')">عرض الكشف</button></td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="7" style="text-align:center;">لا توجد ملفات موظفين لعرضها</td></tr>';
+        renderPayrollSettlementDetail(preserveInputs ? savedInputs : null);
+    }
+
+    function selectPayrollSettlementStaff(staffId) {
+        const select = document.getElementById('payrollSettlementStaffSelect');
+        if (select) select.value = staffId;
+        renderPayrollSettlementDetail();
+        document.getElementById('payrollSettlementDetailCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderPayrollSettlementDetail(savedInputs = null) {
+        const target = document.getElementById('payrollSettlementDetail');
+        if (!target) return;
+        const period = getPayrollSettlementPeriod();
+        const staffId = document.getElementById('payrollSettlementStaffSelect')?.value || '';
+        const staff = getPayrollSettlementStaff().find(item => item.id === staffId);
+        if (!staff) {
+            target.innerHTML = '<div class="employee-permission-note">لا يوجد موظف محدد. أضف ملف الموظف من صفحة الموظفون أولاً.</div>';
+            return;
+        }
+        const data = getEmployeeDuesData(staff, period);
+        const title = escapeEmployeeDuesHtml(staff.fullName || 'الموظف');
+        const balanceCards = CURRENCY_CODES.map(code => `
+            <div class="employee-dues-currency-card">
+                <div class="currency-title">${CURRENCY_NAMES[code]} (${code})</div>
+                <div class="currency-line"><span>المستحق</span><strong>${formatMoney(data.earnedByCurrency[code])}</strong></div>
+                <div class="currency-line"><span>ما استلمه / السلف</span><strong>${formatMoney(data.paidByCurrency[code])}</strong></div>
+                <div class="currency-line"><span>المتبقي</span><strong style="color:${data.remainingByCurrency[code] > 0.009 ? 'var(--warning)' : 'var(--success)'}">${formatMoney(data.remainingByCurrency[code])}</strong></div>
+            </div>`).join('');
+        const workRows = data.production.length ? data.production.map(item => `<tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.workName || 'عمل')}</td><td>${formatQty(item.quantity || 0)} ${escapeEmployeeDuesHtml(item.unit || '')}</td><td>${formatMoney(item.unitRate || 0)} ${data.currency}</td><td><strong>${formatMoney(item.amount || 0)} ${data.currency}</strong></td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;">لا يوجد إنتاج بالقطعة في هذا الشهر</td></tr>';
+        const collectionRows = data.commissions.map(item => `<tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>سند قبض ${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td>${formatMoney(item.commissionAmount)} ${item.commissionCurrency}</td></tr>`).join('');
+        const salesRows = data.salesCommissions.map(item => `<tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>فاتورة ${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td>${formatMoney(item.commissionAmount)} ${item.commissionCurrency}</td></tr>`).join('');
+        const paymentRows = data.expenses.map(item => `<tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.source === 'payrollSettlement' ? 'صرف مستحقات' : (item.source === 'dailyDisbursementAdvance' ? 'سلفة / دفعة' : 'استلام'))}</td><td>${escapeEmployeeDuesHtml(item.note || '-')}</td><td>${formatMoney(item.amount || 0)} ${CURRENCY_CODES.includes(item.currency) ? item.currency : data.currency}</td></tr>`).join('');
+        const payInputs = CURRENCY_CODES.map(code => {
+            const due = Math.max(0, Number(data.remainingByCurrency[code] || 0));
+            const saved = savedInputs?.[code];
+            const amount = saved && saved.amount !== undefined && saved.amount !== '' ? saved.amount : due.toFixed(2);
+            return `<div class="card-box" style="padding:12px;margin:0;">
+                <div class="card-title" style="margin-bottom:8px;"><span>${CURRENCY_NAMES[code]} (${code})</span><strong class="mono">المتبقي: ${formatMoney(data.remainingByCurrency[code])}</strong></div>
+                <div class="form-group"><label>المبلغ المصروف الآن</label><input type="number" min="0" max="${due.toFixed(2)}" step="0.01" inputmode="decimal" id="payrollPayAmount_${code}" class="form-control num-input" value="${escapeEmployeeDuesHtml(amount)}" placeholder="0.00"></div>
+                <div class="form-group" style="margin-bottom:0;"><label>الصندوق (اختياري)</label><select id="payrollPayCashbox_${code}" class="form-control">${getPayrollSettlementCashboxOptions(code, saved?.cashboxId || '')}</select></div>
+            </div>`;
+        }).join('');
+        const allSettled = CURRENCY_CODES.every(code => data.remainingByCurrency[code] <= 0.009);
+        target.innerHTML = `
+            <div class="employee-dues-detail-head">
+                <div><strong style="font-size:17px;color:var(--primary);">${title}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${isPieceworkStaff(staff) ? 'نظام الأجر بالقطعة' : 'راتب شهري'} — شهر ${period}</div></div>
+                <span class="badge ${allSettled ? 'badge-cash' : 'badge-expense'}">${allSettled ? 'لا يوجد متبقٍ' : 'مستحق للصرف'}</span>
+            </div>
+            <div class="employee-dues-overview-grid">${balanceCards}</div>
+            ${!isPieceworkStaff(staff) ? `<div class="employee-permission-note">الراتب الشهري المحتسب: <strong>${formatMoney(data.baseEntitlement)} ${data.currency}</strong></div>` : ''}
+            <h3 style="margin:16px 0 8px;color:var(--primary);">الأعمال والإنتاج المسجل</h3>
+            <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th></tr></thead><tbody>${workRows}</tbody></table></div>
+            <h3 style="margin:16px 0 8px;color:var(--primary);">عمولات التحصيل</h3>
+            <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>السند</th><th>العميل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${collectionRows || '<tr><td colspan="5" style="text-align:center;">لا توجد عمولات تحصيل</td></tr>'}</tbody></table></div>
+            <h3 style="margin:16px 0 8px;color:var(--primary);">عمولات المبيعات</h3>
+            <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>الفاتورة</th><th>العميل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${salesRows || '<tr><td colspan="5" style="text-align:center;">لا توجد عمولات مبيعات</td></tr>'}</tbody></table></div>
+            <h3 style="margin:16px 0 8px;color:var(--primary);">ما استلمه سابقاً</h3>
+            <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>النوع</th><th>البيان</th><th>المبلغ</th></tr></thead><tbody>${paymentRows || '<tr><td colspan="4" style="text-align:center;">لم يستلم دفعات في هذا الشهر</td></tr>'}</tbody></table></div>
+            <div class="card-box" style="margin-top:16px;">
+                <div class="card-title"><span><i class="fa-solid fa-hand-holding-dollar"></i> تسجيل صرف المستحقات</span></div>
+                <div class="employee-permission-note">أدخل المبلغ الذي تم تسليمه فعلياً في كل عملة. يمكنك صرف كامل المتبقي أو جزء منه. عند حفظ العملية سيُخصم المبلغ من المتبقي ويُسجل في كشف الحساب.</div>
+                <div class="grid-3">${payInputs}</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+                    <button type="button" class="btn btn-outline" onclick="fillPayrollSettlementRemaining()"><i class="fa-solid fa-check-double"></i> تعبئة كامل المتبقي</button>
+                    <button type="button" class="btn btn-primary" id="savePayrollSettlementBtn" onclick="savePayrollSettlement()"><i class="fa-solid fa-floppy-disk"></i> تسجيل الصرف وتحديث الرصيد</button>
+                    <button type="button" class="btn btn-accent" onclick="printPayrollSettlementStatement()"><i class="fa-solid fa-print"></i> طباعة الكشف والتوقيع</button>
+                </div>
+            </div>
+            <div class="employee-permission-note">إقفال الشهر يتم بتسجيل المبلغ المصروف فعلياً حتى يصبح المتبقي صفراً. لا نحذف حركات الشهر السابق؛ عند اختيار الشهر الجديد تُحسب مستحقاته من جديد بصورة مستقلة.</div>
+        `;
+    }
+
+    function fillPayrollSettlementRemaining() {
+        const staffId = document.getElementById('payrollSettlementStaffSelect')?.value || '';
+        const staff = getPayrollSettlementStaff().find(item => item.id === staffId);
+        if (!staff) return;
+        const data = getEmployeeDuesData(staff, getPayrollSettlementPeriod());
+        CURRENCY_CODES.forEach(code => {
+            const input = document.getElementById(`payrollPayAmount_${code}`);
+            if (input) input.value = Math.max(0, Number(data.remainingByCurrency[code] || 0)).toFixed(2);
+        });
+    }
+
+    async function savePayrollSettlement() {
+        if (isBusy || !canManageUsers()) { showToast('صرف مستحقات الموظفين متاح للمدير والمشرف العام فقط'); return; }
+        const staffId = document.getElementById('payrollSettlementStaffSelect')?.value || '';
+        const staff = getPayrollSettlementStaff().find(item => item.id === staffId);
+        const period = getPayrollSettlementPeriod();
+        if (!staff) { showToast('اختر الموظف أولاً'); return; }
+        const current = getEmployeeDuesData(staff, period);
+        const entries = [];
+        for (const code of CURRENCY_CODES) {
+            const input = document.getElementById(`payrollPayAmount_${code}`);
+            const amount = Number(input?.value || 0);
+            if (!Number.isFinite(amount) || amount < 0) { showToast(`أدخل مبلغاً صحيحاً بعملة ${code}`); return; }
+            if (amount <= 0.000001) continue;
+            const remaining = Math.max(0, Number(current.remainingByCurrency[code] || 0));
+            if (amount > remaining + 0.009) { showToast(`مبلغ ${code} أكبر من المتبقي للموظف. المتبقي ${formatMoney(remaining)} ${code}`); return; }
+            const cashboxId = document.getElementById(`payrollPayCashbox_${code}`)?.value || '';
+            const cashbox = cashboxId ? (state.cashboxes || []).find(box => box.id === cashboxId) : null;
+            if (cashboxId && !cashbox) { showToast(`الصندوق المحدد لعملة ${code} غير موجود`); return; }
+            if (cashbox && (CURRENCY_CODES.includes(cashbox.currency) ? cashbox.currency : 'YER') !== code) { showToast(`اختر صندوقاً بعملة ${code}`); return; }
+            if (cashbox && computeSystemCashboxBalance(cashbox, code) + 0.000001 < amount) { showToast(`رصيد صندوق ${cashbox.name} غير كافٍ بعملة ${code}`); return; }
+            entries.push({ code, amount, cashbox });
+        }
+        if (!entries.length) { showToast('لا يوجد مبلغ محدد للصرف'); return; }
+        const btn = document.getElementById('savePayrollSettlementBtn');
+        isBusy = true;
+        if (btn) btn.disabled = true;
+        try {
+            const now = new Date().toISOString();
+            const batchId = `PAYROLL_${staff.id}_${period}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            const records = entries.map(entry => ({
+                staffId: staff.id,
+                staffName: staff.fullName || 'موظف',
+                amount: entry.amount,
+                currency: entry.code,
+                note: `صرف مستحقات شهر ${period}`,
+                date: getLocalDateKey(),
+                period,
+                source: 'payrollSettlement',
+                paymentType: 'settlement',
+                settlementBatchId: batchId,
+                cashboxId: entry.cashbox?.id || '',
+                cashboxName: entry.cashbox?.name || '',
+                createdAt: now,
+                createdBy: getAccountDisplayName(currentUser) || currentUser?.username || 'مستخدم',
+                createdByUserId: currentUser?.id || ''
+            }));
+            const refs = records.map(() => db.collection('employeeExpenses').doc());
+            await db.runTransaction(async transaction => {
+                const snapshots = [];
+                for (const ref of refs) snapshots.push(await transaction.get(ref));
+                if (snapshots.some(snapshot => snapshot.exists)) throw new Error('PAYROLL_SETTLEMENT_DUPLICATE');
+                refs.forEach((ref, index) => transaction.set(ref, { ...records[index], id: ref.id }));
+            });
+            records.forEach((record, index) => { record.id = refs[index].id; });
+            state.employeeExpenses = [...(state.employeeExpenses || []), ...records];
+            renderCashboxesList();
+            if (document.getElementById('cashboxStatementBody')) renderCashboxStatement();
+            renderEmployeeDues();
+            renderPayrollSettlementPage(false);
+            showToast('تم تسجيل صرف المستحقات وتحديث المتبقي بنجاح');
+        } catch (error) {
+            console.warn('Payroll settlement error:', error);
+            showToast('تعذر تسجيل الصرف. لم يتم اعتماد العملية؛ تحقق من الاتصال ثم حدّث البيانات');
+        } finally {
+            isBusy = false;
+            const saveButton = document.getElementById('savePayrollSettlementBtn');
+            if (saveButton) saveButton.disabled = false;
+        }
+    }
+
+    function printPayrollSettlementStatement() {
+        const period = getPayrollSettlementPeriod();
+        const staffId = document.getElementById('payrollSettlementStaffSelect')?.value || '';
+        const staff = getPayrollSettlementStaff().find(item => item.id === staffId);
+        if (!staff) { showToast('اختر الموظف أولاً لطباعة كشفه'); return; }
+        const data = getEmployeeDuesData(staff, period);
+        const win = window.open('', '_blank');
+        if (!win) { showToast('اسمح بالنوافذ المنبثقة لطباعة الكشف'); return; }
+        const name = escapeEmployeeDuesHtml(staff.fullName || 'الموظف');
+        const productionRows = data.production.length ? data.production.map(item => `<tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.workName || 'عمل')}</td><td>${formatQty(item.quantity || 0)} ${escapeEmployeeDuesHtml(item.unit || '')}</td><td>${formatMoney(item.unitRate || 0)} ${data.currency}</td><td>${formatMoney(item.amount || 0)} ${data.currency}</td></tr>`).join('') : '<tr><td colspan="5">لا يوجد إنتاج مسجل بالقطعة لهذا الشهر</td></tr>';
+        const commRows = [...data.commissions.map(item => ({ date: item.date, title: `سند قبض ${item.refNumber || item.id || ''} — ${item.customerName || 'عام'}`, rate: item.commissionRate, amount: item.commissionAmount, currency: item.commissionCurrency, kind: 'تحصيل' })), ...data.salesCommissions.map(item => ({ date: item.date, title: `فاتورة ${item.refNumber || item.id || ''} — ${item.customerName || 'عام'}`, rate: item.commissionRate, amount: item.commissionAmount, currency: item.commissionCurrency, kind: 'مبيعات' }))];
+        const commissionRows = commRows.length ? commRows.map(item => `<tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${item.kind}</td><td>${escapeEmployeeDuesHtml(item.title)}</td><td>${Number(item.rate || 0).toFixed(2)}%</td><td>${formatMoney(item.amount)} ${item.currency}</td></tr>`).join('') : '<tr><td colspan="5">لا توجد عمولات خلال هذا الشهر</td></tr>';
+        const paymentRows = data.expenses.length ? data.expenses.map(item => `<tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.source === 'payrollSettlement' ? 'تصفية مستحقات' : (item.source === 'dailyDisbursementAdvance' ? 'سلفة / دفعة' : 'استلام'))}</td><td>${escapeEmployeeDuesHtml(item.note || '-')}</td><td>${formatMoney(item.amount || 0)} ${CURRENCY_CODES.includes(item.currency) ? item.currency : data.currency}</td></tr>`).join('') : '<tr><td colspan="4">لا توجد مبالغ مستلمة خلال هذا الشهر</td></tr>';
+        const totals = CURRENCY_CODES.map(code => `<tr><th>${CURRENCY_NAMES[code]} (${code})</th><td>${formatMoney(data.earnedByCurrency[code])}</td><td>${formatMoney(data.paidByCurrency[code])}</td><td><strong>${formatMoney(data.remainingByCurrency[code])}</strong></td></tr>`).join('');
+        const logo = new URL('logo.png', window.location.href).href;
+        win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>كشف مستحقات ${name} — ${period}</title><style>
+            *{box-sizing:border-box}body{margin:0;padding:9mm;font-family:Tahoma,Arial,sans-serif;color:#17211b;direction:rtl;font-size:12px}
+            .head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #236b45;padding-bottom:10px;margin-bottom:14px}.head h1{margin:0 0 5px;color:#205b3b;font-size:21px}.head p{margin:0;color:#64748b}.logo{width:65px;height:65px;object-fit:contain}
+            .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f5f9f6;border:1px solid #dbe7de;padding:10px;border-radius:8px;margin-bottom:12px}
+            h3{font-size:14px;color:#205b3b;margin:15px 0 7px}table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:10.5px}th{background:#eaf3ec;color:#244b35}th,td{border:1px solid #d7e1d9;padding:7px;text-align:right;vertical-align:top}
+            .summary td,.summary th{font-size:11px}.summary-total{font-weight:bold;background:#f8faf9}.sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:42px}.sign div{border-top:1px solid #222;padding-top:9px;text-align:center;min-height:42px;font-weight:bold}
+            .foot{margin-top:20px;border-top:1px solid #ddd;padding-top:7px;text-align:center;color:#64748b;font-size:9px}@page{size:A4 portrait;margin:7mm}thead{display:table-header-group}tr{break-inside:avoid}
+            </style></head><body>
+            <div class="head"><div><h1>معمل أبو محمد</h1><p>كشف مستحقات وصرف موظف — ${period}</p></div><img class="logo" src="${logo}" onerror="this.style.display='none'"></div>
+            <div class="meta"><div><b>اسم الموظف:</b> ${name}</div><div><b>الشهر:</b> ${period}</div><div><b>نظام الاستحقاق:</b> ${isPieceworkStaff(staff) ? 'بالقطعة' : 'راتب شهري'}</div><div><b>تاريخ استخراج الكشف:</b> ${getLocalDateKey()}</div></div>
+            <h3>ملخص المستحق والمستلم والمتبقي حسب العملة</h3><table class="summary"><thead><tr><th>العملة</th><th>إجمالي المستحق</th><th>إجمالي المستلم</th><th>المتبقي</th></tr></thead><tbody>${totals}</tbody></table>
+            ${!isPieceworkStaff(staff) ? `<h3>الراتب الشهري</h3><table><tbody><tr><th>الراتب المستحق</th><td>${formatMoney(data.baseEntitlement)} ${data.currency}</td></tr></tbody></table>` : ''}
+            <h3>الأعمال والإنتاج</h3><table><thead><tr><th>التاريخ</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>قيمة العمل</th></tr></thead><tbody>${productionRows}</tbody></table>
+            <h3>عمولات التحصيل والمبيعات</h3><table><thead><tr><th>التاريخ</th><th>النوع</th><th>البيان</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${commissionRows}</tbody></table>
+            <h3>المبالغ التي استلمها الموظف</h3><table><thead><tr><th>التاريخ</th><th>النوع</th><th>البيان</th><th>المبلغ</th></tr></thead><tbody>${paymentRows}</tbody></table>
+            <div class="sign"><div>توقيع المستلم: ${name}<br><br>الاسم: __________________</div><div>اعتماد الإدارة<br><br>التوقيع: __________________</div></div>
+            <div class="foot">هذا الكشف صادر من نظام معمل أبو محمد — لا يتم خلط العملات أو تحويلها.</div>
+            </body></html>`);
+        win.document.close();
+        win.focus();
+        setTimeout(() => win.print(), 300);
+    }
+
     function populateEmployeeDuesStaffOptions() {
         const select = document.getElementById('employeeDuesStaffSelect');
         if (!select) return [];
@@ -10846,7 +11154,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
         }));
         data.expenses.forEach(item => ledgerRows.push({
             date: item.date || '-', order: item.createdAt || '',
-            type: item.source === 'dailyDisbursementAdvance' ? (isPieceworkStaff(staff) ? 'سلفة مخصومة من مستحق الإنتاج' : 'سلفة مخصومة من الراتب') : 'استلام / دفعة',
+            type: item.source === 'payrollSettlement' ? 'صرف مستحقات / تصفية شهرية' : (item.source === 'dailyDisbursementAdvance' ? (isPieceworkStaff(staff) ? 'سلفة مخصومة من مستحق الإنتاج' : 'سلفة مخصومة من الراتب') : 'استلام / دفعة'),
             details: item.note || 'مبلغ مستلم', quantity: '-', rate: '-',
             earned: 0, paid: Number(item.amount || 0), currency: CURRENCY_CODES.includes(item.currency) ? item.currency : data.currency, actor: item.createdBy || '-'
         }));
