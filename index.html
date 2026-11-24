@@ -1404,6 +1404,10 @@
                     <i class="fa-solid fa-file-invoice-dollar"></i>
                     <span>المبيعات والفواتير</span>
                 </button>
+                <button class="nav-tab" data-exchange-rates="true" onclick="openExchangeRates()">
+                    <i class="fa-solid fa-money-bill-transfer"></i>
+                    <span>أسعار الصرف</span>
+                </button>
                 <button class="nav-tab expense-tab" data-menu-key="purchasesTab" onclick="openFullPage('purchasesTab')">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span>الموردون والمصروفات</span>
@@ -1458,6 +1462,45 @@
                 </button>
             </div>
         </div>
+
+        <!-- شاشة أسعار الصرف -->
+        <section id="exchangeRatesTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-money-bill-transfer"></i> أسعار الصرف</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()">
+                    <i class="fa-solid fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-coins"></i> تحديد أسعار العملات مقابل الريال اليمني</span></div>
+                <div class="employee-permission-note" style="margin-bottom:12px;">
+                    اكتب قيمة الريال اليمني المقابلة لوحدة واحدة من العملة. مثال: إذا كان 1 ريال سعودي = 140 ريال يمني، اكتب 140. وتُستخدم الأسعار تلقائياً لتحويل سعر الصنف عند إصدار فاتورة بعملة مختلفة، دون تغيير السعر الأصلي المحفوظ للصنف.
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="exchangeSarRate">كل 1 ريال سعودي يساوي كم ريال يمني؟</label>
+                        <input type="number" id="exchangeSarRate" class="form-control num-input" min="0" step="0.01" inputmode="decimal" placeholder="مثلاً 140" oninput="renderExchangeRatesPreview()">
+                    </div>
+                    <div class="form-group">
+                        <label for="exchangeUsdRate">كل 1 دولار أمريكي يساوي كم ريال يمني؟</label>
+                        <input type="number" id="exchangeUsdRate" class="form-control num-input" min="0" step="0.01" inputmode="decimal" placeholder="مثلاً 535" oninput="renderExchangeRatesPreview()">
+                    </div>
+                </div>
+                <div id="exchangeRatesPreview" class="employee-permission-note" style="margin:10px 0;line-height:2;">
+                    أدخل أسعار الصرف لعرض أمثلة تحويل الأصناف.
+                </div>
+                <div id="exchangeRatesSaveStatus" class="employee-permission-note" style="margin-bottom:10px;">أسعار الصرف تُحفظ مركزياً ليستفيد منها جميع مستخدمي النظام.</div>
+                <button type="button" class="btn btn-primary btn-full" onclick="saveExchangeRates()">
+                    <i class="fa-solid fa-floppy-disk"></i> حفظ أسعار الصرف
+                </button>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-calculator"></i> طريقة التحويل في فواتير المبيعات</span></div>
+                <div style="font-size:13px;line-height:2;color:var(--text-muted);">
+                    إذا كان سعر الصنف 1,800 ريال يمني وسعر السعودي 140، يظهر سعره في فاتورة السعودي 12.86 ريال سعودي تقريباً. وإذا كانت الفاتورة باليمني، يرجع النظام إلى السعر بالريال اليمني. وينطبق التحويل نفسه على الدولار حسب السعر الذي تدخله.
+                </div>
+            </div>
+        </section>
 
         <!-- 1. صفحة المبيعات والفواتير الكاملة -->
         <section id="salesTab" class="tab-content hidden">
@@ -3188,6 +3231,18 @@
     const ADMIN_PASS = "5028611";
     const CURRENCY_NAMES = { YER: 'ريال يمني', SAR: 'ريال سعودي', USD: 'دولار أمريكي' };
     const CURRENCY_CODES = ['YER', 'SAR', 'USD'];
+    const EXCHANGE_RATES_STORAGE_KEY = 'abuMohammad.exchangeRates.v1';
+    let currencyExchangeRates = { SAR: 0, USD: 0 };
+    let lastInvoiceCurrency = 'YER';
+    try {
+        const cachedExchangeRates = JSON.parse(localStorage.getItem(EXCHANGE_RATES_STORAGE_KEY) || 'null');
+        if (cachedExchangeRates && typeof cachedExchangeRates === 'object') {
+            currencyExchangeRates = {
+                SAR: Math.max(0, Number(cachedExchangeRates.SAR) || 0),
+                USD: Math.max(0, Number(cachedExchangeRates.USD) || 0)
+            };
+        }
+    } catch (e) {}
 
     const MAIN_MENU_ITEMS = [
         { key: 'salesTab', label: 'المبيعات والفواتير' },
@@ -4381,6 +4436,9 @@ function initMenuPermissionCheckboxes() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-security-hub]').forEach(btn => {
             btn.classList.toggle('hidden', !(canManageUsers(currentUser) || canDeleteUserAccounts(currentUser)));
         });
+        document.querySelectorAll('#homeMenuContainer .nav-tab[data-exchange-rates]').forEach(btn => {
+            btn.classList.toggle('hidden', !canManageUsers(currentUser));
+        });
         applyDashboardWidgetPermissions();
     }
 
@@ -4420,6 +4478,7 @@ function initMenuPermissionCheckboxes() {
         closeMobileInvoiceCart();
         document.body.classList.toggle('sales-page-active', tabId === 'salesTab');
         if (tabId === 'salesTab') {
+            lastInvoiceCurrency = document.getElementById('invCurrency')?.value || 'YER';
             renderWarehouseCatalogDropdown();
             updateInvoiceStatementPreview();
             updateMobileCartDock();
@@ -4662,6 +4721,17 @@ function initMenuPermissionCheckboxes() {
             );
             liveListeners.push(unsub);
         });
+        const ratesUnsub = db.collection('appSettings').doc('currencyRates').onSnapshot(
+            snapshot => {
+                if (snapshot.exists) applyCurrencyExchangeRates(snapshot.data() || {}, true);
+            },
+            error => {
+                console.warn('Exchange rates listener error:', error);
+                const status = document.getElementById('exchangeRatesSaveStatus');
+                if (status) status.textContent = 'تعذر تحميل أسعار الصرف المركزية. يستخدم النظام آخر أسعار محفوظة على هذا الجهاز إن وجدت.';
+            }
+        );
+        liveListeners.push(ratesUnsub);
     }
 
     function stopRealtimeListeners() {
@@ -4725,6 +4795,144 @@ function initMenuPermissionCheckboxes() {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
+    }
+
+    function getCurrencyRateToYER(currency) {
+        if (currency === 'YER') return 1;
+        if (!['SAR', 'USD'].includes(currency)) return null;
+        const rate = Number(currencyExchangeRates?.[currency] || 0);
+        return Number.isFinite(rate) && rate > 0 ? rate : null;
+    }
+
+    function convertCurrencyAmount(amount, fromCurrency, toCurrency) {
+        const value = Number(amount || 0);
+        if (!Number.isFinite(value) || !CURRENCY_CODES.includes(fromCurrency) || !CURRENCY_CODES.includes(toCurrency)) return null;
+        if (fromCurrency === toCurrency || Math.abs(value) < 0.0000001) return value;
+        const fromRate = getCurrencyRateToYER(fromCurrency);
+        const toRate = getCurrencyRateToYER(toCurrency);
+        if (fromRate === null || toRate === null) return null;
+        const converted = (value * fromRate) / toRate;
+        return Number.isFinite(converted) ? converted : null;
+    }
+
+    function getExchangeRateFormValues() {
+        const sarInput = document.getElementById('exchangeSarRate');
+        const usdInput = document.getElementById('exchangeUsdRate');
+        return {
+            SAR: Math.max(0, Number(sarInput?.value || 0) || 0),
+            USD: Math.max(0, Number(usdInput?.value || 0) || 0)
+        };
+    }
+
+    function cacheExchangeRatesLocally(rates) {
+        try { localStorage.setItem(EXCHANGE_RATES_STORAGE_KEY, JSON.stringify(rates)); } catch (e) {}
+    }
+
+    function renderExchangeRatesForm() {
+        const sarInput = document.getElementById('exchangeSarRate');
+        const usdInput = document.getElementById('exchangeUsdRate');
+        if (sarInput && document.activeElement !== sarInput) sarInput.value = currencyExchangeRates.SAR > 0 ? String(currencyExchangeRates.SAR) : '';
+        if (usdInput && document.activeElement !== usdInput) usdInput.value = currencyExchangeRates.USD > 0 ? String(currencyExchangeRates.USD) : '';
+        renderExchangeRatesPreview();
+    }
+
+    function renderExchangeRatesPreview() {
+        const preview = document.getElementById('exchangeRatesPreview');
+        if (!preview) return;
+        const rates = getExchangeRateFormValues();
+        const sar = rates.SAR > 0 ? `1,800 YER = ${formatMoney(1800 / rates.SAR)} SAR` : 'سعر السعودي غير محدد';
+        const usd = rates.USD > 0 ? `1,800 YER = ${formatMoney(1800 / rates.USD)} USD` : 'سعر الدولار غير محدد';
+        preview.innerHTML = `<strong>مثال على سعر صنف قيمته 1,800 YER:</strong><br>${sar}<br>${usd}`;
+    }
+
+    function applyCurrencyExchangeRates(data = {}, fromRemote = false) {
+        currencyExchangeRates = {
+            SAR: Math.max(0, Number(data.SAR) || 0),
+            USD: Math.max(0, Number(data.USD) || 0)
+        };
+        cacheExchangeRatesLocally(currencyExchangeRates);
+        renderExchangeRatesForm();
+        refreshInvoicePricesForCurrentCurrency();
+        renderWarehouseCatalogDropdown();
+        recalculateInvoiceTotal();
+        const status = document.getElementById('exchangeRatesSaveStatus');
+        if (status && fromRemote) status.textContent = 'أسعار الصرف محفوظة مركزياً ومحدثة لجميع المستخدمين.';
+    }
+
+    function refreshInvoicePricesForCurrentCurrency() {
+        const targetCurrency = document.getElementById('invCurrency')?.value || 'YER';
+        document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(row => {
+            const input = row.querySelector('.item-price');
+            if (!input) return;
+            const sourceAmount = Number(row.dataset.priceSourceAmount ?? input.value ?? 0);
+            const sourceCurrency = CURRENCY_CODES.includes(row.dataset.priceSourceCurrency)
+                ? row.dataset.priceSourceCurrency : targetCurrency;
+            const converted = convertCurrencyAmount(sourceAmount, sourceCurrency, targetCurrency);
+            if (converted !== null) input.value = converted.toFixed(2);
+            input.placeholder = `السعر بعملة ${targetCurrency}`;
+        });
+    }
+
+    function openExchangeRates() {
+        if (!canManageUsers(currentUser)) {
+            showToast('تعديل أسعار الصرف متاح للمدير والمشرف العام فقط');
+            return;
+        }
+        closeMobileInvoiceCart();
+        document.body.classList.remove('sales-page-active');
+        document.getElementById('homeMenuContainer').classList.add('hidden');
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById('exchangeRatesTab')?.classList.remove('hidden');
+        renderExchangeRatesForm();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function saveExchangeRates() {
+        if (isBusy || !canManageUsers(currentUser)) {
+            showToast('حفظ أسعار الصرف متاح للمدير والمشرف العام فقط');
+            return;
+        }
+        const rates = getExchangeRateFormValues();
+        if (!(rates.SAR > 0 || rates.USD > 0)) {
+            showToast('أدخل سعر السعودي أو الدولار على الأقل');
+            return;
+        }
+        if (![rates.SAR, rates.USD].every(value => Number.isFinite(value) && value >= 0)) {
+            showToast('تحقق من أسعار الصرف المدخلة');
+            return;
+        }
+        isBusy = true;
+        const payload = {
+            ...rates,
+            baseCurrency: 'YER',
+            updatedAt: new Date().toISOString(),
+            updatedBy: String(currentUser?.id || ''),
+            updatedByName: getAccountDisplayName(currentUser)
+        };
+        try {
+            await db.collection('appSettings').doc('currencyRates').set(payload, { merge: true });
+            applyCurrencyExchangeRates(payload, true);
+            const status = document.getElementById('exchangeRatesSaveStatus');
+            if (status) status.textContent = `تم الحفظ المركزي. السعودي: ${rates.SAR > 0 ? formatMoney(rates.SAR) : 'غير محدد'} YER، الدولار: ${rates.USD > 0 ? formatMoney(rates.USD) : 'غير محدد'} YER.`;
+            showToast('تم حفظ أسعار الصرف لجميع المستخدمين');
+        } catch (error) {
+            console.warn('Save exchange rates error:', error);
+            applyCurrencyExchangeRates(rates, false);
+            const status = document.getElementById('exchangeRatesSaveStatus');
+            if (status) status.textContent = 'تعذر الحفظ المركزي في قاعدة البيانات؛ تم حفظ الأسعار على هذا الجهاز فقط. راجع صلاحية الكتابة في مجموعة appSettings.';
+            showToast('تعذر الحفظ المشترك؛ حُفظت الأسعار على هذا الجهاز فقط');
+        } finally {
+            isBusy = false;
+        }
+    }
+
+    function handleInvoiceLinePriceInput(input) {
+        const row = input?.closest('.invoice-item-row');
+        if (row) {
+            row.dataset.priceSourceAmount = String(Math.max(0, Number(input.value || 0) || 0));
+            row.dataset.priceSourceCurrency = document.getElementById('invCurrency')?.value || 'YER';
+        }
+        recalculateInvoiceTotal();
     }
 
     function formatQty(num) {
@@ -5197,8 +5405,16 @@ function initMenuPermissionCheckboxes() {
         const selectedRows = [...document.querySelectorAll('#invoiceItemsContainer .invoice-item-row')];
         grid.innerHTML = items.map(item => {
             const available = Number(item.qty || 0);
-            const priceCurrency = item.priceCurrency || 'YER';
-            const priceLabel = Number(item.price || 0) > 0 ? `${formatMoney(item.price)} ${priceCurrency}` : 'أدخل سعر البيع';
+            const priceCurrency = CURRENCY_CODES.includes(item.priceCurrency) ? item.priceCurrency : 'YER';
+            const invoiceCurrency = document.getElementById('invCurrency')?.value || 'YER';
+            const storedPrice = Number(item.price || 0);
+            const convertedPrice = convertCurrencyAmount(storedPrice, priceCurrency, invoiceCurrency);
+            const hasStoredPrice = storedPrice > 0;
+            const priceLabel = hasStoredPrice && convertedPrice !== null
+                ? `${formatMoney(convertedPrice)} ${invoiceCurrency}`
+                : (hasStoredPrice ? `حدد سعر صرف ${invoiceCurrency}` : 'أدخل سعر البيع');
+            const priceHint = hasStoredPrice && convertedPrice !== null && priceCurrency !== invoiceCurrency
+                ? `محول من ${formatMoney(storedPrice)} ${priceCurrency}` : '';
             const safeName = escapeUiText(item.name || 'صنف');
             const selected = selectedRows.find(row => row.dataset.stockId === String(item.id));
             const selectedQty = selected ? Number(selected.querySelector('.item-qty')?.value || 0) : 0;
@@ -5209,7 +5425,8 @@ function initMenuPermissionCheckboxes() {
                         <span class="invoice-product-unit">${escapeUiText(item.unit || 'حبة')}</span>
                         <span class="invoice-product-stock"><i class="fa-solid fa-boxes-stacked"></i> المتاح: ${formatQty(available)}</span>
                     </span>
-                    <span class="invoice-product-price">${priceLabel === 'أدخل سعر البيع' ? 'السعر يحتاج إدخال' : priceLabel}</span>
+                    <span class="invoice-product-price">${priceLabel === 'أدخل سعر البيع' ? 'السعر يحتاج إدخال' : escapeUiText(priceLabel)}</span>
+                    ${priceHint ? `<small style="display:block;color:var(--text-muted);font-size:10px;margin-top:2px;">${escapeUiText(priceHint)}</small>` : ''}
                 </span>
                 <span class="invoice-product-add-label">
                     <i class="fa-solid fa-${selectedQty > 0 ? 'plus' : 'cart-plus'}"></i>
@@ -5230,8 +5447,10 @@ function initMenuPermissionCheckboxes() {
         const available = Number(item.qty || 0);
         if (available <= 0) { showToast('هذا الصنف غير متوفر حالياً في المخزن'); return; }
         const invoiceCurrency = document.getElementById('invCurrency')?.value || 'YER';
-        const storedPriceCurrency = item.priceCurrency || 'YER';
-        const canUseStoredPrice = storedPriceCurrency === invoiceCurrency;
+        const storedPriceCurrency = CURRENCY_CODES.includes(item.priceCurrency) ? item.priceCurrency : 'YER';
+        const storedPrice = Number(item.price || 0);
+        const convertedPrice = convertCurrencyAmount(storedPrice, storedPriceCurrency, invoiceCurrency);
+        const canUseStoredPrice = storedPrice > 0 && convertedPrice !== null;
         const container = document.getElementById('invoiceItemsContainer');
         const existing = [...(container?.querySelectorAll('.invoice-item-row') || [])].find(row =>
             row.dataset.stockId === String(item.id) || (
@@ -5249,14 +5468,21 @@ function initMenuPermissionCheckboxes() {
         } else {
             addInvoiceItemRow({
                 name: item.name, unit: item.unit || 'حبة', qty: 1,
-                price: canUseStoredPrice ? Number(item.price || 0) : 0,
+                price: canUseStoredPrice ? convertedPrice : 0,
+                sourcePriceAmount: storedPrice,
+                sourcePriceCurrency: storedPriceCurrency,
                 stockItemId: item.id
             });
         }
         updateMobileCartDock();
-        if (!canUseStoredPrice) showToast(`أضيف ${item.name}. أدخل سعر البيع بعملة ${invoiceCurrency}`);
-        else showToast(`تمت إضافة ${item.name} إلى السلة`);
-        // إبقاء المستخدم في اختيار الأصناف؛ أزرار الحفظ والإجمالي ثابتة أسفل الهاتف.
+        if (storedPrice > 0 && !canUseStoredPrice) {
+            const missingExchangeCurrency = [storedPriceCurrency, invoiceCurrency].find(code => code !== 'YER' && getCurrencyRateToYER(code) === null) || invoiceCurrency;
+            showToast(`أضيف ${item.name}. حدد سعر صرف ${missingExchangeCurrency} أو أدخل السعر يدويًا`);
+        } else if (!storedPrice) {
+            showToast(`أضيف ${item.name}. أدخل سعر البيع بعملة ${invoiceCurrency}`);
+        } else {
+            showToast(`تمت إضافة ${item.name} بسعر محول إلى ${invoiceCurrency}`);
+        }
         const search = document.getElementById('warehouseItemSearch');
         if (search) search.value = '';
         renderWarehouseCatalogDropdown();
@@ -6820,11 +7046,38 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
     }
 
     function handleInvoiceCurrencyChange() {
+        const select = document.getElementById('invCurrency');
+        const targetCurrency = select?.value || 'YER';
+        const plans = [];
+        let missingCurrency = '';
+        document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(row => {
+            const input = row.querySelector('.item-price');
+            if (!input) return;
+            const sourceAmount = Number(row.dataset.priceSourceAmount ?? input.value ?? 0);
+            const sourceCurrency = CURRENCY_CODES.includes(row.dataset.priceSourceCurrency)
+                ? row.dataset.priceSourceCurrency : lastInvoiceCurrency;
+            const converted = convertCurrencyAmount(sourceAmount, sourceCurrency, targetCurrency);
+            if (converted === null && sourceAmount > 0) {
+                missingCurrency = [sourceCurrency, targetCurrency].find(code => code !== 'YER' && getCurrencyRateToYER(code) === null) || targetCurrency;
+            }
+            plans.push({ input, converted, sourceAmount, sourceCurrency });
+        });
+        if (missingCurrency) {
+            if (select) select.value = lastInvoiceCurrency;
+            showToast(`لا يمكن التحويل؛ حدد سعر صرف ${missingCurrency} من شاشة أسعار الصرف أولاً`);
+            updateInvoiceCashboxOptions();
+            renderWarehouseCatalogDropdown();
+            return;
+        }
+        plans.forEach(plan => {
+            if (plan.converted !== null) plan.input.value = plan.converted.toFixed(2);
+            plan.input.placeholder = `السعر بعملة ${targetCurrency}`;
+            plan.input.closest('.invoice-item-row').dataset.priceSourceAmount = String(plan.sourceAmount);
+            plan.input.closest('.invoice-item-row').dataset.priceSourceCurrency = plan.sourceCurrency;
+        });
+        lastInvoiceCurrency = targetCurrency;
         updateInvoiceCashboxOptions();
         renderWarehouseCatalogDropdown();
-        document.querySelectorAll('#invoiceItemsContainer .item-price').forEach(input => {
-            input.placeholder = `السعر بعملة ${document.getElementById('invCurrency')?.value || 'YER'}`;
-        });
         recalculateInvoiceTotal();
     }
 
@@ -6907,18 +7160,27 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const unitVal = prefill ? (prefill.unit || 'حبة') : 'حبة';
         const qtyVal = prefill ? (prefill.qty || 1) : 1;
         const priceVal = prefill ? Number(prefill.price || 0).toFixed(2) : '0.00';
+        const invoiceCurrency = document.getElementById('invCurrency')?.value || 'YER';
+        const sourcePriceAmount = prefill && prefill.sourcePriceAmount !== undefined
+            ? Number(prefill.sourcePriceAmount || 0) : Number(priceVal || 0);
+        const sourcePriceCurrency = prefill && CURRENCY_CODES.includes(prefill.sourcePriceCurrency)
+            ? prefill.sourcePriceCurrency : invoiceCurrency;
         const rows = container.querySelectorAll('.invoice-item-row');
         if (prefill && rows.length === 1 && !rows[0].querySelector('.item-name').value.trim()) {
             rows[0].querySelector('.item-name').value = nameVal;
             rows[0].querySelector('.item-unit').value = unitVal;
             rows[0].querySelector('.item-qty').value = qtyVal;
             rows[0].querySelector('.item-price').value = priceVal;
+            rows[0].dataset.priceSourceAmount = String(sourcePriceAmount);
+            rows[0].dataset.priceSourceCurrency = sourcePriceCurrency;
             if (prefill.stockItemId) rows[0].dataset.stockId = String(prefill.stockItemId);
             recalculateInvoiceTotal();
             return;
         }
         const row = document.createElement('div');
         row.className = 'invoice-item-row';
+        row.dataset.priceSourceAmount = String(sourcePriceAmount);
+        row.dataset.priceSourceCurrency = sourcePriceCurrency;
         if (prefill?.stockItemId) row.dataset.stockId = String(prefill.stockItemId);
         row.innerHTML = `
             <div class="invoice-line-top">
@@ -6928,7 +7190,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             <div class="invoice-line-fields">
                 <div class="invoice-line-field"><label>الوحدة</label><select class="form-control item-unit" onchange="recalculateInvoiceTotal()"><option value="حبة" ${unitVal === 'حبة' ? 'selected' : ''}>حبة</option><option value="شدة" ${unitVal === 'شدة' ? 'selected' : ''}>شدة</option><option value="وار" ${unitVal === 'وار' ? 'selected' : ''}>وار</option></select></div>
                 <div class="invoice-line-field"><label>الكمية</label><div class="invoice-qty-stepper"><button type="button" aria-label="إنقاص الكمية" onclick="stepInvoiceQty(this,-1)">−</button><input type="number" step="0.01" inputmode="decimal" class="form-control item-qty num-input" value="${qtyVal}" min="0.01" placeholder="0" oninput="recalculateInvoiceTotal()"><button type="button" aria-label="زيادة الكمية" onclick="stepInvoiceQty(this,1)">+</button></div></div>
-                <div class="invoice-line-field"><label>سعر البيع</label><input type="number" step="0.01" inputmode="decimal" class="form-control item-price num-input" value="${priceVal}" min="0" placeholder="0.00" oninput="recalculateInvoiceTotal()"></div>
+                <div class="invoice-line-field"><label>سعر البيع</label><input type="number" step="0.01" inputmode="decimal" class="form-control item-price num-input" value="${priceVal}" min="0" placeholder="0.00" oninput="handleInvoiceLinePriceInput(this)"></div>
                 <div class="invoice-line-total"><small>إجمالي السطر</small><strong class="row-line-total mono">0.00</strong></div>
             </div>`;
         container.appendChild(row);
