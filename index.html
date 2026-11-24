@@ -1628,6 +1628,14 @@
 
             <div class="card-box">
                 <div class="card-title"><span>إصدار فاتورة مبيعات سريعة</span></div>
+                <div id="invoiceEditModeBanner" class="employee-permission-note hidden" style="margin:10px 0;border:1px solid #d6a23a;background:#fff8e8;color:#765016;display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                    <strong><i class="fa-solid fa-pen-to-square"></i> أنت تعدّل فاتورة محفوظة. راجع الأصناف والكميات والأسعار قبل اعتماد التعديل.</strong>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="cancelInvoiceEditMode()"><i class="fa-solid fa-xmark"></i> إلغاء التعديل</button>
+                </div>
+                <div id="invoiceEditDateGroup" class="form-group hidden" style="margin:8px 0;max-width:260px;">
+                    <label for="invEditDate">تاريخ الفاتورة</label>
+                    <input type="date" id="invEditDate" class="form-control">
+                </div>
 
                 <div class="grid-4 sales-invoice-meta-grid">
                     <div class="form-group">
@@ -3487,6 +3495,8 @@
     let liveListeners = [];
     let renderDebounceTimer = null;
     let activeStatementCustomerId = null;
+    let editingInvoiceId = null;
+    let editingInvoiceSnapshot = null;
 
     let currentUser = null;
     let recycleBinItems = [];
@@ -7810,6 +7820,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
 
     async function saveSalesInvoice() {
         if (isBusy) return;
+        if (editingInvoiceId) { await updateExistingSalesInvoice(editingInvoiceId); return; }
         const btn = document.getElementById('saveInvoiceBtn');
         const mobileBtn = document.getElementById('mobileSaveInvoiceBtn');
         const branchId = document.getElementById('invBranchSelect').value || 'main_branch';
@@ -7956,21 +7967,322 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         } finally { isBusy = false; if (btn) btn.disabled = false; if (mobileBtn) mobileBtn.disabled = false; }
     }
 
-    async function editInvoiceNote(invId) {
-        if (!canEditRecord()) {
-            showToast('ليس لديك صلاحية التعديل');
-            return;
+    function setInvoiceEditModeUI(enabled) {
+        const banner = document.getElementById('invoiceEditModeBanner');
+        if (banner) {
+            banner.classList.toggle('hidden', !enabled);
+            banner.style.display = enabled ? 'flex' : 'none';
         }
-        const inv = state.invoices.find(i => i.id === invId);
-        if (!inv) return;
-        const nextRef = prompt('تعديل رقم الفاتورة في البيان:', inv.refNumber || '');
-        if (nextRef === null) return;
-        const cleanRef = nextRef.trim();
-        await db.collection('invoices').doc(invId).update({
-            refNumber: cleanRef,
-            notes: `عليكم فاتورة مبيعات برقم ${cleanRef || '—'}`
+        const save = document.getElementById('saveInvoiceBtn');
+        const mobileSave = document.getElementById('mobileSaveInvoiceBtn');
+        if (save) save.innerHTML = enabled
+            ? '<i class="fa-solid fa-floppy-disk"></i> حفظ تعديلات الفاتورة'
+            : '<i class="fa-solid fa-print"></i> حفظ وطباعة الفاتورة';
+        if (mobileSave) mobileSave.innerHTML = enabled
+            ? '<i class="fa-solid fa-floppy-disk"></i> حفظ التعديلات'
+            : '<i class="fa-solid fa-check"></i> حفظ الفاتورة';
+        document.getElementById('invoiceEditDateGroup')?.classList.toggle('hidden', !enabled);
+        const title = document.querySelector('#salesTab .card-title span');
+        if (title) title.textContent = enabled ? 'تعديل فاتورة مبيعات محفوظة' : 'إصدار فاتورة مبيعات سريعة';
+    }
+
+    function clearInvoiceEditorForm() {
+        const container = document.getElementById('invoiceItemsContainer');
+        if (container) container.innerHTML = '';
+        const discount = document.getElementById('invDiscount'); if (discount) discount.value = '0.00';
+        const ref = document.getElementById('invRefNumber'); if (ref) ref.value = '';
+        const editDate = document.getElementById('invEditDate'); if (editDate) editDate.value = '';
+        const cashName = document.getElementById('invCashCustomerName'); if (cashName) cashName.value = '';
+        const staff = document.getElementById('invSalesEmployeeSelect'); if (staff) staff.value = '';
+        const payment = document.getElementById('invPaymentType'); if (payment) payment.value = 'cash';
+        const currency = document.getElementById('invCurrency'); if (currency) currency.value = 'YER';
+        lastInvoiceCurrency = 'YER';
+        toggleInvoicePaymentFields();
+        updateInvoiceStatementPreview();
+        recalculateInvoiceTotal();
+        renderWarehouseCatalogDropdown();
+        updateMobileCartDock();
+    }
+
+    function finishInvoiceEditMode(resetForm = true) {
+        editingInvoiceId = null;
+        editingInvoiceSnapshot = null;
+        setInvoiceEditModeUI(false);
+        if (resetForm) clearInvoiceEditorForm();
+    }
+
+    function cancelInvoiceEditMode() {
+        if (!editingInvoiceId) return;
+        if (!confirm('إلغاء تعديل الفاتورة والعودة إلى إصدار فاتورة جديدة؟ لن يتم حفظ التغييرات الحالية.')) return;
+        finishInvoiceEditMode(true);
+        closeMobileInvoiceCart();
+        showToast('تم إلغاء تعديل الفاتورة');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function editSalesInvoice(invId) {
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل'); return; }
+        if (editingInvoiceId && editingInvoiceId !== invId) {
+            if (!confirm('هناك فاتورة أخرى قيد التعديل. إلغاء التعديلات الحالية وفتح الفاتورة المحددة؟')) return;
+        }
+        const inv = (state.invoices || []).find(item => String(item.id) === String(invId));
+        if (!inv) { showToast('لم يتم العثور على الفاتورة'); return; }
+        const branchId = inv.branchId || 'main_branch';
+        if (!isBranchAllowed(branchId)) { showToast('ليس لديك صلاحية تعديل فاتورة هذا المخزن'); return; }
+        if (!canAccessMenu('salesTab', currentUser)) { showToast('ليس لديك صلاحية فتح شاشة المبيعات'); return; }
+
+        editingInvoiceId = inv.id;
+        editingInvoiceSnapshot = JSON.parse(JSON.stringify(inv));
+        openFullPage('salesTab');
+        populateDropdowns();
+        populateInvoiceSalesEmployeeOptions();
+
+        const branchSelect = document.getElementById('invBranchSelect');
+        if (branchSelect && Array.from(branchSelect.options).some(option => option.value === branchId)) branchSelect.value = branchId;
+        const currencySelect = document.getElementById('invCurrency');
+        if (currencySelect) currencySelect.value = CURRENCY_CODES.includes(inv.currency) ? inv.currency : 'YER';
+        lastInvoiceCurrency = currencySelect?.value || 'YER';
+        handleInvoiceCurrencyChange();
+
+        const paymentSelect = document.getElementById('invPaymentType');
+        if (paymentSelect) paymentSelect.value = inv.paymentType === 'credit' ? 'credit' : 'cash';
+        toggleInvoicePaymentFields();
+        updateInvoiceCashboxOptions();
+        const cashboxSelect = document.getElementById('invCashboxSelect');
+        if (cashboxSelect && inv.cashboxId && Array.from(cashboxSelect.options).some(option => option.value === inv.cashboxId)) cashboxSelect.value = inv.cashboxId;
+
+        const customerSelect = document.getElementById('invCustomerSelect');
+        if (customerSelect) customerSelect.value = inv.customerId || '';
+        const cashCustomerInput = document.getElementById('invCashCustomerName');
+        if (cashCustomerInput) cashCustomerInput.value = inv.paymentType === 'cash' ? (inv.customerName === 'عميل نقدي' ? '' : (inv.customerName || '')) : '';
+        const staffSelect = document.getElementById('invSalesEmployeeSelect');
+        if (staffSelect) staffSelect.value = inv.salesStaffId || '';
+        updateInvoiceSalesCommission();
+
+        const editDate = document.getElementById('invEditDate'); if (editDate) editDate.value = inv.date || getLocalDateKey();
+        const discount = document.getElementById('invDiscount'); if (discount) discount.value = Number(inv.discount || 0).toFixed(2);
+        const ref = document.getElementById('invRefNumber'); if (ref) ref.value = inv.refNumber || '';
+        updateInvoiceStatementPreview();
+        const container = document.getElementById('invoiceItemsContainer');
+        if (container) container.innerHTML = '';
+        (Array.isArray(inv.items) ? inv.items : []).forEach(item => addInvoiceItemRow({
+            name: item.name || '', unit: item.unit || 'حبة', qty: Number(item.qty || 1), price: Number(item.price || 0),
+            stockItemId: item.stockItemId || '', sourcePriceAmount: Number(item.price || 0), sourcePriceCurrency: inv.currency || 'YER'
+        }));
+        if (!inv.items?.length) addInvoiceItemRow();
+        setInvoiceEditModeUI(true);
+        recalculateInvoiceTotal();
+        renderWarehouseCatalogDropdown();
+        updateMobileCartDock();
+        document.getElementById('salesTab')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast(`تم فتح الفاتورة ${inv.id} بكامل بياناتها للتعديل`);
+    }
+
+    async function updateExistingSalesInvoice(invId) {
+        if (isBusy) return;
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل'); return; }
+        const original = editingInvoiceSnapshot || (state.invoices || []).find(item => String(item.id) === String(invId));
+        if (!original || String(original.id) !== String(invId)) { showToast('تعذر العثور على بيانات الفاتورة الأصلية'); return; }
+
+        const btn = document.getElementById('saveInvoiceBtn');
+        const mobileBtn = document.getElementById('mobileSaveInvoiceBtn');
+        const branchId = document.getElementById('invBranchSelect')?.value || 'main_branch';
+        const branchObj = (state.branches || []).find(branch => String(branch.id) === String(branchId));
+        const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
+        const paymentType = document.getElementById('invPaymentType')?.value || 'cash';
+        const currency = document.getElementById('invCurrency')?.value || 'YER';
+        const cashboxId = document.getElementById('invCashboxSelect')?.value || '';
+        const selectedCustomerId = document.getElementById('invCustomerSelect')?.value || '';
+        const directCustomerName = (document.getElementById('invCashCustomerName')?.value || '').trim();
+        const discount = Number(document.getElementById('invDiscount')?.value || 0);
+        const salesStaffId = document.getElementById('invSalesEmployeeSelect')?.value || '';
+        const salesStaff = salesStaffId ? getStaffById(salesStaffId) : null;
+        const salesCommissionRate = paymentType === 'cash' && salesStaff ? getStaffSalesCommissionRate(salesStaff) : 0;
+        const refNum = (document.getElementById('invRefNumber')?.value || '').trim();
+        const invoiceDate = document.getElementById('invEditDate')?.value || original.date || getLocalDateKey();
+        const notes = `عليكم فاتورة مبيعات برقم ${refNum || '—'}`;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(invoiceDate)) { showToast('أدخل تاريخ فاتورة صحيحاً'); return; }
+        if (!branchId || !isBranchAllowed(branchId)) { showToast('لا يمكنك نقل الفاتورة إلى مخزن غير مصرح لك به'); return; }
+        if (!CURRENCY_CODES.includes(currency)) { showToast('عملة الفاتورة غير صحيحة'); return; }
+        if (!Number.isFinite(discount) || discount < 0) { showToast('أدخل خصماً صحيحاً'); return; }
+        if (paymentType === 'cash' && (!Number.isFinite(salesCommissionRate) || salesCommissionRate < 0 || salesCommissionRate > 100)) { showToast('نسبة الموظف من المبيعات يجب أن تكون من 0 إلى 100'); return; }
+        if (refNum && (state.invoices || []).some(item => String(item.id) !== String(invId) && String(item.refNumber || '') === refNum)) {
+            showToast('رقم الفاتورة مستخدم في فاتورة أخرى؛ اختر رقماً مختلفاً'); return;
+        }
+
+        const rawItems = [];
+        document.querySelectorAll('#invoiceItemsContainer .invoice-item-row').forEach(row => {
+            const name = (row.querySelector('.item-name')?.value || '').trim();
+            const unit = row.querySelector('.item-unit')?.value || 'حبة';
+            const qty = Number(row.querySelector('.item-qty')?.value || 0);
+            const price = Number(row.querySelector('.item-price')?.value || 0);
+            if (name || qty || price) rawItems.push({ name, unit, qty, price });
         });
-        showToast('تم تعديل الفاتورة');
+        if (!rawItems.length || rawItems.some(item => !item.name || !Number.isFinite(item.qty) || item.qty <= 0 || !Number.isFinite(item.price) || item.price <= 0)) {
+            showToast('أكمل اسم الصنف والكمية والسعر لكل صنف'); return;
+        }
+        if (paymentType === 'cash' && !cashboxId) { showToast(`اختر الصندوق المناسب لعملة ${currency}`); return; }
+
+        const oldBranchId = original.branchId || 'main_branch';
+        const stockDeltas = new Map();
+        const stockById = new Map((state.warehouse || []).map(item => [String(item.id), item]));
+        const findStock = (branch, name, unit, preferredId = '') => {
+            if (preferredId && stockById.has(String(preferredId))) {
+                const exact = stockById.get(String(preferredId));
+                if (String(exact.branchId || 'main_branch') === String(branch)) return exact;
+            }
+            return (state.warehouse || []).find(item =>
+                String(item.branchId || 'main_branch') === String(branch) &&
+                String(item.name || '').trim().toLowerCase() === String(name || '').trim().toLowerCase() &&
+                (item.unit || 'حبة') === (unit || 'حبة')
+            ) || null;
+        };
+        for (const line of (Array.isArray(original.items) ? original.items : [])) {
+            const stock = findStock(oldBranchId, line.name, line.unit || 'حبة', line.stockItemId || '');
+            if (!stock) { showToast(`تعذر إرجاع الصنف القديم (${line.name}) إلى مخزون الفاتورة؛ لم يتم تعديل شيء`); return; }
+            const entry = stockDeltas.get(String(stock.id)) || { item: stock, delta: 0 };
+            entry.delta += Number(line.qty || 0);
+            stockDeltas.set(String(stock.id), entry);
+        }
+
+        const newItems = [];
+        const oldCostMap = new Map();
+        (Array.isArray(original.items) ? original.items : []).forEach(line => {
+            const key = `${String(line.name || '').trim().toLowerCase()}|${line.unit || 'حبة'}`;
+            if (!oldCostMap.has(key)) oldCostMap.set(key, []);
+            oldCostMap.get(key).push(line);
+        });
+        for (const row of rawItems) {
+            const stock = findStock(branchId, row.name, row.unit, '');
+            if (!stock) { showToast(`الصنف (${row.name}) غير موجود في مخزون ${branchName}`); return; }
+            const entry = stockDeltas.get(String(stock.id)) || { item: stock, delta: 0 };
+            entry.delta -= row.qty;
+            stockDeltas.set(String(stock.id), entry);
+            const key = `${String(row.name).trim().toLowerCase()}|${row.unit || 'حبة'}`;
+            const oldMatches = oldCostMap.get(key) || [];
+            const oldCandidate = oldMatches.length ? oldMatches.shift() : null;
+            const oldStock = oldCandidate ? findStock(oldBranchId, oldCandidate.name, oldCandidate.unit || 'حبة', oldCandidate.stockItemId || '') : null;
+            const sameOriginalStock = oldCandidate && oldStock && String(oldStock.id) === String(stock.id);
+            newItems.push({
+                ...row,
+                stockItemId: stock.id,
+                costPrice: sameOriginalStock && Number.isFinite(Number(oldCandidate.costPrice)) ? Number(oldCandidate.costPrice) : Number(stock.costPrice ?? stock.price ?? 0),
+                costCurrency: sameOriginalStock ? (oldCandidate.costCurrency || stock.costCurrency || currency) : (stock.costCurrency || currency)
+            });
+        }
+        const subtotal = newItems.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0);
+        if (discount > subtotal) { showToast('الخصم لا يمكن أن يكون أكبر من إجمالي الفاتورة'); return; }
+        const netTotal = Math.max(0, subtotal - discount);
+        const cashbox = paymentType === 'cash' ? (state.cashboxes || []).find(box => String(box.id) === String(cashboxId)) : null;
+        if (paymentType === 'cash' && !cashbox) { showToast(`الصندوق المحدد غير موجود لعملة ${currency}`); return; }
+
+        let customer = null;
+        if (paymentType === 'credit') {
+            customer = (state.customers || []).find(item => String(item.id) === String(selectedCustomerId));
+            if (!customer) { showToast('في الفاتورة الآجلة اختر عميلاً مسجلاً'); return; }
+        } else if (directCustomerName) {
+            const normalized = directCustomerName.replace(/\s+/g, ' ').toLowerCase();
+            customer = (state.customers || []).find(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalized) || null;
+            if (!customer) {
+                const customerSaved = await createRecordOnce('customers', 'cust', {
+                    name: normalized, phone: '-', creditLimit: 0, actor: dedupeActorId()
+                }, { name: directCustomerName, phone: '-', creditLimit: 0, balance: 0 }, `cust_${dedupeHash({ name: normalized, phone: '-' })}`);
+                customer = { id: customerSaved.id, name: directCustomerName, phone: '-', creditLimit: 0, balance: 0 };
+            }
+        } else if (selectedCustomerId) {
+            customer = (state.customers || []).find(item => String(item.id) === String(selectedCustomerId)) || null;
+        }
+
+        const updatedInvoice = {
+            ...original,
+            refNumber: refNum,
+            date: invoiceDate,
+            branchId, branchName,
+            customerId: customer?.id || '', customerName: customer?.name || directCustomerName || 'عميل نقدي',
+            paymentType, currency, currencyName: CURRENCY_NAMES[currency],
+            cashboxId: cashbox ? cashbox.id : '', cashboxName: cashbox ? cashbox.name : 'آجل',
+            items: newItems, discount, netTotal,
+            salesStaffId: salesStaff?.id || '', salesStaffName: salesStaff?.fullName || '', salesCommissionRate,
+            salesCommissionAmount: netTotal * salesCommissionRate / 100,
+            salesCommissionCurrency: currency,
+            notes,
+            editedBy: currentUser?.fullName || '', editedAt: new Date().toISOString()
+        };
+
+        isBusy = true;
+        if (btn) btn.disabled = true;
+        if (mobileBtn) mobileBtn.disabled = true;
+        try {
+            const invoiceRef = db.collection('invoices').doc(invId);
+            await db.runTransaction(async transaction => {
+                const invoiceSnapshot = await transaction.get(invoiceRef);
+                if (!invoiceSnapshot.exists) throw new Error('INVOICE_MISSING');
+                const latestInvoice = invoiceSnapshot.data() || {};
+                const invoiceEditSignature = item => JSON.stringify({
+                    branchId: item.branchId || 'main_branch',
+                    paymentType: item.paymentType || 'cash',
+                    currency: item.currency || 'YER',
+                    customerId: item.customerId || '',
+                    refNumber: item.refNumber || '',
+                    discount: Number(item.discount || 0),
+                    items: (Array.isArray(item.items) ? item.items : []).map(line => ({
+                        stockItemId: line.stockItemId || '', name: String(line.name || ''), unit: line.unit || 'حبة',
+                        qty: Number(line.qty || 0), price: Number(line.price || 0)
+                    }))
+                });
+                if (invoiceEditSignature(latestInvoice) !== invoiceEditSignature(original)) throw new Error('INVOICE_CHANGED');
+                const reads = [];
+                for (const [stockId, entry] of stockDeltas) {
+                    const ref = db.collection('warehouse').doc(stockId);
+                    reads.push({ stockId, entry, ref, snapshot: await transaction.get(ref) });
+                }
+                for (const row of reads) {
+                    if (!row.snapshot.exists) throw new Error(`STOCK_MISSING:${row.entry.item.name}`);
+                    const current = row.snapshot.data() || {};
+                    const nextQty = Number(current.qty || 0) + Number(row.entry.delta || 0);
+                    if (nextQty < -0.000001) throw new Error(`INSUFFICIENT_STOCK:${current.name || row.entry.item.name}:${Number(current.qty || 0)}:${Math.abs(row.entry.delta)}`);
+                }
+                transaction.update(invoiceRef, { ...updatedInvoice, id: invId });
+                for (const row of reads) {
+                    if (Math.abs(row.entry.delta) < 0.000001) continue;
+                    const current = row.snapshot.data() || {};
+                    const nextQty = Math.max(0, Number(current.qty || 0) + Number(row.entry.delta || 0));
+                    transaction.update(row.ref, { qty: nextQty });
+                }
+            });
+            const localIndex = (state.invoices || []).findIndex(item => String(item.id) === String(invId));
+            if (localIndex >= 0) state.invoices[localIndex] = updatedInvoice;
+            for (const [stockId, entry] of stockDeltas) {
+                const local = (state.warehouse || []).find(item => String(item.id) === String(stockId));
+                if (local) local.qty = Math.max(0, Number(local.qty || 0) + Number(entry.delta || 0));
+            }
+            finishInvoiceEditMode(true);
+            populateDropdowns();
+            renderInvoicesTable(); renderCustomersTable(); renderWarehouseTable(); renderWarehouseCatalogDropdown(); renderStats();
+            if (activeStatementCustomerId) renderCustomerStatement(activeStatementCustomerId, false);
+            showToast('تم حفظ تعديلات الفاتورة وتحديث المخزون والأرصدة');
+            openPrintModal(updatedInvoice);
+        } catch (error) {
+            console.warn('Update sales invoice error:', error);
+            const message = String(error?.message || '');
+            if (message.startsWith('INSUFFICIENT_STOCK:')) {
+                const [, name, available, requested] = message.split(':');
+                showToast(`المخزون غير كافٍ للصنف ${name}: المتاح ${formatQty(available)}، والتغيير المطلوب ${formatQty(requested)}`);
+            } else if (message.startsWith('STOCK_MISSING:')) {
+                showToast(`لم يتم العثور على سجل المخزون للصنف ${message.split(':')[1] || ''}؛ لم يتم حفظ التعديل`);
+            } else if (message === 'INVOICE_MISSING') showToast('الفاتورة غير موجودة في قاعدة البيانات؛ حدّث الصفحة وحاول مرة أخرى');
+            else if (message === 'INVOICE_CHANGED') showToast('تم تعديل هذه الفاتورة من جهاز آخر؛ حدّث الصفحة وافتحها من جديد قبل التعديل');
+            else showToast('تعذر تعديل الفاتورة؛ لم يتم تغيير الفاتورة أو المخزون');
+        } finally {
+            isBusy = false;
+            if (btn) btn.disabled = false;
+            if (mobileBtn) mobileBtn.disabled = false;
+        }
+    }
+
+    async function editInvoiceNote(invId) {
+        // التوافق مع أي زر قديم: افتح الفاتورة كاملة بدلاً من تعديل البيان وحده.
+        return editSalesInvoice(invId);
     }
 
     async function deleteInvoiceRecord(invId) {
@@ -8024,7 +8336,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                         <td>${i.employee || '-'}</td>
                         <td style="white-space:nowrap;">
                             <button class="btn btn-outline btn-sm" onclick="printInvoiceById('${i.id}')" title="طباعة"><i class="fa-solid fa-print"></i></button>
-                            ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editInvoiceNote('${i.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+                            ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editSalesInvoice('${i.id}')" title="فتح الفاتورة كاملة للتعديل"><i class="fa-solid fa-pen-to-square"></i> تعديل</button>` : ''}
                             ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteInvoiceRecord('${i.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
                         </td>
                     </tr>
