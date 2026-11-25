@@ -1818,11 +1818,11 @@
                     <span><i class="fa-solid fa-file-lines"></i> كشف حساب الموردين</span>
                 </div>
                 <div id="supplierBalancesCard" class="employee-permission-note" style="margin-top:12px;">
-                    كل فاتورة توريد تزيد حساب المورد وتضيف الكميات للمخزن. الدفعات تقلل الرصيد المستحق، والعملات تظهر منفصلة.
+                    الرصيد الافتتاحي وفواتير التوريد يزيدان مستحقات المورد، والدفعات تقللها. كل عملة تظهر مستقلة.
                 </div>
                 <div class="table-responsive" style="margin-top:10px;">
                     <table>
-                        <thead><tr><th>اسم المورد</th><th>رقم الهاتف</th><th>إجمالي التوريدات</th><th>المدفوع</th><th>المتبقي عليه</th><th>كشف الحساب</th><th>إجراءات</th></tr></thead>
+                        <thead><tr><th>اسم المورد</th><th>رقم الهاتف</th><th>الرصيد الافتتاحي</th><th>إجمالي التوريدات</th><th>المدفوع</th><th>المتبقي عليه</th><th>كشف الحساب</th><th>إجراءات</th></tr></thead>
                         <tbody id="supplierBalancesBody"></tbody>
                     </table>
                 </div>
@@ -1845,6 +1845,12 @@
                             <div class="form-group" style="margin-bottom:0;"><label>اسم المورد</label><input type="text" id="newSupplierName" class="form-control" placeholder="اسم المورد"></div>
                             <div class="form-group" style="margin-bottom:0;"><label>الهاتف</label><input type="text" id="newSupplierPhone" class="form-control num-input" inputmode="numeric" placeholder="77xxxxxxx"></div>
                             <div style="display:flex;align-items:flex-end;"><button id="saveSupplierBtn" class="btn btn-primary btn-full" onclick="createSupplier()"><i class="fa-solid fa-check"></i> حفظ المورد</button></div>
+                        </div>
+                        <div class="employee-permission-note" style="margin-top:12px;">الرصيد الافتتاحي للمورد (اختياري) — أدخل المبلغ المستحق للمورد بكل عملة على حدة. لا يُسجّل كدفعة ولا يؤثر على الصندوق.</div>
+                        <div class="grid-3" style="margin-top:8px;">
+                            <div class="form-group" style="margin-bottom:0;"><label>رصيد افتتاحي — ريال يمني (YER)</label><input type="number" min="0" step="0.01" inputmode="decimal" id="newSupplierOpeningYER" class="form-control num-input" placeholder="0.00"></div>
+                            <div class="form-group" style="margin-bottom:0;"><label>رصيد افتتاحي — ريال سعودي (SAR)</label><input type="number" min="0" step="0.01" inputmode="decimal" id="newSupplierOpeningSAR" class="form-control num-input" placeholder="0.00"></div>
+                            <div class="form-group" style="margin-bottom:0;"><label>رصيد افتتاحي — دولار أمريكي (USD)</label><input type="number" min="0" step="0.01" inputmode="decimal" id="newSupplierOpeningUSD" class="form-control num-input" placeholder="0.00"></div>
                         </div>
                     </div>
                 </div>
@@ -4913,7 +4919,13 @@ function initMenuPermissionCheckboxes() {
         const btn = document.getElementById('saveSupplierBtn');
         const name = document.getElementById('newSupplierName').value.trim();
         const phone = document.getElementById('newSupplierPhone').value.trim();
+        const openingBalances = {
+            YER: Number(document.getElementById('newSupplierOpeningYER')?.value || 0),
+            SAR: Number(document.getElementById('newSupplierOpeningSAR')?.value || 0),
+            USD: Number(document.getElementById('newSupplierOpeningUSD')?.value || 0)
+        };
         if (!name) { showToast('أدخل اسم المورد'); return; }
+        if (CURRENCY_CODES.some(code => !Number.isFinite(openingBalances[code]) || openingBalances[code] < 0)) { showToast('أدخل أرصدة افتتاحية صحيحة ولا تستخدم قيماً سالبة'); return; }
         const normalizedName = name.replace(/\s+/g, ' ').toLowerCase();
         if ((state.suppliers || []).some(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalizedName && String(item.phone || '-') === (phone || '-'))) {
             showToast('هذا المورد موجود مسبقاً في السجل؛ لم تتم إضافته مرة أخرى.'); return;
@@ -4921,15 +4933,20 @@ function initMenuPermissionCheckboxes() {
         isBusy = true;
         btn.disabled = true;
         try {
-            const record = { name, phone: phone || '-' };
+            const record = {
+                name, phone: phone || '-', openingBalances,
+                openingBalance: openingBalances.YER,
+                openingBalanceDate: getLocalDateKey()
+            };
             const result = await createRecordOnce('suppliers', 'sup', {
-                name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-', actor: dedupeActorId()
+                name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-', openingBalances, actor: dedupeActorId()
             }, record, `sup_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-' })}`);
             if (!result.created) { showToast('هذا المورد مسجل مسبقاً أو تمت إضافته للتو؛ لم تتم إضافة نسخة أخرى.'); return; }
             record.id = result.id;
             state.suppliers = (state.suppliers || []).concat(record);
             document.getElementById('newSupplierName').value = '';
             document.getElementById('newSupplierPhone').value = '';
+            ['YER','SAR','USD'].forEach(code => { const field = document.getElementById(`newSupplierOpening${code}`); if (field) field.value = ''; });
             document.getElementById('supplierFormContainer').classList.add('hidden');
             renderSupplierBalances();
             populateDropdowns();
@@ -6730,8 +6747,23 @@ function initMenuPermissionCheckboxes() {
         return sameNameCount === 1;
     }
 
+    function getSupplierOpeningBalance(supplier, currency) {
+        if (!supplier || !CURRENCY_CODES.includes(currency)) return 0;
+        if (supplier.openingBalances && typeof supplier.openingBalances === 'object' && Object.prototype.hasOwnProperty.call(supplier.openingBalances, currency)) {
+            return Math.max(0, Number(supplier.openingBalances[currency] || 0));
+        }
+        // توافق مع أي سجل مورد قديم يحتوي رصيداً افتتاحياً واحداً باليمني.
+        return currency === 'YER' ? Math.max(0, Number(supplier.openingBalance || 0)) : 0;
+    }
+
     function supplierTotalsFor(supplierId) {
-        const totals = { YER: { purchases: 0, initialPaid: 0, payments: 0, due: 0 }, SAR: { purchases: 0, initialPaid: 0, payments: 0, due: 0 }, USD: { purchases: 0, initialPaid: 0, payments: 0, due: 0 } };
+        const supplier = (state.suppliers || []).find(item => String(item.id) === String(supplierId));
+        const totals = {
+            YER: { opening: 0, purchases: 0, initialPaid: 0, payments: 0, debit: 0, credit: 0, due: 0 },
+            SAR: { opening: 0, purchases: 0, initialPaid: 0, payments: 0, debit: 0, credit: 0, due: 0 },
+            USD: { opening: 0, purchases: 0, initialPaid: 0, payments: 0, debit: 0, credit: 0, due: 0 }
+        };
+        CURRENCY_CODES.forEach(code => { totals[code].opening = getSupplierOpeningBalance(supplier, code); });
         (state.purchases || []).filter(p => isSupplierMovementFor(p, supplierId)).forEach(p => {
             const code = CURRENCY_CODES.includes(p.currency) ? p.currency : 'YER';
             if (p.kind === 'supplierPurchase') {
@@ -6741,7 +6773,11 @@ function initMenuPermissionCheckboxes() {
                 totals[code].payments += Number(p.amount || 0);
             }
         });
-        CURRENCY_CODES.forEach(code => { totals[code].due = totals[code].purchases - totals[code].initialPaid - totals[code].payments; });
+        CURRENCY_CODES.forEach(code => {
+            totals[code].debit = totals[code].opening + totals[code].purchases;
+            totals[code].credit = totals[code].initialPaid + totals[code].payments;
+            totals[code].due = totals[code].debit - totals[code].credit;
+        });
         return totals;
     }
 
@@ -6758,15 +6794,16 @@ function initMenuPermissionCheckboxes() {
             return `<tr>
                 <td><strong>${escapeUiText(supplier.name || '-')}</strong></td>
                 <td>${escapeUiText(supplier.phone || '-')}</td>
+                <td class="mono">${supplierCurrencySummary(totals, 'opening')}</td>
                 <td class="mono">${supplierCurrencySummary(totals, 'purchases')}</td>
-                <td class="mono">${supplierCurrencySummary(totals, 'initialPaid').replaceAll('<br>', '<br>')}${CURRENCY_CODES.some(code => totals[code].payments) ? '<br>' + supplierCurrencySummary(totals, 'payments') : ''}</td>
+                <td class="mono">${supplierCurrencySummary(totals, 'initialPaid')}${CURRENCY_CODES.some(code => totals[code].payments) ? '<br>' + supplierCurrencySummary(totals, 'payments') : ''}</td>
                 <td class="mono" style="color:var(--danger);font-weight:800;">${supplierCurrencySummary(totals, 'due')}</td>
                 <td><button type="button" class="btn btn-outline btn-sm" onclick="showSupplierLedger('${supplier.id}')"><i class="fa-solid fa-file-lines"></i> كشف الحساب</button></td>
                 <td>${hasFullAccess() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editSupplier('${supplier.id}')"><i class="fa-solid fa-pen"></i> تعديل</button> <button type="button" class="btn btn-danger btn-sm" onclick="deleteSupplierAccount('${supplier.id}')"><i class="fa-solid fa-trash"></i> حذف</button>` : '<span class="employee-permission-note">—</span>'}</td>
             </tr>`;
-        }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا يوجد موردون بعد. أضف المورد أولاً.</td></tr>';
+        }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا يوجد موردون بعد. أضف المورد أولاً.</td></tr>';
         const hint = document.getElementById('supplierBalancesCard');
-        if (hint) hint.textContent = 'كل فاتورة توريد تزيد حساب المورد وتضيف الكميات للمخزن. الدفعات تقلل الرصيد المستحق، والعملات تظهر منفصلة.';
+        if (hint) hint.textContent = 'الرصيد الافتتاحي وفواتير التوريد يزيدان مستحقات المورد، والدفعات تقللها. كل عملة تظهر مستقلة.';
         renderSupplierLedger();
     }
 
@@ -7368,10 +7405,25 @@ function initMenuPermissionCheckboxes() {
     }
 
     function getSupplierLedgerRecords(supplierId) {
-        return (state.purchases || [])
+        const supplier = (state.suppliers || []).find(item => String(item.id) === String(supplierId));
+        const movements = (state.purchases || [])
             .filter(item => isSupplierMovementFor(item, supplierId) && ['supplierPurchase', 'supplierPayment'].includes(item.kind))
-            .slice()
-            .sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.id || '').localeCompare(String(b.id || '')));
+            .slice();
+        const openings = CURRENCY_CODES.map(code => {
+            const amount = getSupplierOpeningBalance(supplier, code);
+            return amount > 0 ? {
+                id: `supplier-opening-${supplierId}-${code}`,
+                kind: 'supplierOpening', isOpeningEntry: true,
+                supplierId: String(supplierId), supplierName: supplier?.name || 'مورد',
+                currency: code, amount, date: 'افتتاحي',
+                title: 'الرصيد الافتتاحي للمورد', notes: 'الرصيد الافتتاحي للمورد'
+            } : null;
+        }).filter(Boolean);
+        return openings.concat(movements).sort((a,b) => {
+            if (a.isOpeningEntry && !b.isOpeningEntry) return -1;
+            if (!a.isOpeningEntry && b.isOpeningEntry) return 1;
+            return String(a.date || '').localeCompare(String(b.date || '')) || String(a.id || '').localeCompare(String(b.id || ''));
+        });
     }
 
     // اعرض الريال اليمني دائماً، وأظهر السعودي أو الدولار فقط عند وجود حركة فعلية بهما.
@@ -7379,9 +7431,8 @@ function initMenuPermissionCheckboxes() {
         const active = new Set(['YER']);
         (Array.isArray(records) ? records : []).forEach(item => {
             const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
-            const purchaseAmount = item.kind === 'supplierPurchase' ? Number(item.amount || item.totalAmount || 0) : 0;
-            const paidAmount = item.kind === 'supplierPurchase' ? Number(item.paidAmount || 0) : Number(item.amount || 0);
-            if (purchaseAmount > 0 || paidAmount > 0) active.add(code);
+            const amount = Number(item.amount || item.totalAmount || 0);
+            if (amount > 0) active.add(code);
         });
         return CURRENCY_CODES.filter(code => active.has(code));
     }
@@ -7399,22 +7450,24 @@ function initMenuPermissionCheckboxes() {
         const activeCurrencies = getSupplierLedgerActiveCurrencies(records);
         summary.innerHTML = activeCurrencies.map(code => {
             const t = totals[code] || { due: 0, purchases: 0, initialPaid: 0, payments: 0 };
-            return `<div class="mini-stat"><div class="mini-stat-label">المتبقي على المورد — ${code}</div><div class="mini-stat-val">${formatMoney(t.due)}</div><div class="mini-stat-label">توريدات ${formatMoney(t.purchases)} | مدفوع ${formatMoney(Number(t.initialPaid || 0) + Number(t.payments || 0))}</div></div>`;
+            return `<div class="mini-stat"><div class="mini-stat-label">المتبقي على المورد — ${code}</div><div class="mini-stat-val">${formatMoney(t.due)}</div><div class="mini-stat-label">افتتاحي ${formatMoney(t.opening || 0)} | توريدات ${formatMoney(t.purchases)} | مدفوع ${formatMoney(Number(t.initialPaid || 0) + Number(t.payments || 0))}</div></div>`;
         }).join('');
         const running = { YER: 0, SAR: 0, USD: 0 };
         body.innerHTML = records.length ? records.map(item => {
             const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+            const opening = item.kind === 'supplierOpening';
             const purchase = item.kind === 'supplierPurchase';
-            const total = purchase ? Number(item.amount || 0) : 0;
-            const paid = purchase ? Number(item.paidAmount || 0) : Number(item.amount || 0);
-            const due = purchase ? total - paid : -paid;
+            const total = (purchase || opening) ? Number(item.amount || 0) : 0;
+            const paid = purchase ? Number(item.paidAmount || 0) : (opening ? 0 : Number(item.amount || 0));
+            const due = (purchase || opening) ? total - paid : -paid;
             running[code] += due;
-            const detail = purchase ? (item.items || []).map(line => `${escapeUiText(line.name)} × ${formatQty(line.qty)} ${escapeUiText(line.unit)} @ ${formatMoney(line.costPrice)}`).join('<br>') : escapeUiText(item.notes || item.title || 'سداد للمورد');
-            const actions = !purchase && hasFullAccess()
+            const detail = opening ? 'الرصيد الافتتاحي للمورد' : purchase ? (item.items || []).map(line => `${escapeUiText(line.name)} × ${formatQty(line.qty)} ${escapeUiText(line.unit)} @ ${formatMoney(line.costPrice)}`).join('<br>') : escapeUiText(item.notes || item.title || 'سداد للمورد');
+            const actions = opening ? '—' : (!purchase && hasFullAccess()
                 ? `<button type="button" class="btn btn-outline btn-sm" onclick="editSupplierPayment('${String(item.id).replace(/'/g, '&#39;')}')">تعديل</button> <button type="button" class="btn btn-danger btn-sm" onclick="deleteSupplierPayment('${String(item.id).replace(/'/g, '&#39;')}')">حذف</button>`
-                : (hasFullAccess() ? '<span class="employee-permission-note">الفاتورة مرتبطة بالمخزون</span>' : '—');
-            return `<tr><td class="mono">${escapeUiText(item.date || '-')}</td><td><span class="badge ${purchase ? 'badge-sup' : 'badge-cash'}">${purchase ? 'فاتورة توريد' : 'سداد'}</span></td><td>${detail}${item.previousPaymentEntry ? '<br><small style="color:var(--text-muted)">دفعة سابقة — لم تخصم من الصندوق مرة أخرى</small>' : ''}</td><td class="mono">${purchase ? formatCurrency(total, code) : '—'}</td><td class="mono">${paid ? formatCurrency(paid, code) : '—'}</td><td class="mono">${purchase ? formatCurrency(total - paid, code) : formatCurrency(paid, code)}</td><td class="mono" style="font-weight:800;color:${running[code] >= 0 ? 'var(--danger)' : 'var(--success)'}">${formatCurrency(running[code], code)}</td><td>${actions}</td></tr>`;
-        }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد فواتير توريد أو دفعات مسجلة لهذا المورد</td></tr>';
+                : (hasFullAccess() ? '<span class="employee-permission-note">الفاتورة مرتبطة بالمخزون</span>' : '—'));
+            const movementLabel = opening ? 'رصيد افتتاحي' : purchase ? 'فاتورة توريد' : 'سداد';
+            return `<tr><td class="mono">${opening ? 'افتتاحي' : escapeUiText(item.date || '-')}</td><td><span class="badge ${purchase || opening ? 'badge-sup' : 'badge-cash'}">${movementLabel}</span></td><td>${detail}${item.previousPaymentEntry ? '<br><small style="color:var(--text-muted)">دفعة سابقة — لم تخصم من الصندوق مرة أخرى</small>' : ''}</td><td class="mono">${(purchase || opening) ? formatCurrency(total, code) : '—'}</td><td class="mono">${paid ? formatCurrency(paid, code) : '—'}</td><td class="mono">${(purchase || opening) ? formatCurrency(total - paid, code) : formatCurrency(paid, code)}</td><td class="mono" style="font-weight:800;color:${running[code] >= 0 ? 'var(--danger)' : 'var(--success)'}">${formatCurrency(running[code], code)}</td><td>${actions}</td></tr>`;
+        }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد فواتير توريد أو دفعات أو رصيد افتتاحي لهذا المورد</td></tr>';
     }
 
     function printSupplierLedger() {
@@ -7441,13 +7494,14 @@ function initMenuPermissionCheckboxes() {
         const running = { YER: 0, SAR: 0, USD: 0 };
         const rows = records.length ? records.map((item, index) => {
             const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+            const opening = item.kind === 'supplierOpening';
             const purchase = item.kind === 'supplierPurchase';
-            const total = purchase ? Number(item.amount || item.totalAmount || 0) : 0;
-            const paid = purchase ? Number(item.paidAmount || 0) : Number(item.amount || 0);
-            const remaining = purchase ? total - paid : 0;
-            running[code] += remaining - (purchase ? 0 : paid);
-            const detail = purchase
-                ? (Array.isArray(item.items) ? item.items.map(line => {
+            const total = (purchase || opening) ? Number(item.amount || item.totalAmount || 0) : 0;
+            const paid = purchase ? Number(item.paidAmount || 0) : (opening ? 0 : Number(item.amount || 0));
+            const remaining = (purchase || opening) ? total - paid : 0;
+            running[code] += remaining - ((!purchase && !opening) ? paid : 0);
+            const detail = opening ? 'الرصيد الافتتاحي للمورد'
+                : purchase ? (Array.isArray(item.items) ? item.items.map(line => {
                     const name = escapeUiText(line.name || line.itemName || 'صنف');
                     const qty = formatQty(line.qty ?? line.quantity ?? 0);
                     const unit = escapeUiText(line.unit || '');
@@ -7456,16 +7510,17 @@ function initMenuPermissionCheckboxes() {
                 }).join('') : '') || '<span class="muted">فاتورة توريد</span>'
                 : escapeUiText(item.notes || item.title || 'سداد للمورد');
             const runningColor = running[code] >= 0 ? 'debt' : 'credit';
+            const label = opening ? 'رصيد افتتاحي' : purchase ? 'فاتورة توريد' : 'سداد للمورد';
             return `<tr>
-                <td class="date-cell">${escapeUiText(item.date || '-')}</td>
-                <td><span class="move-badge ${purchase ? 'purchase' : 'payment'}">${purchase ? 'فاتورة توريد' : 'سداد للمورد'}</span></td>
+                <td class="date-cell">${opening ? 'افتتاحي' : escapeUiText(item.date || '-')}</td>
+                <td><span class="move-badge ${purchase || opening ? 'purchase' : 'payment'}">${label}</span></td>
                 <td class="detail-cell">${detail}</td>
-                <td class="amount">${purchase ? `${formatMoney(total)} ${code}` : '—'}</td>
+                <td class="amount">${(purchase || opening) ? `${formatMoney(total)} ${code}` : '—'}</td>
                 <td class="amount paid">${paid ? `${formatMoney(paid)} ${code}` : '—'}</td>
-                <td class="amount ${purchase && remaining > 0 ? 'debt' : ''}">${purchase ? `${formatMoney(remaining)} ${code}` : `${formatMoney(paid)} ${code}`}</td>
+                <td class="amount ${(purchase || opening) && remaining > 0 ? 'debt' : ''}">${(purchase || opening) ? `${formatMoney(remaining)} ${code}` : `${formatMoney(paid)} ${code}`}</td>
                 <td class="amount balance ${runningColor}">${formatMoney(running[code])} ${code}</td>
             </tr>`;
-        }).join('') : '<tr><td colspan="7" class="empty-row">لا توجد فواتير توريد أو دفعات مسجلة لهذا المورد حتى الآن.</td></tr>';
+        }).join('') : '<tr><td colspan="7" class="empty-row">لا توجد فواتير توريد أو دفعات أو رصيد افتتاحي لهذا المورد حتى الآن.</td></tr>';
 
         const win = window.open('', '_blank');
         if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لهذا الموقع حتى تتمكن من حفظ الكشف PDF'); return; }
