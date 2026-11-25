@@ -1888,6 +1888,10 @@
             border-radius: 8px;
             padding: 2px;
         }
+
+/* بحث الأصناف في الفاتورة بنفس مظهر زر عرض السعر */
+.sales-products-panel .quote-search-trigger{border-radius:10px;font-weight:900;letter-spacing:0;box-shadow:0 3px 10px rgba(24,105,62,.12)}
+.sales-products-panel .quote-search-trigger:focus-visible{outline:3px solid rgba(27,127,73,.28);outline-offset:2px}
 </style>
 <!-- Supplier payment ledger repair 2026-11-23-D -->
 
@@ -2228,7 +2232,7 @@
         <div id="invoiceProductPickerModal" class="quote-picker-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="invoiceProductPickerTitle" onclick="if(event.target===this)closeInvoiceProductPicker()">
             <div class="quote-picker-dialog">
                 <div class="quote-picker-head">
-                    <div><h3 id="invoiceProductPickerTitle">بحث واختيار أصناف الفاتورة</h3><small>ابحث باسم الصنف، راجع المتاح والسعر، وحدد الكمية ثم اضغط إضافة</small></div>
+                    <div><h3 id="invoiceProductPickerTitle">بحث واختيار أصناف الفاتورة</h3><small>ابحث عن أي صنف في المخزن، راجع سعره والمتاح، وحدد الكمية ثم اضغط إضافة</small></div>
                     <button type="button" class="btn btn-outline btn-sm" onclick="closeInvoiceProductPicker()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
                 </div>
                 <div class="form-group"><input id="invoiceProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderInvoiceProductPicker()" autocomplete="off"></div>
@@ -2317,7 +2321,7 @@
                             <div><strong><i class="fa-solid fa-boxes-stacked"></i> اختيار أصناف الفاتورة</strong><small>ابحث عن الأصناف وحدد الكمية قبل إضافتها</small></div>
                             <span class="badge badge-sup" id="invoiceProductsCount">0 صنف</span>
                         </div>
-                        <button type="button" class="btn btn-primary btn-full" style="width:100%;min-height:46px;margin:8px 0 4px" onclick="openInvoiceProductPicker()"><i class="fa-solid fa-magnifying-glass"></i> بحث الأصناف</button>
+                        <button type="button" class="btn btn-primary btn-full quote-search-trigger" style="width:100%;min-height:46px;margin:8px 0 4px" onclick="openInvoiceProductPicker()"><i class="fa-solid fa-magnifying-glass"></i> بحث الأصناف</button>
                         <div class="sales-direct-hint"><i class="fa-solid fa-circle-check"></i> اضغط «بحث الأصناف»، اكتب اسم الصنف، حدد الكمية ثم اضغط إضافة. يمكنك اختيار عدة أصناف من نفس النافذة.</div>
                         <div class="hidden" aria-hidden="true">
                             <input type="search" id="warehouseItemSearch" oninput="renderWarehouseCatalogDropdown()" autocomplete="off">
@@ -6892,10 +6896,10 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
             const count = document.getElementById('invoiceProductsCount'); if (count) count.textContent = '0 صنف';
             return;
         }
-        const branchItems = (state.warehouse || []).filter(w => (w.branchId || 'main_branch') === branchId && Number(w.qty || 0) > 0);
-        const items = branchItems.filter(w => !q || String(w.name || '').toLowerCase().includes(q));
+        const branchItems = (state.warehouse || []).filter(w => (w.branchId || 'main_branch') === branchId && isBranchAllowed(w.branchId || 'main_branch'));
+        const items = branchItems.filter(w => !q || String(w.name || '').toLocaleLowerCase('ar').includes(q));
         const count = document.getElementById('invoiceProductsCount');
-        if (count) count.textContent = `${items.length} صنف ظاهر`;
+        if (count) count.textContent = `${branchItems.length} صنف في المخزن`;
         if (quick) quick.innerHTML = '';
         sel.innerHTML = items.length
             ? items.map(w => `<option value="${escapeUiText(w.id)}">${escapeUiText(w.name)}</option>`).join('')
@@ -6990,15 +6994,16 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
             const count = document.getElementById('invoiceProductsCount'); if (count) count.textContent = '0 صنف';
             return;
         }
+        // اعرض كل أصناف الفرع مثل نافذة عرض السعر، حتى لو كانت الكمية صفرًا؛
+        // لكن امنع إضافة الصنف عندما لا يوجد رصيد قابل للبيع.
         const branchItems = (state.warehouse || []).filter(item =>
             String(item.branchId || 'main_branch') === String(branchId) && isBranchAllowed(item.branchId || 'main_branch')
-            && getInvoiceAllowedStockQty(item) > 0
         );
         const items = branchItems.filter(item => String(item.name || '').toLocaleLowerCase('ar').includes(query));
         const resultCount = document.getElementById('invoicePickerResultCount');
         if (resultCount) resultCount.textContent = `${items.length} صنف`;
         const count = document.getElementById('invoiceProductsCount');
-        if (count) count.textContent = `${branchItems.length} صنف`;
+        if (count) count.textContent = `${branchItems.length} صنف في المخزن`;
         if (!items.length) {
             grid.innerHTML = '<div class="empty-products"><i class="fa-solid fa-box-open"></i><br>لا توجد أصناف مطابقة في هذا المخزن.</div>';
             return;
