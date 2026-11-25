@@ -14018,6 +14018,33 @@ thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avo
 
 
 
+
+
+        /* بطاقات مؤشرات الصفحة الرئيسية فقط: أخضر كامل مع نص أبيض واضح */
+        #summaryStatsStrip .mini-stat {
+            background: linear-gradient(145deg, #176b43 0%, #218653 55%, #2b9862 100%) !important;
+            border: 1px solid #145a39 !important;
+            border-radius: 12px !important;
+            color: #ffffff !important;
+            box-shadow: 0 3px 10px rgba(16, 83, 51, 0.18), inset 0 1px 0 rgba(255,255,255,0.14) !important;
+        }
+        #summaryStatsStrip .mini-stat .mini-stat-label,
+        #summaryStatsStrip .mini-stat .mini-stat-val,
+        #summaryStatsStrip .mini-stat .mini-stat-val[style] {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.12);
+        }
+        #summaryStatsStrip .mini-stat .mini-stat-label {
+            font-weight: 800 !important;
+        }
+        #summaryStatsStrip .mini-stat .mini-stat-val {
+            font-weight: 900 !important;
+        }
+        #summaryStatsStrip .mini-stat:focus-within {
+            outline: 2px solid #9ee6bd;
+            outline-offset: 2px;
+        }
 </style>
 
 
