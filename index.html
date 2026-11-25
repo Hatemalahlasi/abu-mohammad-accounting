@@ -1975,8 +1975,9 @@
                     <img src="logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
                     <i class="fa-solid fa-industry" style="display:none;"></i>
                 </div>
-                <div style="min-width:0;">
+                <div class="header-brand-copy" style="min-width:0;">
                     <h2 id="headerWelcome" style="font-size:16.5px; font-weight:800; line-height:1.35;">معمل أبو محمد</h2>
+                    <span class="header-brand-subtitle">نظام الإدارة المتكامل</span>
                 </div>
             </div>
 
@@ -6008,7 +6009,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
     }
 
     function confirmLogout() {
-        if (!confirm('هل تريد تسجيل الخروج من النظام؟')) return;
+        if (!confirm('هل أنت متأكد أنك تريد تسجيل الخروج؟\n\nاضغط «موافق» للخروج أو «إلغاء» للعودة إلى النظام.')) return;
         handleLogout();
     }
 
@@ -14154,6 +14155,146 @@ thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avo
         }
 
 </style>
+
+<style id="homepage-login-matched-refinement">
+/* هوية الواجهة الرئيسية متناسقة مع صفحة الدخول */
+#mainAppView > .header-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 190px;
+    margin: 12px 0 18px;
+    padding: 20px 84px 22px;
+    border: 1px solid #d7e6dc;
+    border-radius: 25px;
+    border-bottom: 1px solid #d7e6dc;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(185, 28, 28, .075), transparent 30%),
+        radial-gradient(circle at 88% 82%, rgba(21, 128, 61, .10), transparent 34%),
+        linear-gradient(145deg, #ffffff 0%, #f8fcf9 55%, #fffafa 100%);
+    box-shadow: 0 12px 30px rgba(25, 78, 48, .075), 0 3px 10px rgba(157, 41, 48, .035);
+    overflow: hidden;
+}
+#mainAppView > .header-bar::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 5px;
+    background: linear-gradient(90deg, #b83238 0%, #d78a8d 28%, #6ea982 70%, #176b40 100%);
+}
+#mainAppView > .header-bar .header-brand {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    flex: 0 1 auto;
+    text-align: center;
+}
+#mainAppView > .header-bar .header-logo-square {
+    width: 104px;
+    height: 104px;
+    min-width: 104px;
+    border-radius: 27px;
+    padding: 8px;
+    border: 2px solid transparent;
+    background: linear-gradient(#fff, #fff) padding-box, linear-gradient(140deg, #1b7546 0%, #d8eadf 48%, #bd4349 100%) border-box;
+    box-shadow: 0 8px 20px rgba(23, 91, 53, .13), 0 3px 10px rgba(176, 49, 56, .07);
+}
+#mainAppView > .header-bar .header-logo-square img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+#mainAppView > .header-bar .header-brand-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+#mainAppView > .header-bar #headerWelcome {
+    margin: 0;
+    color: #185b38;
+    font-family: 'Cairo', sans-serif;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    line-height: 1.35 !important;
+    letter-spacing: -.25px;
+    text-shadow: 0 1px 0 rgba(255,255,255,.8);
+}
+#mainAppView > .header-bar .header-brand-subtitle {
+    display: block;
+    color: #78877d;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .15px;
+}
+#mainAppView > .header-bar #refreshDataBtn {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    z-index: 2;
+    min-height: 38px;
+    border-color: #cfe1d5;
+    background: rgba(255,255,255,.93);
+    color: #1c6840;
+    box-shadow: 0 3px 9px rgba(24, 84, 49, .06);
+}
+#mainAppView > .header-bar #refreshDataBtn:hover {
+    background: #eff8f1;
+    border-color: #7dae8b;
+}
+#mainAppView > .top-utility-row .btn-danger {
+    min-height: 38px;
+    border-radius: 11px;
+    box-shadow: 0 3px 9px rgba(185, 28, 28, .10);
+}
+#mainAppView > .top-utility-row .db-status,
+#mainAppView > .top-utility-row .badge-role {
+    border-radius: 999px;
+}
+@media (max-width: 600px) {
+    #mainAppView > .header-bar {
+        min-height: 166px;
+        padding: 17px 12px 18px;
+        margin-top: 10px;
+        border-radius: 20px;
+    }
+    #mainAppView > .header-bar .header-logo-square {
+        width: 88px;
+        height: 88px;
+        min-width: 88px;
+        border-radius: 23px;
+        padding: 7px;
+    }
+    #mainAppView > .header-bar #headerWelcome {
+        font-size: 21px !important;
+    }
+    #mainAppView > .header-bar .header-brand-subtitle {
+        font-size: 10px;
+    }
+    #mainAppView > .header-bar #refreshDataBtn {
+        top: 12px;
+        left: 12px;
+        min-height: 34px;
+        padding: 6px 9px;
+        font-size: 11px;
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    #mainAppView > .header-bar .header-logo-square {
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+    #mainAppView > .header-bar .header-logo-square:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 11px 23px rgba(23, 91, 53, .16), 0 4px 12px rgba(176, 49, 56, .09);
+    }
+}
+</style>
+
 </head>
 <body><div class="report-toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div>${safeSheets}
 <script>
