@@ -2217,7 +2217,7 @@
                 </div>
                 <div id="stockMovementSummary" class="summary-strip"></div>
                 <div class="table-responsive">
-                    <table><thead><tr><th>التاريخ</th><th>الصنف</th><th>الحركة</th><th>المخزن</th><th>داخل</th><th>خارج</th><th>البيان / المرجع</th><th>سجل بواسطة</th></tr></thead><tbody id="stockMovementBody"><tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد حركات معروضة</td></tr></tbody></table>
+                    <table><thead><tr><th>التاريخ</th><th>الصنف</th><th>الحركة</th><th>المخزن</th><th>داخل</th><th>خارج</th><th>البيان / المرجع والمصدر</th><th>سجل بواسطة</th><th>إجراءات</th></tr></thead><tbody id="stockMovementBody"><tr><td colspan="9" style="text-align:center;color:var(--text-muted);">لا توجد حركات معروضة</td></tr></tbody></table>
                 </div>
                 <button type="button" class="btn btn-primary btn-full" style="margin-top:12px" onclick="printInventoryMovementReport('all')"><i class="fa-solid fa-print"></i> طباعة / حفظ تقرير حركة المخزون</button>
             </div>
@@ -6617,6 +6617,29 @@ function initMenuPermissionCheckboxes() {
                     linkedSnap = await transaction.get(linkedRef);
                     if (linkedSnap.exists && linkedSnap.data()?.userAccountId && String(linkedSnap.data().userAccountId) !== recordId) throw new Error('RESTORE_LINK_CONFLICT');
                 }
+                // إعادة ربط أثر حذف فاتورة المبيعات أو فاتورة المورد بالمخزون عند الاستعادة.
+                const restoreStockMap = new Map();
+                const original = item.originalData || {};
+                if (collectionName === 'invoices' || (collectionName === 'purchases' && original.kind === 'supplierPurchase' && original.addToWarehouse !== false)) {
+                    const branchId = String(original.branchId || 'main_branch');
+                    for (const line of (Array.isArray(original.items) ? original.items : [])) {
+                        const stock = findInventoryItemRecord(line.stockItemId || line.itemId, line.name || line.itemName, line.unit || 'حبة', branchId) ||
+                            (state.warehouse || []).find(entry => String(entry.branchId || 'main_branch') === branchId && String(entry.name || '').trim().toLocaleLowerCase('ar') === String(line.name || line.itemName || '').trim().toLocaleLowerCase('ar') && String(entry.unit || 'حبة') === String(line.unit || 'حبة'));
+                        const stockId = String(stock?.id || line.stockItemId || line.itemId || `wh_item_${dedupeHash({ branchId, name:String(line.name || line.itemName || '').trim().toLowerCase(), unit:line.unit || 'حبة' })}`);
+                        const delta = Number(line.qty ?? line.quantity ?? 0) * (collectionName === 'invoices' ? -1 : 1);
+                        if (!Number.isFinite(delta) || Math.abs(delta) < 0.000001) continue;
+                        restoreStockMap.set(stockId, (restoreStockMap.get(stockId) || 0) + delta);
+                    }
+                }
+                const restoreStockRefs = [...restoreStockMap.entries()].map(([id,delta]) => ({ id, delta, ref:db.collection('warehouse').doc(id) }));
+                const restoreStockSnaps = [];
+                for (const entry of restoreStockRefs) restoreStockSnaps.push({ ...entry, snap:await transaction.get(entry.ref) });
+                for (const entry of restoreStockSnaps) {
+                    if (!entry.snap.exists) throw new Error('RESTORE_STOCK_ITEM_MISSING');
+                    const nextQty = Number(entry.snap.data()?.qty || 0) + entry.delta;
+                    if (nextQty < -0.000001) throw new Error('RESTORE_STOCK_NEGATIVE');
+                }
+                restoreStockSnaps.forEach(entry => transaction.update(entry.ref,{qty:Math.max(0,Number(entry.snap.data()?.qty || 0)+entry.delta)}));
                 transaction.set(originalRef, item.originalData);
                 if (linkedRef && linkedSnap?.exists) {
                     if (collectionName === 'staff') transaction.update(linkedRef, { staffId: recordId });
@@ -6630,7 +6653,13 @@ function initMenuPermissionCheckboxes() {
             showToast('تمت استعادة السجل إلى مكانه الأصلي');
         } catch (error) {
             console.warn('Restore trash item error:', error);
-            showToast(error?.message === 'RESTORE_TARGET_EXISTS' ? 'لا يمكن الاستعادة لأن سجلاً بنفس المعرّف موجود حالياً؛ لم يتم استبداله.' : (error?.message === 'RESTORE_LINK_CONFLICT' ? 'تعذرت الاستعادة لأن حساب الدخول مرتبط حالياً بملف موظف آخر.' : 'تعذرت استعادة السجل؛ تحقق من صلاحيات قاعدة البيانات'));
+            const restoreMessages = {
+                RESTORE_TARGET_EXISTS:'لا يمكن الاستعادة لأن سجلاً بنفس المعرّف موجود حالياً؛ لم يتم استبداله.',
+                RESTORE_LINK_CONFLICT:'تعذرت الاستعادة لأن حساب الدخول مرتبط حالياً بملف موظف آخر.',
+                RESTORE_STOCK_ITEM_MISSING:'تعذرت استعادة الفاتورة لأن بطاقة أحد الأصناف غير موجودة في المخزون.',
+                RESTORE_STOCK_NEGATIVE:'تعذرت استعادة الفاتورة لأن رصيد المخزون لا يكفي لإعادة إخراج الكمية.'
+            };
+            showToast(restoreMessages[error?.message] || 'تعذرت استعادة السجل؛ تحقق من صلاحيات قاعدة البيانات');
         } finally { isBusy = false; }
     }
 
@@ -8320,14 +8349,33 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         }
         const inv = state.invoices.find(i => i.id === invId);
         if (!inv) return;
+        if (!isBranchAllowedForOperation(inv.branchId || 'main_branch', 'warehouseTab')) { showToast('ليس لديك صلاحية على مخزن هذه الفاتورة'); return; }
         if (!confirm(`تأكيد حذف الفاتورة (${inv.id})؟`)) return;
 
         isBusy = true;
         try {
-            await moveRecordToTrash('invoices', invId);
-            showToast('تم حذف الفاتورة وتحديث الأرصدة');
+            await moveRecordToTrash('invoices', invId, { beforeDelete: async (transaction, originalData) => {
+                const branchId = String(originalData.branchId || 'main_branch');
+                const totals = new Map();
+                for (const line of (originalData.items || [])) {
+                    const stock = findInventoryItemRecord(line.stockItemId || line.itemId, line.name, line.unit || 'حبة', branchId) ||
+                        (state.warehouse || []).find(entry => String(entry.branchId || 'main_branch') === branchId && String(entry.name || '').trim().toLocaleLowerCase('ar') === String(line.name || '').trim().toLocaleLowerCase('ar') && String(entry.unit || 'حبة') === String(line.unit || 'حبة'));
+                    if (!stock) throw new Error('INVOICE_STOCK_ITEM_MISSING');
+                    totals.set(String(stock.id),(totals.get(String(stock.id)) || 0)+Number(line.qty || 0));
+                }
+                const refs = [...totals.entries()].map(([id,qty]) => ({id,qty,ref:db.collection('warehouse').doc(id)}));
+                const snaps = [];
+                for (const entry of refs) snaps.push({...entry,snap:await transaction.get(entry.ref)});
+                for (const entry of snaps) if (!entry.snap.exists) throw new Error('INVOICE_STOCK_ITEM_MISSING');
+                snaps.forEach(entry => transaction.update(entry.ref,{qty:Number(entry.snap.data()?.qty || 0)+entry.qty}));
+            }});
+            state.invoices = (state.invoices || []).filter(item => String(item.id) !== String(invId));
+            refreshInventoryMovementViews();
+            renderInvoicesTable();
+            showToast('تم حذف الفاتورة ونقلها إلى سلة المهملات وإرجاع الكميات للمخزون');
         } catch (e) {
-            showToast('تعذر حذف الفاتورة');
+            console.warn('Delete invoice and restore stock error:',e);
+            showToast(e?.message === 'INVOICE_STOCK_ITEM_MISSING' ? 'لا يمكن حذف الفاتورة لأن أحد أصنافها غير موجود في المخزون؛ لم يتم حذف شيء' : 'تعذر حذف الفاتورة أو عكس أثرها من المخزون');
         } finally {
             isBusy = false;
         }
@@ -9488,50 +9536,341 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 itemId: String(movement.itemId || ''), itemName: movement.itemName || 'صنف',
                 unit: movement.unit || 'حبة', branchId, branchName: movement.branchName || inventoryBranchName(branchId),
                 type: movement.type || (qty > 0 ? 'إدخال مخزون' : 'إخراج مخزون'), qty,
-                reference: movement.reference || movement.note || '-', actor: movement.actor || ''
+                reference: movement.reference || movement.note || '-', actor: movement.actor || '',
+                sourceType: movement.sourceType || 'unknown', sourceId: String(movement.sourceId || ''),
+                sourceLineIndex: Number.isInteger(movement.sourceLineIndex) ? movement.sourceLineIndex : -1,
+                sourceLogId: String(movement.sourceLogId || ''), sourceLogIndex: Number.isInteger(movement.sourceLogIndex) ? movement.sourceLogIndex : -1,
+                transferId: String(movement.transferId || '')
             });
         };
 
-        // فواتير المورد التي دخلت بضاعتها فعلاً إلى المخزون.
+        // كل سطر توريد يأتي من فاتورة مورد محفوظة؛ نعرض المورد ورقم سجل الفاتورة لتمييز مصدر الحركة.
         (state.purchases || []).filter(purchase => purchase.kind === 'supplierPurchase' && purchase.addToWarehouse !== false).forEach(purchase => {
-            (Array.isArray(purchase.items) ? purchase.items : []).forEach(line => {
+            (Array.isArray(purchase.items) ? purchase.items : []).forEach((line, lineIndex) => {
                 const item = findInventoryItemRecord(line.stockItemId || line.itemId, line.name || line.itemName, line.unit, purchase.branchId);
+                const sourceRef = purchase.refNumber || purchase.supplierInvoiceNumber || purchase.title || purchase.id || 'فاتورة توريد';
                 add({ date: purchase.date, itemId: item?.id || line.stockItemId || line.itemId || '', itemName: line.name || line.itemName, unit: line.unit,
                     branchId: purchase.branchId, branchName: purchase.branchName, qty: Math.abs(Number(line.qty ?? line.quantity ?? 0)),
-                    type: 'توريد من مورد', reference: purchase.title || `فاتورة ${purchase.id || ''}`, actor: purchase.employee || purchase.createdByUserId || '' });
+                    type: 'توريد من مورد', reference: `${sourceRef} · المورد: ${purchase.supplierName || 'غير محدد'} · رقم السجل: ${purchase.id || '—'} · السطر: ${lineIndex + 1}`,
+                    actor: purchase.employee || purchase.createdByUserId || '', sourceType: 'supplierPurchase', sourceId: purchase.id, sourceLineIndex: lineIndex });
             });
         });
 
-        // فواتير المبيعات تمثل خروجاً من المخزون.
+        // فواتير المبيعات تمثل خروجاً من المخزون، مع الاحتفاظ بمرجع يفتح الفاتورة الأصلية.
         (state.invoices || []).forEach(invoice => {
-            (Array.isArray(invoice.items) ? invoice.items : []).forEach(line => {
+            (Array.isArray(invoice.items) ? invoice.items : []).forEach((line, lineIndex) => {
                 const item = findInventoryItemRecord(line.stockItemId || line.itemId, line.name, line.unit, invoice.branchId);
                 add({ date: invoice.date, itemId: item?.id || line.stockItemId || line.itemId || '', itemName: line.name, unit: line.unit,
                     branchId: invoice.branchId, branchName: invoice.branchName, qty: -Math.abs(Number(line.qty || 0)),
-                    type: 'مبيعات', reference: `فاتورة ${invoice.refNumber || invoice.id || ''} — ${invoice.customerName || ''}`, actor: invoice.employee || '' });
+                    type: 'مبيعات', reference: `فاتورة ${invoice.refNumber || invoice.id || ''} — ${invoice.customerName || ''}`, actor: invoice.employee || '',
+                    sourceType: 'invoice', sourceId: invoice.id, sourceLineIndex: lineIndex });
             });
         });
 
-        // إدخال/تسوية الكميات المسجلة على بطاقة الصنف.
+        // حركات الإدخال والتسوية اليدوية المرتبطة بسجل الصنف نفسه.
         (state.warehouse || []).forEach(item => {
             const branchId = item.branchId || 'main_branch';
-            (Array.isArray(item.quantityAdjustmentHistory) ? item.quantityAdjustmentHistory : []).forEach(log => {
+            (Array.isArray(item.quantityAdjustmentHistory) ? item.quantityAdjustmentHistory : []).forEach((log, logIndex) => {
                 const difference = log.mode === 'set'
                     ? Number(log.quantityAfter || 0) - Number(log.previousQty || 0)
                     : Number(log.qty || 0);
                 add({ date: log.date || log.createdAt, itemId: log.itemId || item.id, itemName: log.itemName || item.name, unit: log.unit || item.unit,
                     branchId: log.branchId || branchId, branchName: log.branchName || item.branchName, qty: difference,
-                    type: log.mode === 'set' ? 'تسوية رصيد' : 'إدخال كميات', reference: log.mode === 'set' ? `من ${formatQty(log.previousQty || 0)} إلى ${formatQty(log.quantityAfter || 0)}` : 'إضافة كمية للمخزون', actor: log.actorName || '' });
+                    type: log.mode === 'set' ? 'تسوية رصيد' : 'إدخال كميات',
+                    reference: log.mode === 'set' ? `من ${formatQty(log.previousQty || 0)} إلى ${formatQty(log.quantityAfter || 0)}` : 'إضافة كمية للمخزون',
+                    actor: log.actorName || '', sourceType: 'quantityAdjustment', sourceId: item.id,
+                    sourceLogId: log.id || '', sourceLogIndex: logIndex });
             });
-            (Array.isArray(item.warehouseMovementHistory) ? item.warehouseMovementHistory : []).forEach(log => {
+            (Array.isArray(item.warehouseMovementHistory) ? item.warehouseMovementHistory : []).forEach((log, logIndex) => {
                 add({ date: log.date || log.createdAt, itemId: log.itemId || item.id, itemName: log.itemName || item.name, unit: log.unit || item.unit,
                     branchId: log.branchId || branchId, branchName: log.branchName || item.branchName, qty: Number(log.qty || 0),
-                    type: log.type || 'حركة مخزون', reference: log.reference || log.note || '-', actor: log.actor || log.actorName || '' });
+                    type: log.type || 'حركة مخزون', reference: log.reference || log.note || '-', actor: log.actor || log.actorName || '',
+                    sourceType: log.transferId ? 'transfer' : 'warehouseLog', sourceId: item.id, sourceLogId: log.id || '', sourceLogIndex: logIndex, transferId: log.transferId || '' });
             });
         });
 
         return rows.sort((a,b) => String(b.date).localeCompare(String(a.date)) || String(a.itemName).localeCompare(String(b.itemName), 'ar'));
     }
+
+    function renderInventoryMovementActions(row) {
+        const editAllowed = canEditRecord();
+        const deleteAllowed = canDeleteRecord();
+        const enc = value => encodeURIComponent(String(value || ''));
+        const buttons = [];
+        if (row.sourceType === 'supplierPurchase') {
+            if (editAllowed) buttons.push(`<button type="button" class="btn btn-outline btn-sm" onclick="editSupplierStockMovement('${enc(row.sourceId)}',${row.sourceLineIndex})" title="تعديل كمية وسعر سطر التوريد">تعديل</button>`);
+            if (deleteAllowed) buttons.push(`<button type="button" class="btn btn-danger btn-sm" onclick="deleteSupplierStockMovement('${enc(row.sourceId)}',${row.sourceLineIndex})" title="حذف حركة التوريد من الفاتورة">حذف</button>`);
+        } else if (row.sourceType === 'invoice') {
+            if (editAllowed) buttons.push(`<button type="button" class="btn btn-outline btn-sm" onclick="editSalesInvoice('${enc(row.sourceId)}')">تعديل الفاتورة</button>`);
+            if (deleteAllowed) buttons.push(`<button type="button" class="btn btn-danger btn-sm" onclick="deleteInvoiceRecord('${enc(row.sourceId)}')">حذف</button>`);
+        } else if (row.sourceType === 'quantityAdjustment') {
+            if (editAllowed) buttons.push(`<button type="button" class="btn btn-outline btn-sm" onclick="editInventoryAdjustmentMovement('${enc(row.sourceId)}','${enc(row.sourceLogId)}',${row.sourceLogIndex})">تعديل</button>`);
+            if (deleteAllowed) buttons.push(`<button type="button" class="btn btn-danger btn-sm" onclick="deleteInventoryAdjustmentMovement('${enc(row.sourceId)}','${enc(row.sourceLogId)}',${row.sourceLogIndex})">حذف</button>`);
+        } else if (row.sourceType === 'transfer' && row.transferId) {
+            if (editAllowed) buttons.push(`<button type="button" class="btn btn-outline btn-sm" onclick="editTransferOperation('${enc(row.transferId)}')">تعديل العملية</button>`);
+            if (deleteAllowed) buttons.push(`<button type="button" class="btn btn-danger btn-sm" onclick="deleteTransferOperation('${enc(row.transferId)}')">حذف</button>`);
+        }
+        return buttons.length ? `<div style="display:flex;gap:5px;flex-wrap:wrap;min-width:105px;">${buttons.join('')}</div>` : '<span style="color:var(--text-muted)">—</span>';
+    }
+
+    function refreshInventoryMovementViews() {
+        renderInventoryMovementReport();
+        if (typeof renderInventoryItemMovementReport === 'function') renderInventoryItemMovementReport();
+        if (typeof renderWarehouseTable === 'function') renderWarehouseTable();
+        if (typeof renderItemList === 'function') renderItemList();
+        if (typeof renderStats === 'function') renderStats();
+        if (typeof renderSupplierBalances === 'function') renderSupplierBalances();
+        if (typeof renderSupplierLedger === 'function' && document.getElementById('supplierLedgerSelect')?.value) renderSupplierLedger();
+        if (typeof renderCashboxesList === 'function') renderCashboxesList();
+    }
+
+    function getSupplierMovementStockItem(purchase, line) {
+        const branchId = String(purchase?.branchId || 'main_branch');
+        return findInventoryItemRecord(line?.stockItemId || line?.itemId, line?.name || line?.itemName, line?.unit || 'حبة', branchId) ||
+            (state.warehouse || []).find(item => String(item.branchId || 'main_branch') === branchId &&
+                String(item.name || '').trim().toLocaleLowerCase('ar') === String(line?.name || line?.itemName || '').trim().toLocaleLowerCase('ar') &&
+                String(item.unit || 'حبة') === String(line?.unit || 'حبة')) || null;
+    }
+
+    function supplierPurchasePaymentAfterTotalChange(purchase, newTotal) {
+        const type = String(purchase.paymentType || 'credit');
+        if (type === 'cash') return newTotal;
+        if (type === 'credit') return 0;
+        return Number(purchase.paidAmount || 0);
+    }
+
+    async function editSupplierStockMovement(encodedPurchaseId, lineIndex) {
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية تعديل حركات المخزون'); return; }
+        const purchaseId = decodeURIComponent(encodedPurchaseId || '');
+        const purchase = (state.purchases || []).find(item => String(item.id) === purchaseId && item.kind === 'supplierPurchase');
+        if (!purchase || purchase.addToWarehouse === false) { showToast('فاتورة التوريد غير موجودة أو لا تدخل بضاعتها للمخزون'); return; }
+        if (!isBranchAllowedForOperation(purchase.branchId || 'main_branch', 'warehouseTab')) { showToast('ليس لديك صلاحية على مخزن حركة التوريد'); return; }
+        const items = Array.isArray(purchase.items) ? purchase.items.slice() : [];
+        const line = items[Number(lineIndex)];
+        if (!line) { showToast('سطر التوريد غير موجود؛ حدّث التقرير ثم أعد المحاولة'); return; }
+        const stock = getSupplierMovementStockItem(purchase, line);
+        if (!stock) { showToast('لم أجد بطاقة الصنف المرتبطة بهذه الحركة؛ لم يتم تعديل شيء'); return; }
+        const nextQtyText = prompt(`تعديل كمية التوريد للصنف: ${line.name || line.itemName}\nالكمية الحالية: ${formatQty(line.qty ?? line.quantity ?? 0)}\nالمورد: ${purchase.supplierName || 'غير محدد'}\nرقم سجل فاتورة المورد: ${purchase.id}`, String(Number(line.qty ?? line.quantity ?? 0)));
+        if (nextQtyText === null) return;
+        const nextQty = Number(nextQtyText);
+        if (!Number.isFinite(nextQty) || nextQty <= 0) { showToast('أدخل كمية صحيحة أكبر من صفر؛ للحذف استخدم زر حذف'); return; }
+        const nextCostText = prompt(`سعر تكلفة الوحدة الجديد (${purchase.currency || 'YER'}):`, String(Number(line.costPrice ?? line.unitCost ?? 0)));
+        if (nextCostText === null) return;
+        const nextCost = Number(nextCostText);
+        if (!Number.isFinite(nextCost) || nextCost <= 0) { showToast('أدخل سعر تكلفة صحيحاً أكبر من صفر'); return; }
+        const oldQty = Number(line.qty ?? line.quantity ?? 0);
+        const oldCost = Number(line.costPrice ?? line.unitCost ?? 0);
+        if (Math.abs(nextQty - oldQty) < 0.000001 && Math.abs(nextCost - oldCost) < 0.000001) { showToast('لم تتغير الكمية أو التكلفة'); return; }
+        const nextItems = items.map((entry, index) => index === Number(lineIndex) ? { ...entry, qty: nextQty, quantity: nextQty, costPrice: nextCost, unitCost: nextCost, stockItemId: stock.id } : entry);
+        const nextTotal = nextItems.reduce((sum, entry) => sum + Number(entry.qty ?? entry.quantity ?? 0) * Number(entry.costPrice ?? entry.unitCost ?? 0), 0);
+        let nextPaid = supplierPurchasePaymentAfterTotalChange(purchase, nextTotal);
+        if (nextPaid > nextTotal + 0.000001) {
+            const answer = prompt(`بعد تعديل الفاتورة أصبح إجماليها ${formatMoney(nextTotal)} ${purchase.currency || 'YER'}، والمبلغ المسدد الحالي أكبر منه. أدخل المبلغ المسدد الصحيح:`, String(nextTotal));
+            if (answer === null) return;
+            nextPaid = Number(answer);
+        }
+        if (!Number.isFinite(nextPaid) || nextPaid < 0 || nextPaid > nextTotal + 0.000001) { showToast('المبلغ المسدد يجب أن يكون بين صفر وإجمالي فاتورة المورد'); return; }
+        if (!confirm(`تأكيد تعديل حركة التوريد؟\nالكمية: ${formatQty(oldQty)} ← ${formatQty(nextQty)}\nالتكلفة: ${formatMoney(oldCost)} ← ${formatMoney(nextCost)} ${purchase.currency || 'YER'}\nسيتم تحديث كمية المخزون وإجمالي حساب المورد، وأي دفعة نقدية مرتبطة بالفاتورة.`)) return;
+        const purchaseRef = db.collection('purchases').doc(purchaseId);
+        const stockRef = db.collection('warehouse').doc(String(stock.id));
+        isBusy = true;
+        try {
+            const result = await db.runTransaction(async transaction => {
+                const purchaseSnap = await transaction.get(purchaseRef);
+                const stockSnap = await transaction.get(stockRef);
+                if (!purchaseSnap.exists || !stockSnap.exists) throw new Error('MOVEMENT_SOURCE_MISSING');
+                const currentPurchase = purchaseSnap.data() || {};
+                const currentItems = Array.isArray(currentPurchase.items) ? currentPurchase.items.slice() : [];
+                const currentLine = currentItems[Number(lineIndex)];
+                if (!currentLine || Math.abs(Number(currentLine.qty ?? currentLine.quantity ?? 0) - oldQty) > 0.000001 || Math.abs(Number(currentLine.costPrice ?? currentLine.unitCost ?? 0) - oldCost) > 0.000001) throw new Error('MOVEMENT_CHANGED');
+                const currentStock = stockSnap.data() || {};
+                const stockNextQty = Number(currentStock.qty || 0) + (nextQty - oldQty);
+                if (stockNextQty < -0.000001) throw new Error('MOVEMENT_STOCK_NEGATIVE');
+                const oldTotal = Number(currentPurchase.amount ?? currentPurchase.totalAmount ?? 0);
+                const paid = supplierPurchasePaymentAfterTotalChange(currentPurchase, nextTotal);
+                const finalPaid = paid > nextTotal + 0.000001 ? Number(nextPaid) : paid;
+                if (!Number.isFinite(finalPaid) || finalPaid < 0 || finalPaid > nextTotal + 0.000001) throw new Error('MOVEMENT_PAID_INVALID');
+                currentItems[Number(lineIndex)] = { ...currentLine, qty: nextQty, quantity: nextQty, costPrice: nextCost, unitCost: nextCost, stockItemId: stock.id };
+                const purchasePatch = { items: currentItems, amount: nextTotal, totalAmount: nextTotal, paidAmount: finalPaid, outstanding: nextTotal - finalPaid,
+                    updatedAt: new Date().toISOString(), updatedBy: getAccountDisplayName(currentUser),
+                    inventoryMovementEditHistory: [...(currentPurchase.inventoryMovementEditHistory || []), { lineIndex:Number(lineIndex), oldQty, newQty:nextQty, oldCost, newCost:nextCost, editedAt:new Date().toISOString(), editedBy:getAccountDisplayName(currentUser) }].slice(-100) };
+                const stockPatch = { qty: Math.max(0, stockNextQty) };
+                if (String(currentStock.sourcePurchaseId || '') === purchaseId) {
+                    stockPatch.costPrice = nextCost;
+                    stockPatch.costCurrency = currentPurchase.currency || 'YER';
+                }
+                transaction.update(stockRef, stockPatch);
+                transaction.update(purchaseRef, purchasePatch);
+                return { purchasePatch, stockQty:Math.max(0,stockNextQty), stockPatch };
+            });
+            Object.assign(purchase, result.purchasePatch);
+            stock.qty = result.stockQty;
+            if (result.stockPatch.costPrice !== undefined) { stock.costPrice = result.stockPatch.costPrice; stock.costCurrency = result.stockPatch.costCurrency; }
+            refreshInventoryMovementViews();
+            showToast('تم تعديل حركة التوريد وتحديث المخزون وحساب المورد');
+        } catch (error) {
+            console.warn('Edit supplier stock movement error:', error);
+            const messages = { MOVEMENT_SOURCE_MISSING:'فاتورة التوريد أو بطاقة الصنف غير موجودة', MOVEMENT_CHANGED:'تم تعديل الفاتورة من جهاز آخر؛ حدّث التقرير وأعد المحاولة', MOVEMENT_STOCK_NEGATIVE:'لا يمكن تقليل التوريد بهذه الكمية لأن رصيد المخزون الحالي لا يكفي لعكس الفرق', MOVEMENT_PAID_INVALID:'المبلغ المسدد غير صالح' };
+            showToast(messages[error?.message] || 'تعذر تعديل حركة التوريد؛ لم يتم حفظ التغيير');
+        } finally { isBusy = false; }
+    }
+
+    async function deleteSupplierStockMovement(encodedPurchaseId, lineIndex) {
+        if (!canDeleteRecord()) { showToast('ليس لديك صلاحية حذف حركات المخزون'); return; }
+        const purchaseId = decodeURIComponent(encodedPurchaseId || '');
+        const purchase = (state.purchases || []).find(item => String(item.id) === purchaseId && item.kind === 'supplierPurchase');
+        if (!purchase || purchase.addToWarehouse === false) { showToast('فاتورة التوريد غير موجودة أو لا تدخل بضاعتها للمخزون'); return; }
+        if (!isBranchAllowedForOperation(purchase.branchId || 'main_branch', 'warehouseTab')) { showToast('ليس لديك صلاحية على مخزن حركة التوريد'); return; }
+        const items = Array.isArray(purchase.items) ? purchase.items.slice() : [];
+        const line = items[Number(lineIndex)];
+        if (!line) { showToast('سطر التوريد غير موجود؛ حدّث التقرير ثم أعد المحاولة'); return; }
+        const stock = getSupplierMovementStockItem(purchase, line);
+        if (!stock) { showToast('بطاقة الصنف المرتبطة بالحركة غير موجودة؛ لم يتم حذف شيء'); return; }
+        const oldQty = Number(line.qty ?? line.quantity ?? 0);
+        const remainingItems = items.filter((entry, index) => index !== Number(lineIndex));
+        const nextTotal = remainingItems.reduce((sum, entry) => sum + Number(entry.qty ?? entry.quantity ?? 0) * Number(entry.costPrice ?? entry.unitCost ?? 0), 0);
+        let nextPaid = supplierPurchasePaymentAfterTotalChange(purchase, nextTotal);
+        if (nextTotal > 0 && nextPaid > nextTotal + 0.000001) {
+            const answer = prompt(`بعد حذف السطر يصبح إجمالي فاتورة المورد ${formatMoney(nextTotal)} ${purchase.currency || 'YER'}، والمبلغ المسدد الحالي أكبر منه. أدخل المبلغ المسدد الصحيح:`, String(nextTotal));
+            if (answer === null) return;
+            nextPaid = Number(answer);
+        }
+        if (nextTotal > 0 && (!Number.isFinite(nextPaid) || nextPaid < 0 || nextPaid > nextTotal + 0.000001)) { showToast('المبلغ المسدد يجب أن يكون بين صفر وإجمالي الفاتورة'); return; }
+        const lineLabel = `${line.name || line.itemName || 'الصنف'} — ${formatQty(oldQty)} ${line.unit || 'حبة'}`;
+        const wholeInvoice = remainingItems.length === 0;
+        if (!confirm(wholeInvoice
+            ? `هذا هو الصنف الوحيد في فاتورة المورد «${purchase.supplierName || ''}». سيتم نقل فاتورة المورد كاملة إلى سلة المهملات لمدة 7 أيام، وإرجاع أثرها من المخزون وحساب المورد والصندوق.\n${lineLabel}\nمتأكد؟`
+            : `حذف حركة التوريد التالية من فاتورة المورد مع عكس الكمية من المخزون وتحديث حساب المورد؟\n${lineLabel}`)) return;
+        isBusy = true;
+        try {
+            if (wholeInvoice) {
+                await moveRecordToTrash('purchases', purchaseId, { beforeDelete: async (transaction, originalData) => {
+                    if (originalData.kind !== 'supplierPurchase' || originalData.addToWarehouse === false) return;
+                    const totals = new Map();
+                    for (const entry of (originalData.items || [])) {
+                        const target = getSupplierMovementStockItem(originalData, entry);
+                        if (!target) throw new Error('MOVEMENT_STOCK_ITEM_MISSING');
+                        const id = String(target.id);
+                        totals.set(id, (totals.get(id) || 0) + Number(entry.qty ?? entry.quantity ?? 0));
+                    }
+                    const refs = [...totals.entries()].map(([id, qty]) => ({ id, qty, ref:db.collection('warehouse').doc(id) }));
+                    const snaps = [];
+                    for (const entry of refs) snaps.push({ ...entry, snap:await transaction.get(entry.ref) });
+                    for (const entry of snaps) {
+                        if (!entry.snap.exists) throw new Error('MOVEMENT_STOCK_ITEM_MISSING');
+                        const currentQty = Number(entry.snap.data()?.qty || 0);
+                        if (currentQty + 0.000001 < entry.qty) throw new Error('MOVEMENT_STOCK_NEGATIVE');
+                    }
+                    snaps.forEach(entry => transaction.update(entry.ref, { qty:Math.max(0,Number(entry.snap.data()?.qty || 0)-entry.qty) }));
+                }});
+                // حدّث الحالة المحلية فوراً بعد نجاح المعاملة حتى يظهر الرصيد المصحح دون إعادة تحميل الصفحة.
+                for (const entry of (purchase.items || [])) {
+                    const localStock = getSupplierMovementStockItem(purchase, entry);
+                    if (localStock) localStock.qty = Math.max(0, Number(localStock.qty || 0) - Number(entry.qty ?? entry.quantity ?? 0));
+                }
+                state.purchases = (state.purchases || []).filter(item => String(item.id) !== purchaseId);
+            } else {
+                const purchaseRef = db.collection('purchases').doc(purchaseId);
+                const stockRef = db.collection('warehouse').doc(String(stock.id));
+                const result = await db.runTransaction(async transaction => {
+                    const purchaseSnap = await transaction.get(purchaseRef);
+                    const stockSnap = await transaction.get(stockRef);
+                    if (!purchaseSnap.exists || !stockSnap.exists) throw new Error('MOVEMENT_SOURCE_MISSING');
+                    const currentPurchase = purchaseSnap.data() || {};
+                    const currentItems = Array.isArray(currentPurchase.items) ? currentPurchase.items.slice() : [];
+                    const currentLine = currentItems[Number(lineIndex)];
+                    if (!currentLine || Math.abs(Number(currentLine.qty ?? currentLine.quantity ?? 0) - oldQty) > 0.000001) throw new Error('MOVEMENT_CHANGED');
+                    const currentStock = stockSnap.data() || {};
+                    const stockNextQty = Number(currentStock.qty || 0) - oldQty;
+                    if (stockNextQty < -0.000001) throw new Error('MOVEMENT_STOCK_NEGATIVE');
+                    const oldTotal = Number(currentPurchase.amount ?? currentPurchase.totalAmount ?? 0);
+                    const paid = supplierPurchasePaymentAfterTotalChange(currentPurchase, nextTotal);
+                    const finalPaid = paid > nextTotal + 0.000001 ? Number(nextPaid) : paid;
+                    if (!Number.isFinite(finalPaid) || finalPaid < 0 || finalPaid > nextTotal + 0.000001) throw new Error('MOVEMENT_PAID_INVALID');
+                    const patch = { items:remainingItems, amount:nextTotal, totalAmount:nextTotal, paidAmount:finalPaid, outstanding:nextTotal-finalPaid,
+                        updatedAt:new Date().toISOString(), updatedBy:getAccountDisplayName(currentUser),
+                        voidedInventoryLines:[...(currentPurchase.voidedInventoryLines || []), { ...currentLine, removedAt:new Date().toISOString(), removedBy:getAccountDisplayName(currentUser), lineIndex:Number(lineIndex) }].slice(-100) };
+                    transaction.update(stockRef,{qty:Math.max(0,stockNextQty)});
+                    transaction.update(purchaseRef,patch);
+                    return { patch, stockQty:Math.max(0,stockNextQty) };
+                });
+                Object.assign(purchase,result.patch);
+                stock.qty = result.stockQty;
+            }
+            refreshInventoryMovementViews();
+            showToast(wholeInvoice ? 'تم حذف فاتورة التوريد كاملة ونقلها إلى سلة المهملات' : 'تم حذف حركة التوريد وتحديث المخزون وحساب المورد');
+        } catch (error) {
+            console.warn('Delete supplier stock movement error:', error);
+            const messages = { MOVEMENT_SOURCE_MISSING:'فاتورة التوريد أو بطاقة الصنف غير موجودة', MOVEMENT_CHANGED:'تم تعديل الفاتورة من جهاز آخر؛ حدّث التقرير وأعد المحاولة', MOVEMENT_STOCK_ITEM_MISSING:'بطاقة صنف من الفاتورة غير موجودة؛ لم يتم حذف الفاتورة', MOVEMENT_STOCK_NEGATIVE:'لا يمكن حذف الحركة لأن الرصيد الحالي أقل من كمية التوريد المراد عكسها', MOVEMENT_PAID_INVALID:'المبلغ المسدد غير صالح' };
+            showToast(messages[error?.message] || 'تعذر حذف حركة التوريد؛ لم يتم حفظ الحذف');
+        } finally { isBusy = false; }
+    }
+
+    async function changeInventoryAdjustmentMovement(encodedItemId, encodedLogId, logIndex, mode) {
+        const allowed = mode === 'delete' ? canDeleteRecord() : canEditRecord();
+        if (!allowed) { showToast(mode === 'delete' ? 'ليس لديك صلاحية حذف حركات المخزون' : 'ليس لديك صلاحية تعديل حركات المخزون'); return; }
+        const itemId = decodeURIComponent(encodedItemId || '');
+        const logId = decodeURIComponent(encodedLogId || '');
+        const item = (state.warehouse || []).find(entry => String(entry.id) === itemId);
+        if (!item) { showToast('بطاقة الصنف غير موجودة'); return; }
+        const branchId = item.branchId || 'main_branch';
+        if (!isBranchAllowedForOperation(branchId, 'warehouseTab')) { showToast('ليس لديك صلاحية على هذا المخزن'); return; }
+        const history = Array.isArray(item.quantityAdjustmentHistory) ? item.quantityAdjustmentHistory.slice() : [];
+        let index = logId ? history.findIndex(log => String(log.id || '') === logId) : -1;
+        if (index < 0) index = Number(logIndex);
+        const log = history[index];
+        if (!log) { showToast('الحركة لم تعد موجودة؛ حدّث التقرير'); return; }
+        const oldDelta = log.mode === 'set' ? Number(log.quantityAfter || 0)-Number(log.previousQty || 0) : Number(log.qty || 0);
+        let nextDelta = oldDelta;
+        if (mode === 'edit') {
+            const answer = prompt(`الكمية المسجلة في هذه الحركة للصنف ${log.itemName || item.name}\nأدخل فرق الكمية الجديد. استخدم السالب إذا كانت تسوية إخراج:`,String(oldDelta));
+            if (answer === null) return;
+            nextDelta = Number(answer);
+            if (!Number.isFinite(nextDelta) || Math.abs(nextDelta) < 0.000001) { showToast('أدخل فرق كمية صحيحاً غير صفر'); return; }
+        } else if (!confirm(`حذف حركة ${log.mode === 'set' ? 'التسوية' : 'إدخال الكمية'} للصنف «${log.itemName || item.name}» بقيمة ${formatQty(oldDelta)}؟ سيتم عكس أثرها من الرصيد الحالي مع حفظ سجل تدقيق.`)) return;
+        const nextStockQty = Number(item.qty || 0) + (mode === 'delete' ? -oldDelta : nextDelta-oldDelta);
+        if (nextStockQty < -0.000001) { showToast('لا يمكن عكس الحركة لأن الكمية الحالية لا تكفي؛ راجع حركات الصنف اللاحقة'); return; }
+        const ref = db.collection('warehouse').doc(itemId);
+        isBusy = true;
+        try {
+            const result = await db.runTransaction(async transaction => {
+                const snap = await transaction.get(ref);
+                if (!snap.exists) throw new Error('MOVEMENT_SOURCE_MISSING');
+                const current = snap.data() || {};
+                const currentHistory = Array.isArray(current.quantityAdjustmentHistory) ? current.quantityAdjustmentHistory.slice() : [];
+                let currentIndex = logId ? currentHistory.findIndex(entry => String(entry.id || '') === logId) : -1;
+                if (currentIndex < 0) currentIndex = Number(logIndex);
+                const currentLog = currentHistory[currentIndex];
+                if (!currentLog) throw new Error('MOVEMENT_CHANGED');
+                const currentDelta = currentLog.mode === 'set' ? Number(currentLog.quantityAfter || 0)-Number(currentLog.previousQty || 0) : Number(currentLog.qty || 0);
+                if (Math.abs(currentDelta-oldDelta)>0.000001) throw new Error('MOVEMENT_CHANGED');
+                const currentQty = Number(current.qty || 0);
+                const adjustedQty = currentQty + (mode === 'delete' ? -currentDelta : nextDelta-currentDelta);
+                if (adjustedQty < -0.000001) throw new Error('MOVEMENT_STOCK_NEGATIVE');
+                const audit = Array.isArray(current.inventoryMovementAudit) ? current.inventoryMovementAudit.slice() : [];
+                if (mode === 'delete') {
+                    const removed = currentHistory.splice(currentIndex,1)[0];
+                    audit.push({ action:'delete-adjustment', movement:removed, at:new Date().toISOString(), by:getAccountDisplayName(currentUser) });
+                } else {
+                    const original = currentHistory[currentIndex];
+                    currentHistory[currentIndex] = { ...original, qty:nextDelta, quantityAfter:Number(original.previousQty || 0)+nextDelta, editedAt:new Date().toISOString(), editedBy:getAccountDisplayName(currentUser) };
+                    audit.push({ action:'edit-adjustment', movementId:original.id || '', oldQty:currentDelta, newQty:nextDelta, at:new Date().toISOString(), by:getAccountDisplayName(currentUser) });
+                }
+                transaction.update(ref,{qty:Math.max(0,adjustedQty),quantityAdjustmentHistory:currentHistory.slice(-200),inventoryMovementAudit:audit.slice(-300)});
+                return { qty:Math.max(0,adjustedQty), history:currentHistory.slice(-200) };
+            });
+            item.qty = result.qty;
+            item.quantityAdjustmentHistory = result.history;
+            refreshInventoryMovementViews();
+            showToast(mode === 'delete' ? 'تم حذف الحركة وعكس أثرها من المخزون' : 'تم تعديل الحركة وتحديث رصيد المخزون');
+        } catch (error) {
+            console.warn('Change adjustment movement error:',error);
+            const messages = { MOVEMENT_SOURCE_MISSING:'بطاقة الصنف غير موجودة', MOVEMENT_CHANGED:'تغيرت الحركة من مستخدم آخر؛ حدّث التقرير وحاول مجدداً', MOVEMENT_STOCK_NEGATIVE:'لا يمكن عكس الحركة لأن الرصيد الحالي لا يكفي' };
+            showToast(messages[error?.message] || 'تعذر تعديل أو حذف حركة المخزون');
+        } finally { isBusy = false; }
+    }
+    function editInventoryAdjustmentMovement(itemId,logId,index) { return changeInventoryAdjustmentMovement(itemId,logId,index,'edit'); }
+    function deleteInventoryAdjustmentMovement(itemId,logId,index) { return changeInventoryAdjustmentMovement(itemId,logId,index,'delete'); }
 
     function filterInventoryMovementRows(rows, from, to) {
         return rows.filter(row => (!from || row.date >= from) && (!to || row.date <= to));
@@ -9582,7 +9921,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             <td>${escapeUiText(row.date || '-')}</td><td><strong>${escapeUiText(row.itemName)}</strong><small style="display:block;color:var(--text-muted)">${escapeUiText(row.unit)}</small></td>
             <td><span class="badge ${row.qty > 0 ? 'badge-cash' : 'badge-expense'}">${escapeUiText(row.type)}</span></td><td>${escapeUiText(row.branchName)}</td>
             <td class="mono" style="color:var(--success)">${row.qty > 0 ? formatQty(row.qty) : '—'}</td><td class="mono" style="color:var(--danger)">${row.qty < 0 ? formatQty(Math.abs(row.qty)) : '—'}</td>
-            <td>${escapeUiText(row.reference)}</td><td>${escapeUiText(row.actor || '-')}</td></tr>`).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد حركات مخزون مسجلة ضمن الاختيارات</td></tr>';
+            <td style="min-width:190px;max-width:300px;white-space:normal">${escapeUiText(row.reference)}</td><td>${escapeUiText(row.actor || '-')}</td><td>${renderInventoryMovementActions(row)}</td></tr>`).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">لا توجد حركات مخزون مسجلة ضمن الاختيارات</td></tr>';
     }
 
     function inventoryPrintShell(title, sections) {
