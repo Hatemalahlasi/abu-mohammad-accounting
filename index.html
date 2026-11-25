@@ -14012,6 +14012,147 @@ thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avo
             #salesTab .invoice-product-card{grid-template-columns:minmax(0,1fr) 82px;gap:7px;padding:9px;}
             #salesTab .invoice-product-card strong{font-size:12.5px;}
         }
+
+
+        /* تحسين إضافي لوضوح الصفحة الرئيسية وإبراز شعار المعمل */
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) .header-bar {
+            padding: 10px 12px 16px;
+            border-bottom: 2px solid #d9e8de;
+            background: linear-gradient(105deg, rgba(255,255,255,.96), rgba(248,252,249,.98));
+            border-radius: 16px 16px 10px 10px;
+            margin-bottom: 16px;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) .header-brand {
+            gap: 14px;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) .header-logo-square {
+            width: 64px;
+            height: 64px;
+            border-radius: 19px;
+            padding: 6px;
+            background: linear-gradient(145deg, #ffffff 0%, #f2faf4 100%);
+            border: 2px solid #368457;
+            outline: 3px solid rgba(183, 42, 48, .10);
+            box-shadow: 0 5px 15px rgba(26, 92, 54, .14), inset 0 0 0 2px #ffffff;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) .header-logo-square img {
+            border-radius: 12px;
+            object-fit: contain;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #headerWelcome {
+            color: #174f32;
+            font-size: 21px !important;
+            font-weight: 900 !important;
+            letter-spacing: .1px;
+            text-shadow: 0 1px 0 #ffffff;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer {
+            border: 1px solid #dce9df;
+            box-shadow: 0 9px 25px rgba(35, 77, 49, .07);
+            padding: 14px;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .summary-strip .mini-stat {
+            min-height: 82px;
+            padding: 13px 14px;
+            border: 1.5px solid #cbded0;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow: 0 3px 10px rgba(32, 82, 48, .055);
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .summary-strip .mini-stat-label {
+            color: #405b49;
+            font-size: 12.5px;
+            font-weight: 800;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .summary-strip .mini-stat-val {
+            color: #174f32;
+            font-size: 17px !important;
+            font-weight: 900;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav {
+            gap: 13px;
+            margin-top: 5px;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab {
+            min-height: 112px;
+            padding: 16px 10px 14px;
+            border: 1.7px solid #c5d9cb;
+            border-top: 3px solid #43865d;
+            border-radius: 15px;
+            background: linear-gradient(180deg, #ffffff 0%, #f9fcfa 100%);
+            color: #183d29;
+            box-shadow: 0 4px 12px rgba(24, 78, 43, .075);
+            gap: 9px;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab i {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 43px;
+            height: 40px;
+            border-radius: 13px;
+            background: #eaf5ed;
+            color: #176b3c;
+            font-size: 22px;
+            box-shadow: inset 0 0 0 1px #d6e9dc;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab span {
+            color: #203b2b;
+            font-size: 13.5px;
+            line-height: 1.55;
+            font-weight: 900;
+            text-shadow: none;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab.accent-tab {
+            border-top-color: #237d51;
+            background: linear-gradient(180deg, #ffffff, #f4faf6);
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab.profit-tab {
+            border-top-color: #3d8c58;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab.expense-tab {
+            border-top-color: #b84a4d;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab.expense-tab i {
+            color: #a63237;
+            background: #fff0f0;
+            box-shadow: inset 0 0 0 1px #f1d8d8;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab:hover,
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab:focus-visible {
+            background: #f1f9f3;
+            border-color: #58936b;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 17px rgba(26, 91, 49, .13);
+            outline: none;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab[data-menu-key="trashTab"] {
+            border-top-color: #b52c35;
+            background: linear-gradient(180deg, #ffffff, #fff7f7);
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab[data-menu-key="trashTab"] i {
+            background: #fff0f0;
+            color: #ad2933;
+            box-shadow: inset 0 0 0 1px #f0d2d4;
+        }
+        #mainAppView:has(#homeMenuContainer:not(.hidden)) #refreshDataBtn {
+            min-height: 42px;
+            padding-inline: 15px;
+            border-width: 1.5px;
+            font-weight: 900;
+        }
+        @media (max-width: 600px) {
+            #mainAppView:has(#homeMenuContainer:not(.hidden)) .header-logo-square { width: 56px; height: 56px; border-radius: 17px; }
+            #mainAppView:has(#homeMenuContainer:not(.hidden)) #headerWelcome { font-size: 18px !important; }
+            #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer { padding: 10px; }
+            #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav { gap: 9px; }
+            #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab { min-height: 104px; padding: 12px 7px; }
+            #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab span { font-size: 12.5px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer .quick-nav .nav-tab { transition: none; }
+        }
+
 </style>
 </head>
 <body><div class="report-toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div>${safeSheets}
