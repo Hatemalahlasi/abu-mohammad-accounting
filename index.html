@@ -7437,6 +7437,138 @@ function initMenuPermissionCheckboxes() {
         return CURRENCY_CODES.filter(code => active.has(code));
     }
 
+    function supplierPurchaseLedgerActions(purchase) {
+        if (!purchase || purchase.kind !== 'supplierPurchase') return '—';
+        const lines = Array.isArray(purchase.items) ? purchase.items : [];
+        if (!lines.length) return '<span class="employee-permission-note">لا توجد أصناف قابلة للإجراء</span>';
+        const editAllowed = canEditRecord();
+        const deleteAllowed = canDeleteRecord();
+        if (!editAllowed && !deleteAllowed) return '<span class="employee-permission-note">لا توجد صلاحية</span>';
+        const encodedId = encodeURIComponent(String(purchase.id || ''));
+        return `<div style="display:flex;flex-direction:column;gap:5px;min-width:82px;">${lines.map((line,index) => {
+            const suffix = lines.length > 1 ? ` ${index + 1}` : '';
+            const safeIndex = Number(index);
+            const buttons = [];
+            if (editAllowed) buttons.push(`<button type="button" class="btn btn-outline btn-sm" onclick="editSupplierLedgerPurchaseLine('${encodedId}',${safeIndex})">تعديل${suffix}</button>`);
+            if (deleteAllowed) buttons.push(`<button type="button" class="btn btn-danger btn-sm" onclick="deleteSupplierLedgerPurchaseLine('${encodedId}',${safeIndex})">حذف${suffix}</button>`);
+            return `<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">${lines.length > 1 ? `<small style="color:var(--text-muted);white-space:nowrap;">${escapeUiText(line.name || line.itemName || `الصنف ${index + 1}`)}</small>` : ''}${buttons.join('')}</div>`;
+        }).join('')}</div>`;
+    }
+
+    // فواتير التوريد التي سُجلت دون إدخال المخزون تُعدّل مالياً فقط؛ أما الفواتير المخزنية فتستخدم مسار عكس المخزون الآمن.
+    async function editSupplierLedgerPurchaseLine(encodedPurchaseId, lineIndex) {
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية تعديل فواتير المورد'); return; }
+        const purchaseId = decodeURIComponent(encodedPurchaseId || '');
+        const purchase = (state.purchases || []).find(item => String(item.id) === purchaseId && item.kind === 'supplierPurchase');
+        if (!purchase) { showToast('فاتورة المورد غير موجودة؛ حدّث كشف الحساب'); return; }
+        if (purchase.addToWarehouse !== false) {
+            return editSupplierStockMovement(encodeURIComponent(purchaseId), lineIndex);
+        }
+        const items = Array.isArray(purchase.items) ? purchase.items.slice() : [];
+        const index = Number(lineIndex);
+        const line = items[index];
+        if (!line) { showToast('سطر التوريد غير موجود'); return; }
+        const oldQty = Number(line.qty ?? line.quantity ?? 0);
+        const oldCost = Number(line.costPrice ?? line.unitCost ?? 0);
+        const qtyText = prompt(`تعديل كمية الصنف: ${line.name || line.itemName}\nالكمية الحالية: ${formatQty(oldQty)}`, String(oldQty));
+        if (qtyText === null) return;
+        const nextQty = Number(qtyText);
+        if (!Number.isFinite(nextQty) || nextQty <= 0) { showToast('أدخل كمية أكبر من صفر'); return; }
+        const costText = prompt(`سعر تكلفة الوحدة الجديد (${purchase.currency || 'YER'}):`, String(oldCost));
+        if (costText === null) return;
+        const nextCost = Number(costText);
+        if (!Number.isFinite(nextCost) || nextCost <= 0) { showToast('أدخل سعر تكلفة صحيحاً أكبر من صفر'); return; }
+        if (Math.abs(nextQty-oldQty)<0.000001 && Math.abs(nextCost-oldCost)<0.000001) { showToast('لم تتغير بيانات الصنف'); return; }
+        const nextItems = items.map((entry,i) => i === index ? { ...entry, qty:nextQty, quantity:nextQty, costPrice:nextCost, unitCost:nextCost } : entry);
+        const nextTotal = nextItems.reduce((sum,entry) => sum + Number(entry.qty ?? entry.quantity ?? 0) * Number(entry.costPrice ?? entry.unitCost ?? 0),0);
+        let nextPaid = supplierPurchasePaymentAfterTotalChange(purchase,nextTotal);
+        if (nextPaid > nextTotal + 0.000001) {
+            const answer = prompt(`المبلغ المسدد الحالي أكبر من الإجمالي الجديد (${formatMoney(nextTotal)} ${purchase.currency || 'YER'}). أدخل المبلغ المسدد الصحيح:`,String(nextTotal));
+            if (answer === null) return;
+            nextPaid = Number(answer);
+        }
+        if (!Number.isFinite(nextPaid) || nextPaid < 0 || nextPaid > nextTotal + 0.000001) { showToast('المبلغ المسدد يجب أن يكون بين صفر وإجمالي الفاتورة'); return; }
+        if (!confirm(`حفظ تعديل الصنف «${line.name || line.itemName}»؟\nالكمية: ${formatQty(oldQty)} ← ${formatQty(nextQty)}\nالتكلفة: ${formatMoney(oldCost)} ← ${formatMoney(nextCost)}\nسيُحدّث حساب المورد دون تغيير المخزون لأن الفاتورة لم تُدخل للمخزن.`)) return;
+        const ref = db.collection('purchases').doc(purchaseId);
+        isBusy = true;
+        try {
+            const result = await db.runTransaction(async transaction => {
+                const snap = await transaction.get(ref);
+                if (!snap.exists) throw new Error('SUPPLIER_PURCHASE_MISSING');
+                const current = snap.data() || {};
+                const currentItems = Array.isArray(current.items) ? current.items.slice() : [];
+                const currentLine = currentItems[index];
+                if (!currentLine || Math.abs(Number(currentLine.qty ?? currentLine.quantity ?? 0)-oldQty)>0.000001 || Math.abs(Number(currentLine.costPrice ?? currentLine.unitCost ?? 0)-oldCost)>0.000001) throw new Error('SUPPLIER_PURCHASE_CHANGED');
+                const paid = supplierPurchasePaymentAfterTotalChange(current,nextTotal);
+                const finalPaid = paid > nextTotal + 0.000001 ? nextPaid : paid;
+                if (!Number.isFinite(finalPaid) || finalPaid < 0 || finalPaid > nextTotal + 0.000001) throw new Error('SUPPLIER_PURCHASE_PAID_INVALID');
+                const patch = { items:nextItems, amount:nextTotal, totalAmount:nextTotal, paidAmount:finalPaid, outstanding:nextTotal-finalPaid, updatedAt:new Date().toISOString(), updatedBy:getAccountDisplayName(currentUser), supplierStatementEditHistory:[...(current.supplierStatementEditHistory || []),{lineIndex:index,oldQty,newQty:nextQty,oldCost,newCost:nextCost,at:new Date().toISOString(),by:getAccountDisplayName(currentUser)}].slice(-100) };
+                transaction.update(ref,patch);
+                return patch;
+            });
+            Object.assign(purchase,result);
+            renderSupplierBalances(); renderPurchasesTable(); renderCashboxesList(); renderStats();
+            showToast('تم تعديل سطر فاتورة المورد وتحديث كشفه');
+        } catch (error) {
+            console.warn('Edit non-stock supplier purchase line error:',error);
+            showToast(error?.message === 'SUPPLIER_PURCHASE_CHANGED' ? 'تغيرت الفاتورة من مستخدم آخر؛ حدّث كشف المورد وحاول مجدداً' : 'تعذر تعديل فاتورة المورد؛ لم يتم حفظ التغيير');
+        } finally { isBusy = false; }
+    }
+
+    async function deleteSupplierLedgerPurchaseLine(encodedPurchaseId, lineIndex) {
+        if (!canDeleteRecord()) { showToast('ليس لديك صلاحية حذف فواتير المورد'); return; }
+        const purchaseId = decodeURIComponent(encodedPurchaseId || '');
+        const purchase = (state.purchases || []).find(item => String(item.id) === purchaseId && item.kind === 'supplierPurchase');
+        if (!purchase) { showToast('فاتورة المورد غير موجودة؛ حدّث كشف الحساب'); return; }
+        if (purchase.addToWarehouse !== false) {
+            return deleteSupplierStockMovement(encodeURIComponent(purchaseId), lineIndex);
+        }
+        const items = Array.isArray(purchase.items) ? purchase.items.slice() : [];
+        const index = Number(lineIndex);
+        const line = items[index];
+        if (!line) { showToast('سطر التوريد غير موجود'); return; }
+        const nextItems = items.filter((entry,i) => i !== index);
+        const nextTotal = nextItems.reduce((sum,entry) => sum + Number(entry.qty ?? entry.quantity ?? 0) * Number(entry.costPrice ?? entry.unitCost ?? 0),0);
+        let nextPaid = supplierPurchasePaymentAfterTotalChange(purchase,nextTotal);
+        if (nextPaid > nextTotal + 0.000001) {
+            const answer = prompt(`بعد حذف السطر يصبح إجمالي الفاتورة ${formatMoney(nextTotal)} ${purchase.currency || 'YER'} والمبلغ المسدد الحالي أكبر منه. أدخل المبلغ المسدد الصحيح:`,String(nextTotal));
+            if (answer === null) return;
+            nextPaid = Number(answer);
+        }
+        if (!Number.isFinite(nextPaid) || nextPaid < 0 || nextPaid > nextTotal + 0.000001) { showToast('المبلغ المسدد غير صحيح'); return; }
+        const lastLine = nextItems.length === 0;
+        if (!confirm(lastLine ? `هذا آخر صنف في فاتورة المورد «${purchase.supplierName || ''}». سيتم نقل الفاتورة إلى سلة المهملات لمدة 7 أيام، دون تغيير المخزون لأنها لم تُدخل إليه.\n\n${line.name || line.itemName} — ${formatQty(line.qty ?? line.quantity ?? 0)} ${line.unit || 'حبة'}\nهل تريد المتابعة؟` : `حذف الصنف «${line.name || line.itemName}» من فاتورة المورد؟ سيتم تحديث إجمالي الفاتورة وكشف المورد دون تغيير المخزون.`)) return;
+        isBusy = true;
+        try {
+            if (lastLine) {
+                await moveRecordToTrash('purchases',purchaseId);
+                state.purchases = (state.purchases || []).filter(item => String(item.id) !== purchaseId);
+            } else {
+                const ref = db.collection('purchases').doc(purchaseId);
+                const result = await db.runTransaction(async transaction => {
+                    const snap = await transaction.get(ref);
+                    if (!snap.exists) throw new Error('SUPPLIER_PURCHASE_MISSING');
+                    const current = snap.data() || {};
+                    const currentItems = Array.isArray(current.items) ? current.items.slice() : [];
+                    const currentLine = currentItems[index];
+                    if (!currentLine || Math.abs(Number(currentLine.qty ?? currentLine.quantity ?? 0)-Number(line.qty ?? line.quantity ?? 0))>0.000001) throw new Error('SUPPLIER_PURCHASE_CHANGED');
+                    const paid = supplierPurchasePaymentAfterTotalChange(current,nextTotal);
+                    const finalPaid = paid > nextTotal + 0.000001 ? nextPaid : paid;
+                    if (!Number.isFinite(finalPaid) || finalPaid < 0 || finalPaid > nextTotal + 0.000001) throw new Error('SUPPLIER_PURCHASE_PAID_INVALID');
+                    const patch = { items:nextItems, amount:nextTotal, totalAmount:nextTotal, paidAmount:finalPaid, outstanding:nextTotal-finalPaid, updatedAt:new Date().toISOString(), updatedBy:getAccountDisplayName(currentUser), voidedSupplierStatementLines:[...(current.voidedSupplierStatementLines || []),{...currentLine,lineIndex:index,removedAt:new Date().toISOString(),removedBy:getAccountDisplayName(currentUser)}].slice(-100) };
+                    transaction.update(ref,patch);
+                    return patch;
+                });
+                Object.assign(purchase,result);
+            }
+            renderSupplierBalances(); renderPurchasesTable(); renderCashboxesList(); renderStats();
+            showToast(lastLine ? 'تم نقل فاتورة المورد إلى سلة المهملات وتحديث كشف المورد' : 'تم حذف سطر التوريد وتحديث إجمالي المورد');
+        } catch (error) {
+            console.warn('Delete non-stock supplier purchase line error:',error);
+            showToast(error?.message === 'SUPPLIER_PURCHASE_CHANGED' ? 'تغيرت الفاتورة من مستخدم آخر؛ حدّث كشف المورد وحاول مجدداً' : 'تعذر حذف سطر التوريد؛ لم يتم حفظ الحذف');
+        } finally { isBusy = false; }
+    }
+
     function renderSupplierLedger() {
         const select = document.getElementById('supplierLedgerSelect');
         const body = document.getElementById('supplierLedgerBody');
@@ -7462,9 +7594,11 @@ function initMenuPermissionCheckboxes() {
             const due = (purchase || opening) ? total - paid : -paid;
             running[code] += due;
             const detail = opening ? 'الرصيد الافتتاحي للمورد' : purchase ? (item.items || []).map(line => `${escapeUiText(line.name)} × ${formatQty(line.qty)} ${escapeUiText(line.unit)} @ ${formatMoney(line.costPrice)}`).join('<br>') : escapeUiText(item.notes || item.title || 'سداد للمورد');
-            const actions = opening ? '—' : (!purchase && hasFullAccess()
-                ? `<button type="button" class="btn btn-outline btn-sm" onclick="editSupplierPayment('${String(item.id).replace(/'/g, '&#39;')}')">تعديل</button> <button type="button" class="btn btn-danger btn-sm" onclick="deleteSupplierPayment('${String(item.id).replace(/'/g, '&#39;')}')">حذف</button>`
-                : (hasFullAccess() ? '<span class="employee-permission-note">الفاتورة مرتبطة بالمخزون</span>' : '—'));
+            const actions = opening ? '—' : (purchase
+                ? supplierPurchaseLedgerActions(item)
+                : (hasFullAccess()
+                    ? `<button type="button" class="btn btn-outline btn-sm" onclick="editSupplierPayment('${String(item.id).replace(/'/g, '&#39;')}')">تعديل</button> <button type="button" class="btn btn-danger btn-sm" onclick="deleteSupplierPayment('${String(item.id).replace(/'/g, '&#39;')}')">حذف</button>`
+                    : '—'));
             const movementLabel = opening ? 'رصيد افتتاحي' : purchase ? 'فاتورة توريد' : 'سداد';
             return `<tr><td class="mono">${opening ? 'افتتاحي' : escapeUiText(item.date || '-')}</td><td><span class="badge ${purchase || opening ? 'badge-sup' : 'badge-cash'}">${movementLabel}</span></td><td>${detail}${item.previousPaymentEntry ? '<br><small style="color:var(--text-muted)">دفعة سابقة — لم تخصم من الصندوق مرة أخرى</small>' : ''}</td><td class="mono">${(purchase || opening) ? formatCurrency(total, code) : '—'}</td><td class="mono">${paid ? formatCurrency(paid, code) : '—'}</td><td class="mono">${(purchase || opening) ? formatCurrency(total - paid, code) : formatCurrency(paid, code)}</td><td class="mono" style="font-weight:800;color:${running[code] >= 0 ? 'var(--danger)' : 'var(--success)'}">${formatCurrency(running[code], code)}</td><td>${actions}</td></tr>`;
         }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد فواتير توريد أو دفعات أو رصيد افتتاحي لهذا المورد</td></tr>';
