@@ -9058,23 +9058,148 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         finally { isBusy = false; btn.disabled = false; }
     }
 
-    async function editWarehouseItem(itemId) {
-        if (!canEditRecord()) {
-            showToast('ليس لديك صلاحية التعديل');
-            return;
+    function closeWarehouseStockEdit() {
+        document.getElementById('warehouseStockEditOverlay')?.remove();
+    }
+
+    function editWarehouseItem(itemId) {
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل على جرد المخازن'); return; }
+        const item = (state.warehouse || []).find(w => String(w.id) === String(itemId));
+        if (!item) { showToast('الصنف غير موجود في المخزون'); return; }
+        const branchId = item.branchId || 'main_branch';
+        if (!isBranchAllowedForOperation(branchId, 'warehouseTab')) { showToast('هذا المخزن غير مسموح لهذا الحساب'); return; }
+        closeWarehouseStockEdit();
+        const branchName = item.branchName || inventoryBranchName(branchId);
+        const unit = item.unit || 'حبة';
+        const qty = Number(item.qty || 0);
+        const cost = Number(item.costPrice ?? item.price ?? 0);
+        const sale = Number(item.price || 0);
+        const currency = item.priceCurrency || item.costCurrency || 'YER';
+        const overlay = document.createElement('div');
+        overlay.id = 'warehouseStockEditOverlay';
+        overlay.dataset.itemId = String(item.id);
+        overlay.dataset.originalQty = String(qty);
+        overlay.dataset.originalCost = String(cost);
+        overlay.dataset.originalPrice = String(sale);
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;padding:14px;direction:rtl;';
+        overlay.innerHTML = `
+            <div role="dialog" aria-modal="true" aria-labelledby="warehouseStockEditTitle" style="width:min(100%,520px);max-height:92vh;overflow:auto;background:#fff;border:1px solid #d9e5dd;border-radius:18px;box-shadow:0 22px 70px rgba(0,0,0,.24);padding:18px;color:#19352a;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:2px solid #e3eee7;padding-bottom:12px;margin-bottom:14px;">
+                    <div><div id="warehouseStockEditTitle" style="font-size:18px;font-weight:800;color:#176b43;">تعديل بيانات جرد المخزن</div><div style="font-size:12px;color:#61746a;margin-top:4px;">تحديث الكمية والتكلفة وسعر البيع</div></div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="closeWarehouseStockEdit()" aria-label="إغلاق">إغلاق</button>
+                </div>
+                <div style="background:#f2f8f4;border:1px solid #dcebe1;border-radius:12px;padding:11px 13px;margin-bottom:14px;">
+                    <div style="font-weight:800;font-size:15px;">${escapeUiText(item.name || 'صنف')}</div>
+                    <div style="font-size:12px;color:#52685d;margin-top:4px;">${escapeUiText(branchName)} · ${escapeUiText(unit)} · العملة: ${escapeUiText(currency)}</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+                    <div class="form-group" style="margin:0;"><label for="warehouseStockEditQty">الكمية الموجودة (${escapeUiText(unit)})</label><input id="warehouseStockEditQty" class="form-control" type="number" min="0" step="0.001" inputmode="decimal" value="${qty}" /></div>
+                    <div class="form-group" style="margin:0;"><label for="warehouseStockEditCost">سعر التكلفة (${escapeUiText(currency)})</label><input id="warehouseStockEditCost" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" value="${cost}" /></div>
+                    <div class="form-group" style="margin:0;grid-column:1/-1;"><label for="warehouseStockEditPrice">سعر البيع (${escapeUiText(currency)})</label><input id="warehouseStockEditPrice" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" value="${sale}" /></div>
+                </div>
+                <div style="font-size:12px;color:#64776d;background:#fbfdfb;border-right:3px solid #238451;padding:9px 11px;margin-top:13px;border-radius:7px;line-height:1.7;">سيُسجَّل فرق الكمية في حركة المخزون باسم المستخدم الذي أجرى التعديل، وسيتم تحديث قيمة المخزون بالتكلفة تلقائياً. لا تتغير فواتير الشراء أو البيع السابقة.</div>
+                <div style="display:flex;gap:9px;justify-content:flex-start;margin-top:17px;flex-wrap:wrap;">
+                    <button type="button" id="saveWarehouseStockEditBtn" class="btn btn-primary" onclick="saveWarehouseStockEdit('${String(item.id).replace(/'/g, '&#39;')}')"><i class="fa-solid fa-floppy-disk"></i> حفظ التعديلات</button>
+                    <button type="button" class="btn btn-outline" onclick="closeWarehouseStockEdit()">إلغاء</button>
+                </div>
+            </div>`;
+        overlay.addEventListener('click', event => { if (event.target === overlay) closeWarehouseStockEdit(); });
+        document.body.appendChild(overlay);
+        document.getElementById('warehouseStockEditQty')?.focus();
+    }
+
+    async function saveWarehouseStockEdit(itemId) {
+        if (isBusy) return;
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل على جرد المخازن'); return; }
+        const overlay = document.getElementById('warehouseStockEditOverlay');
+        const item = (state.warehouse || []).find(w => String(w.id) === String(itemId));
+        if (!overlay || !item) { showToast('تعذر العثور على بيانات الصنف؛ افتح التعديل مرة أخرى'); return; }
+        const qtyText = document.getElementById('warehouseStockEditQty')?.value ?? '';
+        const costText = document.getElementById('warehouseStockEditCost')?.value ?? '';
+        const saleText = document.getElementById('warehouseStockEditPrice')?.value ?? '';
+        const nextQty = Number(qtyText), nextCost = Number(costText), nextPrice = Number(saleText);
+        if ([qtyText, costText, saleText].some(value => String(value).trim() === '') || ![nextQty, nextCost, nextPrice].every(Number.isFinite) || nextQty < 0 || nextCost < 0 || nextPrice < 0) {
+            showToast('أدخل كمية وسعر تكلفة وسعر بيع صحيحة؛ لا تقبل القيم السالبة'); return;
         }
-        const item = state.warehouse.find(w => w.id === itemId);
-        if (!item) return;
-        const nextQty = prompt(`تعديل كمية (${item.name} - ${item.unit || 'حبة'}):`, item.qty);
-        if (nextQty === null) return;
-        const nextCostPrice = prompt(`تعديل سعر التكلفة (${item.name}):`, Number(item.costPrice ?? item.price ?? 0).toFixed(2));
-        if (nextCostPrice === null) return;
-        const nextPrice = prompt(`تعديل سعر البيع (${item.name}):`, Number(item.price || 0).toFixed(2));
-        if (nextPrice === null) return;
-        const parsedQty = Number(nextQty), parsedCost = Number(nextCostPrice), parsedSale = Number(nextPrice);
-        if (![parsedQty, parsedCost, parsedSale].every(Number.isFinite) || parsedQty < 0 || parsedCost < 0 || parsedSale < 0) { showToast('أدخل أرقاماً صحيحة غير سالبة'); return; }
-        await db.collection('warehouse').doc(itemId).update({ qty: parsedQty, costPrice: parsedCost, price: parsedSale });
-        showToast('تم تعديل الصنف');
+        const branchId = item.branchId || 'main_branch';
+        if (!isBranchAllowedForOperation(branchId, 'warehouseTab')) { showToast('هذا المخزن غير مسموح لهذا الحساب'); return; }
+        const original = {
+            qty: Number(overlay.dataset.originalQty || 0),
+            cost: Number(overlay.dataset.originalCost || 0),
+            price: Number(overlay.dataset.originalPrice || 0)
+        };
+        if (Math.abs(nextQty-original.qty)<0.000001 && Math.abs(nextCost-original.cost)<0.000001 && Math.abs(nextPrice-original.price)<0.000001) {
+            closeWarehouseStockEdit(); showToast('لم يتم تغيير أي بيانات'); return;
+        }
+        const actorId = String(currentUser?.id || '');
+        const actorName = getAccountDisplayName(currentUser);
+        const today = getLocalDateKey();
+        const nowIso = new Date().toISOString();
+        const signature = { action:'edit-branch-stocktake', itemId:String(itemId), qty:nextQty, costPrice:nextCost, price:nextPrice, actor:dedupeActorId() };
+        const markerKey = `${dedupeHash(signature)}:${Math.floor(Date.now()/CREATE_DEDUPE_WINDOW_MS)}`;
+        const btn = document.getElementById('saveWarehouseStockEditBtn');
+        isBusy = true;
+        if (btn) btn.disabled = true;
+        try {
+            const ref = db.collection('warehouse').doc(itemId);
+            const result = await db.runTransaction(async transaction => {
+                const snapshot = await transaction.get(ref);
+                if (!snapshot.exists) throw new Error('STOCK_ITEM_MISSING');
+                const current = snapshot.data() || {};
+                const currentBranchId = current.branchId || 'main_branch';
+                if (currentBranchId !== branchId || !isBranchAllowedForOperation(currentBranchId, 'warehouseTab')) throw new Error('STOCK_BRANCH_CHANGED');
+                const currentQty = Number(current.qty || 0);
+                const currentCost = Number(current.costPrice ?? current.price ?? 0);
+                const currentPrice = Number(current.price || 0);
+                if (Math.abs(currentQty-original.qty)>=0.000001 || Math.abs(currentCost-original.cost)>=0.000001 || Math.abs(currentPrice-original.price)>=0.000001) throw new Error('STOCK_EDIT_CONFLICT');
+                const recent = Array.isArray(current.__recentOperationMarkers) ? current.__recentOperationMarkers : [];
+                if (recent.some(marker => marker?.key === markerKey)) return { duplicate:true };
+                const quantityHistory = Array.isArray(current.quantityAdjustmentHistory) ? current.quantityAdjustmentHistory.slice() : [];
+                const delta = nextQty - currentQty;
+                if (Math.abs(delta) >= 0.000001) {
+                    quantityHistory.push({
+                        id:`stocktake_${Date.now()}_${itemId}`, itemId:String(itemId), itemName:current.name || item.name || '',
+                        unit:current.unit || item.unit || 'حبة', branchId:currentBranchId, branchName:current.branchName || item.branchName || inventoryBranchName(currentBranchId),
+                        qty:delta, previousQty:currentQty, quantityAfter:nextQty, mode:'set', date:today, createdAt:nowIso,
+                        actorId, actorName, note:'تعديل كمية من شاشة جرد مخازن الفروع'
+                    });
+                }
+                const auditHistory = Array.isArray(current.stocktakeEditHistory) ? current.stocktakeEditHistory.slice() : [];
+                auditHistory.push({
+                    id:`stocktake_audit_${Date.now()}_${itemId}`, date:today, createdAt:nowIso, actorId, actorName,
+                    qtyBefore:currentQty, qtyAfter:nextQty, costBefore:currentCost, costAfter:nextCost,
+                    priceBefore:currentPrice, priceAfter:nextPrice, branchId:currentBranchId, branchName:current.branchName || item.branchName || ''
+                });
+                transaction.update(ref, {
+                    qty:nextQty, costPrice:nextCost, price:nextPrice,
+                    quantityAdjustmentHistory:quantityHistory.slice(-200), stocktakeEditHistory:auditHistory.slice(-200),
+                    __recentOperationMarkers:[...recent,{key:markerKey,at:Date.now()}].slice(-30)
+                });
+                return { duplicate:false, qtyHistory:quantityHistory.slice(-200), auditHistory:auditHistory.slice(-200) };
+            });
+            if (result?.duplicate) { showToast('تم منع تكرار نفس التعديل خلال لحظات'); return; }
+            Object.assign(item, { qty:nextQty, costPrice:nextCost, price:nextPrice, quantityAdjustmentHistory:result.qtyHistory || item.quantityAdjustmentHistory, stocktakeEditHistory:result.auditHistory || item.stocktakeEditHistory });
+            closeWarehouseStockEdit();
+            renderWarehouseTable();
+            renderItemList();
+            renderStats();
+            if (typeof renderInventoryItemMovementReport === 'function') renderInventoryItemMovementReport();
+            if (typeof renderInventoryMovementReport === 'function') renderInventoryMovementReport();
+            if (typeof refreshSupplierInvoiceCatalogOptions === 'function') refreshSupplierInvoiceCatalogOptions();
+            showToast('تم تحديث بيانات الجرد وسعر التكلفة وسعر البيع بنجاح');
+        } catch (error) {
+            console.warn('Save warehouse stocktake edit error:', error);
+            const messages = {
+                STOCK_ITEM_MISSING:'الصنف غير موجود في قاعدة البيانات',
+                STOCK_BRANCH_CHANGED:'تغير الفرع أو لم تعد لديك صلاحية الوصول إليه',
+                STOCK_EDIT_CONFLICT:'تم تعديل بيانات الصنف من مستخدم آخر. حدّث الجدول وافتح التعديل من جديد'
+            };
+            showToast(messages[error?.message] || 'تعذر حفظ تعديل الجرد؛ تحقق من الاتصال والصلاحيات ثم أعد المحاولة');
+        } finally {
+            isBusy = false;
+            const saveBtn = document.getElementById('saveWarehouseStockEditBtn');
+            if (saveBtn) saveBtn.disabled = false;
+        }
     }
 
     async function deleteWarehouseItem(itemId) {
@@ -9565,7 +9690,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                         <td><span class="mono">${formatMoney(p)}</span></td>
                         <td><span class="mono">${formatMoney(q * Number(w.costPrice ?? p))}</span></td>
                         <td>
-                            ${canEditRecord() ? `<button class="btn btn-outline btn-sm" onclick="editWarehouseItem('${w.id}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+                            ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editWarehouseItem('${w.id}')" title="تعديل بيانات الجرد: الكمية والتكلفة وسعر البيع"><i class="fa-solid fa-pen-to-square"></i> تعديل الجرد</button>` : ''}
                             ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteWarehouseItem('${w.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
                             ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
                         </td>
