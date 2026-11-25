@@ -5552,21 +5552,85 @@ function initMenuPermissionCheckboxes() {
         if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لمعاينة وطباعة عرض السعر'); return; }
         const currencyName = CURRENCY_NAMES[quote.currency] || quote.currency;
         const branch = quote.branchId === 'ALL' ? 'كل المخازن المسموحة' : (getAllBranches().find(b => b.id === quote.branchId)?.name || '-');
-        const rows = quote.items.map((item, index) => `<tr><td>${index + 1}</td><td>${escapeUiText(item.name)}</td><td>${escapeUiText(item.unit)}</td><td class="num">${formatQty(item.qty)}</td><td class="num">${formatMoney(item.price)} ${quote.currency}</td><td class="num">${formatMoney(item.qty * item.price)} ${quote.currency}</td></tr>`).join('');
+        const rows = quote.items.map((item, index) => `<tr>
+            <td class="center serial">${index + 1}</td>
+            <td class="item-name">${escapeUiText(item.name)}</td>
+            <td class="center">${escapeUiText(item.unit)}</td>
+            <td class="number">${formatQty(item.qty)}</td>
+            <td class="number">${formatMoney(item.price)} <small>${quote.currency}</small></td>
+            <td class="number amount-cell">${formatMoney(item.qty * item.price)} <small>${quote.currency}</small></td>
+        </tr>`).join('');
         const header = bilingualContactHeaderHtml('عرض سعر', `رقم العرض: ${escapeUiText(quote.number)}`);
+        const headerCss = bilingualContactHeaderCss();
         const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>عرض سعر ${escapeUiText(quote.number)}</title><style>
-            *{box-sizing:border-box}body{margin:0;padding:18px;background:#eef3ef;color:#23352a;font-family:Tahoma,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.toolbar{max-width:190mm;margin:0 auto 12px;display:flex;gap:8px;justify-content:center}.toolbar button{border:0;border-radius:8px;padding:10px 18px;font-weight:800;cursor:pointer;background:#176c40;color:#fff}.toolbar .close{background:#e8edf0;color:#334155}.paper{width:190mm;min-height:270mm;margin:0 auto;background:#fff;border:1px solid #d4e2d7;border-top:7px solid #176c40;padding:10mm;box-shadow:0 8px 28px rgba(20,55,35,.12)}
-            .bilingual-contact-header{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:10px;align-items:center;border:1px solid #d5e4d9;border-radius:10px;background:#f7fbf8;padding:10px;margin-bottom:13px}.bilingual-contact-en,.bilingual-contact-ar{display:flex;flex-direction:column;gap:4px;font-size:9px;color:#375c43;line-height:1.7}.bilingual-contact-ar{text-align:right}.bilingual-contact-en{text-align:left}.bilingual-contact-brand{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;color:#176c40}.bilingual-contact-brand h1{margin:0;font-size:18px;font-weight:900}.bilingual-contact-brand img{width:58px;height:58px;object-fit:contain}.bilingual-contact-brand b{font-size:13px}.bilingual-contact-brand small{font-size:9px;color:#557461}
-            h2{font-size:15px;color:#176c40;margin:12px 0;padding:8px;text-align:center;background:#edf7ef;border:1px solid #d4e7d8;border-radius:8px}.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0}.meta div{border:1px solid #dce8df;border-radius:7px;padding:8px;background:#fbfdfb}.meta span{display:block;color:#6b7e70;font-size:9px;margin-bottom:4px}.meta strong{font-size:11px;color:#273d2e;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:10px}thead th{background:#176c40;color:white;padding:9px 6px;border:1px solid #176c40}td{border:1px solid #dce6de;padding:8px 6px;text-align:right}tbody tr:nth-child(even){background:#f5faf6}.num{direction:ltr;text-align:center;white-space:nowrap}.totals{width:min(100%,105mm);margin:14px 0 0 auto;border:1px solid #d5e4d9;border-radius:9px;overflow:hidden}.totals div{display:flex;justify-content:space-between;padding:8px 11px;border-bottom:1px solid #e3ece5;font-size:11px}.totals div:last-child{background:#176c40;color:#fff;border:0;font-size:14px;font-weight:900}.notes{margin-top:14px;border:1px dashed #c8d9cc;border-radius:8px;background:#fbfdfb;padding:10px;font-size:10px;line-height:1.9;white-space:pre-wrap}.quote-disclaimer{margin-top:16px;text-align:center;color:#5e7565;font-size:9px;line-height:1.8;border-top:1px solid #dae7dd;padding-top:9px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:35px;margin-top:28px}.signatures div{text-align:center;font-size:10px;color:#3d6549;padding-top:17px;border-top:1px dashed #9eb5a4}
-            @page{size:A4 portrait;margin:9mm}@media print{body{padding:0;background:#fff}.toolbar{display:none!important}.paper{width:100%;min-height:0;margin:0;padding:6mm;box-shadow:none;border-radius:0}.bilingual-contact-header,thead th,.totals div:last-child{-webkit-print-color-adjust:exact;print-color-adjust:exact}tr{break-inside:avoid;page-break-inside:avoid}}
-            @media(max-width:700px){body{padding:8px}.paper{width:100%;min-height:0;padding:12px}.bilingual-contact-header{grid-template-columns:1fr 1fr}.bilingual-contact-brand{grid-column:1/-1;grid-row:1}.meta{grid-template-columns:repeat(2,1fr)}table{font-size:9px}}
-            </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق العرض</button></div><main class="paper">${header}
-            <div class="meta"><div><span>رقم عرض السعر</span><strong>${escapeUiText(quote.number)}</strong></div><div><span>تاريخ الإصدار</span><strong>${escapeUiText(quote.date)}</strong></div><div><span>صالح حتى</span><strong>${escapeUiText(quote.validUntil || 'غير محدد')}</strong></div><div><span>اسم العميل</span><strong>${escapeUiText(quote.customer)}</strong></div><div><span>رقم الهاتف</span><strong>${escapeUiText(quote.phone || '-')}</strong></div><div><span>العملة</span><strong>${escapeUiText(currencyName)} (${quote.currency})</strong></div><div><span>المخزن المرجعي للأسعار</span><strong>${escapeUiText(branch)}</strong></div><div><span>أعد العرض بواسطة</span><strong>${escapeUiText(currentUser?.fullName || 'معمل أبو محمد')}</strong></div></div>
-            <h2>تفاصيل عرض السعر</h2><table><thead><tr><th>#</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead><tbody>${rows}</tbody></table>
-            <div class="totals"><div><span>الإجمالي قبل الخصم</span><strong>${formatMoney(quote.subtotal)} ${quote.currency}</strong></div><div><span>الخصم</span><strong>${formatMoney(quote.discount)} ${quote.currency}</strong></div><div><span>الصافي المطلوب</span><strong>${formatMoney(quote.net)} ${quote.currency}</strong></div></div>
-            ${quote.notes ? `<div class="notes"><strong>ملاحظات وشروط العرض:</strong><br>${escapeUiText(quote.notes)}</div>` : ''}
-            <div class="quote-disclaimer">هذا عرض سعر استرشادي وليس فاتورة بيع أو سندًا ماليًا. لا يحجز الأصناف ولا يخصم أي كمية من المخزون، وتُعتمد الأسعار والكميات عند إصدار فاتورة البيع.</div>
-            <div class="signatures"><div>إعداد / معمل أبو محمد<br><br>التوقيع: __________________</div><div>اعتماد العميل<br><br>التوقيع: __________________</div></div>
+            *{box-sizing:border-box}
+            html,body{margin:0;padding:0}
+            body{padding:16px;background:#edf2ee;color:#24352a;font-family:Tahoma,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+            .toolbar{width:190mm;max-width:100%;margin:0 auto 12px;display:flex;gap:9px;justify-content:center}
+            .toolbar button{border:1px solid #176b43;border-radius:6px;padding:10px 22px;font:700 12px Tahoma,Arial;cursor:pointer;background:#176b43;color:#fff}
+            .toolbar .close{background:#fff;color:#315542;border-color:#b9cdbf}
+            .paper{width:190mm;min-height:277mm;margin:0 auto;background:#fff;border:1px solid #9cb6a2;border-top:6px solid #176b43;padding:8mm 9mm;box-shadow:0 5px 22px rgba(22,70,42,.12)}
+            ${headerCss}
+            .document-title{margin:0 0 10px;padding:8px 10px;text-align:center;border:1.5px solid #176b43;background:#f0f7f1;color:#145a36;font-size:17px;font-weight:900;letter-spacing:.2px}
+            .document-subtitle{margin:-4px 0 12px;text-align:center;color:#526b5b;font-size:9px;font-weight:700}
+            .section-title{margin:12px 0 0;padding:6px 9px;background:#eaf3ec;color:#155b37;border:1px solid #789b82;border-bottom:0;font-size:11px;font-weight:900}
+            .info-table,.items-table,.summary-table{width:100%;border-collapse:collapse;table-layout:fixed}
+            .info-table{border:1px solid #829b88;font-size:10px}
+            .info-table td{border:1px solid #aebfb2;padding:7px 8px;vertical-align:middle}
+            .info-table .label{width:17%;background:#f1f6f2;color:#385943;font-weight:800;white-space:nowrap}
+            .info-table .value{width:33%;font-weight:800;color:#263b2d;overflow-wrap:anywhere}
+            .items-table{border:1.5px solid #527b5c;font-size:10px}
+            .items-table thead{display:table-header-group}
+            .items-table th{background:#176b43;color:#fff;border:1px solid #145b38;padding:9px 6px;font-size:10px;font-weight:900;text-align:center}
+            .items-table td{border:1px solid #9aafa0;padding:8px 6px;vertical-align:middle}
+            .items-table tbody tr:nth-child(even){background:#f4f8f4}
+            .items-table tbody tr:nth-child(odd){background:#fff}
+            .items-table .serial{width:7%;font-weight:800}
+            .items-table .item-name{font-weight:800;text-align:right}
+            .center{text-align:center}
+            .number{direction:ltr;text-align:center;white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}
+            .number small{font-size:8px;color:#597363}
+            .amount-cell{color:#145b36;font-weight:900}
+            .summary-wrap{margin-top:13px;border:1px solid #789b82}
+            .summary-caption{padding:6px 9px;background:#f1f6f2;color:#315b3d;font-size:10px;font-weight:900;border-bottom:1px solid #9eb4a3}
+            .summary-table{font-size:10px}
+            .summary-table th,.summary-table td{border:1px solid #a5b9aa;padding:8px 9px}
+            .summary-table th{background:#f5f8f5;color:#3a5b43;text-align:right;font-weight:800}
+            .summary-table td{text-align:left;direction:ltr;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+            .summary-table tr.net-row th,.summary-table tr.net-row td{background:#176b43;color:#fff;font-size:13px;border-color:#145b38}
+            .notes{margin-top:12px;border:1px solid #b2c4b5;padding:9px 11px;font-size:10px;line-height:1.8;background:#fbfdfb;white-space:pre-wrap}
+            .quote-disclaimer{margin-top:11px;padding:8px 10px;border:1px solid #c4d2c7;background:#f5f8f5;color:#52695a;font-size:9px;line-height:1.8;text-align:center}
+            .signatures{display:grid;grid-template-columns:1fr 1fr;gap:25mm;margin-top:23px;break-inside:avoid;page-break-inside:avoid}
+            .signature{border:1px solid #9eb4a3;padding:9px 12px 12px;min-height:68px;text-align:center;color:#315b3e;font-size:10px;font-weight:800}
+            .signature .line{margin-top:22px;padding-top:5px;border-top:1px dotted #6e8875;color:#52695a;font-size:9px;font-weight:600}
+            .document-footer{margin-top:15px;padding-top:7px;border-top:2px solid #176b43;text-align:center;color:#53705d;font-size:8px;font-weight:700}
+            @page{size:A4 portrait;margin:8mm}
+            @media print{body{padding:0;background:#fff}.toolbar{display:none!important}.paper{width:100%;min-height:0;margin:0;padding:5mm 6mm;border:0;border-top:5px solid #176b43;box-shadow:none}.bilingual-contact-header,.document-title,.section-title,.items-table th,.summary-table tr.net-row th,.summary-table tr.net-row td{-webkit-print-color-adjust:exact;print-color-adjust:exact}tr,.info-table,.summary-wrap,.notes,.quote-disclaimer,.signatures{break-inside:avoid;page-break-inside:avoid}}
+            @media(max-width:700px){body{padding:7px}.paper{width:100%;min-height:0;padding:10px}.info-table,.items-table,.summary-table{font-size:9px}.info-table td{padding:6px 5px}.info-table .label{width:20%}.info-table .value{width:30%}.items-table th,.items-table td{padding:6px 4px}.number{font-size:9px}.signatures{gap:12px}}
+            </style></head><body>
+            <div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق المعاينة</button></div>
+            <main class="paper">
+                ${header}
+                <h1 class="document-title">عرض سعر</h1>
+                <div class="document-subtitle">عرض أسعار تفصيلي — غير ملزم بالحجز أو الصرف من المخزون</div>
+                <div class="section-title">بيانات العميل والعرض</div>
+                <table class="info-table"><tbody>
+                    <tr><td class="label">رقم العرض</td><td class="value" dir="ltr">${escapeUiText(quote.number)}</td><td class="label">تاريخ الإصدار</td><td class="value" dir="ltr">${escapeUiText(quote.date)}</td></tr>
+                    <tr><td class="label">اسم العميل</td><td class="value">${escapeUiText(quote.customer)}</td><td class="label">رقم الهاتف</td><td class="value" dir="ltr">${escapeUiText(quote.phone || '-')}</td></tr>
+                    <tr><td class="label">صالح حتى</td><td class="value" dir="ltr">${escapeUiText(quote.validUntil || 'غير محدد')}</td><td class="label">العملة</td><td class="value">${escapeUiText(currencyName)} (${quote.currency})</td></tr>
+                    <tr><td class="label">المخزن المرجعي</td><td class="value">${escapeUiText(branch)}</td><td class="label">أعد العرض</td><td class="value">${escapeUiText(currentUser?.fullName || 'معمل أبو محمد')}</td></tr>
+                </tbody></table>
+                <div class="section-title">تفاصيل الأصناف والأسعار</div>
+                <table class="items-table"><thead><tr><th style="width:7%">م</th><th style="width:35%">الصنف / الوصف</th><th style="width:11%">الوحدة</th><th style="width:12%">الكمية</th><th style="width:17%">سعر الوحدة</th><th style="width:18%">الإجمالي</th></tr></thead><tbody>${rows}</tbody></table>
+                <div class="summary-wrap"><div class="summary-caption">ملخص القيمة الإجمالية</div><table class="summary-table"><tbody>
+                    <tr><th>الإجمالي قبل الخصم</th><td>${formatMoney(quote.subtotal)} ${quote.currency}</td></tr>
+                    <tr><th>الخصم</th><td>${formatMoney(quote.discount)} ${quote.currency}</td></tr>
+                    <tr class="net-row"><th>صافي قيمة عرض السعر</th><td>${formatMoney(quote.net)} ${quote.currency}</td></tr>
+                </tbody></table></div>
+                ${quote.notes ? `<div class="notes"><strong>ملاحظات وشروط العرض:</strong><br>${escapeUiText(quote.notes)}</div>` : ''}
+                <div class="quote-disclaimer"><strong>تنبيه:</strong> هذا عرض سعر استرشادي وليس فاتورة بيع أو سندًا ماليًا. لا يحجز الأصناف ولا يخصم أي كمية من المخزون، وتُعتمد الأسعار والكميات النهائية عند إصدار فاتورة البيع.</div>
+                <div class="signatures"><div class="signature">إعداد / معمل أبو محمد<div class="line">الاسم والتوقيع</div></div><div class="signature">موافقة العميل<div class="line">الاسم والتوقيع والختم</div></div></div>
+                <div class="document-footer">معمل أبو محمد — صنعاء / التحرير — هاتف: 777166131 | 771879913</div>
             </main></body></html>`;
         win.document.open();
         win.document.write(html);
