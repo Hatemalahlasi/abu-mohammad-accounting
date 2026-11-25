@@ -2188,14 +2188,13 @@
             <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-boxes-stacked"></i> اختيار الأصناف</span><span id="quoteProductsCount" class="badge">0 صنف</span></div>
                 <div class="quote-picker-actions">
-                    <button type="button" class="btn btn-primary" onclick="openQuotationProductPicker()"><i class="fa-solid fa-magnifying-glass"></i> اختيار الأصناف من القائمة</button>
-                    <button type="button" class="btn btn-outline" onclick="addQuotationManualRow()"><i class="fa-solid fa-plus"></i> إضافة صنف يدوي</button>
+                    <button type="button" class="btn btn-primary" onclick="openQuotationProductPicker()"><i class="fa-solid fa-magnifying-glass"></i> بحث الأصناف</button>
                 </div>
-                <div class="employee-permission-note" style="margin-top:10px">اضغط اختيار الأصناف لفتح نافذة البحث. أدخل كمية كل صنف ثم اضغط إضافة؛ ستظهر الأصناف والكميات في تفاصيل العرض مثل الفاتورة، دون خصم المخزون.</div>
+                <div class="employee-permission-note" style="margin-top:10px">اضغط «بحث الأصناف»، وابحث عن الصنف وحدد الكمية ثم اضغط إضافة. ستظهر الأصناف في تفاصيل العرض دون خصم المخزون.</div>
             </div>
             <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-list-check"></i> أصناف عرض السعر</span><span class="badge" id="quoteSelectedCount">0 صنف</span></div>
-                <div id="quoteItemsContainer" class="quote-lines-container"><div class="quote-empty-state">لم تتم إضافة أصناف بعد. اختر صنفًا من القائمة أو أضف صنفًا يدويًا.</div></div>
+                <div id="quoteItemsContainer" class="quote-lines-container"><div class="quote-empty-state">لم تتم إضافة أصناف بعد. اضغط «بحث الأصناف» لاختيار الأصناف والكميات.</div></div>
                 <div class="quote-total-editor">
                     <div class="form-group"><label for="quoteDiscount">الخصم</label><input type="number" id="quoteDiscount" class="form-control num-input" min="0" step="0.01" value="0" oninput="recalculateQuotationTotal()"></div>
                     <div class="quote-net-display"><span>الإجمالي قبل الخصم</span><strong id="quoteSubtotal">0.00 YER</strong><span>الصافي المطلوب</span><b id="quoteNetTotal">0.00 YER</b></div>
@@ -2225,6 +2224,20 @@
             </div>
         </section>
 
+        <!-- نافذة بحث أصناف فاتورة المبيعات بنفس نمط عرض السعر -->
+        <div id="invoiceProductPickerModal" class="quote-picker-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="invoiceProductPickerTitle" onclick="if(event.target===this)closeInvoiceProductPicker()">
+            <div class="quote-picker-dialog">
+                <div class="quote-picker-head">
+                    <div><h3 id="invoiceProductPickerTitle">بحث واختيار أصناف الفاتورة</h3><small>ابحث باسم الصنف، راجع المتاح والسعر، وحدد الكمية ثم اضغط إضافة</small></div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="closeInvoiceProductPicker()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
+                </div>
+                <div class="form-group"><input id="invoiceProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderInvoiceProductPicker()" autocomplete="off"></div>
+                <div class="employee-permission-note" style="margin:0 0 8px">يظهر هنا مخزون الفرع المختار فقط. عند تعديل فاتورة، تُضاف كميتها الأصلية إلى المتاح أثناء التعديل حتى لا تمنعك من إعادة اختيارها.</div>
+                <div id="invoicePickerResultCount" class="badge" style="align-self:flex-start;margin-bottom:6px">0 صنف</div>
+                <div id="invoiceProductCatalog" class="quote-picker-list"><div class="empty-products">جاري تحميل الأصناف...</div></div>
+            </div>
+        </div>
+
         <!-- 1. صفحة المبيعات والفواتير الكاملة -->
         <section id="salesTab" class="tab-content hidden">
             <div class="fullpage-topbar">
@@ -2248,7 +2261,7 @@
                 <div class="grid-4 sales-invoice-meta-grid">
                     <div class="form-group">
                         <label>الفرع</label>
-                        <select id="invBranchSelect" class="form-control" onchange="renderWarehouseCatalogDropdown()"></select>
+                        <select id="invBranchSelect" class="form-control" onchange="renderWarehouseCatalogDropdown(); renderInvoiceProductPicker();"></select>
                     </div>
                     <div class="form-group">
                         <label>نوع الفاتورة</label>
@@ -2301,25 +2314,23 @@
                 <div class="sales-workspace-grid">
                     <div class="sales-products-panel">
                         <div class="sales-panel-heading">
-                            <div><strong><i class="fa-solid fa-boxes-stacked"></i> الأصناف المتاحة</strong><small>ابحث عن الصنف ثم اضغط «إضافة» لوضعه في الفاتورة</small></div>
+                            <div><strong><i class="fa-solid fa-boxes-stacked"></i> اختيار أصناف الفاتورة</strong><small>ابحث عن الأصناف وحدد الكمية قبل إضافتها</small></div>
                             <span class="badge badge-sup" id="invoiceProductsCount">0 صنف</span>
                         </div>
-                        <div class="sales-product-search">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="search" id="warehouseItemSearch" class="form-control" placeholder="ابحث عن اسم الصنف (اختياري)..." oninput="renderWarehouseCatalogDropdown()" autocomplete="off">
-                            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('warehouseItemSearch').value=''; renderWarehouseCatalogDropdown();" title="مسح البحث"><i class="fa-solid fa-xmark"></i></button>
+                        <button type="button" class="btn btn-primary btn-full" style="width:100%;min-height:46px;margin:8px 0 4px" onclick="openInvoiceProductPicker()"><i class="fa-solid fa-magnifying-glass"></i> بحث الأصناف</button>
+                        <div class="sales-direct-hint"><i class="fa-solid fa-circle-check"></i> اضغط «بحث الأصناف»، اكتب اسم الصنف، حدد الكمية ثم اضغط إضافة. يمكنك اختيار عدة أصناف من نفس النافذة.</div>
+                        <div class="hidden" aria-hidden="true">
+                            <input type="search" id="warehouseItemSearch" oninput="renderWarehouseCatalogDropdown()" autocomplete="off">
+                            <div id="invoiceQuickProducts"></div>
+                            <div id="invoiceProductGrid"></div>
+                            <select id="warehouseCatalogSelect"><option value="">اختر صنفاً</option></select>
                         </div>
-                        <div class="sales-direct-hint"><i class="fa-solid fa-circle-check"></i> اختر الصنف من القائمة. يمكنك زيادة الكمية بالضغط على «إضافة» أكثر من مرة.</div>
-                        <div id="invoiceQuickProducts" class="invoice-quick-products hidden" aria-hidden="true"></div>
-                        <div id="invoiceProductGrid" class="invoice-product-grid"><div class="empty-products">اكتب جزءاً من اسم الصنف للبحث، أو اختر صنفاً سريعاً بالأعلى</div></div>
-                        <select id="warehouseCatalogSelect" class="hidden" aria-hidden="true"><option value="">اختر صنفاً</option></select>
                     </div>
                     <div class="sales-cart-panel" id="salesCartPanel">
                         <div class="sales-panel-heading">
                             <div><strong><i class="fa-solid fa-list-check"></i> الأصناف المختارة</strong><small id="salesCartSubheading">تعديل الكمية والسعر مباشرة عند الحاجة</small></div>
                             <div class="sales-cart-heading-actions">
                                 <button type="button" class="btn btn-outline btn-sm sales-cart-close" onclick="closeMobileInvoiceCart()" aria-label="إغلاق السلة"><i class="fa-solid fa-xmark"></i></button>
-                                <button type="button" class="btn btn-outline btn-sm" onclick="addInvoiceItemRow()"><i class="fa-solid fa-plus"></i> صنف يدوي</button>
                             </div>
                         </div>
                         <div id="invoiceItemsContainer" class="invoice-items-list"></div>
@@ -5524,7 +5535,7 @@ function initMenuPermissionCheckboxes() {
     function removeQuotationRow(button) {
         button?.closest('.quote-line')?.remove();
         const container = document.getElementById('quoteItemsContainer');
-        if (container && !container.querySelector('.quote-line')) container.innerHTML = '<div class="quote-empty-state">لم تتم إضافة أصناف بعد. اختر صنفًا من القائمة أو أضف صنفًا يدويًا.</div>';
+        if (container && !container.querySelector('.quote-line')) container.innerHTML = '<div class="quote-empty-state">لم تتم إضافة أصناف بعد. اختر صنفًا من القائمة أو اضغط بحث الأصناف لاختيار الصنف.</div>';
         recalculateQuotationTotal();
     }
 
@@ -6926,6 +6937,106 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
             </button>`;
         }).join('');
         bindInvoiceProductButtons(grid);
+        refreshInvoicePickerIfOpen();
+    }
+
+    function getInvoiceOriginalStockQty(item) {
+        if (!editingInvoiceId || !editingInvoiceSnapshot || !Array.isArray(editingInvoiceSnapshot.items)) return 0;
+        const itemId = String(item?.id || '');
+        const itemName = String(item?.name || '').trim().toLocaleLowerCase('ar');
+        const itemUnit = String(item?.unit || 'حبة');
+        return editingInvoiceSnapshot.items.reduce((total, line) => {
+            const lineId = String(line?.stockItemId || '');
+            const sameId = itemId && lineId && lineId === itemId;
+            const sameName = !lineId && String(line?.name || '').trim().toLocaleLowerCase('ar') === itemName
+                && String(line?.unit || 'حبة') === itemUnit;
+            return total + ((sameId || sameName) ? Number(line?.qty || 0) : 0);
+        }, 0);
+    }
+
+    function getInvoiceAllowedStockQty(item) {
+        return Math.max(0, Number(item?.qty || 0) + getInvoiceOriginalStockQty(item));
+    }
+
+    function openInvoiceProductPicker() {
+        const branchId = document.getElementById('invBranchSelect')?.value || '';
+        if (!branchId || !isBranchAllowed(branchId)) { showToast('اختر مخزناً مسموحاً أولاً'); return; }
+        const modal = document.getElementById('invoiceProductPickerModal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        const search = document.getElementById('invoiceProductSearch');
+        if (search) search.value = '';
+        renderInvoiceProductPicker();
+        setTimeout(() => search?.focus(), 50);
+    }
+
+    function closeInvoiceProductPicker() {
+        document.getElementById('invoiceProductPickerModal')?.classList.add('hidden');
+    }
+
+    function refreshInvoicePickerIfOpen() {
+        const modal = document.getElementById('invoiceProductPickerModal');
+        if (modal && !modal.classList.contains('hidden')) renderInvoiceProductPicker();
+    }
+
+    function renderInvoiceProductPicker() {
+        const grid = document.getElementById('invoiceProductCatalog');
+        if (!grid) return;
+        const branchId = document.getElementById('invBranchSelect')?.value || '';
+        const query = String(document.getElementById('invoiceProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
+        if (!branchId || !isBranchAllowed(branchId)) {
+            grid.innerHTML = '<div class="empty-products">لم يتم تحديد مخزن مسموح لهذا الحساب.</div>';
+            const resultCount = document.getElementById('invoicePickerResultCount'); if (resultCount) resultCount.textContent = '0 صنف';
+            const count = document.getElementById('invoiceProductsCount'); if (count) count.textContent = '0 صنف';
+            return;
+        }
+        const branchItems = (state.warehouse || []).filter(item =>
+            String(item.branchId || 'main_branch') === String(branchId) && isBranchAllowed(item.branchId || 'main_branch')
+            && getInvoiceAllowedStockQty(item) > 0
+        );
+        const items = branchItems.filter(item => String(item.name || '').toLocaleLowerCase('ar').includes(query));
+        const resultCount = document.getElementById('invoicePickerResultCount');
+        if (resultCount) resultCount.textContent = `${items.length} صنف`;
+        const count = document.getElementById('invoiceProductsCount');
+        if (count) count.textContent = `${branchItems.length} صنف`;
+        if (!items.length) {
+            grid.innerHTML = '<div class="empty-products"><i class="fa-solid fa-box-open"></i><br>لا توجد أصناف مطابقة في هذا المخزن.</div>';
+            return;
+        }
+        const currency = document.getElementById('invCurrency')?.value || 'YER';
+        const selectedRows = [...document.querySelectorAll('#invoiceItemsContainer .invoice-item-row')];
+        grid.innerHTML = items.map(item => {
+            const available = getInvoiceAllowedStockQty(item);
+            const selected = selectedRows.find(row => row.dataset.stockId === String(item.id) || (
+                !row.dataset.stockId && row.querySelector('.item-name')?.value.trim().toLocaleLowerCase('ar') === String(item.name || '').trim().toLocaleLowerCase('ar')
+                && (row.querySelector('.item-unit')?.value || 'حبة') === (item.unit || 'حبة')
+            ));
+            const selectedQty = selected ? Number(selected.querySelector('.item-qty')?.value || 0) : 0;
+            const remaining = Math.max(0, available - selectedQty);
+            const priceCurrency = CURRENCY_CODES.includes(item.priceCurrency) ? item.priceCurrency : 'YER';
+            const storedPrice = Number(item.price || 0);
+            const convertedPrice = storedPrice > 0 ? convertCurrencyAmount(storedPrice, priceCurrency, currency) : 0;
+            const priceLabel = storedPrice > 0
+                ? (convertedPrice === null ? `سعر الصرف غير محدد (${priceCurrency})` : `${formatMoney(convertedPrice)} ${currency}`)
+                : 'سعر البيع غير محدد';
+            const priceHint = storedPrice > 0 && convertedPrice !== null && priceCurrency !== currency
+                ? `السعر الأصلي: ${formatMoney(storedPrice)} ${priceCurrency}` : '';
+            const branchName = item.branchName || getAllBranches().find(branch => String(branch.id) === String(branchId))?.name || '';
+            return `<div class="quote-picker-row">
+                <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(branchName)} · المتاح للإضافة: ${formatQty(remaining)}</small><small class="quote-picker-price">${escapeUiText(priceLabel)}</small>${priceHint ? `<small>${escapeUiText(priceHint)}</small>` : ''}</div>
+                <div><label style="display:block;font-size:10px;font-weight:800;color:#52665a;margin-bottom:3px">الكمية</label><input class="quote-picker-qty num-input" type="number" min="0.01" max="${remaining}" step="0.01" inputmode="decimal" value="${remaining > 0 ? 1 : 0}" ${remaining <= 0 ? 'disabled' : ''} aria-label="كمية ${escapeUiText(item.name || 'الصنف')}"></div>
+                <button type="button" class="btn btn-primary btn-sm" ${remaining <= 0 ? 'disabled' : ''} onclick="addInvoiceProductFromModal('${encodeURIComponent(String(item.id))}',this)"><i class="fa-solid fa-plus"></i> إضافة</button>
+            </div>`;
+        }).join('');
+    }
+
+    function addInvoiceProductFromModal(encodedId, button) {
+        const row = button?.closest('.quote-picker-row');
+        const qty = Number(row?.querySelector('.quote-picker-qty')?.value || 0);
+        if (!Number.isFinite(qty) || qty <= 0) { showToast('أدخل كمية صحيحة للصنف'); return; }
+        const id = decodeURIComponent(String(encodedId || ''));
+        const added = addStockProductToInvoice(id, qty);
+        if (added) renderInvoiceProductPicker();
     }
 
     function escapeUiText(value) {
@@ -6957,11 +7068,13 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         @media print{.bilingual-contact-header{break-inside:avoid;page-break-inside:avoid;background:#f7fbf8!important}}`;
     }
 
-    function addStockProductToInvoice(stockId) {
-        const item = (state.warehouse || []).find(w => w.id === stockId);
-        if (!item) { showToast('لم يتم العثور على الصنف'); return; }
-        const available = Number(item.qty || 0);
-        if (available <= 0) { showToast('هذا الصنف غير متوفر حالياً في المخزن'); return; }
+    function addStockProductToInvoice(stockId, quantity = 1) {
+        const item = (state.warehouse || []).find(w => String(w.id) === String(stockId));
+        if (!item) { showToast('لم يتم العثور على الصنف'); return false; }
+        const requestedQty = Number(quantity || 0);
+        if (!Number.isFinite(requestedQty) || requestedQty <= 0) { showToast('أدخل كمية صحيحة للصنف'); return false; }
+        const available = getInvoiceAllowedStockQty(item);
+        if (available <= 0) { showToast('هذا الصنف غير متوفر حالياً في المخزن'); return false; }
         const invoiceCurrency = document.getElementById('invCurrency')?.value || 'YER';
         const storedPriceCurrency = CURRENCY_CODES.includes(item.priceCurrency) ? item.priceCurrency : 'YER';
         const storedPrice = Number(item.price || 0);
@@ -6970,20 +7083,25 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const container = document.getElementById('invoiceItemsContainer');
         const existing = [...(container?.querySelectorAll('.invoice-item-row') || [])].find(row =>
             row.dataset.stockId === String(item.id) || (
-                row.querySelector('.item-name')?.value.trim().toLowerCase() === String(item.name || '').trim().toLowerCase() &&
+                row.querySelector('.item-name')?.value.trim().toLocaleLowerCase('ar') === String(item.name || '').trim().toLocaleLowerCase('ar') &&
                 (row.querySelector('.item-unit')?.value || 'حبة') === (item.unit || 'حبة')
             )
         );
+        const currentQty = existing ? Number(existing.querySelector('.item-qty')?.value || 0) : 0;
+        const nextQty = currentQty + requestedQty;
+        if (nextQty > available + 0.000001) {
+            const remaining = Math.max(0, available - currentQty);
+            showToast(`المتاح لإضافة ${item.name} هو ${formatQty(remaining)} فقط`);
+            return false;
+        }
         if (existing) {
             const qtyInput = existing.querySelector('.item-qty');
-            const nextQty = Number(qtyInput?.value || 0) + 1;
-            if (nextQty > available) { showToast(`المتاح من ${item.name} هو ${formatQty(available)} فقط`); return; }
             if (qtyInput) qtyInput.value = nextQty;
             existing.dataset.stockId = String(item.id);
             recalculateInvoiceTotal();
         } else {
             addInvoiceItemRow({
-                name: item.name, unit: item.unit || 'حبة', qty: 1,
+                name: item.name, unit: item.unit || 'حبة', qty: requestedQty,
                 price: canUseStoredPrice ? convertedPrice : 0,
                 sourcePriceAmount: storedPrice,
                 sourcePriceCurrency: storedPriceCurrency,
@@ -6997,14 +7115,16 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         } else if (!storedPrice) {
             showToast(`أضيف ${item.name}. أدخل سعر البيع بعملة ${invoiceCurrency}`);
         } else {
-            showToast(`تمت إضافة ${item.name} بسعر محول إلى ${invoiceCurrency}`);
+            showToast(`تمت إضافة ${item.name} بكمية ${formatQty(requestedQty)} بسعر محول إلى ${invoiceCurrency}`);
         }
         const search = document.getElementById('warehouseItemSearch');
         if (search) search.value = '';
         renderWarehouseCatalogDropdown();
+        refreshInvoicePickerIfOpen();
+        return true;
     }
 
-    function addSelectedWarehouseItemToInvoice() {
+        function addSelectedWarehouseItemToInvoice() {
         const sel = document.getElementById('warehouseCatalogSelect');
         if (sel?.value) addStockProductToInvoice(sel.value);
     }
@@ -9088,6 +9208,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         lastInvoiceCurrency = targetCurrency;
         updateInvoiceCashboxOptions();
         renderWarehouseCatalogDropdown();
+        refreshInvoicePickerIfOpen();
         recalculateInvoiceTotal();
     }
 
@@ -9222,7 +9343,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const stockId = row.dataset.stockId;
         if (delta > 0 && stockId) {
             const stock = (state.warehouse || []).find(item => String(item.id) === String(stockId));
-            const available = Number(stock?.qty || 0);
+            const available = stock ? getInvoiceAllowedStockQty(stock) : 0;
             if (next > available) { showToast(`المتاح من ${stock?.name || 'الصنف'} هو ${formatQty(available)} فقط`); return; }
         }
         input.value = next;
@@ -9621,7 +9742,6 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             name: item.name || '', unit: item.unit || 'حبة', qty: Number(item.qty || 1), price: Number(item.price || 0),
             stockItemId: item.stockItemId || '', sourcePriceAmount: Number(item.price || 0), sourcePriceCurrency: inv.currency || 'YER'
         }));
-        if (!inv.items?.length) addInvoiceItemRow();
         setInvoiceEditModeUI(true);
         recalculateInvoiceTotal();
         renderWarehouseCatalogDropdown();
