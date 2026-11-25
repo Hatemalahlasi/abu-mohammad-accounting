@@ -1404,23 +1404,26 @@
         #payrollSettlementTab .payroll-currency-usd{color:#59688b;}
 
 
-        /* ألوان وهوية الصفحة الرئيسية فقط — لا نمس أزرار القائمة أو مقاساتها أو توزيعها */
+        /* ألوان الصفحة الرئيسية فقط: لمسات أخضر وأحمر شفافة، مع إبقاء الأزرار كما هي */
         body:has(#mainAppView:not(.hidden) #homeMenuContainer:not(.hidden)) {
             background:
-                radial-gradient(ellipse at 12% 15%, rgba(185, 28, 28, .045) 0%, transparent 43%),
-                radial-gradient(ellipse at 88% 84%, rgba(21, 128, 61, .055) 0%, transparent 46%),
-                linear-gradient(125deg, #f5f8f6 0%, #ffffff 52%, #fbf7f7 100%);
+                radial-gradient(ellipse at 12% 16%, rgba(185, 28, 28, .10) 0%, transparent 43%),
+                radial-gradient(ellipse at 88% 84%, rgba(21, 128, 61, .11) 0%, transparent 46%),
+                linear-gradient(125deg, #f4f8f5 0%, #ffffff 50%, #fcf5f5 100%);
         }
         .app-shell:has(#mainAppView:not(.hidden) #homeMenuContainer:not(.hidden)) {
-            background: #fff;
-            border-color: #e1e8e3;
-            box-shadow: 0 12px 32px rgba(35, 65, 48, .07);
+            background: linear-gradient(125deg, rgba(244, 250, 246, .98) 0%, #ffffff 48%, rgba(255, 247, 247, .98) 100%);
+            border-color: #dce8df;
+            box-shadow: 0 12px 32px rgba(35, 65, 48, .08);
         }
         #mainAppView:has(#homeMenuContainer:not(.hidden)) #homeMenuContainer {
             border-radius: 18px;
-            background: linear-gradient(135deg, rgba(247, 251, 248, .55), rgba(255,255,255,.94) 52%, rgba(253,247,247,.48));
+            background:
+                radial-gradient(ellipse at 8% 8%, rgba(190, 42, 49, .09) 0%, transparent 38%),
+                radial-gradient(ellipse at 92% 92%, rgba(22, 128, 73, .11) 0%, transparent 42%),
+                linear-gradient(125deg, rgba(241, 249, 244, .92) 0%, rgba(255,255,255,.96) 50%, rgba(253, 244, 244, .92) 100%);
         }
-        /* تحسين الشعار واسم المعمل فقط */
+        /* شعار واسم المعمل داخل ترويسة الواجهة الرئيسية فقط */
         #mainAppView .header-logo-square {
             width: 62px;
             height: 62px;
@@ -1428,7 +1431,7 @@
             padding: 5px;
             background: #fff;
             border: 1.5px solid #b8d7c2;
-            box-shadow: 0 0 0 3px rgba(185, 28, 28, .055), 0 5px 14px rgba(21, 90, 48, .10);
+            box-shadow: 0 0 0 3px rgba(185, 28, 28, .07), 0 5px 14px rgba(21, 90, 48, .12);
         }
         #mainAppView .header-logo-square img { object-fit: contain; }
         #mainAppView .header-brand-copy h2 {
@@ -1436,7 +1439,7 @@
             font-size: 19px !important;
             font-weight: 900 !important;
         }
-        #mainAppView .header-brand-subtitle { color: #21834b; font-weight: 800; text-shadow: 0 1px 0 rgba(33, 131, 75, .08); }
+        #mainAppView .header-brand-subtitle { color: #21834b !important; font-weight: 800 !important; }
 
         .trash-bin-list{display:grid;grid-template-columns:1fr;gap:10px}
         .trash-bin-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border:1px solid #eadede;border-right:4px solid #bd3434;border-radius:12px;background:linear-gradient(110deg,#fffafa,#fff 65%,#f7fcf8)}
