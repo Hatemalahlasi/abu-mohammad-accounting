@@ -1890,6 +1890,30 @@
         }
 </style>
 <!-- Supplier payment ledger repair 2026-11-23-D -->
+
+<style>
+.quote-meta-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.quote-product-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.quote-product-card{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;text-align:right;padding:11px;border:1px solid #d6e6da;border-radius:12px;background:#fbfefb;color:#263b2e;cursor:pointer;font:700 12px/1.7 'Cairo',sans-serif}
+.quote-product-card:hover{border-color:#20804a;background:#eef8f0}
+.quote-product-card strong{display:block;font-size:12px;color:#1c4b30;overflow-wrap:anywhere}
+.quote-product-card small{display:block;color:#647568;font-size:10px;font-weight:600}
+.quote-product-card .quote-price{color:#176c40;font-weight:900;direction:ltr;white-space:nowrap}
+.quote-lines-container{display:flex;flex-direction:column;gap:9px}
+.quote-empty-state{padding:22px;text-align:center;color:var(--text-muted);background:#f8faf8;border:1px dashed #cbd9ce;border-radius:12px}
+.quote-line{border:1px solid #dbe7de;border-radius:12px;padding:10px;background:#fff;display:grid;grid-template-columns:2fr .75fr .9fr 1fr 1fr auto;gap:8px;align-items:end}
+.quote-line .form-group{margin:0;min-width:0}
+.quote-line label{display:block;font-size:10px;color:#52665a;font-weight:800;margin-bottom:4px}
+.quote-line input{min-width:0;padding:8px;font-size:12px}
+.quote-line-total{padding:8px 5px;color:#176c40;font-size:12px;font-weight:900;white-space:nowrap;direction:ltr;text-align:left}
+.quote-total-editor{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-top:14px;padding-top:13px;border-top:1px solid #e2ebe4}
+.quote-total-editor .form-group{width:min(240px,40%);margin:0}
+.quote-net-display{display:grid;grid-template-columns:auto auto;gap:5px 18px;align-items:center;text-align:left}
+.quote-net-display span{font-size:11px;color:#647568}.quote-net-display strong{font-size:14px;color:#33483a;direction:ltr}.quote-net-display b{font-size:18px;color:#fff;background:#176c40;padding:8px 13px;border-radius:9px;direction:ltr}
+.quote-actions-card{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-start}
+@media(max-width:850px){.quote-meta-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.quote-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.quote-line{grid-template-columns:repeat(2,minmax(0,1fr))}.quote-line .quote-name-field{grid-column:1/-1}.quote-line-total{display:flex;align-items:center}}
+@media(max-width:480px){.quote-meta-grid{grid-template-columns:1fr}.quote-meta-grid>div[style*="grid-column"]{grid-column:auto!important}.quote-total-editor{align-items:stretch;flex-direction:column}.quote-total-editor .form-group{width:100%}.quote-net-display{width:100%;grid-template-columns:1fr auto}}
+</style>
 </head>
 <body>
 
@@ -2014,6 +2038,10 @@
                     <i class="fa-solid fa-file-invoice-dollar"></i>
                     <span>المبيعات والفواتير</span>
                 </button>
+                <button class="nav-tab" data-quote-button="true" onclick="openQuotationPage()">
+                    <i class="fa-solid fa-file-circle-check"></i>
+                    <span>عرض سعر</span>
+                </button>
                 <button class="nav-tab" data-exchange-rates="true" onclick="openExchangeRates()">
                     <i class="fa-solid fa-money-bill-transfer"></i>
                     <span>أسعار الصرف</span>
@@ -2117,6 +2145,51 @@
                 <div style="font-size:13px;line-height:2;color:var(--text-muted);">
                     إذا كان سعر الصنف 1,800 ريال يمني وسعر السعودي 140، يظهر سعره في فاتورة السعودي 12.86 ريال سعودي تقريباً. وإذا كانت الفاتورة باليمني، يرجع النظام إلى السعر بالريال اليمني. وينطبق التحويل نفسه على الدولار حسب السعر الذي تدخله.
                 </div>
+            </div>
+        </section>
+
+        <!-- شاشة إعداد عروض الأسعار: لا تنشئ فاتورة ولا تخصم من المخزون -->
+        <section id="quotationTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title"><i class="fa-solid fa-file-circle-check"></i> عروض الأسعار</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+            </div>
+            <div class="employee-permission-note" style="margin-bottom:12px;border-color:#cce5d3;background:#f2faf4;color:#285d3c;">
+                <i class="fa-solid fa-circle-info"></i>
+                عرض السعر للعرض والطباعة فقط؛ لا ينشئ فاتورة، ولا يخصم أي كمية من المخزون، ولا يؤثر في الصندوق أو حساب العميل. الأسعار تُقرأ من بطاقة الصنف وتُحوّل وفق أسعار الصرف الحالية.
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-clipboard-list"></i> بيانات عرض السعر</span></div>
+                <div class="grid-3 quote-meta-grid">
+                    <div class="form-group"><label for="quoteCustomerName">اسم العميل</label><input id="quoteCustomerName" class="form-control" list="quoteCustomersList" placeholder="اكتب اسم العميل" autocomplete="off" onchange="fillQuotationCustomerPhone()"><datalist id="quoteCustomersList"></datalist></div>
+                    <div class="form-group"><label for="quoteCustomerPhone">رقم الهاتف</label><input id="quoteCustomerPhone" class="form-control" inputmode="tel" placeholder="رقم التواصل (اختياري)"></div>
+                    <div class="form-group"><label for="quoteNumber">رقم عرض السعر</label><input id="quoteNumber" class="form-control mono" readonly></div>
+                    <div class="form-group"><label for="quoteDate">تاريخ العرض</label><input type="date" id="quoteDate" class="form-control"></div>
+                    <div class="form-group"><label for="quoteValidUntil">صالح حتى</label><input type="date" id="quoteValidUntil" class="form-control"></div>
+                    <div class="form-group"><label for="quoteBranch">المخزن / الفرع (لتحديد أسعار الأصناف)</label><select id="quoteBranch" class="form-control" onchange="renderQuotationCatalog()"><option value="ALL">كل المخازن المسموحة</option></select></div>
+                    <div class="form-group"><label for="quoteCurrency">عملة عرض السعر</label><select id="quoteCurrency" class="form-control" onchange="changeQuotationCurrency()"><option value="YER">ريال يمني (YER)</option><option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option></select></div>
+                    <div class="form-group" style="grid-column:span 2"><label for="quoteNotes">ملاحظات وشروط العرض (اختياري)</label><input id="quoteNotes" class="form-control" placeholder="مثال: الأسعار صالحة لمدة 7 أيام"></div>
+                </div>
+                <div id="quoteExchangeHint" class="employee-permission-note" style="margin:0;background:#f7faf8;border-color:#dce9e0;color:#456250"></div>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-magnifying-glass"></i> البحث عن الأصناف</span><span id="quoteProductsCount" class="badge">0 صنف</span></div>
+                <div class="form-group"><input id="quoteProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderQuotationCatalog()"></div>
+                <div id="quoteProductCatalog" class="quote-product-grid"><div class="empty-products">اختر المخزن أو اكتب اسم الصنف للبحث</div></div>
+                <div style="display:flex;justify-content:flex-start;margin-top:12px"><button type="button" class="btn btn-outline" onclick="addQuotationManualRow()"><i class="fa-solid fa-plus"></i> إضافة صنف يدوي</button></div>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-list-check"></i> أصناف عرض السعر</span><span class="badge" id="quoteSelectedCount">0 صنف</span></div>
+                <div id="quoteItemsContainer" class="quote-lines-container"><div class="quote-empty-state">لم تتم إضافة أصناف بعد. اختر صنفًا من القائمة أو أضف صنفًا يدويًا.</div></div>
+                <div class="quote-total-editor">
+                    <div class="form-group"><label for="quoteDiscount">الخصم</label><input type="number" id="quoteDiscount" class="form-control num-input" min="0" step="0.01" value="0" oninput="recalculateQuotationTotal()"></div>
+                    <div class="quote-net-display"><span>الإجمالي قبل الخصم</span><strong id="quoteSubtotal">0.00 YER</strong><span>الصافي المطلوب</span><b id="quoteNetTotal">0.00 YER</b></div>
+                </div>
+            </div>
+            <div class="card-box quote-actions-card">
+                <button type="button" class="btn btn-primary" onclick="previewQuotation()"><i class="fa-solid fa-eye"></i> معاينة وطباعة عرض السعر</button>
+                <button type="button" class="btn btn-outline" onclick="resetQuotationForm()"><i class="fa-solid fa-rotate-left"></i> عرض سعر جديد</button>
+                <button type="button" class="btn btn-outline" onclick="goBackHome()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
             </div>
         </section>
 
@@ -3874,7 +3947,7 @@
 <!-- نافذة طباعة الفاتورة النظامية -->
 <div id="printInvoiceModal" class="modal-backdrop hidden">
     <div class="modal-card invoice-print-card">
-        <div class="invoice-bilingual-contact"><div class="en" dir="ltr"><strong>Sana'a - Al-Tahrir</strong>Behind Taj Saba Hotel<br>Tel: 777166131 | 77187913</div><div class="ar" dir="rtl"><strong>صنعاء - التحرير</strong>خلف فندق تاج سبأ<br>الرقم: 777166131 | 77187913</div></div>
+        <div class="invoice-bilingual-contact"><div class="en" dir="ltr"><strong>Sana'a - Al-Tahrir</strong>Behind Taj Saba Hotel<br>Tel: 777166131 | 771879913</div><div class="ar" dir="rtl"><strong>صنعاء - التحرير</strong>خلف فندق تاج سبأ<br>الرقم: 777166131 | 771879913</div></div>
         <div class="invoice-letterhead">
             <div class="invoice-brand-block">
                 <div class="invoice-brand-text invoice-brand-titleline">
@@ -4019,6 +4092,7 @@
     let editingInvoiceSnapshot = null;
     let editingVoucherId = null;
     let editingVoucherSnapshot = null;
+    let currentQuotationNumber = '';
 
     let currentUser = null;
     let recycleBinItems = [];
@@ -5219,6 +5293,9 @@ function initMenuPermissionCheckboxes() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-payroll-settlement]').forEach(btn => {
             btn.classList.toggle('hidden', !canManageUsers(currentUser));
         });
+        document.querySelectorAll('#homeMenuContainer .nav-tab[data-quote-button]').forEach(btn => {
+            btn.classList.toggle('hidden', !canAccessMenu('salesTab', currentUser));
+        });
         applyDashboardWidgetPermissions();
     }
 
@@ -5237,6 +5314,276 @@ function initMenuPermissionCheckboxes() {
         if (deletionButton) deletionButton.classList.toggle('hidden', !canDeleteUserAccounts(currentUser));
         document.getElementById('securityAccountsHubTab').classList.remove('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+
+    function openQuotationPage() {
+        if (!canAccessMenu('salesTab', currentUser)) { showToast('ليس لديك صلاحية إعداد عروض الأسعار'); return; }
+        closeMobileInvoiceCart();
+        document.body.classList.remove('sales-page-active');
+        document.getElementById('homeMenuContainer').classList.add('hidden');
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById('quotationTab')?.classList.remove('hidden');
+        populateQuotationForm();
+        renderQuotationCatalog();
+        recalculateQuotationTotal();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function quotationCurrency() {
+        const value = document.getElementById('quoteCurrency')?.value || 'YER';
+        return CURRENCY_CODES.includes(value) ? value : 'YER';
+    }
+
+    function nextQuotationNumber() {
+        const date = getLocalDateKey().replace(/-/g, '');
+        const suffix = String(Date.now()).slice(-6);
+        return `QT-${date}-${suffix}`;
+    }
+
+    function setQuotationDefaultDates() {
+        const today = getLocalDateKey();
+        const dateInput = document.getElementById('quoteDate');
+        const expiryInput = document.getElementById('quoteValidUntil');
+        if (dateInput && !dateInput.value) dateInput.value = today;
+        if (expiryInput && !expiryInput.value) {
+            const expiry = new Date();
+            expiry.setDate(expiry.getDate() + 7);
+            expiryInput.value = getLocalDateKey(expiry);
+        }
+        const numberInput = document.getElementById('quoteNumber');
+        if (numberInput && !currentQuotationNumber) currentQuotationNumber = nextQuotationNumber();
+        if (numberInput) numberInput.value = currentQuotationNumber;
+    }
+
+    function populateQuotationForm() {
+        const branch = document.getElementById('quoteBranch');
+        const previous = branch?.value || 'ALL';
+        if (branch) {
+            const branches = getAccessibleBranches();
+            branch.innerHTML = '<option value="ALL">كل المخازن المسموحة</option>' + branches.map(b =>
+                `<option value="${escapeUiText(b.id)}">${escapeUiText(b.name)}</option>`).join('');
+            branch.value = branches.some(b => b.id === previous) ? previous : 'ALL';
+        }
+        const list = document.getElementById('quoteCustomersList');
+        if (list) list.innerHTML = (state.customers || []).map(c => `<option value="${escapeUiText(c.name || '')}"></option>`).join('');
+        setQuotationDefaultDates();
+        updateQuotationExchangeHint();
+    }
+
+    function fillQuotationCustomerPhone() {
+        const name = String(document.getElementById('quoteCustomerName')?.value || '').trim().toLocaleLowerCase('ar');
+        const customer = (state.customers || []).find(c => String(c.name || '').trim().toLocaleLowerCase('ar') === name);
+        const phone = document.getElementById('quoteCustomerPhone');
+        if (customer && phone && !phone.value) phone.value = customer.phone || '';
+    }
+
+    function updateQuotationExchangeHint() {
+        const hint = document.getElementById('quoteExchangeHint');
+        if (!hint) return;
+        const currency = quotationCurrency();
+        const lines = [`العملة المختارة: ${CURRENCY_NAMES[currency] || currency}`];
+        ['SAR','USD'].forEach(code => {
+            const rate = getCurrencyRateToYER(code);
+            lines.push(rate ? `1 ${code} = ${formatMoney(rate)} YER` : `سعر ${code} غير مضبوط`);
+        });
+        hint.textContent = lines.join('  |  ') + ' — أسعار الصرف تؤخذ من شاشة أسعار الصرف.';
+    }
+
+    function renderQuotationCatalog() {
+        const grid = document.getElementById('quoteProductCatalog');
+        if (!grid) return;
+        const branchId = document.getElementById('quoteBranch')?.value || 'ALL';
+        const query = String(document.getElementById('quoteProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
+        const items = getScopedWarehouseItems().filter(item => {
+            const branchMatch = branchId === 'ALL' || String(item.branchId || 'main_branch') === branchId;
+            const nameMatch = !query || String(item.name || '').toLocaleLowerCase('ar').includes(query);
+            return branchMatch && nameMatch;
+        }).slice(0, 90);
+        const count = document.getElementById('quoteProductsCount');
+        if (count) count.textContent = `${items.length} صنف`;
+        if (!items.length) {
+            grid.innerHTML = '<div class="empty-products">لا توجد أصناف مطابقة في المخازن المسموحة.</div>';
+            return;
+        }
+        const currency = quotationCurrency();
+        grid.innerHTML = items.map(item => {
+            const sourceCurrency = CURRENCY_CODES.includes(item.priceCurrency) ? item.priceCurrency : 'YER';
+            const sourcePrice = Number(item.price || 0);
+            const price = sourcePrice > 0 ? convertCurrencyAmount(sourcePrice, sourceCurrency, currency) : 0;
+            const label = price === null ? `سعر الصرف غير محدد` : `${formatMoney(price || 0)} ${currency}`;
+            const branchName = item.branchName || getAllBranches().find(b => b.id === (item.branchId || 'main_branch'))?.name || '';
+            return `<button type="button" class="quote-product-card" onclick="addQuotationProduct('${encodeURIComponent(String(item.id))}')">
+                <span><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(branchName)}</small><small class="quote-price">${escapeUiText(label)}</small></span>
+                <i class="fa-solid fa-plus" style="color:#176c40;font-size:17px;flex:0 0 auto"></i>
+            </button>`;
+        }).join('');
+    }
+
+    function addQuotationProduct(encodedId) {
+        const id = decodeURIComponent(String(encodedId || ''));
+        const item = (state.warehouse || []).find(w => String(w.id) === id);
+        if (!item || !isBranchAllowed(item.branchId || 'main_branch')) { showToast('الصنف غير متاح لهذا الحساب'); return; }
+        const currency = quotationCurrency();
+        const sourceCurrency = CURRENCY_CODES.includes(item.priceCurrency) ? item.priceCurrency : 'YER';
+        const sourcePrice = Number(item.price || 0);
+        const converted = sourcePrice > 0 ? convertCurrencyAmount(sourcePrice, sourceCurrency, currency) : 0;
+        const price = converted === null ? 0 : converted;
+        appendQuotationRow({ name:item.name || '', unit:item.unit || 'حبة', qty:1, price, sourcePrice, sourceCurrency, stockItemId:item.id });
+        if (converted === null) showToast(`أضيف الصنف، لكن سعر الصرف من ${sourceCurrency} إلى ${currency} غير مضبوط؛ أدخل السعر يدويًا.`);
+        recalculateQuotationTotal();
+    }
+
+    function addQuotationManualRow() {
+        appendQuotationRow({ name:'', unit:'حبة', qty:1, price:0, sourcePrice:0, sourceCurrency:quotationCurrency() });
+    }
+
+    function appendQuotationRow(item = {}) {
+        const container = document.getElementById('quoteItemsContainer');
+        if (!container) return;
+        container.querySelector('.quote-empty-state')?.remove();
+        const currency = quotationCurrency();
+        const row = document.createElement('div');
+        row.className = 'quote-line';
+        row.dataset.sourcePrice = String(Number(item.sourcePrice ?? item.price ?? 0));
+        row.dataset.sourceCurrency = CURRENCY_CODES.includes(item.sourceCurrency) ? item.sourceCurrency : currency;
+        row.dataset.stockItemId = String(item.stockItemId || '');
+        row.innerHTML = `
+            <div class="form-group quote-name-field"><label>الصنف</label><input class="form-control quote-item-name" value="${escapeUiText(item.name || '')}" placeholder="اسم الصنف"></div>
+            <div class="form-group"><label>الوحدة</label><input class="form-control quote-item-unit" value="${escapeUiText(item.unit || 'حبة')}" placeholder="حبة"></div>
+            <div class="form-group"><label>الكمية</label><input type="number" min="0.01" step="0.01" class="form-control quote-item-qty num-input" value="${Number(item.qty || 1)}" oninput="recalculateQuotationTotal()"></div>
+            <div class="form-group"><label>سعر الوحدة (${currency})</label><input type="number" min="0" step="0.01" class="form-control quote-item-price num-input" value="${Number(item.price || 0).toFixed(2)}" oninput="handleQuotationPriceInput(this)"></div>
+            <div class="form-group"><label>الإجمالي</label><div class="quote-line-total">0.00 ${currency}</div></div>
+            <button type="button" class="btn btn-danger btn-sm" title="حذف الصنف من العرض" onclick="removeQuotationRow(this)"><i class="fa-solid fa-trash"></i></button>`;
+        container.appendChild(row);
+        recalculateQuotationTotal();
+    }
+
+    function removeQuotationRow(button) {
+        button?.closest('.quote-line')?.remove();
+        const container = document.getElementById('quoteItemsContainer');
+        if (container && !container.querySelector('.quote-line')) container.innerHTML = '<div class="quote-empty-state">لم تتم إضافة أصناف بعد. اختر صنفًا من القائمة أو أضف صنفًا يدويًا.</div>';
+        recalculateQuotationTotal();
+    }
+
+    function handleQuotationPriceInput(input) {
+        const row = input?.closest('.quote-line');
+        if (row) {
+            row.dataset.sourcePrice = String(Number(input.value || 0));
+            row.dataset.sourceCurrency = quotationCurrency();
+        }
+        recalculateQuotationTotal();
+    }
+
+    function changeQuotationCurrency() {
+        const target = quotationCurrency();
+        document.querySelectorAll('#quoteItemsContainer .quote-line').forEach(row => {
+            const from = CURRENCY_CODES.includes(row.dataset.sourceCurrency) ? row.dataset.sourceCurrency : target;
+            const source = Number(row.dataset.sourcePrice || 0);
+            const converted = convertCurrencyAmount(source, from, target);
+            const input = row.querySelector('.quote-item-price');
+            const label = row.querySelector('.quote-item-price')?.previousElementSibling;
+            if (converted !== null && input) input.value = converted.toFixed(2);
+            if (label) label.textContent = `سعر الوحدة (${target})`;
+        });
+        updateQuotationExchangeHint();
+        renderQuotationCatalog();
+        recalculateQuotationTotal();
+    }
+
+    function collectQuotationData() {
+        const currency = quotationCurrency();
+        const items = [...document.querySelectorAll('#quoteItemsContainer .quote-line')].map(row => ({
+            name: String(row.querySelector('.quote-item-name')?.value || '').trim(),
+            unit: String(row.querySelector('.quote-item-unit')?.value || 'حبة').trim() || 'حبة',
+            qty: Number(row.querySelector('.quote-item-qty')?.value || 0),
+            price: Number(row.querySelector('.quote-item-price')?.value || 0)
+        }));
+        const subtotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
+        const discount = Number(document.getElementById('quoteDiscount')?.value || 0);
+        return {
+            number: String(document.getElementById('quoteNumber')?.value || currentQuotationNumber || nextQuotationNumber()),
+            date: document.getElementById('quoteDate')?.value || getLocalDateKey(),
+            validUntil: document.getElementById('quoteValidUntil')?.value || '',
+            customer: String(document.getElementById('quoteCustomerName')?.value || '').trim(),
+            phone: String(document.getElementById('quoteCustomerPhone')?.value || '').trim(),
+            branchId: document.getElementById('quoteBranch')?.value || 'ALL',
+            currency, notes: String(document.getElementById('quoteNotes')?.value || '').trim(),
+            items, subtotal, discount, net: Math.max(0, subtotal - discount)
+        };
+    }
+
+    function recalculateQuotationTotal() {
+        const currency = quotationCurrency();
+        let subtotal = 0;
+        const rows = [...document.querySelectorAll('#quoteItemsContainer .quote-line')];
+        rows.forEach(row => {
+            const qty = Number(row.querySelector('.quote-item-qty')?.value || 0);
+            const price = Number(row.querySelector('.quote-item-price')?.value || 0);
+            const total = qty * price;
+            subtotal += Number.isFinite(total) ? total : 0;
+            const totalEl = row.querySelector('.quote-line-total');
+            if (totalEl) totalEl.textContent = `${formatMoney(total)} ${currency}`;
+        });
+        const discount = Math.max(0, Number(document.getElementById('quoteDiscount')?.value || 0));
+        const subtotalEl = document.getElementById('quoteSubtotal');
+        const netEl = document.getElementById('quoteNetTotal');
+        if (subtotalEl) subtotalEl.textContent = `${formatMoney(subtotal)} ${currency}`;
+        if (netEl) netEl.textContent = `${formatMoney(Math.max(0, subtotal - discount))} ${currency}`;
+        const count = document.getElementById('quoteSelectedCount');
+        if (count) count.textContent = `${rows.length} صنف`;
+        if (document.getElementById('quoteNumber') && !document.getElementById('quoteNumber').value) setQuotationDefaultDates();
+        return Math.max(0, subtotal - discount);
+    }
+
+    function previewQuotation() {
+        const quote = collectQuotationData();
+        if (!quote.customer) { showToast('اكتب اسم العميل قبل معاينة عرض السعر'); document.getElementById('quoteCustomerName')?.focus(); return; }
+        if (!quote.items.length || quote.items.some(item => !item.name || !Number.isFinite(item.qty) || item.qty <= 0 || !Number.isFinite(item.price) || item.price < 0)) {
+            showToast('أضف صنفًا واحدًا على الأقل وتأكد من الاسم والكمية والسعر'); return;
+        }
+        if (!Number.isFinite(quote.discount) || quote.discount < 0 || quote.discount > quote.subtotal) { showToast('تحقق من قيمة الخصم؛ لا يمكن أن يتجاوز إجمالي الأصناف'); return; }
+        if (quote.validUntil && quote.validUntil < quote.date) { showToast('تاريخ صلاحية العرض لا يمكن أن يسبق تاريخ إصداره'); return; }
+        openQuotationPrintWindow(quote);
+    }
+
+    function openQuotationPrintWindow(quote) {
+        const win = window.open('', '_blank');
+        if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لمعاينة وطباعة عرض السعر'); return; }
+        const currencyName = CURRENCY_NAMES[quote.currency] || quote.currency;
+        const branch = quote.branchId === 'ALL' ? 'كل المخازن المسموحة' : (getAllBranches().find(b => b.id === quote.branchId)?.name || '-');
+        const rows = quote.items.map((item, index) => `<tr><td>${index + 1}</td><td>${escapeUiText(item.name)}</td><td>${escapeUiText(item.unit)}</td><td class="num">${formatQty(item.qty)}</td><td class="num">${formatMoney(item.price)} ${quote.currency}</td><td class="num">${formatMoney(item.qty * item.price)} ${quote.currency}</td></tr>`).join('');
+        const header = bilingualContactHeaderHtml('عرض سعر', `رقم العرض: ${escapeUiText(quote.number)}`);
+        const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>عرض سعر ${escapeUiText(quote.number)}</title><style>
+            *{box-sizing:border-box}body{margin:0;padding:18px;background:#eef3ef;color:#23352a;font-family:Tahoma,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.toolbar{max-width:190mm;margin:0 auto 12px;display:flex;gap:8px;justify-content:center}.toolbar button{border:0;border-radius:8px;padding:10px 18px;font-weight:800;cursor:pointer;background:#176c40;color:#fff}.toolbar .close{background:#e8edf0;color:#334155}.paper{width:190mm;min-height:270mm;margin:0 auto;background:#fff;border:1px solid #d4e2d7;border-top:7px solid #176c40;padding:10mm;box-shadow:0 8px 28px rgba(20,55,35,.12)}
+            .bilingual-contact-header{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:10px;align-items:center;border:1px solid #d5e4d9;border-radius:10px;background:#f7fbf8;padding:10px;margin-bottom:13px}.bilingual-contact-en,.bilingual-contact-ar{display:flex;flex-direction:column;gap:4px;font-size:9px;color:#375c43;line-height:1.7}.bilingual-contact-ar{text-align:right}.bilingual-contact-en{text-align:left}.bilingual-contact-brand{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;color:#176c40}.bilingual-contact-brand h1{margin:0;font-size:18px;font-weight:900}.bilingual-contact-brand img{width:58px;height:58px;object-fit:contain}.bilingual-contact-brand b{font-size:13px}.bilingual-contact-brand small{font-size:9px;color:#557461}
+            h2{font-size:15px;color:#176c40;margin:12px 0;padding:8px;text-align:center;background:#edf7ef;border:1px solid #d4e7d8;border-radius:8px}.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0}.meta div{border:1px solid #dce8df;border-radius:7px;padding:8px;background:#fbfdfb}.meta span{display:block;color:#6b7e70;font-size:9px;margin-bottom:4px}.meta strong{font-size:11px;color:#273d2e;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:10px}thead th{background:#176c40;color:white;padding:9px 6px;border:1px solid #176c40}td{border:1px solid #dce6de;padding:8px 6px;text-align:right}tbody tr:nth-child(even){background:#f5faf6}.num{direction:ltr;text-align:center;white-space:nowrap}.totals{width:min(100%,105mm);margin:14px 0 0 auto;border:1px solid #d5e4d9;border-radius:9px;overflow:hidden}.totals div{display:flex;justify-content:space-between;padding:8px 11px;border-bottom:1px solid #e3ece5;font-size:11px}.totals div:last-child{background:#176c40;color:#fff;border:0;font-size:14px;font-weight:900}.notes{margin-top:14px;border:1px dashed #c8d9cc;border-radius:8px;background:#fbfdfb;padding:10px;font-size:10px;line-height:1.9;white-space:pre-wrap}.quote-disclaimer{margin-top:16px;text-align:center;color:#5e7565;font-size:9px;line-height:1.8;border-top:1px solid #dae7dd;padding-top:9px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:35px;margin-top:28px}.signatures div{text-align:center;font-size:10px;color:#3d6549;padding-top:17px;border-top:1px dashed #9eb5a4}
+            @page{size:A4 portrait;margin:9mm}@media print{body{padding:0;background:#fff}.toolbar{display:none!important}.paper{width:100%;min-height:0;margin:0;padding:6mm;box-shadow:none;border-radius:0}.bilingual-contact-header,thead th,.totals div:last-child{-webkit-print-color-adjust:exact;print-color-adjust:exact}tr{break-inside:avoid;page-break-inside:avoid}}
+            @media(max-width:700px){body{padding:8px}.paper{width:100%;min-height:0;padding:12px}.bilingual-contact-header{grid-template-columns:1fr 1fr}.bilingual-contact-brand{grid-column:1/-1;grid-row:1}.meta{grid-template-columns:repeat(2,1fr)}table{font-size:9px}}
+            </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق العرض</button></div><main class="paper">${header}
+            <div class="meta"><div><span>رقم عرض السعر</span><strong>${escapeUiText(quote.number)}</strong></div><div><span>تاريخ الإصدار</span><strong>${escapeUiText(quote.date)}</strong></div><div><span>صالح حتى</span><strong>${escapeUiText(quote.validUntil || 'غير محدد')}</strong></div><div><span>اسم العميل</span><strong>${escapeUiText(quote.customer)}</strong></div><div><span>رقم الهاتف</span><strong>${escapeUiText(quote.phone || '-')}</strong></div><div><span>العملة</span><strong>${escapeUiText(currencyName)} (${quote.currency})</strong></div><div><span>المخزن المرجعي للأسعار</span><strong>${escapeUiText(branch)}</strong></div><div><span>أعد العرض بواسطة</span><strong>${escapeUiText(currentUser?.fullName || 'معمل أبو محمد')}</strong></div></div>
+            <h2>تفاصيل عرض السعر</h2><table><thead><tr><th>#</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead><tbody>${rows}</tbody></table>
+            <div class="totals"><div><span>الإجمالي قبل الخصم</span><strong>${formatMoney(quote.subtotal)} ${quote.currency}</strong></div><div><span>الخصم</span><strong>${formatMoney(quote.discount)} ${quote.currency}</strong></div><div><span>الصافي المطلوب</span><strong>${formatMoney(quote.net)} ${quote.currency}</strong></div></div>
+            ${quote.notes ? `<div class="notes"><strong>ملاحظات وشروط العرض:</strong><br>${escapeUiText(quote.notes)}</div>` : ''}
+            <div class="quote-disclaimer">هذا عرض سعر استرشادي وليس فاتورة بيع أو سندًا ماليًا. لا يحجز الأصناف ولا يخصم أي كمية من المخزون، وتُعتمد الأسعار والكميات عند إصدار فاتورة البيع.</div>
+            <div class="signatures"><div>إعداد / معمل أبو محمد<br><br>التوقيع: __________________</div><div>اعتماد العميل<br><br>التوقيع: __________________</div></div>
+            </main></body></html>`;
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+    }
+
+    function resetQuotationForm() {
+        ['quoteCustomerName','quoteCustomerPhone','quoteProductSearch','quoteNotes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+        const discount=document.getElementById('quoteDiscount'); if(discount) discount.value='0';
+        const container=document.getElementById('quoteItemsContainer'); if(container) container.innerHTML='<div class="quote-empty-state">لم تتم إضافة أصناف بعد. اختر صنفًا من القائمة أو أضف صنفًا يدويًا.</div>';
+        const date=document.getElementById('quoteDate'); if(date) date.value=getLocalDateKey();
+        const expiry=new Date(); expiry.setDate(expiry.getDate()+7); const exp=document.getElementById('quoteValidUntil'); if(exp) exp.value=getLocalDateKey(expiry);
+        currentQuotationNumber=nextQuotationNumber(); const number=document.getElementById('quoteNumber'); if(number) number.value=currentQuotationNumber;
+        const branch=document.getElementById('quoteBranch'); if(branch) branch.value='ALL';
+        const currency=document.getElementById('quoteCurrency'); if(currency) currency.value='YER';
+        renderQuotationCatalog(); updateQuotationExchangeHint(); recalculateQuotationTotal();
     }
 
     function openFullPage(tabId) {
@@ -5694,6 +6041,9 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         refreshInvoicePricesForCurrentCurrency();
         renderWarehouseCatalogDropdown();
         recalculateInvoiceTotal();
+        if (!document.getElementById('quotationTab')?.classList.contains('hidden')) {
+            changeQuotationCurrency();
+        }
         const status = document.getElementById('exchangeRatesSaveStatus');
         if (status && fromRemote) status.textContent = 'أسعار الصرف محفوظة مركزياً ومحدثة لجميع المستخدمين.';
     }
@@ -6031,6 +6381,11 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const qtyShortcut = document.getElementById('warehouseQuantitiesShortcut');
         if (qtyShortcut) qtyShortcut.classList.toggle('hidden', !canAccessMenu('quantitiesTab'));
         populateDropdowns();
+        if (!document.getElementById('quotationTab')?.classList.contains('hidden')) {
+            populateQuotationForm();
+            renderQuotationCatalog();
+            recalculateQuotationTotal();
+        }
         populateVoucherCollectionStaffOptions();
         populateInvoiceSalesEmployeeOptions();
         renderStats();
@@ -6288,9 +6643,9 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const safeTitle = escapeUiText(reportTitle || '');
         const safeSubtitle = escapeUiText(reportSubtitle || '');
         return `<header class="bilingual-contact-header">
-            <div class="bilingual-contact-en" dir="ltr"><strong>Sana'a - Al-Tahrir</strong><span>Behind Taj Saba Hotel</span><span>Tel: 777166131 | 77187913</span></div>
+            <div class="bilingual-contact-en" dir="ltr"><strong>Sana'a - Al-Tahrir</strong><span>Behind Taj Saba Hotel</span><span>Tel: 777166131 | 771879913</span></div>
             <div class="bilingual-contact-brand" dir="rtl"><h1>معمل أبو محمد</h1><img src="https://abu-mohammad-accounting.vercel.app/logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><b>${safeTitle}</b>${safeSubtitle ? `<small>${safeSubtitle}</small>` : ''}</div>
-            <div class="bilingual-contact-ar" dir="rtl"><strong>صنعاء - التحرير</strong><span>خلف فندق تاج سبأ</span><span>الرقم: 777166131 | 77187913</span></div>
+            <div class="bilingual-contact-ar" dir="rtl"><strong>صنعاء - التحرير</strong><span>خلف فندق تاج سبأ</span><span>الرقم: 777166131 | 771879913</span></div>
         </header>`;
     }
 
