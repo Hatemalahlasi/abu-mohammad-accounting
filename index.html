@@ -1876,6 +1876,18 @@
             #loginView *, #loginView *::before, #loginView *::after { transition: none !important; }
         }
 
+
+        /* تعديل محدود: جعل مربع شعار الصفحة الرئيسية أخضر فقط دون المساس بالأزرار أو تخطيط الواجهة */
+        #mainAppView .header-logo-square {
+            background: linear-gradient(145deg, #23834f 0%, #12683d 100%) !important;
+            border: 1.5px solid #0f6338 !important;
+            box-shadow: 0 4px 12px rgba(14, 100, 55, .22), inset 0 1px 0 rgba(255,255,255,.20) !important;
+        }
+        #mainAppView .header-logo-square img {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 2px;
+        }
 </style>
 <!-- Supplier payment ledger repair 2026-11-23-D -->
 </head>
