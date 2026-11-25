@@ -1564,6 +1564,306 @@
             #loginView *, #loginView *::before, #loginView *::after { transition: none !important; animation: none !important; }
         }
 
+
+
+        /* تصميم حديث لصفحة الدخول فقط */
+        body:has(#loginView:not(.hidden)) {
+            background:
+                radial-gradient(circle at 8% 12%, rgba(180, 40, 48, .13), transparent 27%),
+                radial-gradient(circle at 92% 88%, rgba(20, 110, 61, .16), transparent 30%),
+                linear-gradient(135deg, #f4f8f5 0%, #f8faf8 48%, #fff7f7 100%);
+            padding: 18px;
+        }
+        body:has(#loginView:not(.hidden)) .app-shell {
+            width: min(100%, 1080px);
+            min-height: calc(100svh - 36px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 26px;
+            background: rgba(255,255,255,.40);
+            border: 1px solid rgba(213, 226, 216, .92);
+            border-radius: 30px;
+            box-shadow: 0 25px 70px rgba(24, 68, 43, .10);
+            backdrop-filter: blur(8px);
+        }
+        #loginView.login-wrapper {
+            isolation: isolate;
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1.04fr) minmax(0, .96fr);
+            width: min(100%, 930px);
+            max-width: 930px;
+            min-height: 560px;
+            margin: auto;
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid #d8e5dc;
+            border-radius: 27px;
+            background: #fff;
+            box-shadow: 0 28px 68px rgba(19, 67, 40, .14), 0 8px 22px rgba(157, 38, 45, .06);
+        }
+        #loginView.login-wrapper::before {
+            content: "";
+            position: absolute;
+            z-index: 4;
+            top: 0; right: 0; left: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #b52e38 0%, #d76b6e 27%, #2c9659 68%, #145c37 100%);
+        }
+        #loginView.login-wrapper::after { content: none; }
+        #loginView .login-form-panel {
+            grid-column: 1;
+            grid-row: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+            padding: 56px clamp(26px, 5vw, 58px) 42px;
+            background: linear-gradient(160deg, #ffffff 0%, #fbfdfb 64%, #fffafa 100%);
+            direction: rtl;
+        }
+        #loginView .login-form-topline {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            align-self: flex-start;
+            margin-bottom: 32px;
+            color: #557263;
+            font-size: 12px;
+            font-weight: 800;
+        }
+        #loginView .login-secure-mark {
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            color: #187143;
+            background: #eaf5ed;
+            border: 1px solid #d7eadd;
+        }
+        #loginView .login-form-heading { margin-bottom: 30px; }
+        #loginView .login-eyebrow {
+            display: inline-block;
+            margin-bottom: 7px;
+            color: #b13b42;
+            font-size: 13px;
+            font-weight: 900;
+        }
+        #loginView .login-form-heading h2 {
+            margin: 0 0 7px;
+            color: #174d31;
+            font-size: clamp(25px, 3.6vw, 31px);
+            line-height: 1.35;
+            font-weight: 900;
+            letter-spacing: -.4px;
+        }
+        #loginView .login-form-heading p {
+            margin: 0;
+            color: #78877e;
+            font-size: 13px;
+            line-height: 1.8;
+            font-weight: 600;
+        }
+        #loginView .login-field-group { margin-bottom: 19px; }
+        #loginView .login-field-group label {
+            display: block;
+            margin: 0 2px 8px;
+            color: #345846;
+            font-size: 13px;
+            font-weight: 900;
+        }
+        #loginView .login-input-wrap { position: relative; }
+        #loginView .login-input-wrap > i {
+            position: absolute;
+            z-index: 1;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6d9279;
+            font-size: 16px;
+            pointer-events: none;
+        }
+        #loginView .login-input-wrap .form-control {
+            display: block;
+            width: 100%;
+            min-height: 57px;
+            padding: 13px 47px 13px 15px;
+            border: 1.5px solid #dce8df;
+            border-radius: 14px;
+            background: #fdfefd;
+            color: #183d29;
+            font-family: 'Cairo', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            box-shadow: inset 0 1px 2px rgba(20, 60, 35, .025);
+            transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+            touch-action: manipulation;
+        }
+        #loginView .login-input-wrap .form-control::placeholder { color: #a0ada4; font-weight: 500; }
+        #loginView .login-input-wrap .form-control:focus {
+            outline: none;
+            border-color: #27814c;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(39, 129, 76, .11);
+        }
+        #loginView .login-input-wrap:focus-within > i { color: #1b7944; }
+        #loginView .login-btn-color {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            min-height: 58px;
+            margin-top: 7px;
+            padding: 13px 18px;
+            border: 1px solid #17633a;
+            border-bottom: 4px solid #a72e37;
+            border-radius: 14px;
+            background: linear-gradient(105deg, #23864e 0%, #176d3f 58%, #125a34 100%);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 900;
+            box-shadow: 0 10px 22px rgba(25, 112, 63, .20);
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+        }
+        #loginView .login-btn-color:hover { filter: brightness(1.045); box-shadow: 0 13px 25px rgba(25, 112, 63, .25); }
+        #loginView .login-btn-color:active { transform: translateY(1px); filter: brightness(.98); }
+        #loginView .login-btn-color:focus-visible { outline: 3px solid rgba(181, 46, 56, .28); outline-offset: 3px; }
+        #loginView .login-btn-color:disabled { opacity: .7; cursor: wait; }
+        #loginView .login-btn-color i { font-size: 16px; }
+        #loginView .login-form-footnote {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            margin-top: 22px;
+            color: #8b9990;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        #loginView .login-form-footnote i { color: #b14a50; font-size: 11px; }
+        #loginView .login-visual-panel {
+            grid-column: 2;
+            grid-row: 1;
+            position: relative;
+            isolation: isolate;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            overflow: hidden;
+            padding: 48px 30px 40px;
+            color: #fff;
+            text-align: center;
+            background: linear-gradient(145deg, #155b37 0%, #176c40 45%, #a9323c 100%);
+        }
+        #loginView .login-visual-panel::before,
+        #loginView .login-visual-panel::after {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        #loginView .login-visual-panel::before { width: 440px; height: 440px; top: -215px; right: -190px; box-shadow: 0 0 0 32px rgba(255,255,255,.035), 0 0 0 68px rgba(255,255,255,.025); }
+        #loginView .login-visual-panel::after { width: 330px; height: 330px; bottom: -205px; left: -175px; box-shadow: 0 0 0 30px rgba(255,255,255,.035), 0 0 0 62px rgba(255,255,255,.022); }
+        #loginView .login-visual-glow { position: absolute; z-index: -1; width: 230px; height: 230px; border-radius: 50%; filter: blur(48px); opacity: .26; pointer-events: none; }
+        #loginView .login-visual-glow-red { top: 12%; left: -85px; background: #f0a1a4; }
+        #loginView .login-visual-glow-green { right: -95px; bottom: 8%; background: #6fe09b; }
+        #loginView .login-visual-content { width: 100%; max-width: 350px; position: relative; z-index: 1; }
+        #loginView .login-visual-logo-frame {
+            width: 122px;
+            height: 122px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 22px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,.68);
+            border-radius: 31px;
+            background: rgba(255,255,255,.97);
+            box-shadow: 0 18px 38px rgba(3, 35, 18, .22), 0 0 0 8px rgba(255,255,255,.08);
+        }
+        #loginView .login-visual-logo-frame img { display: block; width: 100%; height: 100%; object-fit: contain; }
+        #loginView .login-visual-logo-frame > i { color: #176b3e; font-size: 46px; }
+        #loginView .login-visual-overline {
+            display: block;
+            margin-bottom: 8px;
+            color: #f5ffef;
+            font-size: 17px;
+            font-weight: 900;
+            letter-spacing: .1px;
+        }
+        #loginView .login-visual-content h2 {
+            margin: 0 0 8px;
+            color: #fff;
+            font-size: clamp(20px, 2.8vw, 25px);
+            font-weight: 900;
+            line-height: 1.5;
+        }
+        #loginView .login-visual-content > p { margin: 0; color: rgba(255,255,255,.84); font-size: 13px; font-weight: 600; }
+        #loginView .login-feature-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 30px;
+        }
+        #loginView .login-feature-list span {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 35px;
+            padding: 7px 11px;
+            border: 1px solid rgba(255,255,255,.24);
+            border-radius: 999px;
+            background: rgba(255,255,255,.11);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            backdrop-filter: blur(4px);
+        }
+        #loginView .login-feature-list i { color: #d6f5df; }
+        #loginView .login-visual-bottom-line { position: absolute; bottom: 23px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
+        #loginView .login-visual-bottom-line span { width: 18px; height: 3px; border-radius: 8px; background: rgba(255,255,255,.38); }
+        #loginView .login-visual-bottom-line span:nth-child(2) { width: 34px; background: rgba(255,255,255,.92); }
+        @media (max-width: 760px) {
+            body:has(#loginView:not(.hidden)) { padding: 8px; }
+            body:has(#loginView:not(.hidden)) .app-shell { min-height: calc(100svh - 16px); padding: 10px; border-radius: 20px; }
+            #loginView.login-wrapper { grid-template-columns: minmax(0,1fr); min-height: 0; max-width: 480px; border-radius: 21px; }
+            #loginView .login-visual-panel { grid-column: 1; grid-row: 1; min-height: 235px; padding: 25px 18px 28px; }
+            #loginView .login-visual-logo-frame { width: 76px; height: 76px; margin-bottom: 10px; padding: 8px; border-radius: 20px; }
+            #loginView .login-visual-logo-frame > i { font-size: 30px; }
+            #loginView .login-visual-overline { font-size: 14px; margin-bottom: 2px; }
+            #loginView .login-visual-content h2 { font-size: 18px; margin-bottom: 2px; }
+            #loginView .login-visual-content > p { font-size: 11px; }
+            #loginView .login-feature-list { margin-top: 12px; gap: 5px; }
+            #loginView .login-feature-list span { min-height: 28px; padding: 5px 8px; font-size: 10px; }
+            #loginView .login-visual-bottom-line { bottom: 10px; }
+            #loginView .login-form-panel { grid-column: 1; grid-row: 2; padding: 26px clamp(18px, 5vw, 30px) 23px; }
+            #loginView .login-form-topline { margin-bottom: 19px; font-size: 11px; }
+            #loginView .login-form-heading { margin-bottom: 22px; }
+            #loginView .login-form-heading h2 { font-size: 24px; }
+            #loginView .login-field-group { margin-bottom: 15px; }
+            #loginView .login-input-wrap .form-control { min-height: 55px; font-size: 16px; }
+            #loginView .login-btn-color { min-height: 56px; font-size: 15px; }
+            #loginView .login-form-footnote { margin-top: 16px; font-size: 10px; }
+        }
+        @media (max-width: 360px) {
+            #loginView .login-feature-list span { font-size: 9px; padding-inline: 6px; }
+            #loginView .login-form-panel { padding-inline: 15px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #loginView *, #loginView *::before, #loginView *::after { transition: none !important; }
+        }
+
 </style>
 <!-- Supplier payment ledger repair 2026-11-23-D -->
 </head>
@@ -1572,27 +1872,67 @@
 <div class="app-shell">
 
     <!-- شاشة الدخول -->
-    <div id="loginView" class="login-wrapper">
-        <div class="brand-logo">
-            <img src="logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
-            <i class="fa-solid fa-industry" style="display:none;"></i>
-        </div>
-        <h1>معمل أبو محمد</h1>
-        <p>نظام محاسبة ومبيعات متكامل</p>
+    <section id="loginView" class="login-wrapper" aria-label="تسجيل الدخول إلى نظام معمل أبو محمد">
+        <div class="login-form-panel">
+            <div class="login-form-topline">
+                <span class="login-secure-mark"><i class="fa-solid fa-shield-halved"></i></span>
+                <span class="login-secure-label">دخول آمن إلى النظام</span>
+            </div>
 
-        <div class="form-group">
-            <label>اسم المستخدم</label>
-            <input type="text" id="loginUser" class="form-control num-input" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter') handleLogin()">
-        </div>
-        <div class="form-group">
-            <label>كلمة المرور</label>
-            <input type="password" id="loginPass" class="form-control num-input" inputmode="numeric" autocomplete="new-password" onkeydown="if(event.key==='Enter') handleLogin()">
+            <div class="login-form-heading">
+                <span class="login-eyebrow">مرحباً بعودتك</span>
+                <h2>تسجيل الدخول</h2>
+                <p>أدخل بيانات حسابك للمتابعة إلى لوحة الإدارة</p>
+            </div>
+
+            <div class="form-group login-field-group">
+                <label for="loginUser">اسم المستخدم</label>
+                <div class="login-input-wrap">
+                    <i class="fa-regular fa-user" aria-hidden="true"></i>
+                    <input type="text" id="loginUser" class="form-control num-input" inputmode="numeric" autocomplete="username" placeholder="أدخل اسم المستخدم" onkeydown="if(event.key==='Enter') handleLogin()">
+                </div>
+            </div>
+            <div class="form-group login-field-group">
+                <label for="loginPass">كلمة المرور</label>
+                <div class="login-input-wrap">
+                    <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                    <input type="password" id="loginPass" class="form-control num-input" inputmode="numeric" autocomplete="current-password" placeholder="أدخل كلمة المرور" onkeydown="if(event.key==='Enter') handleLogin()">
+                </div>
+            </div>
+
+            <button id="loginSubmitBtn" type="button" class="btn login-btn-color btn-full" onclick="handleLogin()">
+                <span id="loginBtnText">دخول إلى النظام</span>
+                <i class="fa-solid fa-arrow-left-long" aria-hidden="true"></i>
+            </button>
+
+            <div class="login-form-footnote">
+                <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                <span>هذا النظام مخصص للمستخدمين المصرّح لهم فقط</span>
+            </div>
         </div>
 
-        <button id="loginSubmitBtn" class="btn login-btn-color btn-full" onclick="handleLogin()">
-            <i class="fa-solid fa-right-to-bracket"></i> <span id="loginBtnText">دخول</span>
-        </button>
-    </div>
+        <aside class="login-visual-panel" aria-label="هوية معمل أبو محمد">
+            <div class="login-visual-glow login-visual-glow-red"></div>
+            <div class="login-visual-glow login-visual-glow-green"></div>
+            <div class="login-visual-content">
+                <div class="login-visual-logo-frame">
+                    <img src="logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                    <i class="fa-solid fa-industry" style="display:none;" aria-hidden="true"></i>
+                </div>
+                <span class="login-visual-overline">معمل أبو محمد</span>
+                <h2>نظام الإدارة المتكامل</h2>
+                <p>إدارة أعمالك اليومية من مكان واحد</p>
+                <div class="login-feature-list">
+                    <span><i class="fa-solid fa-chart-line"></i> المبيعات والحسابات</span>
+                    <span><i class="fa-solid fa-boxes-stacked"></i> المخزون والمشتريات</span>
+                    <span><i class="fa-solid fa-users"></i> العملاء والموردون والموظفون</span>
+                </div>
+            </div>
+            <div class="login-visual-bottom-line">
+                <span></span><span></span><span></span>
+            </div>
+        </aside>
+    </section>
 
     <!-- واجهة النظام -->
     <div id="mainAppView" class="hidden">
