@@ -1809,7 +1809,7 @@
                     <button type="button" class="btn btn-accent" onclick="showSupplierSection('invoice')"><i class="fa-solid fa-boxes-stacked"></i> أصناف توريد</button>
                     <button type="button" class="btn btn-success" onclick="showSupplierSection('payment')"><i class="fa-solid fa-money-bill-transfer"></i> تسديد المورد</button>
                 </div>
-                <div class="employee-permission-note" style="margin-top:10px;">اختر القسم المطلوب من الأزرار. المشرف العام والمدير يستطيعان تعديل اسم المورد وحذف حسابه.</div>
+                <div class="employee-permission-note" style="margin-top:10px;">اختر القسم المطلوب من الأزرار. المشرف العام والمدير يستطيعان تعديل المورد وحذف حسابه عندما لا تكون له فواتير أو دفعات أو أرصدة مرتبطة. عند وجود حركات سيعرض النظام تفاصيلها ويفتح كشف المورد لمراجعتها قبل الحذف.</div>
             </div>
 
             <div id="supplierLedgerSection" class="supplier-section">
@@ -4902,16 +4902,56 @@ function initMenuPermissionCheckboxes() {
 
     async function deleteSupplierAccount(supplierId) {
         if (!hasFullAccess()) { showToast('حذف المورد متاح للمشرف العام والمدير فقط'); return; }
-        const supplier = (state.suppliers || []).find(item => item.id === supplierId);
-        if (!supplier) return;
+        const supplier = (state.suppliers || []).find(item => String(item.id) === String(supplierId));
+        if (!supplier) { showToast('المورد غير موجود؛ حدّث القائمة ثم حاول مرة أخرى'); return; }
+
+        // اعرض الارتباطات الفعلية وأرصدة العملات بدلاً من رسالة عامة؛ لا نحذف ديناً أو تاريخاً مالياً بصمت.
         const related = (state.purchases || []).filter(item => isSupplierMovementFor(item, supplierId));
-        if (related.length) { showToast('هذا المورد مرتبط بفواتير أو دفعات؛ لا يمكن حذف حسابه حتى لا تضيع الحركات. يمكنك تعديل اسمه، أو حذف دفعات السداد من كشف الحساب بصلاحية المدير.'); return; }
-        if (!confirm(`حذف حساب المورد «${supplier.name}»؟`)) return;
+        const relatedInvoices = related.filter(item => item.kind === 'supplierPurchase');
+        const relatedPayments = related.filter(item => item.kind === 'supplierPayment');
+        const totals = supplierTotalsFor(supplierId);
+        const hasOpening = CURRENCY_CODES.some(code => Math.abs(Number(totals[code]?.opening || 0)) > 0.000001);
+        const hasDue = CURRENCY_CODES.some(code => Math.abs(Number(totals[code]?.due || 0)) > 0.000001);
+
+        if (related.length || hasOpening || hasDue) {
+            const currencyLines = CURRENCY_CODES.filter(code => {
+                const t = totals[code] || {};
+                return [t.opening,t.purchases,t.initialPaid,t.payments,t.due].some(value => Math.abs(Number(value || 0)) > 0.000001);
+            }).map(code => {
+                const t = totals[code];
+                return `${code}: افتتاحي ${formatMoney(t.opening || 0)} | توريدات ${formatMoney(t.purchases || 0)} | مدفوع ${formatMoney(Number(t.initialPaid || 0) + Number(t.payments || 0))} | المتبقي ${formatMoney(t.due || 0)}`;
+            });
+            const invoiceLines = relatedInvoices.slice(0, 8).map(item => {
+                const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+                const amount = Number(item.amount ?? item.totalAmount ?? 0);
+                const paid = Number(item.paidAmount || 0);
+                const itemNames = (Array.isArray(item.items) ? item.items : []).map(line => line.name || line.itemName).filter(Boolean).slice(0, 3).join('، ');
+                return `• فاتورة ${item.refNumber || item.id || 'بدون رقم'} — ${item.date || 'بلا تاريخ'} — ${formatMoney(amount)} ${code} (مدفوع ${formatMoney(paid)} ${code})${itemNames ? ` — ${itemNames}` : ''}`;
+            });
+            const paymentLines = relatedPayments.slice(0, 8).map(item => {
+                const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+                return `• سداد ${item.date || 'بلا تاريخ'} — ${formatMoney(Number(item.amount || 0))} ${code}${item.previousPaymentEntry ? ' — مسدد سابقاً' : ''}`;
+            });
+            const more = Math.max(0, relatedInvoices.length - 8) + Math.max(0, relatedPayments.length - 8);
+            const message = `لا يمكن حذف المورد «${supplier.name}» مباشرة لأن له حركات مرتبطة، والحذف المباشر قد يخفي ديناً أو يخلّ بالمخزون والصندوق.
+
+عدد فواتير التوريد: ${relatedInvoices.length}
+عدد دفعات السداد: ${relatedPayments.length}
+${currencyLines.join('\n') || 'لا توجد أرصدة مالية ظاهرة'}
+
+${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبطة قديمة'}${more ? `\n... وهناك ${more} حركة أخرى` : ''}
+
+اضغط «موافق» لفتح كشف المورد ومراجعة الفاتورة أو الدفعة المحددة. من هناك يمكنك حذف الحركة نفسها بأمان، ثم حذف حساب المورد بعد خلوه من الحركات.`;
+            if (confirm(message)) showSupplierLedger(supplierId);
+            return;
+        }
+
+        if (!confirm(`لا توجد فواتير أو دفعات أو أرصدة افتتاحية مرتبطة بالمورد «${supplier.name}». هل تريد نقل حسابه إلى سلة المهملات لمدة 7 أيام؟`)) return;
         try {
             await moveRecordToTrash('suppliers', supplierId);
-            state.suppliers = (state.suppliers || []).filter(item => item.id !== supplierId);
-            renderSupplierBalances(); populateDropdowns(); showToast('تم حذف حساب المورد');
-        } catch (e) { console.warn('Delete supplier error:', e); showToast('تعذر حذف حساب المورد'); }
+            state.suppliers = (state.suppliers || []).filter(item => String(item.id) !== String(supplierId));
+            renderSupplierBalances(); populateDropdowns(); showToast('تم نقل حساب المورد إلى سلة المهملات');
+        } catch (e) { console.warn('Delete supplier error:', e); showToast(`تعذر حذف حساب المورد${e?.code ? ' (' + e.code + ')' : ''}`); }
     }
 
     async function createSupplier() {
@@ -5751,21 +5791,29 @@ function initMenuPermissionCheckboxes() {
         return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
     }
 
-    // ترويسة التواصل الموحدة: الإنجليزية يسار الصفحة والعربية يمينها.
-    function bilingualContactHeaderHtml() {
-        return `<div class="bilingual-contact-header">
+    // ترويسة موحدة لكشوف الحساب: الإنجليزية يساراً، اسم المعمل والشعار والعنوان في الوسط، والعربية يميناً.
+    function bilingualContactHeaderHtml(reportTitle = '', reportSubtitle = '') {
+        const safeTitle = escapeUiText(reportTitle || '');
+        const safeSubtitle = escapeUiText(reportSubtitle || '');
+        return `<header class="bilingual-contact-header">
             <div class="bilingual-contact-en" dir="ltr"><strong>Sana'a - Al-Tahrir</strong><span>Behind Taj Saba Hotel</span><span>Tel: 777166131 | 77187913</span></div>
+            <div class="bilingual-contact-brand" dir="rtl"><h1>معمل أبو محمد</h1><img src="https://abu-mohammad-accounting.vercel.app/logo.png" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><b>${safeTitle}</b>${safeSubtitle ? `<small>${safeSubtitle}</small>` : ''}</div>
             <div class="bilingual-contact-ar" dir="rtl"><strong>صنعاء - التحرير</strong><span>خلف فندق تاج سبأ</span><span>الرقم: 777166131 | 77187913</span></div>
-        </div>`;
+        </header>`;
     }
 
     function bilingualContactHeaderCss() {
-        return `.bilingual-contact-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:center;direction:ltr;width:100%;padding:0 0 8px;margin:0 0 10px;border-bottom:1px solid #d7e5dc;color:#315542;font-family:Tahoma,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-        .bilingual-contact-en,.bilingual-contact-ar{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:9px;line-height:1.45;font-weight:700}
+        return `.bilingual-contact-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(135px,.9fr) minmax(0,1fr);gap:12px;align-items:center;direction:ltr;width:100%;padding:9px 12px 10px;margin:0 0 12px;border:1px solid #b8d2bf;border-top:4px solid #176b43;border-radius:10px;background:linear-gradient(110deg,#f5faf6 0%,#fff 48%,#f5faf6 100%);color:#315542;font-family:Tahoma,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid;page-break-inside:avoid}
+        .bilingual-contact-en,.bilingual-contact-ar{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:9px;line-height:1.5;font-weight:700}
         .bilingual-contact-en{text-align:left;direction:ltr;align-items:flex-start}.bilingual-contact-ar{text-align:right;direction:rtl;align-items:flex-end}
         .bilingual-contact-en strong,.bilingual-contact-ar strong{font-size:10px;font-weight:900;color:#176b43}
-        @media(max-width:520px){.bilingual-contact-header{gap:8px}.bilingual-contact-en,.bilingual-contact-ar{font-size:8px}.bilingual-contact-en strong,.bilingual-contact-ar strong{font-size:9px}}
-        @media print{.bilingual-contact-header{break-inside:avoid;page-break-inside:avoid}}`;
+        .bilingual-contact-brand{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:3px;min-width:0;direction:rtl}
+        .bilingual-contact-brand h1{margin:0;color:#145b35;font-size:16px;line-height:1.25;font-weight:950;white-space:nowrap}
+        .bilingual-contact-brand img{width:48px;height:48px;object-fit:contain;display:block;margin:1px auto}
+        .bilingual-contact-brand b{font-size:11px;color:#176b43;font-weight:900;line-height:1.35}
+        .bilingual-contact-brand small{font-size:8px;color:#60766a;font-weight:700;line-height:1.35}
+        @media(max-width:520px){.bilingual-contact-header{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px;padding:8px}.bilingual-contact-brand{grid-column:1/-1;grid-row:1}.bilingual-contact-en,.bilingual-contact-ar{font-size:8px}.bilingual-contact-en strong,.bilingual-contact-ar strong{font-size:9px}.bilingual-contact-brand h1{font-size:15px}.bilingual-contact-brand img{width:42px;height:42px}}
+        @media print{.bilingual-contact-header{break-inside:avoid;page-break-inside:avoid;background:#f7fbf8!important}}`;
     }
 
     function addStockProductToInvoice(stockId) {
@@ -7741,11 +7789,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
 <body>
 <div class="actions"><button class="action-btn" onclick="window.print()">طباعة / حفظ PDF</button><button class="action-btn secondary" onclick="window.close()">إغلاق الكشف</button></div>
 <main class="report ${records.length <= 12 ? 'compact-one-page' : 'multi-page'}">
-    ${bilingualContactHeaderHtml()}
-    <header class="report-header">
-        <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><div><h1>معمل أبو محمد</h1><p>كشف حساب المورد — تقرير مالي تفصيلي</p></div></div>
-        <div class="report-tag">كشف رسمي · الريال اليمني والعملات الأخرى عند وجود حركات</div>
-    </header>
+    ${bilingualContactHeaderHtml('كشف حساب المورد', 'كشف رسمي · الريال اليمني والعملات الأخرى عند وجود حركات')}
     <section class="meta">
         <div class="meta-item"><span>اسم المورد</span><strong>${supplierName}</strong></div>
         <div class="meta-item"><span>رقم الهاتف</span><strong>${supplierPhone}</strong></div>
@@ -9048,7 +9092,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         @page{size:A4 portrait;margin:10mm}@media print{html,body{background:#fff!important;padding:0!important}.toolbar{display:none!important}.voucher-paper{max-width:none;width:100%;min-height:0;margin:0;padding:5mm;border:0;border-top:5px solid #176b43;box-shadow:none}.voucher-meta,.voucher-title,.amount-panel,.signatures{break-inside:avoid;page-break-inside:avoid}}
         @media(max-width:560px){body{padding:7px}.voucher-paper{padding:12px;min-height:0}.voucher-meta{grid-template-columns:1fr 1fr}.voucher-brand img{width:58px;height:58px}.voucher-brand h1{font-size:20px}.voucher-title h2{font-size:18px}.amount-panel strong{font-size:23px}}
         </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق السند</button></div>
-        <main class="voucher-paper">${bilingualContactHeaderHtml()}<header class="voucher-brand"><img src="${logoUrl}" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><div><h1>معمل أبو محمد</h1><p>نظام الحسابات والمخزون</p></div></header>
+        <main class="voucher-paper">${bilingualContactHeaderHtml()}
         <div class="voucher-title"><h2>${title}</h2><div class="voucher-ref">رقم السند: ${reference}</div></div>
         <section class="voucher-meta"><div><span>التاريخ</span><strong>${date}</strong></div><div><span>نوع السند</span><strong>${title}</strong></div><div><span>الصندوق</span><strong>${cashboxName}</strong></div><div><span>العملة</span><strong>${escapeUiText(CURRENCY_NAMES[currency] || currency)} (${currency})</strong></div><div><span>الموظف المسؤول</span><strong>${staffName}</strong></div><div><span>سجل بواسطة</span><strong>${issuerName}</strong></div></section>
         <div class="party-line"><b>${isReceipt ? 'استلمنا من العميل / الجهة:' : 'اسم المستلم / الجهة:'}</b> ${partyName}</div>
@@ -9247,7 +9291,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         win.document.open();
         win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>كشف حساب ${escapeUiText(cashbox.name)}</title><style>
         *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#1f2937;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}${bilingualContactHeaderCss()}body{padding:12px}.toolbar{display:flex;justify-content:center;gap:8px;margin:0 auto 14px}.toolbar button{border:0;border-radius:8px;padding:9px 16px;font:800 12px Tahoma;cursor:pointer;background:#176b43;color:#fff}.toolbar .close{background:#f1f5f9;color:#344256;border:1px solid #d8e0e8}.report{max-width:900px;margin:auto}.head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:3px solid #176b43;padding-bottom:10px;margin-bottom:12px}.head h2{margin:0;color:#174d32;font-size:20px}.head p{margin:5px 0 0;color:#64748b;font-size:11px}.logo{width:55px;height:55px;object-fit:contain}.summary-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.mini-stat{border:1px solid #d9e7dd;padding:10px;border-radius:9px;background:#f8fbf9}.mini-stat-label{font-size:11px;color:#64748b}.mini-stat-val{font-weight:900;margin-top:5px;color:#174d32;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:12px;table-layout:fixed}th,td{border:1px solid #dce5df;padding:7px;text-align:right;font-size:10px;overflow-wrap:anywhere}th{background:#174d32;color:#fff;font-weight:900}tbody tr:nth-child(even){background:#f4f8f5}tbody td:nth-child(4){color:#176b43;font-weight:800}tbody td:nth-child(5){color:#b42323;font-weight:800}@page{size:A4 portrait;margin:8mm}@media print{body{padding:0}.toolbar{display:none!important}.report{max-width:none}.summary-strip,.head{break-inside:avoid}thead{display:table-header-group}tr{break-inside:avoid}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-        </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div><main class="report">${bilingualContactHeaderHtml()}<header class="head"><div><h2>معمل أبو محمد — كشف حساب الصندوق</h2><p>الصندوق: ${escapeUiText(cashbox.name)} | العملة: ${currency} | الفترة: ${period}</p></div><img class="logo" src="https://abu-mohammad-accounting.vercel.app/logo.png" onerror="this.style.display='none'"></header><div class="summary-strip">${summary}</div>${table}</main><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+        </style></head><body><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div><main class="report">${bilingualContactHeaderHtml('كشف حساب الصندوق', `الصندوق: ${escapeUiText(cashbox.name)} | العملة: ${currency} | الفترة: ${period}`)}<div class="summary-strip">${summary}</div>${table}</main><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
         win.document.close();
     }
 
@@ -10086,6 +10130,17 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         } finally { isBusy = false; }
     }
 
+    // عند حذف توريد لم تصل كميته فعلياً، لا نوقف حذف حساب المورد بسبب تعذر قراءة بطاقة المخزون؛
+    // نعتبر عكس الكمية غير آمن ونسجل ذلك في النسخة المحفوظة بسلة المهملات.
+    async function resolveSupplierMovementStockItemForDeletion(purchase, line) {
+        try {
+            return await resolveSupplierMovementStockItem(purchase, line);
+        } catch (error) {
+            console.warn('Supplier movement stock lookup skipped during deletion:', error);
+            return null;
+        }
+    }
+
     async function deleteSupplierStockMovement(encodedPurchaseId, lineIndex) {
         if (!canDeleteRecord()) { showToast('ليس لديك صلاحية حذف حركات المخزون'); return; }
         const purchaseId = decodeURIComponent(encodedPurchaseId || '');
@@ -10102,15 +10157,17 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         try {
             if (items.length === 1) {
                 resolvedByIndex = [];
-                for (const entry of items) resolvedByIndex.push(await resolveSupplierMovementStockItem(purchase, entry));
+                for (const entry of items) resolvedByIndex.push(await resolveSupplierMovementStockItemForDeletion(purchase, entry));
                 stock = resolvedByIndex[index] || null;
             } else {
-                stock = await resolveSupplierMovementStockItem(purchase, line);
+                stock = await resolveSupplierMovementStockItemForDeletion(purchase, line);
             }
         } catch (resolveError) {
-            console.warn('Resolve supplier movement stock item error:', resolveError);
-            showToast('تعذر التحقق من بطاقة الصنف في قاعدة البيانات؛ لم يتم حذف شيء');
-            return;
+            // لا تجعل مشكلة قراءة بطاقة الصنف تمنع حذف فاتورة توريد لم تصل بضاعتها.
+            // ستُحذف الحركة المالية، وتُترك كمية المخزون دون تغيير مع توثيق سبب عدم العكس.
+            console.warn('Resolve supplier movement stock item skipped; deletion will continue without stock reversal:', resolveError);
+            stock = null;
+            if (items.length === 1) resolvedByIndex = [null];
         }
 
         const oldQty = Number(line.qty ?? line.quantity ?? 0);
@@ -10131,7 +10188,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (wholeInvoice) {
             if (!resolvedByIndex) {
                 resolvedByIndex = [];
-                for (const entry of items) resolvedByIndex.push(await resolveSupplierMovementStockItem(purchase, entry));
+                for (const entry of items) resolvedByIndex.push(await resolveSupplierMovementStockItemForDeletion(purchase, entry));
             }
             wholeTargets = new Map();
             resolvedByIndex.forEach((target, i) => {
@@ -10150,7 +10207,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             stockReversalSkipped = preSkipped.size > 0;
         }
         const skipWarning = stockReversalSkipped
-            ? `\n\nتنبيه: بعض بطاقات الأصناف غير موجودة أو رصيدها الحالي أقل من كمية التوريد. سيُحذف السجل من حركة التوريد ويُحدّث حساب المورد، لكن لن نخصم كمية قد تجعل المخزون سالباً أو تخصم من صنف غير مطابق. سيتم حفظ السطر غير المعكوس بعلامة واضحة حتى لا تتكرر كميته عند الاستعادة.`
+            ? `\n\nتنبيه مهم: بطاقة الصنف غير موجودة أو الكمية الحالية أقل من ${formatQty(oldQty)}. سيتم حذف الفاتورة/السطر من كشف المورد وسلة المهملات، ولن تتغير كمية المخزون الحالية. سيتم وضع علامة على السطر بأنه لم يُعكس مخزنياً حتى لا تُضاف الكمية مرة ثانية عند الاستعادة.`
             : '\nسيتم عكس كمية التوريد من بطاقة المخزون وتحديث حساب المورد.';
         const confirmText = wholeInvoice
             ? `هذا آخر صنف في فاتورة المورد «${purchase.supplierName || ''}». سيتم نقل فاتورة المورد إلى سلة المهملات لمدة 7 أيام.${skipWarning}\n\n${lineLabel}\nمتأكد؟`
@@ -10218,8 +10275,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 : (stockReversalSkipped ? 'تم حذف سطر التوريد وتحديث حساب المورد؛ لم نغيّر المخزون لأن عكس الكمية غير آمن' : 'تم حذف حركة التوريد وعكس كميتها وتحديث حساب المورد'));
         } catch (error) {
             console.warn('Delete supplier stock movement error:', error);
-            const messages = { MOVEMENT_SOURCE_MISSING:'فاتورة التوريد تغيرت أثناء الحذف؛ حدّث التقرير وحاول مجدداً', MOVEMENT_CHANGED:'تم تعديل الفاتورة من جهاز آخر؛ حدّث التقرير وأعد المحاولة', MOVEMENT_STOCK_NEGATIVE:'لا يمكن عكس الحركة بأمان؛ راجع المبيعات والحركات اللاحقة', MOVEMENT_PAID_INVALID:'المبلغ المسدد غير صالح' };
-            showToast(messages[error?.message] || 'تعذر حذف حركة التوريد؛ لم يتم حفظ الحذف');
+            const messages = { MOVEMENT_SOURCE_MISSING:'فاتورة التوريد غير موجودة؛ حدّث كشف المورد', MOVEMENT_CHANGED:'تم تعديل الفاتورة من جهاز آخر؛ حدّث التقرير وأعد المحاولة', MOVEMENT_STOCK_NEGATIVE:'لا يمكن عكس الحركة بأمان؛ لم يتم حذف الفاتورة', MOVEMENT_PAID_INVALID:'المبلغ المسدد غير صالح', RECORD_NOT_FOUND:'لم تعد فاتورة التوريد موجودة؛ حدّث كشف المورد', 'permission-denied':'قواعد Firebase منعت حفظ الحذف أو نقله إلى سلة المهملات؛ لم تُحذف الفاتورة', 'failed-precondition':'تعذر إكمال الحذف بسبب حالة السجل في قاعدة البيانات؛ حدّث الصفحة وحاول مجدداً' };
+            showToast(messages[error?.message] || `تعذر حذف حركة التوريد: ${error?.code || error?.message || 'خطأ غير معروف'}؛ لم يتم تأكيد الحذف`);
         } finally { isBusy = false; }
     }
 
@@ -10363,7 +10420,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
     }
 
     function inventoryReportHeader(title, subtitle='') {
-        return `<section class="report-page">${bilingualContactHeaderHtml()}<header class="report-header"><img src="https://abu-mohammad-accounting.vercel.app/logo.png"><div><h1>معمل أبو محمد — ${escapeUiText(title)}</h1>${subtitle ? `<p>${escapeUiText(subtitle)}</p>` : ''}</div></header>`;
+        return `<section class="report-page">${bilingualContactHeaderHtml(title, subtitle)}`;
     }
 
     function buildInventoryItemListPrintSection() {
@@ -10820,8 +10877,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
 </div>
 <p id="shareStatus" role="status" aria-live="polite" style="display:none;max-width:820px;margin:0 auto 12px;padding:10px 12px;border:1px solid #dce7df;border-radius:10px;background:#f8fbf9;color:#315344;font:700 12px/1.7 Tahoma,Arial,sans-serif;text-align:center"></p>
 <main class="report">
-${bilingualContactHeaderHtml()}
-<header class="report-header"><div class="brand"><img class="brand-logo" src="${logoUrl}" alt="شعار معمل أبو محمد" onerror="this.style.display='none'"><div><h1>معمل أبو محمد</h1><p>كشف حساب العميل — تقرير مالي تفصيلي</p></div></div></header>
+${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مالي تفصيلي')}
 <section class="meta"><div class="meta-item"><span>اسم العميل</span><strong>${customerName}</strong></div><div class="meta-item"><span>رقم الهاتف</span><strong>${customerPhone}</strong></div><div class="meta-item"><span>تاريخ استخراج الكشف</span><strong>${getLocalDateKey()}</strong></div></section>
 <div class="section-title">كشف الحركات التفصيلي</div>
 <div class="table-wrap"><table><colgroup><col style="width:13%"><col style="width:12%"><col style="width:25%"><col style="width:16%"><col style="width:16%"><col style="width:18%"></colgroup><thead><tr><th>التاريخ</th><th>المرجع</th><th>البيان</th><th>مدين (عليكم)</th><th>دائن (لكم)</th><th>الرصيد التراكمي</th></tr></thead><tbody>${rows}</tbody><tfoot>${summaryRowsHtml}</tfoot></table></div>
@@ -12988,8 +13044,7 @@ ${bilingualContactHeaderHtml()}
             .foot{margin-top:20px;border-top:1px solid #d9e0dc;padding-top:7px;text-align:center;color:#77838c;font-size:9px}@page{size:A4 portrait;margin:7mm}thead{display:table-header-group}tr{break-inside:avoid}@media print{.report-toolbar{display:none!important}}
             </style></head><body>
             <div class="report-toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="close" onclick="window.close()">إغلاق الكشف</button></div>
-            ${bilingualContactHeaderHtml()}
-            <div class="head"><div><h1>معمل أبو محمد</h1><p>كشف مستحقات وصرف موظف — ${period}</p></div><img class="logo" src="${logo}" onerror="this.style.display='none'"></div>
+            ${bilingualContactHeaderHtml('كشف مستحقات وصرف موظف', `الفترة: ${period}`)}
             <div class="meta"><div><b>اسم الموظف:</b> ${name}</div><div><b>الشهر:</b> ${period}</div><div><b>نظام الاستحقاق:</b> ${isPieceworkStaff(staff) ? 'بالقطعة' : 'راتب شهري'}</div><div><b>تاريخ استخراج الكشف:</b> ${getLocalDateKey()}</div></div>
             <section class="section summary-section"><h3>ملخص المستحق والمستلم والمتبقي</h3><table class="summary"><thead><tr><th>العملة</th><th>إجمالي المستحق</th><th>إجمالي المستلم</th><th>المتبقي</th></tr></thead><tbody>${totals}</tbody></table></section>
             ${salarySection}${productionSection}${collectionSection}${salesSection}${paymentsSection}
@@ -13185,11 +13240,7 @@ ${bilingualContactHeaderHtml()}
         const paymentSection = data.expenses.length ? `<h3>سجل المبالغ المصروفة / المستلمة</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>سجل بواسطة</th></tr></thead><tbody>${expenseRows}</tbody></table>` : '';
         return `
             <div class="employee-dues-pdf-sheet">
-                ${bilingualContactHeaderHtml()}
-                <div class="employee-dues-pdf-header">
-                    <div><h2>معمل أبو محمد</h2><p>كشف حساب ومستحقات موظف — ${period}</p></div>
-                    <img class="employee-dues-pdf-brand" src="logo.png" alt="شعار المعمل" onerror="this.style.display='none'">
-                </div>
+                ${bilingualContactHeaderHtml('كشف حساب ومستحقات موظف', `الفترة: ${period}`)}
                 <div class="employee-dues-pdf-meta">
                     <div><b>اسم الموظف:</b> ${name}</div><div><b>نظام الأجر:</b> ${type}</div>
                     <div><b>المخزن:</b> ${escapeEmployeeDuesHtml(staff.warehouseBranchName || getAllBranches().find(branch => branch.id === staff.warehouseBranchId)?.name || 'غير محدد')}</div>
