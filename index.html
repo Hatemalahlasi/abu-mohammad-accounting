@@ -6623,6 +6623,7 @@ function initMenuPermissionCheckboxes() {
                 if (collectionName === 'invoices' || (collectionName === 'purchases' && original.kind === 'supplierPurchase' && original.addToWarehouse !== false)) {
                     const branchId = String(original.branchId || 'main_branch');
                     for (const line of (Array.isArray(original.items) ? original.items : [])) {
+                        if (collectionName === 'purchases' && line.inventoryReversalSkippedOnDelete === true) continue;
                         const stock = findInventoryItemRecord(line.stockItemId || line.itemId, line.name || line.itemName, line.unit || 'حبة', branchId) ||
                             (state.warehouse || []).find(entry => String(entry.branchId || 'main_branch') === branchId && String(entry.name || '').trim().toLocaleLowerCase('ar') === String(line.name || line.itemName || '').trim().toLocaleLowerCase('ar') && String(entry.unit || 'حبة') === String(line.unit || 'حبة'));
                         const stockId = String(stock?.id || line.stockItemId || line.itemId || `wh_item_${dedupeHash({ branchId, name:String(line.name || line.itemName || '').trim().toLowerCase(), unit:line.unit || 'حبة' })}`);
@@ -6635,11 +6636,14 @@ function initMenuPermissionCheckboxes() {
                 const restoreStockSnaps = [];
                 for (const entry of restoreStockRefs) restoreStockSnaps.push({ ...entry, snap:await transaction.get(entry.ref) });
                 for (const entry of restoreStockSnaps) {
-                    if (!entry.snap.exists) throw new Error('RESTORE_STOCK_ITEM_MISSING');
+                    if (!entry.snap.exists) {
+                        if (collectionName === 'purchases') continue; // فاتورة توريد قديمة بلا بطاقة مخزون: استعد السجل دون إنشاء رصيد غير مؤكد.
+                        throw new Error('RESTORE_STOCK_ITEM_MISSING');
+                    }
                     const nextQty = Number(entry.snap.data()?.qty || 0) + entry.delta;
                     if (nextQty < -0.000001) throw new Error('RESTORE_STOCK_NEGATIVE');
                 }
-                restoreStockSnaps.forEach(entry => transaction.update(entry.ref,{qty:Math.max(0,Number(entry.snap.data()?.qty || 0)+entry.delta)}));
+                restoreStockSnaps.forEach(entry => { if (entry.snap.exists) transaction.update(entry.ref,{qty:Math.max(0,Number(entry.snap.data()?.qty || 0)+entry.delta)}); });
                 transaction.set(originalRef, item.originalData);
                 if (linkedRef && linkedSnap?.exists) {
                     if (collectionName === 'staff') transaction.update(linkedRef, { staffId: recordId });
@@ -7006,7 +7010,11 @@ function initMenuPermissionCheckboxes() {
         const record = {
             kind: 'supplierPurchase', date, supplierId, supplierName: supplier.name,
             branchId, branchName: branch.name, currency, currencyName: CURRENCY_NAMES[currency],
-            items: lines, amount: total, totalAmount: total, paidAmount,
+            // اربط كل سطر توريد بمعرّف بطاقة المخزون الفعلية حتى لا تضيع الحركة عند اختلاف الاسم لاحقاً.
+            items: lines.map(line => {
+                const target = stockTargets.find(entry => String(entry.name || '').trim().toLocaleLowerCase('ar') === String(line.name || '').trim().toLocaleLowerCase('ar') && String(entry.unit || 'حبة') === String(line.unit || 'حبة'));
+                return { ...line, stockItemId: target?.docId || '', itemId: target?.docId || '' };
+            }), amount: total, totalAmount: total, paidAmount,
             outstanding: total - paidAmount, paymentType, cashboxId: cashbox?.id || '', cashboxName: cashbox?.name || '',
             title: note || `فاتورة توريد من ${supplier.name}`, notes: note, addToWarehouse,
             employee: getAccountDisplayName(currentUser), createdByUserId: currentUser?.id || ''
@@ -9547,12 +9555,12 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         // كل سطر توريد يأتي من فاتورة مورد محفوظة؛ نعرض المورد ورقم سجل الفاتورة لتمييز مصدر الحركة.
         (state.purchases || []).filter(purchase => purchase.kind === 'supplierPurchase' && purchase.addToWarehouse !== false).forEach(purchase => {
             (Array.isArray(purchase.items) ? purchase.items : []).forEach((line, lineIndex) => {
-                const item = findInventoryItemRecord(line.stockItemId || line.itemId, line.name || line.itemName, line.unit, purchase.branchId);
+                const item = getSupplierMovementStockItem(purchase, line) || findInventoryItemRecord(line.stockItemId || line.itemId, line.name || line.itemName, line.unit, purchase.branchId);
                 const sourceRef = purchase.refNumber || purchase.supplierInvoiceNumber || purchase.title || purchase.id || 'فاتورة توريد';
-                add({ date: purchase.date, itemId: item?.id || line.stockItemId || line.itemId || '', itemName: line.name || line.itemName, unit: line.unit,
+                add({ date: purchase.date, itemId: item?.id || line.stockItemId || line.itemId || supplierMovementStockDocumentId(purchase, line), itemName: line.name || line.itemName, unit: line.unit,
                     branchId: purchase.branchId, branchName: purchase.branchName, qty: Math.abs(Number(line.qty ?? line.quantity ?? 0)),
                     type: 'توريد من مورد', reference: `${sourceRef} · المورد: ${purchase.supplierName || 'غير محدد'} · رقم السجل: ${purchase.id || '—'} · السطر: ${lineIndex + 1}`,
-                    actor: purchase.employee || purchase.createdByUserId || '', sourceType: 'supplierPurchase', sourceId: purchase.id, sourceLineIndex: lineIndex });
+                    actor: purchase.employee || purchase.createdByName || purchase.createdByUserId || '', sourceType: 'supplierPurchase', sourceId: purchase.id, sourceLineIndex: lineIndex });
             });
         });
 
@@ -9624,12 +9632,72 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (typeof renderCashboxesList === 'function') renderCashboxesList();
     }
 
+    function supplierMovementBranchId(purchase) {
+        const direct = String(purchase?.branchId || '');
+        if (direct) return direct;
+        const branchName = String(purchase?.branchName || '').trim();
+        const match = (state.branches || []).find(branch => String(branch.name || '').trim() === branchName);
+        return String(match?.id || 'main_branch');
+    }
+
+    function supplierMovementStockDocumentId(purchase, line) {
+        const explicit = String(line?.stockItemId || line?.itemId || '').trim();
+        if (explicit) return explicit;
+        const branchId = supplierMovementBranchId(purchase);
+        const name = String(line?.name || line?.itemName || '').trim().toLowerCase();
+        const unit = String(line?.unit || 'حبة');
+        return name ? `wh_item_${dedupeHash({ branchId, name, unit })}` : '';
+    }
+
+    function normalizeMovementItemName(value) {
+        const plain = String(value || '').trim().toLocaleLowerCase('ar')
+            .replace(/[إأآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')
+            .replace(/[ـ\u064B-\u065F]/g, '').replace(/\s+/g, ' ');
+        // توحيد بعض صيغ الجمع الشائعة في أسماء الأصناف القديمة، مثل «اسعافات» و«اسعاف».
+        return plain.split(' ').filter(Boolean).map(token => token.length > 5 && token.endsWith('ات') ? token.slice(0,-2) : token).join(' ');
+    }
+
     function getSupplierMovementStockItem(purchase, line) {
-        const branchId = String(purchase?.branchId || 'main_branch');
-        return findInventoryItemRecord(line?.stockItemId || line?.itemId, line?.name || line?.itemName, line?.unit || 'حبة', branchId) ||
-            (state.warehouse || []).find(item => String(item.branchId || 'main_branch') === branchId &&
-                String(item.name || '').trim().toLocaleLowerCase('ar') === String(line?.name || line?.itemName || '').trim().toLocaleLowerCase('ar') &&
-                String(item.unit || 'حبة') === String(line?.unit || 'حبة')) || null;
+        const branchId = supplierMovementBranchId(purchase);
+        const nameKey = normalizeMovementItemName(line?.name || line?.itemName);
+        const unitKey = normalizeMovementItemName(line?.unit || 'حبة');
+        const explicitIds = [line?.stockItemId, line?.itemId, supplierMovementStockDocumentId(purchase, line)].filter(Boolean).map(String);
+        const items = state.warehouse || [];
+        for (const id of explicitIds) {
+            const direct = items.find(item => String(item.id) === id && String(item.branchId || 'main_branch') === branchId);
+            if (direct) return direct;
+        }
+        const exact = items.filter(item => String(item.branchId || 'main_branch') === branchId &&
+            normalizeMovementItemName(item.name) === nameKey && normalizeMovementItemName(item.unit || 'حبة') === unitKey);
+        if (exact.length === 1) return exact[0];
+        const linked = items.filter(item => String(item.branchId || 'main_branch') === branchId && String(item.sourcePurchaseId || '') === String(purchase?.id || ''));
+        if (linked.length === 1 && normalizeMovementItemName(linked[0].unit || 'حبة') === unitKey) return linked[0];
+        return null;
+    }
+
+    async function resolveSupplierMovementStockItem(purchase, line) {
+        const local = getSupplierMovementStockItem(purchase, line);
+        if (local) return local;
+        if (!db) return null;
+        const branchId = supplierMovementBranchId(purchase);
+        const ids = [line?.stockItemId, line?.itemId, supplierMovementStockDocumentId(purchase, line)].filter(Boolean).map(String);
+        for (const id of [...new Set(ids)]) {
+            const snap = await db.collection('warehouse').doc(id).get();
+            if (snap.exists) {
+                const data = snap.data() || {};
+                if (String(data.branchId || 'main_branch') === branchId) return { ...data, id: snap.id };
+            }
+        }
+        // دعم بطاقات المخزون القديمة التي لم تحفظ stockItemId داخل سطر فاتورة المورد.
+        const query = await db.collection('warehouse').where('branchId', '==', branchId).get();
+        const nameKey = normalizeMovementItemName(line?.name || line?.itemName);
+        const unitKey = normalizeMovementItemName(line?.unit || 'حبة');
+        const matches = query.docs.filter(doc => {
+            const data = doc.data() || {};
+            return normalizeMovementItemName(data.name) === nameKey && normalizeMovementItemName(data.unit || 'حبة') === unitKey;
+        });
+        if (matches.length === 1) return { ...(matches[0].data() || {}), id: matches[0].id };
+        return null;
     }
 
     function supplierPurchasePaymentAfterTotalChange(purchase, newTotal) {
@@ -9648,8 +9716,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const items = Array.isArray(purchase.items) ? purchase.items.slice() : [];
         const line = items[Number(lineIndex)];
         if (!line) { showToast('سطر التوريد غير موجود؛ حدّث التقرير ثم أعد المحاولة'); return; }
-        const stock = getSupplierMovementStockItem(purchase, line);
-        if (!stock) { showToast('لم أجد بطاقة الصنف المرتبطة بهذه الحركة؛ لم يتم تعديل شيء'); return; }
+        const stock = await resolveSupplierMovementStockItem(purchase, line);
+        if (!stock) { showToast('لم أجد بطاقة مخزون مؤكدة لهذا الصنف؛ يمكنك حذف سطر التوريد من السجل دون تغيير المخزون، أو أعد تعريف بطاقة الصنف أولاً للتعديل'); return; }
         const nextQtyText = prompt(`تعديل كمية التوريد للصنف: ${line.name || line.itemName}\nالكمية الحالية: ${formatQty(line.qty ?? line.quantity ?? 0)}\nالمورد: ${purchase.supplierName || 'غير محدد'}\nرقم سجل فاتورة المورد: ${purchase.id}`, String(Number(line.qty ?? line.quantity ?? 0)));
         if (nextQtyText === null) return;
         const nextQty = Number(nextQtyText);
@@ -9720,14 +9788,30 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const purchaseId = decodeURIComponent(encodedPurchaseId || '');
         const purchase = (state.purchases || []).find(item => String(item.id) === purchaseId && item.kind === 'supplierPurchase');
         if (!purchase || purchase.addToWarehouse === false) { showToast('فاتورة التوريد غير موجودة أو لا تدخل بضاعتها للمخزون'); return; }
-        if (!isBranchAllowedForOperation(purchase.branchId || 'main_branch', 'warehouseTab')) { showToast('ليس لديك صلاحية على مخزن حركة التوريد'); return; }
+        if (!isBranchAllowedForOperation(supplierMovementBranchId(purchase), 'warehouseTab')) { showToast('ليس لديك صلاحية على مخزن حركة التوريد'); return; }
         const items = Array.isArray(purchase.items) ? purchase.items.slice() : [];
-        const line = items[Number(lineIndex)];
+        const index = Number(lineIndex);
+        const line = items[index];
         if (!line) { showToast('سطر التوريد غير موجود؛ حدّث التقرير ثم أعد المحاولة'); return; }
-        const stock = getSupplierMovementStockItem(purchase, line);
-        if (!stock) { showToast('بطاقة الصنف المرتبطة بالحركة غير موجودة؛ لم يتم حذف شيء'); return; }
+
+        let resolvedByIndex = null;
+        let stock = null;
+        try {
+            if (items.length === 1) {
+                resolvedByIndex = [];
+                for (const entry of items) resolvedByIndex.push(await resolveSupplierMovementStockItem(purchase, entry));
+                stock = resolvedByIndex[index] || null;
+            } else {
+                stock = await resolveSupplierMovementStockItem(purchase, line);
+            }
+        } catch (resolveError) {
+            console.warn('Resolve supplier movement stock item error:', resolveError);
+            showToast('تعذر التحقق من بطاقة الصنف في قاعدة البيانات؛ لم يتم حذف شيء');
+            return;
+        }
+
         const oldQty = Number(line.qty ?? line.quantity ?? 0);
-        const remainingItems = items.filter((entry, index) => index !== Number(lineIndex));
+        const remainingItems = items.filter((entry, entryIndex) => entryIndex !== index);
         const nextTotal = remainingItems.reduce((sum, entry) => sum + Number(entry.qty ?? entry.quantity ?? 0) * Number(entry.costPrice ?? entry.unitCost ?? 0), 0);
         let nextPaid = supplierPurchasePaymentAfterTotalChange(purchase, nextTotal);
         if (nextTotal > 0 && nextPaid > nextTotal + 0.000001) {
@@ -9736,72 +9820,102 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             nextPaid = Number(answer);
         }
         if (nextTotal > 0 && (!Number.isFinite(nextPaid) || nextPaid < 0 || nextPaid > nextTotal + 0.000001)) { showToast('المبلغ المسدد يجب أن يكون بين صفر وإجمالي الفاتورة'); return; }
-        const lineLabel = `${line.name || line.itemName || 'الصنف'} — ${formatQty(oldQty)} ${line.unit || 'حبة'}`;
+
         const wholeInvoice = remainingItems.length === 0;
-        if (!confirm(wholeInvoice
-            ? `هذا هو الصنف الوحيد في فاتورة المورد «${purchase.supplierName || ''}». سيتم نقل فاتورة المورد كاملة إلى سلة المهملات لمدة 7 أيام، وإرجاع أثرها من المخزون وحساب المورد والصندوق.\n${lineLabel}\nمتأكد؟`
-            : `حذف حركة التوريد التالية من فاتورة المورد مع عكس الكمية من المخزون وتحديث حساب المورد؟\n${lineLabel}`)) return;
+        const lineLabel = `${line.name || line.itemName || 'الصنف'} — ${formatQty(oldQty)} ${line.unit || 'حبة'}`;
+        let stockReversalSkipped = !stock || Number(stock.qty || 0) + 0.000001 < oldQty;
+        let wholeTargets = null;
+        if (wholeInvoice) {
+            if (!resolvedByIndex) {
+                resolvedByIndex = [];
+                for (const entry of items) resolvedByIndex.push(await resolveSupplierMovementStockItem(purchase, entry));
+            }
+            wholeTargets = new Map();
+            resolvedByIndex.forEach((target, i) => {
+                if (!target?.id) return;
+                const id = String(target.id);
+                const current = wholeTargets.get(id) || { qty:0, indexes:[] };
+                current.qty += Number(items[i].qty ?? items[i].quantity ?? 0);
+                current.indexes.push(i);
+                wholeTargets.set(id,current);
+            });
+            const preSkipped = new Set(items.map((entry,i) => resolvedByIndex[i]?.id ? -1 : i).filter(i => i >= 0));
+            for (const [id, info] of wholeTargets.entries()) {
+                const target = resolvedByIndex.find(value => String(value?.id || '') === id);
+                if (!target || Number(target.qty || 0) + 0.000001 < info.qty) info.indexes.forEach(i => preSkipped.add(i));
+            }
+            stockReversalSkipped = preSkipped.size > 0;
+        }
+        const skipWarning = stockReversalSkipped
+            ? `\n\nتنبيه: بعض بطاقات الأصناف غير موجودة أو رصيدها الحالي أقل من كمية التوريد. سيُحذف السجل من حركة التوريد ويُحدّث حساب المورد، لكن لن نخصم كمية قد تجعل المخزون سالباً أو تخصم من صنف غير مطابق. سيتم حفظ السطر غير المعكوس بعلامة واضحة حتى لا تتكرر كميته عند الاستعادة.`
+            : '\nسيتم عكس كمية التوريد من بطاقة المخزون وتحديث حساب المورد.';
+        const confirmText = wholeInvoice
+            ? `هذا آخر صنف في فاتورة المورد «${purchase.supplierName || ''}». سيتم نقل فاتورة المورد إلى سلة المهملات لمدة 7 أيام.${skipWarning}\n\n${lineLabel}\nمتأكد؟`
+            : `حذف حركة التوريد التالية من فاتورة المورد؟${skipWarning}\n\n${lineLabel}`;
+        if (!confirm(confirmText)) return;
+
         isBusy = true;
         try {
             if (wholeInvoice) {
+                const skipIndexes = new Set(items.map((entry,i) => resolvedByIndex[i]?.id ? -1 : i).filter(i => i >= 0));
                 await moveRecordToTrash('purchases', purchaseId, { beforeDelete: async (transaction, originalData) => {
                     if (originalData.kind !== 'supplierPurchase' || originalData.addToWarehouse === false) return;
-                    const totals = new Map();
-                    for (const entry of (originalData.items || [])) {
-                        const target = getSupplierMovementStockItem(originalData, entry);
-                        if (!target) throw new Error('MOVEMENT_STOCK_ITEM_MISSING');
-                        const id = String(target.id);
-                        totals.set(id, (totals.get(id) || 0) + Number(entry.qty ?? entry.quantity ?? 0));
-                    }
-                    const refs = [...totals.entries()].map(([id, qty]) => ({ id, qty, ref:db.collection('warehouse').doc(id) }));
+                    const refs = [...wholeTargets.entries()].map(([id, info]) => ({ id, ...info, ref:db.collection('warehouse').doc(id) }));
                     const snaps = [];
                     for (const entry of refs) snaps.push({ ...entry, snap:await transaction.get(entry.ref) });
                     for (const entry of snaps) {
-                        if (!entry.snap.exists) throw new Error('MOVEMENT_STOCK_ITEM_MISSING');
+                        if (!entry.snap.exists) { entry.indexes.forEach(i => skipIndexes.add(i)); continue; }
                         const currentQty = Number(entry.snap.data()?.qty || 0);
-                        if (currentQty + 0.000001 < entry.qty) throw new Error('MOVEMENT_STOCK_NEGATIVE');
+                        if (currentQty + 0.000001 < entry.qty) { entry.indexes.forEach(i => skipIndexes.add(i)); continue; }
                     }
-                    snaps.forEach(entry => transaction.update(entry.ref, { qty:Math.max(0,Number(entry.snap.data()?.qty || 0)-entry.qty) }));
+                    originalData.items = (Array.isArray(originalData.items) ? originalData.items : []).map((entry,i) =>
+                        skipIndexes.has(i) ? { ...entry, inventoryReversalSkippedOnDelete:true } : entry);
+                    snaps.forEach(entry => {
+                        if (!entry.snap.exists || entry.indexes.some(i => skipIndexes.has(i))) return;
+                        transaction.update(entry.ref, { qty:Math.max(0,Number(entry.snap.data()?.qty || 0)-entry.qty) });
+                    });
                 }});
-                // حدّث الحالة المحلية فوراً بعد نجاح المعاملة حتى يظهر الرصيد المصحح دون إعادة تحميل الصفحة.
-                for (const entry of (purchase.items || [])) {
-                    const localStock = getSupplierMovementStockItem(purchase, entry);
-                    if (localStock) localStock.qty = Math.max(0, Number(localStock.qty || 0) - Number(entry.qty ?? entry.quantity ?? 0));
+                for (const [stockId, info] of wholeTargets.entries()) {
+                    if (info.indexes.some(i => skipIndexes.has(i))) continue;
+                    const localStock = (state.warehouse || []).find(entry => String(entry.id) === stockId);
+                    if (localStock) localStock.qty = Math.max(0, Number(localStock.qty || 0) - info.qty);
                 }
                 state.purchases = (state.purchases || []).filter(item => String(item.id) !== purchaseId);
             } else {
                 const purchaseRef = db.collection('purchases').doc(purchaseId);
-                const stockRef = db.collection('warehouse').doc(String(stock.id));
+                const stockRef = stock?.id ? db.collection('warehouse').doc(String(stock.id)) : null;
                 const result = await db.runTransaction(async transaction => {
                     const purchaseSnap = await transaction.get(purchaseRef);
-                    const stockSnap = await transaction.get(stockRef);
-                    if (!purchaseSnap.exists || !stockSnap.exists) throw new Error('MOVEMENT_SOURCE_MISSING');
+                    if (!purchaseSnap.exists) throw new Error('MOVEMENT_SOURCE_MISSING');
+                    const stockSnap = stockRef ? await transaction.get(stockRef) : null;
                     const currentPurchase = purchaseSnap.data() || {};
                     const currentItems = Array.isArray(currentPurchase.items) ? currentPurchase.items.slice() : [];
-                    const currentLine = currentItems[Number(lineIndex)];
+                    const currentLine = currentItems[index];
                     if (!currentLine || Math.abs(Number(currentLine.qty ?? currentLine.quantity ?? 0) - oldQty) > 0.000001) throw new Error('MOVEMENT_CHANGED');
-                    const currentStock = stockSnap.data() || {};
-                    const stockNextQty = Number(currentStock.qty || 0) - oldQty;
-                    if (stockNextQty < -0.000001) throw new Error('MOVEMENT_STOCK_NEGATIVE');
-                    const oldTotal = Number(currentPurchase.amount ?? currentPurchase.totalAmount ?? 0);
+                    const currentStock = stockSnap?.exists ? stockSnap.data() || {} : null;
+                    const stockNextQty = currentStock ? Number(currentStock.qty || 0) - oldQty : null;
+                    const skipCurrentReversal = !currentStock || stockNextQty < -0.000001;
                     const paid = supplierPurchasePaymentAfterTotalChange(currentPurchase, nextTotal);
                     const finalPaid = paid > nextTotal + 0.000001 ? Number(nextPaid) : paid;
                     if (!Number.isFinite(finalPaid) || finalPaid < 0 || finalPaid > nextTotal + 0.000001) throw new Error('MOVEMENT_PAID_INVALID');
                     const patch = { items:remainingItems, amount:nextTotal, totalAmount:nextTotal, paidAmount:finalPaid, outstanding:nextTotal-finalPaid,
                         updatedAt:new Date().toISOString(), updatedBy:getAccountDisplayName(currentUser),
-                        voidedInventoryLines:[...(currentPurchase.voidedInventoryLines || []), { ...currentLine, removedAt:new Date().toISOString(), removedBy:getAccountDisplayName(currentUser), lineIndex:Number(lineIndex) }].slice(-100) };
-                    transaction.update(stockRef,{qty:Math.max(0,stockNextQty)});
+                        voidedInventoryLines:[...(currentPurchase.voidedInventoryLines || []), { ...currentLine, removedAt:new Date().toISOString(), removedBy:getAccountDisplayName(currentUser), lineIndex:index, stockCardMissing:!currentStock, stockReversalSkipped:skipCurrentReversal }].slice(-100) };
+                    if (currentStock && !skipCurrentReversal) transaction.update(stockRef,{qty:Math.max(0,stockNextQty)});
                     transaction.update(purchaseRef,patch);
-                    return { patch, stockQty:Math.max(0,stockNextQty) };
+                    return { patch, stockQty:skipCurrentReversal ? null : stockNextQty, skipped:skipCurrentReversal };
                 });
                 Object.assign(purchase,result.patch);
-                stock.qty = result.stockQty;
+                if (stock && result.stockQty !== null) stock.qty = result.stockQty;
+                stockReversalSkipped = result.skipped;
             }
             refreshInventoryMovementViews();
-            showToast(wholeInvoice ? 'تم حذف فاتورة التوريد كاملة ونقلها إلى سلة المهملات' : 'تم حذف حركة التوريد وتحديث المخزون وحساب المورد');
+            showToast(wholeInvoice
+                ? 'تم نقل فاتورة التوريد إلى سلة المهملات؛ عُكست الكميات الآمنة وحُفظت الأسطر غير المعكوسة للاستعادة دون تكرار'
+                : (stockReversalSkipped ? 'تم حذف سطر التوريد وتحديث حساب المورد؛ لم نغيّر المخزون لأن عكس الكمية غير آمن' : 'تم حذف حركة التوريد وعكس كميتها وتحديث حساب المورد'));
         } catch (error) {
             console.warn('Delete supplier stock movement error:', error);
-            const messages = { MOVEMENT_SOURCE_MISSING:'فاتورة التوريد أو بطاقة الصنف غير موجودة', MOVEMENT_CHANGED:'تم تعديل الفاتورة من جهاز آخر؛ حدّث التقرير وأعد المحاولة', MOVEMENT_STOCK_ITEM_MISSING:'بطاقة صنف من الفاتورة غير موجودة؛ لم يتم حذف الفاتورة', MOVEMENT_STOCK_NEGATIVE:'لا يمكن حذف الحركة لأن الرصيد الحالي أقل من كمية التوريد المراد عكسها', MOVEMENT_PAID_INVALID:'المبلغ المسدد غير صالح' };
+            const messages = { MOVEMENT_SOURCE_MISSING:'فاتورة التوريد تغيرت أثناء الحذف؛ حدّث التقرير وحاول مجدداً', MOVEMENT_CHANGED:'تم تعديل الفاتورة من جهاز آخر؛ حدّث التقرير وأعد المحاولة', MOVEMENT_STOCK_NEGATIVE:'لا يمكن عكس الحركة بأمان؛ راجع المبيعات والحركات اللاحقة', MOVEMENT_PAID_INVALID:'المبلغ المسدد غير صالح' };
             showToast(messages[error?.message] || 'تعذر حذف حركة التوريد؛ لم يتم حفظ الحذف');
         } finally { isBusy = false; }
     }
