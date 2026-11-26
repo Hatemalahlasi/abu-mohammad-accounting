@@ -3125,8 +3125,16 @@
                         <input type="number" step="0.01" inputmode="decimal" id="newCustomerLimit" class="form-control num-input" value="100000.00" min="0">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
-                        <label>الرصيد الافتتاحي (ريال يمني)</label>
-                        <input type="number" step="0.01" inputmode="decimal" id="newCustomerOpeningBalance" class="form-control num-input" value="0" min="0" placeholder="0.00">
+                        <label>الرصيد الافتتاحي — ريال يمني (YER)</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="newCustomerOpeningYER" class="form-control num-input" value="0" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>الرصيد الافتتاحي — ريال سعودي (SAR)</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="newCustomerOpeningSAR" class="form-control num-input" value="0" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>الرصيد الافتتاحي — دولار أمريكي (USD)</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="newCustomerOpeningUSD" class="form-control num-input" value="0" min="0" placeholder="0.00">
                     </div>
                 </div>
                 <button id="saveCustomerBtn" class="btn btn-primary btn-full" onclick="createCustomer()" style="margin-top:12px;">
@@ -6502,8 +6510,11 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
             (cust.id && recordCustId === cust.id) ||
             (!recordCustId && recordCustName && cust.name && recordCustName.trim() === cust.name.trim());
 
-        // الرصيد الافتتاحي للعميل يُسجل كرصيد مدين بعملة الريال اليمني.
-        totals.YER += Math.max(0, Number(cust.openingBalance || 0));
+        // الأرصدة الافتتاحية مستقلة لكل عملة، مع دعم العملاء القدامى الذين لديهم openingBalance فقط.
+        const openingBalances = cust.openingBalances && typeof cust.openingBalances === 'object' ? cust.openingBalances : {};
+        totals.YER += Math.max(0, Number(openingBalances.YER ?? cust.openingBalance ?? 0));
+        totals.SAR += Math.max(0, Number(openingBalances.SAR || 0));
+        totals.USD += Math.max(0, Number(openingBalances.USD || 0));
 
         state.invoices
             .filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName))
@@ -11785,9 +11796,12 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const name = document.getElementById('newCustomerName').value.trim();
         const phone = document.getElementById('newCustomerPhone').value.trim();
         const creditLimit = Number(document.getElementById('newCustomerLimit').value || 0);
-        const openingBalance = Number(document.getElementById('newCustomerOpeningBalance').value || 0);
+        const openingYER = Number(document.getElementById('newCustomerOpeningYER').value || 0);
+        const openingSAR = Number(document.getElementById('newCustomerOpeningSAR').value || 0);
+        const openingUSD = Number(document.getElementById('newCustomerOpeningUSD').value || 0);
+        const openingBalances = { YER: openingYER, SAR: openingSAR, USD: openingUSD };
         if (!name) { showToast('أدخل اسم العميل'); return; }
-        if (!Number.isFinite(openingBalance) || openingBalance < 0) { showToast('أدخل رصيداً افتتاحياً صحيحاً'); return; }
+        if (![openingYER, openingSAR, openingUSD].every(v => Number.isFinite(v) && v >= 0)) { showToast('أدخل الأرصدة الافتتاحية بشكل صحيح'); return; }
         const normalizedName = name.replace(/\s+/g, ' ').toLowerCase();
         if ((state.customers || []).some(item => String(item.name || '').replace(/\s+/g, ' ').toLowerCase() === normalizedName && String(item.phone || '-') === (phone || '-'))) {
             showToast('هذا العميل موجود بالفعل بنفس رقم الهاتف؛ لم تتم إضافته مرة أخرى.'); return;
@@ -11797,12 +11811,19 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         try {
             const result = await createRecordOnce('customers', 'cust', {
                 name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-', creditLimit, actor: dedupeActorId()
-            }, { name, phone: phone || '-', creditLimit, balance: openingBalance, openingBalance, openingBalanceDate: getLocalDateKey() }, `cust_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-' })}`);
+            }, { name, phone: phone || '-', creditLimit, balance: openingYER, openingBalance: openingYER, openingBalances, openingBalanceDate: getLocalDateKey() }, `cust_${dedupeHash({ name: name.replace(/\s+/g, ' ').toLowerCase(), phone: phone || '-' })}`);
             if (!result.created) { showToast('هذا العميل مسجل مسبقاً؛ لم تتم إضافة نسخة أخرى.'); return; }
             document.getElementById('newCustomerName').value = '';
             document.getElementById('newCustomerPhone').value = '';
-            document.getElementById('newCustomerOpeningBalance').value = '0';
-            showToast(openingBalance > 0 ? `تم حفظ العميل والرصيد الافتتاحي ${formatMoney(openingBalance)} YER` : 'تم حفظ العميل');
+            document.getElementById('newCustomerOpeningYER').value = '0';
+            document.getElementById('newCustomerOpeningSAR').value = '0';
+            document.getElementById('newCustomerOpeningUSD').value = '0';
+            const openingSummary = [
+                openingYER ? `${formatMoney(openingYER)} YER` : '',
+                openingSAR ? `${formatMoney(openingSAR)} SAR` : '',
+                openingUSD ? `${formatMoney(openingUSD)} USD` : ''
+            ].filter(Boolean).join(' | ');
+            showToast(openingSummary ? `تم حفظ العميل والأرصدة الافتتاحية: ${openingSummary}` : 'تم حفظ العميل');
         } catch (e) { console.warn('Create customer error:', e); showToast('تعذر حفظ العميل'); }
         finally { isBusy = false; btn.disabled = false; }
     }
@@ -11818,11 +11839,22 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (nextName === null || !nextName.trim()) return;
         const nextPhone = prompt('تعديل رقم الهاتف:', c.phone || '');
         if (nextPhone === null) return;
+        const ob = c.openingBalances && typeof c.openingBalances === 'object' ? c.openingBalances : {};
+        const nextYER = prompt('الرصيد الافتتاحي — ريال يمني (YER):', String(ob.YER ?? c.openingBalance ?? 0));
+        if (nextYER === null) return;
+        const nextSAR = prompt('الرصيد الافتتاحي — ريال سعودي (SAR):', String(ob.SAR || 0));
+        if (nextSAR === null) return;
+        const nextUSD = prompt('الرصيد الافتتاحي — دولار أمريكي (USD):', String(ob.USD || 0));
+        if (nextUSD === null) return;
+        const openingBalances = { YER: Math.max(0, Number(nextYER || 0)), SAR: Math.max(0, Number(nextSAR || 0)), USD: Math.max(0, Number(nextUSD || 0)) };
+        if (!Object.values(openingBalances).every(Number.isFinite)) { showToast('أدخل الأرصدة الافتتاحية بشكل صحيح'); return; }
         await db.collection('customers').doc(custId).update({
             name: nextName.trim(),
-            phone: nextPhone.trim() || '-'
+            phone: nextPhone.trim() || '-',
+            openingBalance: openingBalances.YER,
+            openingBalances
         });
-        showToast('تم تعديل العميل');
+        showToast('تم تعديل بيانات العميل والأرصدة الافتتاحية');
     }
 
     async function deleteCustomerItem(custId) {
@@ -11885,18 +11917,21 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             (!recordCustId && recordCustName && cust.name && recordCustName.trim() === cust.name.trim());
 
         const entries = [];
-        const openingBalance = Math.max(0, Number(cust.openingBalance || 0));
-        if (openingBalance > 0) {
-            entries.push({
-                date: 'افتتاحي',
-                ref: 'OPENING',
-                desc: 'الرصيد الافتتاحي للعميل',
-                currency: 'YER',
-                debit: openingBalance,
-                credit: 0,
-                sortKey: '00000000000000000000'
-            });
-        }
+        const openingBalances = cust.openingBalances && typeof cust.openingBalances === 'object' ? cust.openingBalances : {};
+        const legacyOpeningYER = Number(openingBalances.YER ?? cust.openingBalance ?? 0);
+        [['YER', legacyOpeningYER], ['SAR', Number(openingBalances.SAR || 0)], ['USD', Number(openingBalances.USD || 0)]].forEach(([currency, openingBalance]) => {
+            if (openingBalance > 0) {
+                entries.push({
+                    date: 'افتتاحي',
+                    ref: 'OPENING',
+                    desc: 'الرصيد الافتتاحي للعميل',
+                    currency,
+                    debit: openingBalance,
+                    credit: 0,
+                    sortKey: `00000000000000000000_${currency}`
+                });
+            }
+        });
         state.invoices
             .filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName))
             .forEach(i => {
