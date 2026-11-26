@@ -2786,6 +2786,11 @@
                     <span class="inventory-action-copy"><strong>قائمة الأصناف</strong><small>عرض الأصناف ومصادرها والكميات والأسعار</small></span>
                     <i class="fa-solid fa-chevron-left inventory-action-arrow"></i>
                 </button>
+                <button type="button" class="inventory-hub-action" data-inv-permission="itemListTab" onclick="printAllItemsWithoutQuantities()">
+                    <span class="inventory-action-icon"><i class="fa-solid fa-print"></i></span>
+                    <span class="inventory-action-copy"><strong>طباعة جميع الأصناف</strong><small>قائمة كاملة بأسماء الأصناف والوحدات دون عرض الكميات — A4 عمودي</small></span>
+                    <i class="fa-solid fa-chevron-left inventory-action-arrow"></i>
+                </button>
                 <button type="button" class="inventory-hub-action" data-inv-permission="addItemTab" onclick="openFullPage('addItemTab')">
                     <span class="inventory-action-icon"><i class="fa-solid fa-box-open"></i></span>
                     <span class="inventory-action-copy"><strong>إضافة أصناف</strong><small>تعريف صنف جديد وتحديد الوحدة والكمية والتكلفة والبيع</small></span>
@@ -11888,6 +11893,38 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
 
     function printItemListReport() {
         inventoryPrintShell('تقرير قائمة الأصناف', [buildInventoryItemListPrintSection()]);
+    }
+
+    // طباعة قائمة موحدة بكافة الأصناف دون أي أعمدة للكميات أو الأسعار.
+    // عند تكرار الصنف في أكثر من مخزن يظهر مرة واحدة مع أسماء المخازن التابعة له.
+    function printAllItemsWithoutQuantities() {
+        const sourceItems = (getScopedWarehouseItems() || []).filter(item => String(item.name || '').trim());
+        const grouped = new Map();
+        sourceItems.forEach(item => {
+            const name = String(item.name || '').trim();
+            const unit = String(item.unit || 'حبة').trim() || 'حبة';
+            const key = `${name.toLocaleLowerCase('ar')}__${unit.toLocaleLowerCase('ar')}`;
+            if (!grouped.has(key)) grouped.set(key, { name, unit, branches: new Set() });
+            const branchName = item.branchName || inventoryBranchName(item.branchId || 'main_branch');
+            grouped.get(key).branches.add(String(branchName || 'المخزن الرئيسي'));
+        });
+        const items = [...grouped.values()].sort((a, b) =>
+            String(a.name).localeCompare(String(b.name), 'ar') || String(a.unit).localeCompare(String(b.unit), 'ar')
+        );
+        const rows = items.map((item, index) => `<tr>
+            <td style="width:9%;text-align:center">${index + 1}</td>
+            <td style="width:47%"><strong>${escapeUiText(item.name)}</strong></td>
+            <td style="width:16%;text-align:center">${escapeUiText(item.unit)}</td>
+            <td style="width:28%">${escapeUiText([...item.branches].sort((a,b) => a.localeCompare(b, 'ar')).join('، '))}</td>
+        </tr>`).join('');
+        const section = inventoryReportHeader('القائمة الكاملة للأصناف', `عدد الأصناف: ${items.length} · قائمة موحدة دون كميات`) + `
+            <div class="report-note" style="padding:8px 10px;border:1px solid #dbe5de;background:#f5faf6;color:#315542;border-radius:6px;margin:8px 0 12px">
+                يشمل هذا الكشف جميع الأصناف المسجلة في المخازن المسموحة لهذا الحساب. لا يعرض الكميات أو أسعار التكلفة أو البيع.
+            </div>
+            <table><thead><tr><th style="width:9%">م</th><th style="width:47%">اسم الصنف</th><th style="width:16%">الوحدة</th><th style="width:28%">المخزن / المخازن</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="4" style="text-align:center">لا توجد أصناف مسجلة</td></tr>'}</tbody></table>
+            </section>`;
+        inventoryPrintShell('القائمة الكاملة للأصناف', [section]);
     }
 
     function printWarehouseStockReport() {
