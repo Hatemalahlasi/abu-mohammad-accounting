@@ -458,6 +458,10 @@
 
         .mini-stat-label { font-size: 12px; color: var(--text-muted); font-weight: 700; }
         .mini-stat-val { font-size: 17px; font-weight: 800; margin-top: 3px; color: var(--primary); }
+        #profitsTab .profit-summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        @media (min-width: 768px) { #profitsTab .profit-summary-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+        #profitsTab .profit-summary-strip .mini-stat { min-width: 0; padding: 10px; }
+        #profitsTab .profit-summary-strip .mini-stat-val { font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
 
         .card-box {
             background: var(--bg-surface);
@@ -3223,26 +3227,31 @@
                 </button>
             </div>
 
-            <div class="summary-strip">
+            <div class="summary-strip profit-summary-strip">
                 <div class="mini-stat">
-                    <div class="mini-stat-label">إجمالي المبيعات — حسب العملة</div>
+                    <div class="mini-stat-label">قيمة البيع بعد الخصم — حسب العملة</div>
                     <div class="mini-stat-val mono" id="profTotalSales">0.00 YER</div>
                 </div>
                 <div class="mini-stat">
-                    <div class="mini-stat-label">تكلفة البضاعة المباعة فقط</div>
+                    <div class="mini-stat-label">تكلفة الأصناف التي بيعت</div>
                     <div class="mini-stat-val mono" id="profTotalCost" style="color:var(--warning);">0.00 YER</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="mini-stat-label">مجمل الربح (البيع − التكلفة)</div>
+                    <div class="mini-stat-val mono" id="profGrossProfit" style="color:var(--success);">0.00 YER</div>
                 </div>
                 <div class="mini-stat">
                     <div class="mini-stat-label">المصروفات التشغيلية المسجلة</div>
                     <div class="mini-stat-val mono" id="profTotalExpenses" style="color:var(--danger);">0.00 YER</div>
                 </div>
                 <div class="mini-stat">
-                    <div class="mini-stat-label">صافي الربح — كل عملة مستقلة</div>
+                    <div class="mini-stat-label">صافي الربح بعد المصروفات</div>
                     <div class="mini-stat-val mono" id="profNetProfit" style="color:var(--success);">0.00 YER</div>
                 </div>
             </div>
+            <div class="employee-permission-note" id="profitCalculationWarning" style="display:none;margin-bottom:10px;"></div>
             <div class="employee-permission-note" style="margin-bottom:14px;">
-                لا تُحسب فواتير شراء المخزون كاملةً كمصروف عند شرائها؛ تُحسب تكلفة الأصناف التي بيعت فقط. ولا تُحسب سندات الصرف العامة ضمن المصروفات إلا بعد تصنيفها كمصروف تشغيلي. لا يتم جمع العملات المختلفة أو تحويلها.
+                يُحسب مجمل الربح بطرح تكلفة شراء الأصناف المباعة من قيمة بيعها بعد الخصم، ثم تُطرح المصروفات التشغيلية للوصول إلى صافي الربح. تُستخدم تكلفة الصنف المحفوظة في الفاتورة، وإذا لم تكن محفوظة في فاتورة قديمة يحاول النظام الرجوع إلى تكلفة بطاقة المخزون الحالية؛ لذلك قد تختلف تكلفة الفواتير القديمة إذا تغيّرت تكلفة الصنف لاحقاً. لا تُستخدم قيمة البيع كبديل عن التكلفة، ولا يتم جمع العملات المختلفة أو تحويلها.
             </div>
             <div class="card-box" id="unclassifiedProfitVouchersCard">
                 <div class="card-title"><span><i class="fa-solid fa-circle-question"></i> سندات صرف تحتاج تصنيفًا</span></div>
@@ -3263,12 +3272,13 @@
                                 <th>رقم الفاتورة</th>
                                 <th>العميل</th>
                                 <th>العملة</th>
-                                <th>صافي الفاتورة</th>
-                                <th>تكلفة البضاعة</th>
-                                <th>ربح الفاتورة</th>
+                                <th>قيمة البيع بعد الخصم</th>
+                                <th>تكلفة البضاعة المباعة</th>
+                                <th>الفرق / ربح الفاتورة</th>
                             </tr>
                         </thead>
                         <tbody id="profitsTableBody"></tbody>
+                        <tfoot id="profitsTableFoot"></tfoot>
                     </table>
                 </div>
             </div>
@@ -9572,8 +9582,9 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 String(w.name || '').trim().toLowerCase() === row.name.toLowerCase() && (w.unit || 'حبة') === row.unit
             );
             if (!stockItem) { showToast(`الصنف (${row.name}) غير موجود في مخزون ${branchName}`); return; }
-            const costPrice = Number(stockItem.costPrice ?? stockItem.price ?? 0);
-            items.push({ ...row, stockItemId: stockItem.id, costPrice, costCurrency: stockItem.costCurrency || currency });
+            const resolvedCost = getReliableStockUnitCost({}, stockItem);
+            const costPrice = resolvedCost ?? 0;
+            items.push({ ...row, stockItemId: stockItem.id, costPrice, costCurrency: stockItem.costCurrency || stockItem.purchaseCurrency || currency, costMissingAtSale: resolvedCost === null });
             const old = stockRequirements.get(stockItem.id) || { item: stockItem, qty: 0 };
             old.qty += row.qty;
             stockRequirements.set(stockItem.id, old);
@@ -9873,11 +9884,15 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             const oldCandidate = oldMatches.length ? oldMatches.shift() : null;
             const oldStock = oldCandidate ? findStock(oldBranchId, oldCandidate.name, oldCandidate.unit || 'حبة', oldCandidate.stockItemId || '') : null;
             const sameOriginalStock = oldCandidate && oldStock && String(oldStock.id) === String(stock.id);
+            const savedHistoricalCost = sameOriginalStock ? getReliableStockUnitCost(oldCandidate, null) : null;
+            const resolvedStockCost = getReliableStockUnitCost({}, stock);
+            const resolvedCost = savedHistoricalCost ?? resolvedStockCost;
             newItems.push({
                 ...row,
                 stockItemId: stock.id,
-                costPrice: sameOriginalStock && Number.isFinite(Number(oldCandidate.costPrice)) ? Number(oldCandidate.costPrice) : Number(stock.costPrice ?? stock.price ?? 0),
-                costCurrency: sameOriginalStock ? (oldCandidate.costCurrency || stock.costCurrency || currency) : (stock.costCurrency || currency)
+                costPrice: resolvedCost ?? 0,
+                costCurrency: (sameOriginalStock && oldCandidate.costCurrency) || stock.costCurrency || stock.purchaseCurrency || currency,
+                costMissingAtSale: resolvedCost === null
             });
         }
         const subtotal = newItems.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0);
@@ -12404,6 +12419,19 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         showToast('تم فتح معاينة كشف العميل؛ يمكنك الطباعة أو تجهيز PDF للمشاركة أو إغلاق النافذة');
     }
 
+    function getReliableStockUnitCost(invoiceLine = {}, stockItem = null) {
+        const candidates = [
+            invoiceLine?.costPrice, invoiceLine?.unitCost, invoiceLine?.purchasePrice, invoiceLine?.buyPrice, invoiceLine?.cost,
+            stockItem?.costPrice, stockItem?.unitCost, stockItem?.purchasePrice, stockItem?.buyPrice, stockItem?.cost
+        ];
+        for (const value of candidates) {
+            if (value === null || value === undefined || value === '') continue;
+            const amount = Number(value);
+            if (Number.isFinite(amount) && amount > 0) return amount;
+        }
+        return null;
+    }
+
     async function setVoucherProfitTreatment(voucherId, treatment) {
         if (!hasFullAccess()) { showToast('تصنيف سندات الصرف في الأرباح متاح للمدير والمشرف العام فقط'); return; }
         if (!['operatingExpense', 'nonExpense'].includes(treatment)) return;
@@ -12431,8 +12459,8 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         const codes = Array.isArray(CURRENCY_CODES) && CURRENCY_CODES.length ? CURRENCY_CODES : ['YER', 'SAR', 'USD'];
         const totals = {};
         codes.forEach(code => totals[code] = {
-            sales: 0, costOfGoodsSold: 0, operatingExpenses: 0,
-            net: 0, currencyMismatch: 0, unclassifiedVoucherTotal: 0
+            sales: 0, costOfGoodsSold: 0, grossProfit: 0, operatingExpenses: 0,
+            net: 0, currencyMismatch: 0, missingCostInvoices: 0, unclassifiedVoucherTotal: 0
         });
         const currencyOf = value => codes.includes(String(value || '').toUpperCase()) ? String(value).toUpperCase() : 'YER';
         const amountOf = value => {
@@ -12440,17 +12468,27 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
             return Number.isFinite(n) ? n : 0;
         };
         const movementCurrencies = new Set(['YER']);
-        const fmtLines = (values, field) => codes
-            .filter(code => code === 'YER' || Math.abs(amountOf(values[code]?.[field])) > 0.000001)
-            .map(code => `<div style="display:flex;justify-content:space-between;gap:8px;line-height:1.75;"><span>${code}</span><strong>${formatMoney(values[code]?.[field] || 0)}</strong></div>`)
-            .join('') || '<span>0.00 YER</span>';
-
-        const costMapById = new Map((state.warehouse || []).map(item => [String(item.id), item]));
-        const costMapByName = new Map();
-        (state.warehouse || []).forEach(item => {
-            const key = `${String(item.name || '').trim().toLocaleLowerCase('ar')}|${item.unit || 'حبة'}`;
-            if (!costMapByName.has(key)) costMapByName.set(key, item);
-        });
+        const normalizeItemName = value => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('ar');
+        const warehouseItems = Array.isArray(state.warehouse) ? state.warehouse : [];
+        const costMapById = new Map(warehouseItems.map(item => [String(item.id), item]));
+        const findStockForInvoiceLine = (line, invoice) => {
+            const itemId = String(line.stockItemId || line.itemId || '').trim();
+            if (itemId && costMapById.has(itemId)) return costMapById.get(itemId);
+            const name = normalizeItemName(line.name || line.itemName);
+            if (!name) return null;
+            const branchId = String(invoice.branchId || 'main_branch');
+            const branchItems = warehouseItems.filter(item => String(item.branchId || 'main_branch') === branchId && normalizeItemName(item.name) === name);
+            const unit = String(line.unit || 'حبة');
+            const sameUnit = branchItems.filter(item => String(item.unit || 'حبة') === unit);
+            if (sameUnit.length === 1) return sameUnit[0];
+            if (sameUnit.length > 1) return sameUnit.find(item => getReliableStockUnitCost({}, item) !== null) || sameUnit[0];
+            // بعض الفواتير القديمة لا تحفظ الوحدة؛ لا نطابق بطاقة مخزون إلا إذا كان الاسم فريداً في الفرع.
+            if (branchItems.length === 1) return branchItems[0];
+            // دعم الفواتير القديمة ذات ربط الفرع أو بطاقة الصنف غير المتطابق، بشرط أن يكون الاسم والوحدة فريدين في المخزون كله.
+            const globalMatches = warehouseItems.filter(item => normalizeItemName(item.name) === name && String(item.unit || 'حبة') === unit);
+            if (globalMatches.length === 1) return globalMatches[0];
+            return null;
+        };
 
         const invoiceRows = (state.invoices || []).slice().reverse().map(inv => {
             const saleCurrency = currencyOf(inv.currency);
@@ -12459,30 +12497,40 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
             movementCurrencies.add(saleCurrency);
             let invoiceCostComparable = 0;
             let mismatchCost = false;
+            let missingCost = false;
             const costBreakdown = {};
             (Array.isArray(inv.items) ? inv.items : []).forEach(line => {
-                const stockItem = (line.stockItemId ? costMapById.get(String(line.stockItemId)) : null)
-                    || costMapByName.get(`${String(line.name || '').trim().toLocaleLowerCase('ar')}|${line.unit || 'حبة'}`);
-                const unitCost = amountOf(line.costPrice ?? stockItem?.costPrice ?? stockItem?.price ?? 0);
-                const lineQty = amountOf(line.qty);
-                const lineCost = unitCost * lineQty;
-                const costCurrency = currencyOf(line.costCurrency || stockItem?.costCurrency || saleCurrency);
+                const qty = amountOf(line.qty ?? line.quantity);
+                if (qty <= 0) return;
+                const stockItem = findStockForInvoiceLine(line, inv);
+                const unitCost = getReliableStockUnitCost(line, stockItem);
+                if (unitCost === null) {
+                    missingCost = true;
+                    return;
+                }
+                const lineCost = unitCost * qty;
+                const costCurrency = currencyOf(line.costCurrency || stockItem?.costCurrency || stockItem?.purchaseCurrency || saleCurrency);
                 costBreakdown[costCurrency] = (costBreakdown[costCurrency] || 0) + lineCost;
                 totals[costCurrency].costOfGoodsSold += lineCost;
                 movementCurrencies.add(costCurrency);
                 if (costCurrency === saleCurrency) invoiceCostComparable += lineCost;
                 else mismatchCost = true;
             });
-            const costLabel = codes.filter(code => Math.abs(costBreakdown[code] || 0) > 0.000001)
-                .map(code => `${formatMoney(costBreakdown[code])} ${code}`).join(' / ') || `0.00 ${saleCurrency}`;
+
+            const costText = codes.filter(code => Math.abs(costBreakdown[code] || 0) > 0.000001)
+                .map(code => `${formatMoney(costBreakdown[code])} ${code}`).join(' / ');
+            const costLabel = `${costText || 'لا توجد تكلفة مسجلة'}${missingCost ? ' — يوجد صنف بلا تكلفة' : ''}`;
             let profitCell;
-            if (mismatchCost) {
-                totals[saleCurrency].currencyMismatch += 1;
-                profitCell = '<span style="color:var(--warning);font-weight:800;">غير محسوب — تكلفة بعملة مختلفة</span>';
+            if (mismatchCost || missingCost) {
+                if (mismatchCost) totals[saleCurrency].currencyMismatch += 1;
+                if (missingCost) totals[saleCurrency].missingCostInvoices += 1;
+                const reasons = [mismatchCost ? 'تكلفة بعملة مختلفة' : '', missingCost ? 'تكلفة صنف غير مسجلة' : ''].filter(Boolean).join(' و ');
+                profitCell = `<span style="color:var(--warning);font-weight:800;">غير مكتمل — ${reasons}</span>`;
             } else {
                 const invoiceProfit = invoiceNet - invoiceCostComparable;
-                profitCell = `<span class="mono" style="color:${invoiceProfit >= 0 ? 'var(--success)' : 'var(--danger)'};">${formatMoney(invoiceProfit)} ${saleCurrency}</span>`;
+                totals[saleCurrency].grossProfit += invoiceProfit;
                 totals[saleCurrency].net += invoiceProfit;
+                profitCell = `<span class="mono" style="color:${invoiceProfit >= 0 ? 'var(--success)' : 'var(--danger)'};font-weight:800;">${formatMoney(invoiceProfit)} ${saleCurrency}</span>`;
             }
             return `<tr>
                 <td><span class="mono">${escapeUiText(String(inv.refNumber || inv.id || '-'))}</span></td>
@@ -12494,8 +12542,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
             </tr>`;
         }).join('');
 
-        // المصروفات التشغيلية الفعلية فقط: سجل المصروفات، الصرف اليومي للعاملين، وسند الصرف المصنف كمصروف.
-        // فواتير التوريد وسداد المورد والسندات العامة غير المصنفة ليست مصروفاً تلقائياً.
+        // المصروفات التشغيلية الفعلية فقط: المصروفات المسجلة، الصرف اليومي، وسند الصرف المصنف كمصروف.
         (state.purchases || []).filter(item => item.kind === 'expense').forEach(item => {
             const code = currencyOf(item.currency);
             totals[code].operatingExpenses += amountOf(item.amount);
@@ -12518,27 +12565,43 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
             totals[code].unclassifiedVoucherTotal += amountOf(item.amount);
             movementCurrencies.add(code);
         });
-        codes.forEach(code => {
-            if (totals[code].currencyMismatch === 0) totals[code].net -= totals[code].operatingExpenses;
-        });
+        codes.forEach(code => totals[code].net -= totals[code].operatingExpenses);
 
         const activeCodes = codes.filter(code => code === 'YER' || movementCurrencies.has(code)
             || Object.values(totals[code]).some(value => typeof value === 'number' && Math.abs(value) > 0.000001));
-        const renderMetric = (field, extra = '') => activeCodes.map(code =>
+        const renderMetric = field => activeCodes.map(code =>
             `<div style="display:flex;justify-content:space-between;gap:8px;line-height:1.75;"><span>${code}</span><strong>${formatMoney(totals[code][field] || 0)}</strong></div>`
-        ).join('') + extra;
+        ).join('') || '<span>0.00 YER</span>';
 
         const salesEl = document.getElementById('profTotalSales');
         const costEl = document.getElementById('profTotalCost');
+        const grossEl = document.getElementById('profGrossProfit');
         const expensesEl = document.getElementById('profTotalExpenses');
         const netEl = document.getElementById('profNetProfit');
         if (salesEl) salesEl.innerHTML = renderMetric('sales');
         if (costEl) costEl.innerHTML = renderMetric('costOfGoodsSold');
+        if (grossEl) grossEl.innerHTML = activeCodes.map(code => {
+            const incomplete = totals[code].currencyMismatch + totals[code].missingCostInvoices;
+            return `<div style="display:flex;justify-content:space-between;gap:8px;line-height:1.75;"><span>${code}</span><strong style="color:${incomplete ? 'var(--warning)' : 'var(--success)'};">${incomplete ? `مراجعة ${incomplete} فاتورة` : formatMoney(totals[code].grossProfit)}</strong></div>`;
+        }).join('');
         if (expensesEl) expensesEl.innerHTML = renderMetric('operatingExpenses');
         if (netEl) netEl.innerHTML = activeCodes.map(code => {
-            const mismatch = totals[code].currencyMismatch > 0;
-            return `<div style="display:flex;justify-content:space-between;gap:8px;line-height:1.75;"><span>${code}</span><strong style="color:${mismatch ? 'var(--warning)' : totals[code].net >= 0 ? 'var(--success)' : 'var(--danger)'};">${mismatch ? `مراجعة العملة (${totals[code].currencyMismatch} فاتورة)` : formatMoney(totals[code].net)}</strong></div>`;
+            const incomplete = totals[code].currencyMismatch + totals[code].missingCostInvoices;
+            return `<div style="display:flex;justify-content:space-between;gap:8px;line-height:1.75;"><span>${code}</span><strong style="color:${incomplete ? 'var(--warning)' : totals[code].net >= 0 ? 'var(--success)' : 'var(--danger)'};">${incomplete ? `غير مكتمل — ${incomplete} فاتورة` : formatMoney(totals[code].net)}</strong></div>`;
         }).join('');
+
+        const warningEl = document.getElementById('profitCalculationWarning');
+        if (warningEl) {
+            const warningParts = [];
+            activeCodes.forEach(code => {
+                if (totals[code].missingCostInvoices) warningParts.push(`${totals[code].missingCostInvoices} فاتورة بعملة ${code} بها صنف لم نعثر له على تكلفة شراء محفوظة`);
+                if (totals[code].currencyMismatch) warningParts.push(`${totals[code].currencyMismatch} فاتورة بعملة ${code} بها تكلفة بعملة مختلفة`);
+            });
+            warningEl.style.display = warningParts.length ? 'block' : 'none';
+            warningEl.textContent = warningParts.length
+                ? `تنبيه: لا نعطي ربحاً نهائياً لفاتورة تنقصها تكلفة أو تختلف عملة تكلفتها. راجع بطاقة الصنف في المخزون وأدخل سعر التكلفة الصحيح. ${warningParts.join('؛ ')}.`
+                : '';
+        }
 
         const voucherBody = document.getElementById('unclassifiedProfitVouchersBody');
         if (voucherBody) {
@@ -12560,6 +12623,18 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         }
         const tableBody = document.getElementById('profitsTableBody');
         if (tableBody) tableBody.innerHTML = invoiceRows || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد فواتير مبيعات مسجلة حتى الآن</td></tr>';
+        const tableFoot = document.getElementById('profitsTableFoot');
+        if (tableFoot) tableFoot.innerHTML = activeCodes.map(code => {
+            const incomplete = totals[code].currencyMismatch + totals[code].missingCostInvoices;
+            const profitText = incomplete ? `غير مكتمل — مراجعة ${incomplete} فاتورة` : `${formatMoney(totals[code].grossProfit)} ${code}`;
+            return `<tr style="background:var(--bg-subtle);font-weight:800;">
+                <td colspan="2">الإجمالي — ${code}</td>
+                <td>${code}</td>
+                <td class="mono">${formatMoney(totals[code].sales)} ${code}</td>
+                <td class="mono">${formatMoney(totals[code].costOfGoodsSold)} ${code}</td>
+                <td class="mono">${profitText}</td>
+            </tr>`;
+        }).join('');
     }
 
     let employeePieceRateRowCounter = 0;
