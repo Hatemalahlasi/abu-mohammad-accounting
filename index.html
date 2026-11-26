@@ -2042,7 +2042,11 @@
                 </div>
                 <div class="mini-stat" data-dashboard-widget="receivables">
                     <div class="mini-stat-label">ديون العملاء</div>
-                    <div class="mini-stat-val" id="kpiTotalReceivables" style="color:var(--warning); font-size:12px; line-height:1.7;">0.00 YER</div>
+                    <div class="mini-stat-val customer-debt-breakdown" id="kpiTotalReceivables" style="color:var(--warning); font-size:12px; line-height:1.9;">
+                        <span>0.00 YER</span>
+                        <span>0.00 SAR</span>
+                        <span>0.00 USD</span>
+                    </div>
                 </div>
                 <div class="mini-stat" data-dashboard-widget="stock">
                     <div class="mini-stat-label">المخزون (إجمالي الكميات)</div>
@@ -3143,7 +3147,12 @@
             </div>
 
             <div class="card-box">
-                <div class="card-title"><span><i class="fa-solid fa-address-book"></i> قائمة العملاء وأرصدتهم النظامية</span></div>
+                <div class="card-title">
+                    <span><i class="fa-solid fa-address-book"></i> قائمة العملاء وأرصدتهم النظامية</span>
+                    <button type="button" class="btn btn-accent btn-sm" onclick="exportAllCustomerStatementsPDF()" title="كشف حساب جميع العملاء الذين لديهم أرصدة">
+                        <i class="fa-solid fa-file-pdf"></i> كشف حساب جميع العملاء
+                    </button>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -7759,7 +7768,10 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
 
         document.getElementById('kpiTotalSales').textContent = formatCurrencyBreakdown(visibleInvoices, 'netTotal');
         document.getElementById('kpiTotalCash').textContent = cash;
-        document.getElementById('kpiTotalReceivables').textContent = formatCurrencyTotals(debtTotals);
+        const receivablesEl = document.getElementById('kpiTotalReceivables');
+        if (receivablesEl) {
+            receivablesEl.innerHTML = CURRENCY_CODES.map(code => `<span>${formatMoney(debtTotals[code])} ${code}</span>`).join('');
+        }
         document.getElementById('kpiWarehouseStock').textContent = formatQty(totalStockQty);
         document.getElementById('purchasesTabTotal').textContent = formatCurrencyBreakdown(visiblePurchases.filter(record => record.kind === 'expense'), 'amount');
         document.getElementById('warehouseTotalValueBadge').textContent = `قيمة المخزون: ${formatMoney(totalStockVal)}`;
@@ -12017,6 +12029,66 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (shouldScroll) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+    function exportAllCustomerStatementsPDF() {
+        const customersWithBalances = (state.customers || [])
+            .map(c => ({ customer: c, balances: computeSystemCustomerBalances(c) }))
+            .filter(x => CURRENCY_CODES.some(code => Number(x.balances[code] || 0) > 0));
+
+        if (!customersWithBalances.length) {
+            showToast('لا يوجد عملاء لديهم أرصدة مستحقة حالياً');
+            return;
+        }
+
+        const allEntries = [];
+        const currencyLabel = code => code === 'YER' ? 'الريال اليمني' : code === 'SAR' ? 'الريال السعودي' : 'الدولار الأمريكي';
+
+        customersWithBalances.forEach(({ customer: cust }) => {
+            const matchesCustomer = (recordCustId, recordCustName) =>
+                (cust.id && String(recordCustId || '') === String(cust.id)) ||
+                (!recordCustId && recordCustName && cust.name && String(recordCustName).trim() === String(cust.name).trim());
+            const entries = [];
+            const openingBalances = cust.openingBalances && typeof cust.openingBalances === 'object' ? cust.openingBalances : {};
+            const legacyOpeningYER = Number(openingBalances.YER ?? cust.openingBalance ?? 0);
+            [['YER', legacyOpeningYER], ['SAR', Number(openingBalances.SAR || 0)], ['USD', Number(openingBalances.USD || 0)]].forEach(([currency, openingBalance]) => {
+                if (openingBalance > 0) entries.push({ date:'افتتاحي', ref:'OPENING', desc:'الرصيد الافتتاحي للعميل', currency, debit:openingBalance, credit:0, sortKey:`00000000000000000000_${currency}` });
+            });
+            state.invoices.filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName)).forEach(i => {
+                const refDisplay = i.refNumber || i.id || '—';
+                entries.push({ date:i.date || '-', ref:refDisplay, desc:getCustomerInvoiceStatementDescription(i, refDisplay), currency:CURRENCY_CODES.includes(i.currency) ? i.currency : 'YER', debit:Number(i.netTotal || 0), credit:0, sortKey:String(i.id || '') });
+            });
+            state.vouchers.filter(v => v.type === 'receipt' && matchesCustomer(v.customerId, v.customerName)).forEach(v => {
+                const refDisplay = v.refNumber || v.id || '—';
+                entries.push({ date:v.date || '-', ref:refDisplay, desc:v.note || `لكم سند قبض برقم ${refDisplay}`, currency:getVoucherCurrency(v), debit:0, credit:Number(v.amount || 0), sortKey:String(v.id || '') });
+            });
+            entries.sort((a,b) => {
+                if (a.ref === 'OPENING') return -1;
+                if (b.ref === 'OPENING') return 1;
+                return String(a.date).localeCompare(String(b.date)) || a.sortKey.localeCompare(b.sortKey);
+            });
+            const running={YER:0,SAR:0,USD:0};
+            const totals={YER:{debit:0,credit:0},SAR:{debit:0,credit:0},USD:{debit:0,credit:0}};
+            const rows=entries.length ? entries.map(en=>{
+                const code=CURRENCY_CODES.includes(en.currency)?en.currency:'YER';
+                running[code]+=Number(en.debit||0)-Number(en.credit||0);
+                totals[code].debit+=Number(en.debit||0); totals[code].credit+=Number(en.credit||0);
+                return `<tr><td>${escapeUiText(String(en.date||'-'))}</td><td>${escapeUiText(String(en.ref||'—'))}</td><td>${escapeUiText(String(en.desc||'—'))}<span class="currency-badge">${code}</span></td><td class="amount debit">${en.debit>0?`${formatMoney(en.debit)} ${code}`:'—'}</td><td class="amount credit">${en.credit>0?`${formatMoney(en.credit)} ${code}`:'—'}</td><td class="amount balance">${formatMoney(Math.abs(running[code]))} ${code}${running[code]<0?' (دائن)':''}</td></tr>`;
+            }).join('') : '<tr><td colspan="6" class="empty-row">لا توجد حركات مسجلة لهذا العميل.</td></tr>';
+            const active=CURRENCY_CODES.filter(code => code==='YER' || entries.some(e=>e.currency===code));
+            const totalsRows=active.map(code=>{
+                const t=totals[code], bal=t.debit-t.credit;
+                return `<tr class="statement-totals-row"><td colspan="3">الإجمالي والرصيد الختامي — ${currencyLabel(code)}</td><td>${formatMoney(t.debit)} ${code}</td><td>${formatMoney(t.credit)} ${code}</td><td>${formatMoney(Math.abs(bal))} ${code}${bal<0?' (دائن)':''}</td></tr>`;
+            }).join('');
+            allEntries.push(`<section class="customer-section"><div class="customer-title"><div><strong>${escapeUiText(cust.name||'عميل')}</strong><span>رقم الهاتف: ${escapeUiText(cust.phone||'-')}</span></div><span>الرصيد الحالي: ${CURRENCY_CODES.map(code=>`${formatMoney(computeSystemCustomerBalances(cust)[code])} ${code}`).join(' | ')}</span></div><div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>المرجع</th><th>البيان</th><th>مدين (عليكم)</th><th>دائن (لكم)</th><th>الرصيد التراكمي</th></tr></thead><tbody>${rows}</tbody><tfoot>${totalsRows}</tfoot></table></div></section>`);
+        });
+
+        const win=window.open('','_blank');
+        if(!win){showToast('اسمح بفتح النوافذ المنبثقة لمعاينة كشف العملاء');return;}
+        win.document.open();
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>كشف حساب جميع العملاء</title><style>
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#f1f5f2;color:#172033;font-family:Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{padding:18px}.actions{display:flex;justify-content:center;gap:9px;margin:0 auto 14px;max-width:900px}.action-btn{border:0;border-radius:10px;padding:10px 18px;background:#176b43;color:#fff;font-weight:800;font-family:Tahoma,Arial,sans-serif;cursor:pointer}.action-btn.secondary{background:#fff;color:#344256;border:1px solid #d8e0e8}.report{max-width:900px;margin:0 auto;background:#fff;border:1px solid #dce7df;border-radius:13px;padding:22px;box-shadow:0 8px 30px rgba(15,60,35,.08)}${bilingualContactHeaderCss()}.customer-section{margin-top:18px;break-inside:auto;page-break-inside:auto}.customer-title{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#edf7ef;border:1px solid #cfe4d5;border-right:5px solid #176b43;border-radius:8px;padding:9px 11px;color:#174d32;font-size:11px}.customer-title strong{display:block;font-size:14px}.customer-title span{display:block;color:#64748b;font-size:9px;margin-top:3px}.table-wrap{border:1px solid #dce5df;border-radius:8px;overflow:hidden;margin-top:7px}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px}thead{display:table-header-group}th{background:#174d32;color:#fff;font-weight:900;padding:7px 5px;border:1px solid #174d32;text-align:right}td{padding:6px 5px;border:1px solid #e2e9e4;text-align:right;vertical-align:top;overflow-wrap:anywhere}.amount{direction:ltr;text-align:left;white-space:nowrap;font-weight:800;font-size:8.5px}.currency-badge{display:inline-block;margin-right:5px;padding:1px 5px;border-radius:999px;background:#eef2f6;color:#40546a;font-size:7px;font-weight:900}.empty-row{text-align:center;color:#64748b;padding:12px}.statement-totals-row td{background:#eaf4ed;border-top:2px solid #176b43;border-bottom:2px solid #176b43;color:#174d32;font-weight:900}.statement-totals-row td:first-child{border-right:4px solid #176b43}@page{size:A4 portrait;margin:10mm}@media print{html,body{background:#fff!important;padding:0!important}.actions{display:none!important}.report{max-width:none!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}.customer-title{break-inside:avoid;page-break-inside:avoid}tr{break-inside:avoid;page-break-inside:avoid}th{background:#174d32!important;color:#fff!important}.statement-totals-row td{background:#eaf4ed!important}}@media(max-width:600px){body{padding:8px}.report{padding:12px}.customer-title{align-items:flex-start;flex-direction:column}.table-wrap{overflow-x:auto}table{min-width:680px}}</style></head><body><div class="actions"><button class="action-btn" onclick="window.print()">طباعة / حفظ PDF</button><button class="action-btn secondary" onclick="window.close()">إغلاق الكشف</button></div><main class="report">${bilingualContactHeaderHtml('كشف حساب جميع العملاء', 'تقرير مالي موحد — العملاء ذوو الأرصدة')}<div style="margin:8px 0 12px;color:#64748b;font-size:10px;font-weight:700">تاريخ استخراج الكشف: ${getLocalDateKey()} | عدد العملاء ذوي الأرصدة: ${customersWithBalances.length}</div>${allEntries.join('')}</main></body></html>`);
+        win.document.close();
+    }
+
     function exportStatementPDF() {
         const cust = state.customers.find(c => c.id === activeStatementCustomerId);
         if (!cust) {
@@ -12030,13 +12102,16 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             (!recordCustId && recordCustName && cust.name && String(recordCustName).trim() === String(cust.name).trim());
 
         const entries = [];
-        const openingBalance = Math.max(0, Number(cust.openingBalance || 0));
-        if (openingBalance > 0) {
-            entries.push({
-                date: 'افتتاحي', ref: 'OPENING', desc: 'الرصيد الافتتاحي للعميل',
-                currency: 'YER', debit: openingBalance, credit: 0, sortKey: '00000000000000000000'
-            });
-        }
+        const openingBalances = cust.openingBalances && typeof cust.openingBalances === 'object' ? cust.openingBalances : {};
+        const legacyOpeningYER = Number(openingBalances.YER ?? cust.openingBalance ?? 0);
+        [['YER', legacyOpeningYER], ['SAR', Number(openingBalances.SAR || 0)], ['USD', Number(openingBalances.USD || 0)]].forEach(([currency, openingBalance]) => {
+            if (openingBalance > 0) {
+                entries.push({
+                    date: 'افتتاحي', ref: 'OPENING', desc: 'الرصيد الافتتاحي للعميل',
+                    currency, debit: openingBalance, credit: 0, sortKey: `00000000000000000000_${currency}`
+                });
+            }
+        });
         (state.invoices || [])
             .filter(i => i.paymentType === 'credit' && matchesCustomer(i.customerId, i.customerName))
             .forEach(i => {
