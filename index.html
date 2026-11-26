@@ -1896,6 +1896,41 @@
 /* بحث الأصناف في الفاتورة بنفس مظهر زر عرض السعر */
 .sales-products-panel .quote-search-trigger{border-radius:10px;font-weight:900;letter-spacing:0;box-shadow:0 3px 10px rgba(24,105,62,.12)}
 .sales-products-panel .quote-search-trigger:focus-visible{outline:3px solid rgba(27,127,73,.28);outline-offset:2px}
+
+        /* رصيد الصندوق في الرئيسية: عرض العملات الثلاث في أسطر مستقلة ومنع تلاصقها */
+        #summaryStatsStrip #kpiTotalCash.cashbox-balance-breakdown {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            grid-auto-flow: row !important;
+            align-items: start !important;
+            justify-items: stretch !important;
+            gap: 3px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            margin-top: 5px !important;
+            white-space: nowrap !important;
+            text-align: right !important;
+            line-height: 1.5 !important;
+            font-variant-numeric: tabular-nums;
+        }
+        #summaryStatsStrip #kpiTotalCash.cashbox-balance-breakdown > div {
+            display: block !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            white-space: nowrap !important;
+            text-align: right !important;
+            line-height: 1.5 !important;
+            font-size: 12px !important;
+            font-weight: 900 !important;
+            direction: ltr !important;
+            unicode-bidi: isolate !important;
+        }
+        @media (max-width: 420px) {
+            #summaryStatsStrip #kpiTotalCash.cashbox-balance-breakdown > div {
+                font-size: 11.5px !important;
+            }
+        }
+
 </style>
 <!-- Supplier payment ledger repair 2026-11-23-D -->
 
@@ -2042,7 +2077,9 @@
                 </div>
                 <div class="mini-stat" data-dashboard-widget="cash">
                     <div class="mini-stat-label">رصيد الصندوق</div>
-                    <div class="mini-stat-val" id="kpiTotalCash" style="color:var(--success); font-size:12px; line-height:1.7;">0.00 YER</div>
+                    <div class="mini-stat-val cashbox-balance-breakdown" id="kpiTotalCash" style="color:var(--success); font-size:12px; line-height:1.7;">
+                        <div>0.00 YER</div><div>0.00 SAR</div><div>0.00 USD</div>
+                    </div>
                 </div>
                 <div class="mini-stat" data-dashboard-widget="receivables">
                     <div class="mini-stat-label">ديون العملاء</div>
@@ -8214,7 +8251,9 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         CURRENCY_CODES.forEach(code => {
             state.cashboxes.forEach(c => { cashTotals[code] += computeSystemCashboxBalance(c, code); });
         });
-        const cash = CURRENCY_CODES.filter(code => cashTotals[code] !== 0).map(code => `${formatMoney(cashTotals[code])} ${code}`).join(' | ') || '0.00 YER';
+        const cashLinesHtml = CURRENCY_CODES.map(code =>
+            `<div class="cashbox-currency-line">${formatMoney(cashTotals[code])} ${code}</div>`
+        ).join('');
         const debtTotals = { YER: 0, SAR: 0, USD: 0 };
         state.customers.forEach(c => {
             const balances = computeSystemCustomerBalances(c);
@@ -8225,7 +8264,21 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const totalStockVal = visibleWarehouse.reduce((s, w) => s + (Number(w.qty || 0) * Number(w.costPrice ?? w.price ?? 0)), 0);
 
         document.getElementById('kpiTotalSales').textContent = formatCurrencyBreakdown(visibleInvoices, 'netTotal');
-        document.getElementById('kpiTotalCash').textContent = cash;
+        const cashEl = document.getElementById('kpiTotalCash');
+        if (cashEl) {
+            cashEl.classList.add('cashbox-balance-breakdown');
+            cashEl.innerHTML = cashLinesHtml;
+            cashEl.style.display = 'grid';
+            cashEl.style.gridTemplateColumns = 'minmax(0, 1fr)';
+            cashEl.style.gridAutoFlow = 'row';
+            cashEl.style.alignItems = 'start';
+            cashEl.style.justifyItems = 'stretch';
+            cashEl.style.gap = '2px';
+            cashEl.style.width = '100%';
+            cashEl.style.minWidth = '0';
+            cashEl.style.whiteSpace = 'nowrap';
+            cashEl.style.textAlign = 'right';
+        }
         const receivablesEl = document.getElementById('kpiTotalReceivables');
         if (receivablesEl) {
             // تثبيت عرض كل عملة في سطر مستقل، حتى لا تجمعها قواعد تنسيق البطاقات في سطر واحد.
