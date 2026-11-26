@@ -1961,6 +1961,11 @@
 .quote-picker-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e1ebe3}
 .quote-picker-head h3{margin:0;color:#145a36;font-size:17px;font-weight:900}.quote-picker-head small{display:block;color:#65776b;font-size:11px;margin-top:3px}
 .quote-picker-list{overflow:auto;min-height:130px;max-height:calc(88vh - 155px);display:flex;flex-direction:column;gap:7px;padding:2px}
+.item-group-filters{display:flex;flex-wrap:wrap;gap:7px;margin:7px 0 10px;direction:rtl}
+.item-group-chip{border:1px solid #cbdccf;background:#f6faf7;color:#24583a;border-radius:999px;padding:7px 12px;font:800 12px Tahoma,Arial,sans-serif;cursor:pointer;min-height:34px}
+.item-group-chip.active{background:#176b43;border-color:#176b43;color:#fff;box-shadow:0 2px 7px rgba(23,107,67,.16)}
+.item-group-label{display:inline-flex;align-items:center;gap:4px;border:1px solid #d5e7d9;background:#f0f8f2;color:#176b43;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:800;width:max-content;max-width:100%}
+@media(max-width:520px){.item-group-chip{padding:6px 10px;font-size:11px;min-height:32px}}
 .quote-picker-row{display:grid;grid-template-columns:minmax(0,1fr) 105px 100px;align-items:center;gap:10px;padding:9px 10px;border:1px solid #dce8de;border-radius:10px;background:#fbfefb}
 .quote-picker-row strong{display:block;color:#244833;font-size:12px;line-height:1.5}.quote-picker-row small{display:block;color:#718075;font-size:10px;line-height:1.5}.quote-picker-row .quote-picker-price{color:#176b43;font-weight:900;direction:ltr;text-align:right}
 .quote-picker-qty{width:100%;min-height:38px;border:1px solid #cbd9ce;border-radius:8px;padding:5px 7px;text-align:center;font-weight:800}
@@ -2272,6 +2277,7 @@
                 <div class="quote-picker-dialog">
                     <div class="quote-picker-head"><div><h3 id="quoteProductPickerTitle">اختيار أصناف عرض السعر</h3><small>ابحث عن الصنف، حدّد الكمية، ثم اضغط إضافة</small></div><button type="button" class="btn btn-outline btn-sm" onclick="closeQuotationProductPicker()"><i class="fa-solid fa-xmark"></i> إغلاق</button></div>
                     <div class="form-group"><input id="quoteProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderQuotationCatalog()" autocomplete="off"></div>
+                    <div><strong style="display:block;font-size:12px;color:#60766a;margin:2px 0;">مجموعات الأصناف</strong><div id="quoteProductGroupFilters" class="item-group-filters"></div></div>
                     <div id="quoteProductCatalog" class="quote-picker-list"><div class="empty-products">جاري تحميل الأصناف...</div></div>
                 </div>
             </div>
@@ -2285,6 +2291,7 @@
                     <button type="button" class="btn btn-outline btn-sm" onclick="closeInvoiceProductPicker()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
                 </div>
                 <div class="form-group"><input id="invoiceProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderInvoiceProductPicker()" autocomplete="off"></div>
+                <div><strong style="display:block;font-size:12px;color:#60766a;margin:2px 0;">مجموعات الأصناف</strong><div id="invoiceProductGroupFilters" class="item-group-filters"></div></div>
                 <div class="employee-permission-note" style="margin:0 0 8px">يظهر هنا مخزون الفرع المختار فقط. عند تعديل فاتورة، تُضاف كميتها الأصلية إلى المتاح أثناء التعديل حتى لا تمنعك من إعادة اختيارها.</div>
                 <div id="invoicePickerResultCount" class="badge" style="align-self:flex-start;margin-bottom:6px">0 صنف</div>
                 <div id="invoiceProductCatalog" class="quote-picker-list"><div class="empty-products">جاري تحميل الأصناف...</div></div>
@@ -2986,6 +2993,7 @@
                     <div class="form-group"><label for="itemListSearch">بحث باسم الصنف أو المورد أو المصدر</label><input id="itemListSearch" class="form-control" type="search" placeholder="اكتب اسم الصنف أو المورد..." oninput="renderItemList()"></div>
                     <div class="form-group"><label for="itemListBranch">المخزن</label><select id="itemListBranch" class="form-control" onchange="renderItemList()"><option value="ALL">كل المخازن المسموحة</option></select></div>
                 </div>
+                <div><strong style="display:block;font-size:12px;color:var(--text-muted);margin:4px 0;">تصفية حسب مجموعة الصنف</strong><div id="itemListGroupFilters" class="item-group-filters"></div></div>
                 <div id="itemListCards" class="item-list-grid"></div>
             </div>
             <div class="employee-permission-note">يعرض مصدر الصنف حسب بيانات التوريد أو الإضافة المسجلة. الأصناف القديمة التي لم يكن لها مصدر محفوظ ستظهر بعبارة «مصدر غير مسجل».</div>
@@ -3009,6 +3017,12 @@
                 <div class="form-group">
                     <label>اسم الصنف</label>
                     <input type="text" id="newItemName" class="form-control" placeholder="اسم المادة أو المنتج">
+                </div>
+                <div class="form-group">
+                    <label for="newItemGroup">مجموعة الصنف</label>
+                    <input type="text" id="newItemGroup" class="form-control" list="warehouseItemGroupOptions" placeholder="مثلاً: البالطوهات أو بدلات العمليات" onfocus="populateWarehouseGroupOptions()" autocomplete="off">
+                    <small style="display:block;color:var(--text-muted);margin-top:4px;">اختر مجموعة موجودة أو اكتب اسماً جديداً لإنشاء مجموعة تلقائياً.</small>
+                    <datalist id="warehouseItemGroupOptions"></datalist>
                 </div>
                 <div class="grid-4">
                     <div class="form-group">
@@ -4311,6 +4325,10 @@
     let currentUser = null;
     let recycleBinItems = [];
     let trashPurgeInterval = null;
+    let itemListGroupFilter = 'ALL';
+    let invoicePickerGroupFilter = 'ALL';
+    let quotationPickerGroupFilter = 'ALL';
+
     let state = {
         branches: [],
         cashboxes: [],
@@ -5716,6 +5734,7 @@ function initMenuPermissionCheckboxes() {
         const modal = document.getElementById('quoteProductPickerModal');
         if (!modal) return;
         modal.classList.remove('hidden');
+        quotationPickerGroupFilter = 'ALL';
         renderQuotationCatalog();
         const search = document.getElementById('quoteProductSearch');
         setTimeout(() => search?.focus(), 50);
@@ -5730,10 +5749,12 @@ function initMenuPermissionCheckboxes() {
         if (!grid) return;
         const branchId = document.getElementById('quoteBranch')?.value || 'ALL';
         const query = String(document.getElementById('quoteProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
-        const items = getScopedWarehouseItems().filter(item => {
-            const branchMatch = branchId === 'ALL' || String(item.branchId || 'main_branch') === branchId;
+        const branchItems = getScopedWarehouseItems().filter(item => branchId === 'ALL' || String(item.branchId || 'main_branch') === branchId);
+        renderItemGroupFilterButtons('quoteProductGroupFilters', branchItems, quotationPickerGroupFilter, 'setQuotationPickerGroup');
+        const items = branchItems.filter(item => {
+            const groupMatch = quotationPickerGroupFilter === 'ALL' || getWarehouseItemGroup(item) === quotationPickerGroupFilter;
             const nameMatch = !query || String(item.name || '').toLocaleLowerCase('ar').includes(query);
-            return branchMatch && nameMatch;
+            return groupMatch && nameMatch;
         });
         const count = document.getElementById('quoteProductsCount');
         if (count) count.textContent = `${items.length} صنف`;
@@ -5749,7 +5770,7 @@ function initMenuPermissionCheckboxes() {
             const label = price === null ? 'سعر الصرف غير محدد' : `${formatMoney(price || 0)} ${currency}`;
             const branchName = item.branchName || getAllBranches().find(b => b.id === (item.branchId || 'main_branch'))?.name || '';
             return `<div class="quote-picker-row">
-                <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(branchName)}</small><small class="quote-picker-price">${escapeUiText(label)}</small></div>
+                <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small><span class="item-group-label">${escapeUiText(getWarehouseItemGroup(item))}</span> · ${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(branchName)}</small><small class="quote-picker-price">${escapeUiText(label)}</small></div>
                 <div><label style="display:block;font-size:10px;font-weight:800;color:#52665a;margin-bottom:3px">الكمية</label><input class="quote-picker-qty num-input" type="number" min="0.01" step="0.01" inputmode="decimal" value="1" aria-label="كمية ${escapeUiText(item.name || 'الصنف')}"></div>
                 <button type="button" class="btn btn-primary btn-sm" onclick="addQuotationProductFromModal('${encodeURIComponent(String(item.id))}',this)"><i class="fa-solid fa-plus"></i> إضافة</button>
             </div>`;
@@ -7248,6 +7269,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         modal.classList.remove('hidden');
         const search = document.getElementById('invoiceProductSearch');
         if (search) search.value = '';
+        invoicePickerGroupFilter = 'ALL';
         renderInvoiceProductPicker();
         setTimeout(() => search?.focus(), 50);
     }
@@ -7277,7 +7299,11 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const branchItems = (state.warehouse || []).filter(item =>
             String(item.branchId || 'main_branch') === String(branchId) && isBranchAllowed(item.branchId || 'main_branch')
         );
-        const items = branchItems.filter(item => String(item.name || '').toLocaleLowerCase('ar').includes(query));
+        renderItemGroupFilterButtons('invoiceProductGroupFilters', branchItems, invoicePickerGroupFilter, 'setInvoicePickerGroup');
+        const items = branchItems.filter(item =>
+            (invoicePickerGroupFilter === 'ALL' || getWarehouseItemGroup(item) === invoicePickerGroupFilter) &&
+            String(item.name || '').toLocaleLowerCase('ar').includes(query)
+        );
         const resultCount = document.getElementById('invoicePickerResultCount');
         if (resultCount) resultCount.textContent = `${items.length} صنف`;
         const count = document.getElementById('invoiceProductsCount');
@@ -7306,7 +7332,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
                 ? `السعر الأصلي: ${formatMoney(storedPrice)} ${priceCurrency}` : '';
             const branchName = item.branchName || getAllBranches().find(branch => String(branch.id) === String(branchId))?.name || '';
             return `<div class="quote-picker-row">
-                <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(branchName)} · المتاح للإضافة: ${formatQty(remaining)}</small><small class="quote-picker-price">${escapeUiText(priceLabel)}</small>${priceHint ? `<small>${escapeUiText(priceHint)}</small>` : ''}</div>
+                <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small><span class="item-group-label">${escapeUiText(getWarehouseItemGroup(item))}</span> · ${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(branchName)} · المتاح للإضافة: ${formatQty(remaining)}</small><small class="quote-picker-price">${escapeUiText(priceLabel)}</small>${priceHint ? `<small>${escapeUiText(priceHint)}</small>` : ''}</div>
                 <div><label style="display:block;font-size:10px;font-weight:800;color:#52665a;margin-bottom:3px">الكمية</label><input class="quote-picker-qty num-input" type="number" min="0.01" max="${remaining}" step="0.01" inputmode="decimal" value="${remaining > 0 ? 1 : 0}" ${remaining <= 0 ? 'disabled' : ''} aria-label="كمية ${escapeUiText(item.name || 'الصنف')}"></div>
                 <button type="button" class="btn btn-primary btn-sm" ${remaining <= 0 ? 'disabled' : ''} onclick="addInvoiceProductFromModal('${encodeURIComponent(String(item.id))}',this)"><i class="fa-solid fa-plus"></i> إضافة</button>
             </div>`;
@@ -11222,6 +11248,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const branchObj = state.branches.find(b => b.id === branchId);
         const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
         const name = document.getElementById('newItemName').value.trim();
+        const groupName = normalizeItemGroupName(document.getElementById('newItemGroup')?.value || '');
         const unit = document.getElementById('newItemUnit').value || 'حبة';
         const qty = Number(document.getElementById('newItemQty').value || 0);
         const costPrice = Number(document.getElementById('newItemCostPrice')?.value || 0);
@@ -11237,12 +11264,12 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 String(w.name || '').trim().toLowerCase() === name.toLowerCase() &&
                 (w.unit || 'حبة') === unit
             );
-            const itemPatch = { qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, unit, branchId, branchName, name, sourceType: existing?.sourceType || 'manual', sourceName: existing?.sourceName || getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() };
+            const itemPatch = { qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, unit, branchId, branchName, name, groupName, sourceType: existing?.sourceType || 'manual', sourceName: existing?.sourceName || getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() };
             if (existing) {
                 if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل على المخزون'); return; }
                 let savedHistory = Array.isArray(existing.quantityAdjustmentHistory) ? existing.quantityAdjustmentHistory.slice() : [];
                 const updated = await updateDocumentOnce('warehouse', existing.id, {
-                    action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
+                    action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, groupName, actor: dedupeActorId()
                 }, current => {
                     const previousQty = Number(current.qty || 0);
                     const delta = qty - previousQty;
@@ -11261,7 +11288,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 const initialHistory = qty > 0 ? [{ id: `manual_add_${Date.now()}`, itemName: name, unit, branchId, branchName, qty, previousQty: 0, quantityAfter: qty, mode: 'manual', date: getLocalDateKey(), createdAt: new Date().toISOString(), actorId: String(currentUser?.id || ''), actorName: getAccountDisplayName(currentUser) }] : [];
                 itemPatch.quantityAdjustmentHistory = initialHistory;
                 const result = await createRecordOnce('warehouse', 'wh', {
-                    action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
+                    action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, groupName, actor: dedupeActorId()
                 }, itemPatch, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
                 if (!result.created) { showToast('هذا الصنف موجود أو تمت إضافته للتو؛ لن يتكرر في المخزن.'); return; }
                 state.warehouse = Array.isArray(state.warehouse) ? state.warehouse : [];
@@ -11269,8 +11296,12 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             }
             refreshSupplierInvoiceCatalogOptions();
             renderWarehouseTable();
+            renderItemList();
             renderStats();
+            if (typeof renderInvoiceProductPicker === 'function') renderInvoiceProductPicker();
+            if (typeof renderQuotationCatalog === 'function') renderQuotationCatalog();
             document.getElementById('newItemName').value = '';
+            if (document.getElementById('newItemGroup')) document.getElementById('newItemGroup').value = '';
             document.getElementById('newItemQty').value = '1';
             document.getElementById('newItemPrice').value = '0.00';
             if (document.getElementById('newItemCostPrice')) document.getElementById('newItemCostPrice').value = '0.00';
@@ -11302,6 +11333,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         overlay.dataset.originalQty = String(qty);
         overlay.dataset.originalCost = String(cost);
         overlay.dataset.originalPrice = String(sale);
+        overlay.dataset.originalGroup = normalizeItemGroupName(item.groupName || item.category || item.group || '');
         overlay.style.cssText = 'position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;padding:14px;direction:rtl;';
         overlay.innerHTML = `
             <div role="dialog" aria-modal="true" aria-labelledby="warehouseStockEditTitle" style="width:min(100%,520px);max-height:92vh;overflow:auto;background:#fff;border:1px solid #d9e5dd;border-radius:18px;box-shadow:0 22px 70px rgba(0,0,0,.24);padding:18px;color:#19352a;">
@@ -11313,6 +11345,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                     <div style="font-weight:800;font-size:15px;">${escapeUiText(item.name || 'صنف')}</div>
                     <div style="font-size:12px;color:#52685d;margin-top:4px;">${escapeUiText(branchName)} · ${escapeUiText(unit)} · العملة: ${escapeUiText(currency)}</div>
                 </div>
+                <div class="form-group" style="margin:0 0 12px;"><label for="warehouseStockEditGroup">مجموعة الصنف</label><input id="warehouseStockEditGroup" class="form-control" list="warehouseItemGroupOptions" value="${escapeUiText(getWarehouseItemGroup(item) === 'غير مصنف' ? '' : getWarehouseItemGroup(item))}" placeholder="مثلاً: البالطوهات أو بدلات العمليات" onfocus="populateWarehouseGroupOptions()" autocomplete="off"><small style="display:block;color:#64776d;margin-top:4px;">اكتب مجموعة جديدة أو اختر مجموعة سابقة لتصنيف الصنف.</small></div>
                 <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
                     <div class="form-group" style="margin:0;"><label for="warehouseStockEditQty">الكمية الموجودة (${escapeUiText(unit)})</label><input id="warehouseStockEditQty" class="form-control" type="number" min="0" step="0.001" inputmode="decimal" value="${qty}" /></div>
                     <div class="form-group" style="margin:0;"><label for="warehouseStockEditCost">سعر التكلفة (${escapeUiText(currency)})</label><input id="warehouseStockEditCost" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" value="${cost}" /></div>
@@ -11338,6 +11371,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const qtyText = document.getElementById('warehouseStockEditQty')?.value ?? '';
         const costText = document.getElementById('warehouseStockEditCost')?.value ?? '';
         const saleText = document.getElementById('warehouseStockEditPrice')?.value ?? '';
+        const nextGroupName = normalizeItemGroupName(document.getElementById('warehouseStockEditGroup')?.value || '');
+        const originalGroupName = normalizeItemGroupName(overlay.dataset.originalGroup || '');
         const nextQty = Number(qtyText), nextCost = Number(costText), nextPrice = Number(saleText);
         if ([qtyText, costText, saleText].some(value => String(value).trim() === '') || ![nextQty, nextCost, nextPrice].every(Number.isFinite) || nextQty < 0 || nextCost < 0 || nextPrice < 0) {
             showToast('أدخل كمية وسعر تكلفة وسعر بيع صحيحة؛ لا تقبل القيم السالبة'); return;
@@ -11349,14 +11384,14 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             cost: Number(overlay.dataset.originalCost || 0),
             price: Number(overlay.dataset.originalPrice || 0)
         };
-        if (Math.abs(nextQty-original.qty)<0.000001 && Math.abs(nextCost-original.cost)<0.000001 && Math.abs(nextPrice-original.price)<0.000001) {
+        if (Math.abs(nextQty-original.qty)<0.000001 && Math.abs(nextCost-original.cost)<0.000001 && Math.abs(nextPrice-original.price)<0.000001 && nextGroupName === originalGroupName) {
             closeWarehouseStockEdit(); showToast('لم يتم تغيير أي بيانات'); return;
         }
         const actorId = String(currentUser?.id || '');
         const actorName = getAccountDisplayName(currentUser);
         const today = getLocalDateKey();
         const nowIso = new Date().toISOString();
-        const signature = { action:'edit-branch-stocktake', itemId:String(itemId), qty:nextQty, costPrice:nextCost, price:nextPrice, actor:dedupeActorId() };
+        const signature = { action:'edit-branch-stocktake', itemId:String(itemId), qty:nextQty, costPrice:nextCost, price:nextPrice, groupName:nextGroupName, actor:dedupeActorId() };
         const markerKey = `${dedupeHash(signature)}:${Math.floor(Date.now()/CREATE_DEDUPE_WINDOW_MS)}`;
         const btn = document.getElementById('saveWarehouseStockEditBtn');
         isBusy = true;
@@ -11372,7 +11407,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 const currentQty = Number(current.qty || 0);
                 const currentCost = Number(current.costPrice ?? current.price ?? 0);
                 const currentPrice = Number(current.price || 0);
-                if (Math.abs(currentQty-original.qty)>=0.000001 || Math.abs(currentCost-original.cost)>=0.000001 || Math.abs(currentPrice-original.price)>=0.000001) throw new Error('STOCK_EDIT_CONFLICT');
+                if (Math.abs(currentQty-original.qty)>=0.000001 || Math.abs(currentCost-original.cost)>=0.000001 || Math.abs(currentPrice-original.price)>=0.000001 || normalizeItemGroupName(current.groupName || current.category || current.group || '') !== originalGroupName) throw new Error('STOCK_EDIT_CONFLICT');
                 const recent = Array.isArray(current.__recentOperationMarkers) ? current.__recentOperationMarkers : [];
                 if (recent.some(marker => marker?.key === markerKey)) return { duplicate:true };
                 const quantityHistory = Array.isArray(current.quantityAdjustmentHistory) ? current.quantityAdjustmentHistory.slice() : [];
@@ -11389,17 +11424,17 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 auditHistory.push({
                     id:`stocktake_audit_${Date.now()}_${itemId}`, date:today, createdAt:nowIso, actorId, actorName,
                     qtyBefore:currentQty, qtyAfter:nextQty, costBefore:currentCost, costAfter:nextCost,
-                    priceBefore:currentPrice, priceAfter:nextPrice, branchId:currentBranchId, branchName:current.branchName || item.branchName || ''
+                    priceBefore:currentPrice, priceAfter:nextPrice, groupBefore:normalizeItemGroupName(current.groupName || current.category || current.group || ''), groupAfter:nextGroupName, branchId:currentBranchId, branchName:current.branchName || item.branchName || ''
                 });
                 transaction.update(ref, {
-                    qty:nextQty, costPrice:nextCost, price:nextPrice,
+                    qty:nextQty, costPrice:nextCost, price:nextPrice, groupName:nextGroupName,
                     quantityAdjustmentHistory:quantityHistory.slice(-200), stocktakeEditHistory:auditHistory.slice(-200),
                     __recentOperationMarkers:[...recent,{key:markerKey,at:Date.now()}].slice(-30)
                 });
                 return { duplicate:false, qtyHistory:quantityHistory.slice(-200), auditHistory:auditHistory.slice(-200) };
             });
             if (result?.duplicate) { showToast('تم منع تكرار نفس التعديل خلال لحظات'); return; }
-            Object.assign(item, { qty:nextQty, costPrice:nextCost, price:nextPrice, quantityAdjustmentHistory:result.qtyHistory || item.quantityAdjustmentHistory, stocktakeEditHistory:result.auditHistory || item.stocktakeEditHistory });
+            Object.assign(item, { qty:nextQty, costPrice:nextCost, price:nextPrice, groupName:nextGroupName, quantityAdjustmentHistory:result.qtyHistory || item.quantityAdjustmentHistory, stocktakeEditHistory:result.auditHistory || item.stocktakeEditHistory });
             closeWarehouseStockEdit();
             renderWarehouseTable();
             renderItemList();
@@ -11407,7 +11442,9 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             if (typeof renderInventoryItemMovementReport === 'function') renderInventoryItemMovementReport();
             if (typeof renderInventoryMovementReport === 'function') renderInventoryMovementReport();
             if (typeof refreshSupplierInvoiceCatalogOptions === 'function') refreshSupplierInvoiceCatalogOptions();
-            showToast('تم تحديث بيانات الجرد وسعر التكلفة وسعر البيع بنجاح');
+            if (typeof renderInvoiceProductPicker === 'function') renderInvoiceProductPicker();
+            if (typeof renderQuotationCatalog === 'function') renderQuotationCatalog();
+            showToast('تم تحديث بيانات الصنف ومجموعته والأسعار والكمية بنجاح');
         } catch (error) {
             console.warn('Save warehouse stocktake edit error:', error);
             const messages = {
@@ -11581,6 +11618,60 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         }
     }
 
+    function normalizeItemGroupName(value) {
+        return String(value || '').trim().replace(/\s+/g, ' ');
+    }
+
+    function getWarehouseItemGroup(item) {
+        const value = normalizeItemGroupName(item?.groupName || item?.category || item?.group || '');
+        return value || 'غير مصنف';
+    }
+
+    function getWarehouseItemGroups(items = state.warehouse || []) {
+        const groups = [...new Set((items || []).map(getWarehouseItemGroup).filter(Boolean))];
+        return groups.sort((a, b) => a.localeCompare(b, 'ar'));
+    }
+
+    function populateWarehouseGroupOptions() {
+        const list = document.getElementById('warehouseItemGroupOptions');
+        if (!list) return;
+        list.innerHTML = getWarehouseItemGroups(state.warehouse || []).map(group => `<option value="${escapeUiText(group)}"></option>`).join('');
+    }
+
+    function renderItemGroupFilterButtons(hostId, items, selected, handlerName) {
+        const host = document.getElementById(hostId);
+        if (!host) return;
+        const groups = getWarehouseItemGroups(items);
+        const normalizedSelected = selected === 'ALL' ? 'ALL' : normalizeItemGroupName(selected);
+        if (normalizedSelected !== 'ALL' && !groups.includes(normalizedSelected)) {
+            if (handlerName === 'setItemListGroupFilter') itemListGroupFilter = 'ALL';
+            if (handlerName === 'setInvoicePickerGroup') invoicePickerGroupFilter = 'ALL';
+            if (handlerName === 'setQuotationPickerGroup') quotationPickerGroupFilter = 'ALL';
+        }
+        const active = normalizedSelected !== 'ALL' && groups.includes(normalizedSelected) ? normalizedSelected : 'ALL';
+        const buttons = [`<button type="button" class="item-group-chip ${active === 'ALL' ? 'active' : ''}" onclick="${handlerName}('ALL')">الكل</button>`];
+        groups.forEach(group => {
+            const encoded = encodeURIComponent(group);
+            buttons.push(`<button type="button" class="item-group-chip ${active === group ? 'active' : ''}" onclick="${handlerName}('${encoded}')">${escapeUiText(group)}</button>`);
+        });
+        host.innerHTML = buttons.join('');
+    }
+
+    function setItemListGroupFilter(encodedGroup) {
+        itemListGroupFilter = encodedGroup === 'ALL' ? 'ALL' : normalizeItemGroupName(decodeURIComponent(encodedGroup));
+        renderItemList();
+    }
+
+    function setInvoicePickerGroup(encodedGroup) {
+        invoicePickerGroupFilter = encodedGroup === 'ALL' ? 'ALL' : normalizeItemGroupName(decodeURIComponent(encodedGroup));
+        renderInvoiceProductPicker();
+    }
+
+    function setQuotationPickerGroup(encodedGroup) {
+        quotationPickerGroupFilter = encodedGroup === 'ALL' ? 'ALL' : normalizeItemGroupName(decodeURIComponent(encodedGroup));
+        renderQuotationCatalog();
+    }
+
     function renderItemList() {
         const host = document.getElementById('itemListCards');
         const count = document.getElementById('itemListCount');
@@ -11590,13 +11681,15 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const branchId = document.getElementById('itemListBranch')?.value || 'ALL';
         const allWarehouse = Array.isArray(state.warehouse) ? state.warehouse : [];
         const accessible = getScopedWarehouseItems();
-        let items = accessible.filter(item => branchId === 'ALL' || (item.branchId || 'main_branch') === branchId);
+        const branchItems = accessible.filter(item => branchId === 'ALL' || (item.branchId || 'main_branch') === branchId);
+        renderItemGroupFilterButtons('itemListGroupFilters', branchItems, itemListGroupFilter, 'setItemListGroupFilter');
+        let items = branchItems.filter(item => itemListGroupFilter === 'ALL' || getWarehouseItemGroup(item) === itemListGroupFilter);
         const sourceOf = item => getWarehouseItemSource(item);
         const isSourceKnown = item => !sourceOf(item).includes('مصدر غير مسجل');
         items = items.filter(item => {
             const source = sourceOf(item).toLowerCase();
             const branchName = item.branchName || getAllBranches().find(b => b.id === item.branchId)?.name || 'المخزن الرئيسي';
-            return !query || String(item.name || '').toLowerCase().includes(query) || source.includes(query) || String(branchName).toLowerCase().includes(query);
+            return !query || String(item.name || '').toLowerCase().includes(query) || source.includes(query) || String(branchName).toLowerCase().includes(query) || getWarehouseItemGroup(item).toLowerCase().includes(query);
         }).sort((a, b) => {
             const branchA = a.branchName || getAllBranches().find(x => x.id === a.branchId)?.name || '';
             const branchB = b.branchName || getAllBranches().find(x => x.id === b.branchId)?.name || '';
@@ -11608,6 +11701,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             const unknown = items.length - known;
             summary.innerHTML = `
                 <div class="item-list-stat"><span>الأصناف المعروضة</span><strong>${items.length}</strong></div>
+                <div class="item-list-stat"><span>المجموعات</span><strong>${getWarehouseItemGroups(items).filter(group => group !== 'غير مصنف').length}</strong></div>
                 <div class="item-list-stat"><span>مصدر معروف</span><strong class="known">${known}</strong></div>
                 <div class="item-list-stat"><span>مصدر غير مسجل</span><strong class="unknown">${unknown}</strong></div>`;
         }
@@ -11640,6 +11734,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                         <small>${escapeUiText(unit)}</small>
                     </div>
                 </div>
+                <div class="item-row-detail"><span>المجموعة</span><b><span class="item-group-label">${escapeUiText(getWarehouseItemGroup(item))}</span></b></div>
                 <div class="item-row-detail"><span>المخزن</span><b>${escapeUiText(branch)}</b></div>
                 <div class="item-row-source ${sourceKnown ? 'source-known' : 'source-unknown'}">
                     <span>المصدر</span><b>${escapeUiText(source.replace(/^مصدر الصنف:\s*/, '').replace(/^مصدر غير مسجل \(صنف قديم\)$/, 'لا توجد بيانات توريد أو إضافة محفوظة لهذا الصنف'))}</b>
@@ -11648,7 +11743,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 <div class="item-row-detail"><span>سعر البيع</span><b>${formatMoney(item.price || 0)} ${escapeUiText(saleCurrency)}</b></div>
                 <div class="item-row-detail item-row-total"><span>قيمة الكمية بالتكلفة</span><b>${formatMoney(inventoryCost)} ${escapeUiText(costCurrency)}</b></div>
                 <div class="item-row-actions">
-                    ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editWarehouseItemQuantity('${item.id}')"><i class="fa-solid fa-pen"></i> تعديل الكمية</button>` : ''}
+                    ${canEditRecord() && isBranchAllowedForOperation(item.branchId || 'main_branch', 'warehouseTab') ? `<button type="button" class="btn btn-primary btn-sm" onclick="editWarehouseItem('${item.id}')"><i class="fa-solid fa-pen-to-square"></i> تعديل بيانات الصنف والمجموعة</button>` : ''}
+                    ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editWarehouseItemQuantity('${item.id}')"><i class="fa-solid fa-cubes-stacked"></i> تعديل الكمية فقط</button>` : ''}
                     ${canDeleteRecord() && sourceKnown ? `<button type="button" class="btn btn-warning btn-sm" onclick="removeWarehouseItemSource('${item.id}')"><i class="fa-solid fa-link-slash"></i> إزالة مصدر التوريد</button>` : ''}
                     ${(!canEditRecord() && !canDeleteRecord()) ? '<span class="item-list-readonly">عرض فقط</span>' : ''}
                 </div>
@@ -15348,7 +15444,7 @@ thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avo
 @media print{html,body{width:100%;height:auto}.employee-dues-pdf-sheet{width:100%;padding:3mm}.employee-dues-pdf-sheet:not(:last-child){break-after:page;page-break-after:always}.report-toolbar{display:none!important}}
 .report-toolbar{position:sticky;top:0;z-index:10;display:flex;justify-content:center;gap:8px;padding:10px;background:#174d32;margin:0 0 10px}.report-toolbar button{border:0;border-radius:8px;padding:9px 16px;background:#fff;color:#174d32;font:800 12px Tahoma;cursor:pointer}.report-toolbar .close{background:#e8edf0;color:#334155}
 
-        .item-list-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:4px 0 14px}
+        .item-list-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:4px 0 14px}
         .item-list-stat{background:#f7fafc;border:1px solid var(--border);border-radius:13px;padding:11px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
         .item-list-stat span{font-size:11px;color:var(--text-muted);font-weight:700}
         .item-list-stat strong{font-size:21px;color:var(--primary);font-weight:900;font-variant-numeric:tabular-nums}
