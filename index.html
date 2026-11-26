@@ -2083,6 +2083,10 @@
                     <i class="fa-solid fa-file-signature"></i>
                     <span>الأسناد</span>
                 </button>
+                <button class="nav-tab expense-tab" data-menu-key="managerWithdrawalsTab" onclick="openFullPage('managerWithdrawalsTab')">
+                    <i class="fa-solid fa-money-bill-transfer"></i>
+                    <span>مسحوبات المدراء</span>
+                </button>
                 <button class="nav-tab" data-menu-key="cashboxTab" onclick="openFullPage('cashboxTab')">
                     <i class="fa-solid fa-vault"></i>
                     <span>الصندوق</span>
@@ -3114,6 +3118,87 @@
         </section>
 
         <!-- 5. صفحة العملاء وكشف الحساب الكامل -->
+        <!-- مسحوبات المدراء: سجل مستقل يؤثر على رصيد الصندوق وكشف المدير -->
+        <section id="managerWithdrawalsTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title" style="color:var(--danger);"><i class="fa-solid fa-money-bill-transfer"></i> مسحوبات المدراء</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+            </div>
+            <div class="employee-permission-note" style="margin-bottom:12px;">
+                سجل مستقل لكل مبلغ يسحبه المدير أو المشرف من الصندوق. تُخصم المسحوبات من رصيد الصندوق وتظهر في كشف الصندوق وكشف حساب المدير، لكنها لا تُسجل كمصروف تشغيلي ولا تُنقص الأرباح تلقائياً.
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span id="managerWithdrawalFormTitle"><i class="fa-solid fa-circle-plus"></i> تسجيل مسحوبة مدير جديدة</span></div>
+                <div id="managerWithdrawalEditBanner" class="employee-permission-note hidden" style="display:none;margin-bottom:12px;border-right:4px solid #d97706;background:#fff8e8;">
+                    أنت تعدّل مسحوبة محفوظة. بعد الحفظ ستُحدّث أرصدة الصندوق وكشف المدير تلقائياً.
+                    <button type="button" class="btn btn-outline btn-sm" onclick="cancelManagerWithdrawalEdit()" style="margin-right:8px;">إلغاء التعديل</button>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label for="managerWithdrawalDate">تاريخ السحب</label>
+                        <input type="date" id="managerWithdrawalDate" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="managerWithdrawalManager">المدير / المشرف المستلم</label>
+                        <select id="managerWithdrawalManager" class="form-control"><option value="">اختر المدير</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="managerWithdrawalCashbox">الصندوق الذي تم السحب منه</label>
+                        <select id="managerWithdrawalCashbox" class="form-control"><option value="">اختر الصندوق</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="managerWithdrawalCurrency">العملة</label>
+                        <select id="managerWithdrawalCurrency" class="form-control">
+                            <option value="YER">ريال يمني (YER)</option>
+                            <option value="SAR">ريال سعودي (SAR)</option>
+                            <option value="USD">دولار أمريكي (USD)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="managerWithdrawalAmount">المبلغ المسحوب</label>
+                        <input type="number" id="managerWithdrawalAmount" class="form-control num-input" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="managerWithdrawalNote">البيان / سبب السحب</label>
+                        <input type="text" id="managerWithdrawalNote" class="form-control" placeholder="اكتب سبب أو ملاحظة السحب">
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button type="button" id="saveManagerWithdrawalBtn" class="btn btn-primary" onclick="saveManagerWithdrawal()"><i class="fa-solid fa-floppy-disk"></i> حفظ المسحوبة</button>
+                    <button type="button" id="cancelManagerWithdrawalBtn" class="btn btn-outline hidden" onclick="cancelManagerWithdrawalEdit()">إلغاء التعديل</button>
+                </div>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-chart-column"></i> إجمالي مسحوبات المدراء حسب العملة</span></div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>المدير / المشرف</th><th>الريال اليمني</th><th>الريال السعودي</th><th>الدولار</th><th>عدد الحركات</th></tr></thead>
+                        <tbody id="managerWithdrawalsSummaryBody"><tr><td colspan="5">لا توجد مسحوبات مسجلة</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-file-lines"></i> كشف حساب مسحوبات المدراء</span></div>
+                <div class="grid-3" style="align-items:end;">
+                    <div class="form-group"><label for="managerWithdrawalsFilterManager">المدير / المشرف</label><select id="managerWithdrawalsFilterManager" class="form-control" onchange="renderManagerWithdrawals()"><option value="">جميع المدراء</option></select></div>
+                    <div class="form-group"><label for="managerWithdrawalsFrom">من تاريخ</label><input type="date" id="managerWithdrawalsFrom" class="form-control" onchange="renderManagerWithdrawals()"></div>
+                    <div class="form-group"><label for="managerWithdrawalsTo">إلى تاريخ</label><input type="date" id="managerWithdrawalsTo" class="form-control" onchange="renderManagerWithdrawals()"></div>
+                </div>
+                <div id="managerWithdrawalsFilterTotals" class="summary-strip" style="margin:8px 0 12px;"></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="printManagerWithdrawalsStatement()"><i class="fa-solid fa-print"></i> طباعة الكشف</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="resetManagerWithdrawalsFilters()"><i class="fa-solid fa-filter-circle-xmark"></i> إلغاء التصفية</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="reloadAllData(true)"><i class="fa-solid fa-rotate"></i> تحديث</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>التاريخ</th><th>المدير</th><th>الصندوق</th><th>البيان</th><th>العملة</th><th>المبلغ المسحوب</th><th>الرصيد التراكمي للمسحوبات</th><th>سجل بواسطة</th><th>إجراء</th></tr></thead>
+                        <tbody id="managerWithdrawalsTableBody"><tr><td colspan="9">لا توجد مسحوبات مسجلة</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <section id="customersTab" class="tab-content hidden">
             <div class="fullpage-topbar">
                 <div class="fullpage-title"><i class="fa-solid fa-users"></i> العملاء وكشف الحساب</div>
@@ -4139,6 +4224,7 @@
         { key: 'purchasesTab', label: 'الموردون والمصروفات' },
         { key: 'expenseEntryTab', label: 'تسجيل مصروف جديد' },
         { key: 'vouchersTab', label: 'الأسناد' },
+        { key: 'managerWithdrawalsTab', label: 'مسحوبات المدراء' },
         { key: 'cashboxTab', label: 'الصندوق' },
         { key: 'warehouseTab', label: 'جرد المخازن والفروع' },
         { key: 'itemListTab', label: 'قائمة الأصناف' },
@@ -4202,6 +4288,7 @@
         employeeExpenses: [],
         employeeDailyDisbursements: [],
         employeeProduction: [],
+        managerWithdrawals: [],
         warehouse: []
     };
 
@@ -5409,7 +5496,7 @@ function initMenuPermissionCheckboxes() {
             const match = MAIN_MENU_ITEMS.find(item => item.key === value || item.label === value);
             return match?.key || '';
         }).filter(Boolean);
-        const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab', 'trashTab'];
+        const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab', 'trashTab', 'managerWithdrawalsTab'];
         return [...new Set(resolved)].filter(key => !adminOnly.includes(key));
     }
 
@@ -5471,7 +5558,7 @@ function initMenuPermissionCheckboxes() {
     function applyHomeMenuPermissions() {
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-menu-key]').forEach(btn => {
             const key = btn.getAttribute('data-menu-key');
-            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab', 'trashTab'].includes(key);
+            const adminOnly = ['employeesTab', 'employeePermissionsTab', 'backupTab', 'trashTab', 'managerWithdrawalsTab'].includes(key);
             btn.classList.toggle('hidden', (adminOnly && !canManageUsers(currentUser)) || !canAccessMenu(key, currentUser));
         });
         document.querySelectorAll('#homeMenuContainer .nav-tab[data-inventory-hub]').forEach(btn => {
@@ -6037,7 +6124,7 @@ function initMenuPermissionCheckboxes() {
     }
 
     function openFullPage(tabId) {
-        if (['employeesTab', 'employeePermissionsTab', 'backupTab', 'trashTab'].includes(tabId) && !canManageUsers(currentUser)) {
+        if (['employeesTab', 'employeePermissionsTab', 'backupTab', 'trashTab', 'managerWithdrawalsTab'].includes(tabId) && !canManageUsers(currentUser)) {
             showToast('إدارة الموظفين والصلاحيات للمشرف العام والمدير فقط');
             return;
         }
@@ -6119,6 +6206,9 @@ function initMenuPermissionCheckboxes() {
         }
         if (tabId === 'userDeletionTab') {
             renderUserDeletionTable();
+        }
+        if (tabId === 'managerWithdrawalsTab') {
+            prepareManagerWithdrawalsPage();
         }
         if (tabId === 'employeeExpensesTab') {
             const dailyDate = document.getElementById('employeeDailyDisbursementDate');
@@ -6629,8 +6719,11 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const dailyEmployeeDisbursementsOut = (state.employeeDailyDisbursements || [])
             .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
             .reduce((s, p) => s + Number(p.amount || 0), 0);
+        const managerWithdrawalsOut = (state.managerWithdrawals || [])
+            .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
+            .reduce((s, p) => s + Number(p.amount || 0), 0);
 
-        return opening + cashSales + receipts - payments - purchasesOut - staffPaymentsOut - dailyEmployeeDisbursementsOut;
+        return opening + cashSales + receipts - payments - purchasesOut - staffPaymentsOut - dailyEmployeeDisbursementsOut - managerWithdrawalsOut;
     }
 
     function getVoucherCurrency(voucher) {
@@ -6701,7 +6794,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
 
     async function reloadAllData(showMsg = false) {
         try {
-            const [branches, cashboxes, customers, suppliers, invoices, quotations, purchases, vouchers, employees, staff, employeeExpenses, employeeDailyDisbursements, employeeProduction, warehouse] = await Promise.all([
+            const [branches, cashboxes, customers, suppliers, invoices, quotations, purchases, vouchers, employees, staff, employeeExpenses, employeeDailyDisbursements, employeeProduction, managerWithdrawals, warehouse] = await Promise.all([
                 loadCollection('branches'),
                 loadCollection('cashboxes'),
                 loadCollection('customers'),
@@ -6715,9 +6808,10 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
                 loadCollection('employeeExpenses'),
                 loadOptionalCollection('employeeDailyDisbursements'),
                 loadCollection('employeeProduction'),
+                loadOptionalCollection('managerWithdrawals'),
                 loadCollection('warehouse')
             ]);
-            state = { branches, cashboxes, customers, suppliers, invoices, quotations, purchases, vouchers, employees, staff, employeeExpenses, employeeDailyDisbursements, employeeProduction, warehouse };
+            state = { branches, cashboxes, customers, suppliers, invoices, quotations, purchases, vouchers, employees, staff, employeeExpenses, employeeDailyDisbursements, employeeProduction, managerWithdrawals, warehouse };
             if (currentUser && currentUser.id) {
                 const updatedMe = state.employees.find(e => e.id === currentUser.id);
                 if (updatedMe) currentUser = updatedMe;
@@ -6849,6 +6943,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         renderSupplierBalances();
         if (!document.getElementById('expenseEntryTab')?.classList.contains('hidden')) { filterPurchaseCashboxes(); renderPurchasesTable(); }
         renderVouchersTable();
+        renderManagerWithdrawals();
         renderCashboxesList();
         renderBranchesChips();
         renderWarehouseTable();
@@ -7875,6 +7970,243 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         } finally { isBusy = false; btn.disabled = false; }
     }
 
+
+    // ==================== مسحوبات المدراء ====================
+    let managerWithdrawalEditId = null;
+
+    function getManagerAccounts() {
+        return (state.employees || []).filter(account => account && (account.role === 'admin' || account.role === 'supervisor'))
+            .slice().sort((a, b) => getAccountDisplayName(a).localeCompare(getAccountDisplayName(b), 'ar'));
+    }
+
+    function populateManagerWithdrawalSelects(preserve = true) {
+        const managerSelect = document.getElementById('managerWithdrawalManager');
+        const filterSelect = document.getElementById('managerWithdrawalsFilterManager');
+        const cashboxSelect = document.getElementById('managerWithdrawalCashbox');
+        if (!managerSelect || !filterSelect || !cashboxSelect) return;
+        const oldManager = preserve ? managerSelect.value : '';
+        const oldFilter = preserve ? filterSelect.value : '';
+        const oldCashbox = preserve ? cashboxSelect.value : '';
+        const managers = getManagerAccounts();
+        managerSelect.innerHTML = '<option value="">اختر المدير / المشرف</option>' + managers.map(account =>
+            `<option value="${escapeUiText(account.id)}">${escapeUiText(getAccountDisplayName(account))} — ${escapeUiText(roleLabel(account.role))}</option>`
+        ).join('');
+        filterSelect.innerHTML = '<option value="">جميع المدراء</option>' + managers.map(account =>
+            `<option value="${escapeUiText(account.id)}">${escapeUiText(getAccountDisplayName(account))}</option>`
+        ).join('');
+        cashboxSelect.innerHTML = '<option value="">اختر الصندوق</option>' + (state.cashboxes || []).map(box =>
+            `<option value="${escapeUiText(box.id)}">${escapeUiText(box.name || 'صندوق')}</option>`
+        ).join('');
+        if (managers.some(item => item.id === oldManager)) managerSelect.value = oldManager;
+        else if (currentUser && managers.some(item => item.id === currentUser.id)) managerSelect.value = currentUser.id;
+        if (managers.some(item => item.id === oldFilter) || oldFilter === '') filterSelect.value = oldFilter;
+        if ((state.cashboxes || []).some(item => item.id === oldCashbox)) cashboxSelect.value = oldCashbox;
+        else if (state.cashboxes?.length) cashboxSelect.selectedIndex = 1;
+    }
+
+    function prepareManagerWithdrawalsPage() {
+        if (!canManageUsers(currentUser)) { showToast('مسحوبات المدراء متاحة للمدير والمشرف العام فقط'); goBackHome(); return; }
+        populateManagerWithdrawalSelects(true);
+        const date = document.getElementById('managerWithdrawalDate');
+        if (date && !date.value) date.value = getLocalDateKey();
+        renderManagerWithdrawals();
+    }
+
+    function resetManagerWithdrawalForm() {
+        managerWithdrawalEditId = null;
+        const date = document.getElementById('managerWithdrawalDate');
+        if (date) date.value = getLocalDateKey();
+        const manager = document.getElementById('managerWithdrawalManager');
+        if (manager && currentUser && getManagerAccounts().some(item => item.id === currentUser.id)) manager.value = currentUser.id;
+        const cashbox = document.getElementById('managerWithdrawalCashbox');
+        if (cashbox && state.cashboxes?.length) cashbox.selectedIndex = 1;
+        const currency = document.getElementById('managerWithdrawalCurrency'); if (currency) currency.value = 'YER';
+        const amount = document.getElementById('managerWithdrawalAmount'); if (amount) amount.value = '';
+        const note = document.getElementById('managerWithdrawalNote'); if (note) note.value = '';
+        const title = document.getElementById('managerWithdrawalFormTitle'); if (title) title.innerHTML = '<i class="fa-solid fa-circle-plus"></i> تسجيل مسحوبة مدير جديدة';
+        document.getElementById('managerWithdrawalEditBanner')?.classList.add('hidden');
+        const cancel = document.getElementById('cancelManagerWithdrawalBtn'); if (cancel) cancel.classList.add('hidden');
+        const save = document.getElementById('saveManagerWithdrawalBtn'); if (save) save.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ المسحوبة';
+    }
+
+    function cancelManagerWithdrawalEdit() { resetManagerWithdrawalForm(); }
+
+    async function saveManagerWithdrawal() {
+        if (!canManageUsers(currentUser) || isBusy) { showToast('تسجيل مسحوبات المدراء للمدير والمشرف العام فقط'); return; }
+        const managerId = document.getElementById('managerWithdrawalManager')?.value || '';
+        const cashboxId = document.getElementById('managerWithdrawalCashbox')?.value || '';
+        const currency = document.getElementById('managerWithdrawalCurrency')?.value || 'YER';
+        const amount = Number(document.getElementById('managerWithdrawalAmount')?.value || 0);
+        const date = document.getElementById('managerWithdrawalDate')?.value || '';
+        const note = String(document.getElementById('managerWithdrawalNote')?.value || '').trim();
+        const manager = getManagerAccounts().find(item => item.id === managerId);
+        const cashbox = (state.cashboxes || []).find(item => item.id === cashboxId);
+        if (!manager) { showToast('اختر المدير أو المشرف الذي استلم المبلغ'); return; }
+        if (!cashbox) { showToast('اختر الصندوق الذي خرج منه المبلغ'); return; }
+        if (!date) { showToast('حدد تاريخ السحب'); return; }
+        if (!CURRENCY_CODES.includes(currency)) { showToast('اختر عملة صحيحة'); return; }
+        if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
+        if (!note) { showToast('اكتب بياناً أو سبباً للسحب حتى يظهر في كشف الحساب'); return; }
+        const payload = {
+            date, managerId: manager.id, managerName: getAccountDisplayName(manager), managerRole: manager.role,
+            cashboxId: cashbox.id, cashboxName: cashbox.name || 'الصندوق', currency, amount,
+            note, createdBy: managerWithdrawalEditId ? undefined : getAccountDisplayName(currentUser),
+            createdById: managerWithdrawalEditId ? undefined : currentUser.id,
+            updatedBy: getAccountDisplayName(currentUser), updatedAt: new Date()
+        };
+        isBusy = true;
+        const button = document.getElementById('saveManagerWithdrawalBtn');
+        if (button) button.disabled = true;
+        try {
+            if (managerWithdrawalEditId) {
+                const previous = (state.managerWithdrawals || []).find(item => item.id === managerWithdrawalEditId);
+                if (!previous) throw new Error('WITHDRAWAL_NOT_FOUND');
+                delete payload.createdBy; delete payload.createdById;
+                await db.collection('managerWithdrawals').doc(String(managerWithdrawalEditId)).update(payload);
+                showToast('تم تعديل المسحوبة وتحديث رصيد الصندوق');
+            } else {
+                payload.createdAt = new Date();
+                const doc = await db.collection('managerWithdrawals').add(payload);
+                payload.id = doc.id;
+                showToast('تم تسجيل المسحوبة وخصمها من رصيد الصندوق');
+            }
+            await reloadAllData(false);
+            resetManagerWithdrawalForm();
+            populateManagerWithdrawalSelects(true);
+            renderManagerWithdrawals();
+        } catch (error) {
+            console.error('Save manager withdrawal error:', error);
+            showToast(error?.message === 'WITHDRAWAL_NOT_FOUND' ? 'المسحوبة لم تعد موجودة' : 'تعذر حفظ المسحوبة؛ تحقق من اتصال وصلاحيات قاعدة البيانات');
+        } finally {
+            isBusy = false;
+            if (button) button.disabled = false;
+        }
+    }
+
+    function editManagerWithdrawal(id) {
+        if (!canManageUsers(currentUser)) { showToast('لا تملك صلاحية تعديل المسحوبات'); return; }
+        const item = (state.managerWithdrawals || []).find(row => String(row.id) === String(id));
+        if (!item) { showToast('لم يتم العثور على المسحوبة'); return; }
+        populateManagerWithdrawalSelects(true);
+        managerWithdrawalEditId = item.id;
+        document.getElementById('managerWithdrawalDate').value = item.date || getLocalDateKey();
+        document.getElementById('managerWithdrawalManager').value = item.managerId || '';
+        document.getElementById('managerWithdrawalCashbox').value = item.cashboxId || '';
+        document.getElementById('managerWithdrawalCurrency').value = item.currency || 'YER';
+        document.getElementById('managerWithdrawalAmount').value = Number(item.amount || 0);
+        document.getElementById('managerWithdrawalNote').value = item.note || '';
+        document.getElementById('managerWithdrawalFormTitle').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> تعديل مسحوبة مدير';
+        document.getElementById('managerWithdrawalEditBanner')?.classList.remove('hidden');
+        document.getElementById('cancelManagerWithdrawalBtn')?.classList.remove('hidden');
+        document.getElementById('saveManagerWithdrawalBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ التعديل';
+        document.getElementById('managerWithdrawalsTab').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('managerWithdrawalAmount')?.focus();
+    }
+
+    async function deleteManagerWithdrawal(id) {
+        if (!canManageUsers(currentUser) || isBusy) { showToast('لا تملك صلاحية حذف المسحوبات'); return; }
+        const item = (state.managerWithdrawals || []).find(row => String(row.id) === String(id));
+        if (!item) return;
+        if (!confirm(`هل تريد حذف مسحوبة ${item.managerName || 'المدير'} بمبلغ ${formatMoney(item.amount)} ${item.currency || 'YER'}؟ ستعود قيمتها إلى رصيد الصندوق، ويمكن استعادتها من سلة المهملات خلال 7 أيام.`)) return;
+        isBusy = true;
+        try {
+            await moveRecordToTrash('managerWithdrawals', id);
+            await reloadAllData(false);
+            showToast('تم حذف المسحوبة وإرجاع أثرها إلى رصيد الصندوق');
+        } catch (error) {
+            console.error('Delete manager withdrawal error:', error);
+            showToast('تعذر حذف المسحوبة');
+        } finally { isBusy = false; }
+    }
+
+    function resetManagerWithdrawalsFilters() {
+        const manager = document.getElementById('managerWithdrawalsFilterManager'); if (manager) manager.value = '';
+        const from = document.getElementById('managerWithdrawalsFrom'); if (from) from.value = '';
+        const to = document.getElementById('managerWithdrawalsTo'); if (to) to.value = '';
+        renderManagerWithdrawals();
+    }
+
+    function getFilteredManagerWithdrawals() {
+        const managerId = document.getElementById('managerWithdrawalsFilterManager')?.value || '';
+        const from = document.getElementById('managerWithdrawalsFrom')?.value || '';
+        const to = document.getElementById('managerWithdrawalsTo')?.value || '';
+        return (state.managerWithdrawals || []).filter(item =>
+            (!managerId || String(item.managerId || '') === managerId) &&
+            (!from || String(item.date || '') >= from) && (!to || String(item.date || '') <= to)
+        );
+    }
+
+    function managerWithdrawalTotals(rows) {
+        const totals = { YER: 0, SAR: 0, USD: 0 };
+        rows.forEach(item => { const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER'; totals[code] += Number(item.amount || 0); });
+        return totals;
+    }
+
+    function renderManagerWithdrawals() {
+        const tableBody = document.getElementById('managerWithdrawalsTableBody');
+        if (!tableBody) return;
+        const filtered = getFilteredManagerWithdrawals();
+        const sortedAsc = filtered.slice().sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.id || '').localeCompare(String(b.id || '')));
+        const running = new Map();
+        sortedAsc.forEach(item => {
+            const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+            const key = `${item.managerId || item.managerName || 'manager'}|${code}`;
+            const next = (running.get(key) || 0) + Number(item.amount || 0);
+            running.set(key, next);
+            item.__runningManagerWithdrawal = next;
+        });
+        const managerFilter = document.getElementById('managerWithdrawalsFilterManager')?.value || '';
+        const totalsEl = document.getElementById('managerWithdrawalsFilterTotals');
+        if (totalsEl) {
+            const totals = managerWithdrawalTotals(filtered);
+            totalsEl.innerHTML = CURRENCY_CODES.map(code => `<div class="mini-stat"><div class="mini-stat-label">إجمالي المسحوبات — ${code}</div><div class="mini-stat-val mono" style="color:var(--danger);">${formatMoney(totals[code])} ${code}</div></div>`).join('');
+        }
+        const managers = getManagerAccounts();
+        const summaryBody = document.getElementById('managerWithdrawalsSummaryBody');
+        if (summaryBody) {
+            const grouped = new Map();
+            (state.managerWithdrawals || []).forEach(item => {
+                const id = String(item.managerId || item.managerName || 'unknown');
+                if (!grouped.has(id)) grouped.set(id, { name: item.managerName || 'مدير غير محدد', YER: 0, SAR: 0, USD: 0, count: 0 });
+                const row = grouped.get(id); const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+                row[code] += Number(item.amount || 0); row.count++;
+            });
+            summaryBody.innerHTML = grouped.size ? Array.from(grouped.values()).sort((a,b) => a.name.localeCompare(b.name, 'ar')).map(row => {
+                return `<tr><td><strong>${escapeUiText(row.name)}</strong></td><td class="mono">${formatMoney(row.YER)} YER</td><td class="mono">${formatMoney(row.SAR)} SAR</td><td class="mono">${formatMoney(row.USD)} USD</td><td>${row.count}</td></tr>`;
+            }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">لا توجد مسحوبات مسجلة</td></tr>';
+        }
+        tableBody.innerHTML = filtered.length ? filtered.slice().sort((a,b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).map(item => {
+            const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+            const managerLabel = item.managerName || managers.find(account => account.id === item.managerId)?.fullName || 'مدير غير محدد';
+            const cashboxLabel = item.cashboxName || state.cashboxes.find(box => box.id === item.cashboxId)?.name || '—';
+            return `<tr><td class="mono">${escapeUiText(item.date || '-')}</td><td><strong>${escapeUiText(managerLabel)}</strong></td><td>${escapeUiText(cashboxLabel)}</td><td>${escapeUiText(item.note || 'مسحوبة مدير')}</td><td>${code}</td><td class="mono" style="color:var(--danger);font-weight:800;">${formatMoney(item.amount)} ${code}</td><td class="mono">${formatMoney(item.__runningManagerWithdrawal || 0)} ${code}</td><td>${escapeUiText(item.createdBy || '—')}</td><td style="white-space:nowrap;">${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editManagerWithdrawal('${item.id}')" title="تعديل"><i class="fa-solid fa-pen"></i></button>` : ''} ${canDeleteRecord() ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteManagerWithdrawal('${item.id}')" title="حذف"><i class="fa-solid fa-trash"></i></button>` : ''}</td></tr>`;
+        }).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">لا توجد مسحوبات ضمن التصفية المحددة</td></tr>';
+        const title = document.getElementById('managerWithdrawalsStatementTitle');
+        if (title) title.textContent = managerFilter ? `كشف مسحوبات ${managers.find(item => item.id === managerFilter) ? getAccountDisplayName(managers.find(item => item.id === managerFilter)) : 'المدير'}` : 'كشف مسحوبات جميع المدراء';
+    }
+
+    function printManagerWithdrawalsStatement() {
+        if (!canManageUsers(currentUser)) { showToast('طباعة مسحوبات المدراء للمدير والمشرف العام فقط'); return; }
+        const filtered = getFilteredManagerWithdrawals().slice().sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')));
+        const managerId = document.getElementById('managerWithdrawalsFilterManager')?.value || '';
+        const managers = getManagerAccounts();
+        const managerLabel = managerId ? (managers.find(item => item.id === managerId) ? getAccountDisplayName(managers.find(item => item.id === managerId)) : 'مدير') : 'جميع المدراء';
+        const totals = managerWithdrawalTotals(filtered);
+        const running = new Map();
+        const rows = filtered.map((item, index) => {
+            const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+            const key = `${item.managerId || item.managerName || 'manager'}|${code}`;
+            const next = (running.get(key) || 0) + Number(item.amount || 0);
+            running.set(key, next);
+            return `<tr><td>${index + 1}</td><td>${escapeUiText(item.date || '-')}</td><td>${escapeUiText(item.managerName || '-')}</td><td>${escapeUiText(item.cashboxName || '-')}</td><td>${escapeUiText(item.note || '-')}</td><td>${formatMoney(item.amount)} ${code}</td><td>${formatMoney(next)} ${code}</td><td>${escapeUiText(item.createdBy || '-')}</td></tr>`;
+        }).join('');
+        const totalsRows = CURRENCY_CODES.map(code => `<tr><th>إجمالي المسحوبات — ${code}</th><td class="mono">${formatMoney(totals[code])} ${code}</td></tr>`).join('');
+        const section = inventoryReportHeader('كشف حساب مسحوبات المدراء', `المدير: ${managerLabel} · الفترة: ${document.getElementById('managerWithdrawalsFrom')?.value || 'من البداية'} إلى ${document.getElementById('managerWithdrawalsTo')?.value || 'اليوم'} · عدد الحركات: ${filtered.length}`)
+            + `<table><thead><tr><th>م</th><th>التاريخ</th><th>المدير</th><th>الصندوق</th><th>البيان</th><th>المبلغ</th><th>الرصيد التراكمي للمسحوبات</th><th>سجل بواسطة</th></tr></thead><tbody>${rows || '<tr><td colspan="8">لا توجد مسحوبات مسجلة</td></tr>'}</tbody></table><table style="width:55%;margin-right:auto;margin-top:18px;"><tbody>${totalsRows}</tbody></table><div style="margin-top:26px;display:flex;justify-content:space-between;font-size:12px;"><span>توقيع المدير: __________________</span><span>توقيع المستلم: __________________</span></div></section>`;
+        inventoryPrintShell('كشف حساب مسحوبات المدراء', [section]);
+    }
+
+
     function renderStats() {
         const visibleInvoices = state.invoices.filter(recordIsInUserBranch);
         const visiblePurchases = state.purchases.filter(recordIsInUserBranch);
@@ -7977,7 +8309,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
     // سلة المهملات: نحفظ السجل الأصلي بمعرّفه ومجموعته ثم نحذفه من مجموعته في معاملة واحدة.
     const TRASH_RETENTION_DAYS = 7;
     const TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-    const TRASH_ALLOWED_COLLECTIONS = new Set(['suppliers','purchases','invoices','quotations','vouchers','branches','warehouse','customers','employees','staff','employeeExpenses','employeeDailyDisbursements','employeeProduction']);
+    const TRASH_ALLOWED_COLLECTIONS = new Set(['suppliers','purchases','invoices','quotations','vouchers','branches','warehouse','customers','employees','staff','employeeExpenses','employeeDailyDisbursements','employeeProduction','managerWithdrawals']);
 
     function getTrashRecordTitle(collectionName, data = {}) {
         const map = {
@@ -7987,7 +8319,8 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
             employees: `حساب دخول ${data.fullName || data.username || ''}`, staff: data.fullName || 'ملف موظف',
             employeeExpenses: data.note || `مستحق / سلفة ${data.staffName || ''}`,
             employeeDailyDisbursements: `صرفة ${data.staffName || 'موظف'}`,
-            employeeProduction: `إنتاج ${data.staffName || 'موظف'} — ${data.workName || ''}`
+            employeeProduction: `إنتاج ${data.staffName || 'موظف'} — ${data.workName || ''}`,
+            managerWithdrawals: `مسحوبة ${data.managerName || 'مدير'} — ${Number(data.amount || 0).toLocaleString('en-US')} ${data.currency || 'YER'}`
         };
         return String(map[collectionName] || 'سجل محذوف').trim();
     }
@@ -8083,7 +8416,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
                 const expires = trashDateValue(item.expiresAt) || trashDateValue(item.deletedAt) + TRASH_RETENTION_MS;
                 const remainingDays = Math.max(0, Math.ceil((expires - Date.now()) / (24 * 60 * 60 * 1000)));
                 const recordLabel = escapeUiText(item.title || getTrashRecordTitle(item.originalCollection, item.originalData || {}));
-                const collectionLabel = escapeUiText(({suppliers:'الموردون',customers:'العملاء',branches:'الفروع',warehouse:'المخزون',invoices:'فواتير المبيعات',vouchers:'السندات',purchases:'الموردون والمصروفات',employees:'حسابات الدخول',staff:'ملفات الموظفين',employeeExpenses:'مصروفات الموظفين',employeeDailyDisbursements:'الصرف اليومي',employeeProduction:'الإنتاج'})[item.originalCollection] || item.originalCollection || 'سجل');
+                const collectionLabel = escapeUiText(({suppliers:'الموردون',customers:'العملاء',branches:'الفروع',warehouse:'المخزون',invoices:'فواتير المبيعات',vouchers:'السندات',purchases:'الموردون والمصروفات',employees:'حسابات الدخول',staff:'ملفات الموظفين',employeeExpenses:'مصروفات الموظفين',employeeDailyDisbursements:'الصرف اليومي',employeeProduction:'الإنتاج',managerWithdrawals:'مسحوبات المدراء'})[item.originalCollection] || item.originalCollection || 'سجل');
                 const amount = Number(item.originalData?.amount || item.originalData?.netTotal || 0);
                 const currency = escapeUiText(item.originalData?.currency || 'YER');
                 return `<article class="trash-bin-item"><div><div class="trash-bin-item-title">${recordLabel}</div><div class="trash-bin-item-meta"><span class="trash-pill">${collectionLabel}</span><span>حُذف: ${escapeUiText(trashDateLabel(item.deletedAt))}</span><span>بواسطة: ${escapeUiText(item.deletedBy || '-')}</span>${amount ? `<span>المبلغ: ${formatMoney(amount)} ${currency}</span>` : ''}<span>الحذف النهائي بعد: ${remainingDays} يوم</span></div></div><div class="trash-bin-item-actions"><button type="button" class="btn btn-primary btn-sm" onclick="restoreTrashItem('${item.id}')"><i class="fa-solid fa-rotate-left"></i> استعادة</button><button type="button" class="btn btn-danger btn-sm" onclick="permanentlyDeleteTrashItem('${item.id}')"><i class="fa-solid fa-trash-can"></i> حذف نهائي</button></div></article>`;
@@ -10665,6 +10998,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             .forEach(item => movements.push({ date: item.date || '', type: item.source === 'dailyDisbursementAdvance' ? 'سلفة مخصومة من مستحق موظف' : 'دفعة من مستحق موظف', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
         (state.employeeDailyDisbursements || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
             .forEach(item => movements.push({ date: item.date || '', type: 'صرفة يومية لعامل', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
+        (state.managerWithdrawals || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
+            .forEach(item => movements.push({ date: item.date || '', type: 'مسحوبة مدير', note: `${item.managerName || 'مدير'} — ${item.note || 'مسحوبة مدير'}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || item.managerName || '' }));
         return movements.filter(item => item.date).sort((a,b) => String(a.date).localeCompare(String(b.date)));
     }
 
@@ -15274,7 +15609,7 @@ window.addEventListener('load',function(){
     const SYSTEM_BACKUP_VERSION = 1;
     const SYSTEM_BACKUP_COLLECTIONS = [
         'branches', 'cashboxes', 'customers', 'suppliers', 'invoices', 'quotations', 'purchases',
-        'vouchers', 'employees', 'staff', 'employeeExpenses', 'employeeDailyDisbursements', 'employeeProduction', 'warehouse', 'appSettings', 'recycleBin'
+        'vouchers', 'employees', 'staff', 'employeeExpenses', 'employeeDailyDisbursements', 'employeeProduction', 'managerWithdrawals', 'warehouse', 'appSettings', 'recycleBin'
     ];
 
     function encodeBackupValue(value) {
