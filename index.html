@@ -3892,23 +3892,33 @@
                     </div>
                 </div>
 
-                <div class="card-box">
-                    <div class="card-title"><span><i class="fa-solid fa-list-check"></i> ملخص حسابات الدخول والصلاحيات</span></div>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>حساب الدخول</th>
-                                    <th>الأقسام المسموحة</th>
-                                    <th>التعديل</th>
-                                    <th>الحذف</th>
-                                    <th>مؤشرات الشاشة</th>
-                                    <th>المخازن</th>
-                                    <th>إدارة</th>
-                                </tr>
-                            </thead>
-                            <tbody id="employeePermissionsTableBody"></tbody>
-                        </table>
+                <div class="card-box" id="allUserAccountsCard">
+                    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                        <span><i class="fa-solid fa-users-gear"></i> إدارة جميع المستخدمين</span>
+                        <button type="button" id="toggleAllUserAccountsBtn" class="btn btn-primary btn-sm" onclick="toggleAllUserAccountsPanel()">
+                            <i class="fa-solid fa-users"></i> عرض جميع المستخدمين
+                        </button>
+                    </div>
+                    <div id="allUserAccountsPanel" class="hidden">
+                        <div class="employee-permission-note" style="margin-bottom:10px;">تظهر هنا جميع حسابات الدخول، بما فيها المدير العام والمشرفون والموظفون. يمكنك تعديل كلمة مرور أي حساب أو إيقافه وتشغيله. لا يمكن إيقاف الحساب الذي تستخدمه حالياً، ولا إيقاف آخر حساب بصلاحية مدير/مشرف حتى لا تفقد الوصول للإدارة.</div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>حساب الدخول</th>
+                                        <th>الأقسام المسموحة</th>
+                                        <th>التعديل</th>
+                                        <th>الحذف</th>
+                                        <th>مؤشرات الشاشة</th>
+                                        <th>المخازن</th>
+                                        <th>الحالة</th>
+                                        <th>كلمة المرور</th>
+                                        <th>تشغيل / إيقاف</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeePermissionsTableBody"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4857,7 +4867,7 @@ function initMenuPermissionCheckboxes() {
     function refreshPermissionAccountIdentity() {
         const info = document.getElementById('permissionSelectedAccountInfo');
         const id = document.getElementById('permissionEmployeeSelect')?.value || '';
-        const account = state.employees.find(item => item.id === id);
+        const account = getSecurityAccountsForManagement().find(item => item.id === id);
         if (!info) return;
         if (!account) {
             info.classList.add('hidden');
@@ -4878,15 +4888,43 @@ function initMenuPermissionCheckboxes() {
         info.style.borderColor = staff ? 'var(--border)' : '#f0c36d';
     }
 
+    function getSecurityAccountsForManagement() {
+        const accounts = Array.isArray(state.employees) ? state.employees.slice() : [];
+        // حساب المدير العام الأساسي قد يكون حساب الدخول الحالي المولّد عند أول تشغيل
+        // ولم يصل بعد ضمن قراءة مجموعة employees؛ أظهره في القائمة أيضاً.
+        if (currentUser?.id && !accounts.some(account => String(account.id) === String(currentUser.id))) {
+            accounts.push(currentUser);
+        }
+        return accounts.sort((a, b) => {
+            const rank = account => (account.role === 'admin' || account.id === 'emp_admin' || account.username === ADMIN_USER) ? 0 : account.role === 'supervisor' ? 1 : 2;
+            return rank(a) - rank(b) || String(a.fullName || a.username || '').localeCompare(String(b.fullName || b.username || ''), 'ar');
+        });
+    }
+
+    function toggleAllUserAccountsPanel() {
+        const panel = document.getElementById('allUserAccountsPanel');
+        const button = document.getElementById('toggleAllUserAccountsBtn');
+        if (!panel || !button) return;
+        const opening = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !opening);
+        const count = getSecurityAccountsForManagement().length;
+        button.innerHTML = opening
+            ? `<i class="fa-solid fa-eye-slash"></i> إخفاء قائمة المستخدمين (${count})`
+            : `<i class="fa-solid fa-users"></i> عرض جميع المستخدمين (${count})`;
+        if (opening) renderEmployeePermissionsTable();
+    }
+
     function populateEmployeePermissionOptions() {
         const sel = document.getElementById('permissionEmployeeSelect');
         if (!sel) return;
         const previous = sel.value;
-        const eligible = state.employees.filter(account => account.id !== 'emp_admin' && account.username !== ADMIN_USER);
-        sel.innerHTML = '<option value="">اختر اسم الموظف</option>' + eligible.map(account => {
+        const eligible = getSecurityAccountsForManagement();
+        sel.innerHTML = '<option value="">اختر حساب الدخول</option>' + eligible.map(account => {
             const staff = getStaffLinkedToAccount(account);
-            const displayName = staff?.fullName || account.fullName || 'اسم غير مسجل';
-            const label = `${displayName} — اسم الدخول: ${account.username || account.id} — ${roleLabel(account.role)}`;
+            const displayName = account.id === 'emp_admin' || account.username === ADMIN_USER
+                ? 'المدير العام'
+                : (staff?.fullName || account.fullName || 'اسم غير مسجل');
+            const label = `${displayName} — اسم الدخول: ${account.username || account.id} — ${roleLabel(account.role)}${account.active === false ? ' — موقوف' : ''}`;
             return `<option value="${escapeUiText(account.id)}">${escapeUiText(label)}</option>`;
         }).join('');
         if (previous && eligible.some(account => account.id === previous)) sel.value = previous;
@@ -4996,12 +5034,12 @@ function initMenuPermissionCheckboxes() {
 
     function loadEmployeePermissions() {
         const empId = document.getElementById('permissionEmployeeSelect')?.value || '';
-        const emp = state.employees.find(e => e.id === empId);
+        const emp = getSecurityAccountsForManagement().find(e => e.id === empId);
         refreshPermissionAccountIdentity();
         const editor = document.getElementById('permissionEditorBox');
         const fullNote = document.getElementById('permissionFullAccessNote');
         const passwordBox = document.getElementById('permissionPasswordBox');
-        const canEditAccount = Boolean(emp && emp.id !== 'emp_admin' && emp.username !== ADMIN_USER);
+        const canEditAccount = Boolean(emp);
         passwordBox?.classList.toggle('hidden', !canEditAccount);
         const pass1 = document.getElementById('permissionNewPassword');
         const pass2 = document.getElementById('permissionConfirmPassword');
@@ -5134,11 +5172,8 @@ function initMenuPermissionCheckboxes() {
     async function saveSelectedAccountPassword() {
         if (isBusy || !canManageUsers()) return;
         const empId = document.getElementById('permissionEmployeeSelect')?.value || '';
-        const account = state.employees.find(item => item.id === empId);
-        if (!account || account.id === 'emp_admin' || account.username === ADMIN_USER) {
-            showToast('اختر حساب موظف أو مشرف لتغيير كلمة مروره');
-            return;
-        }
+        const account = getSecurityAccountsForManagement().find(item => item.id === empId);
+        if (!account) { showToast('اختر حساب دخول لتغيير كلمة مروره'); return; }
         const password = document.getElementById('permissionNewPassword')?.value || '';
         const confirmPassword = document.getElementById('permissionConfirmPassword')?.value || '';
         if (password.length < 4) { showToast('كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل'); return; }
@@ -5150,15 +5185,19 @@ function initMenuPermissionCheckboxes() {
         try {
             if (!db || isDemoMode) throw new Error('FIRESTORE_UNAVAILABLE');
             const accountRef = db.collection('employees').doc(empId);
-            await accountRef.update({ password, passwordUpdatedAt: new Date().toISOString(), passwordUpdatedBy: currentUser?.username || currentUser?.id || 'admin' });
+            const { id: ignoredAccountId, ...accountBaseData } = account;
+            await accountRef.set({ ...accountBaseData, password, passwordUpdatedAt: new Date().toISOString(), passwordUpdatedBy: currentUser?.username || currentUser?.id || 'admin' }, { merge: true });
             const snap = await accountRef.get();
             if (!snap.exists || String(snap.data()?.password || '') !== password) throw new Error('PASSWORD_NOT_VERIFIED');
             const updated = { ...snap.data(), id: snap.id };
             const idx = state.employees.findIndex(item => item.id === empId);
-            if (idx >= 0) state.employees[idx] = updated;
+            if (idx >= 0) state.employees[idx] = updated; else state.employees.push(updated);
             if (currentUser?.id === empId) currentUser = updated;
-            document.getElementById('permissionNewPassword').value = '';
-            document.getElementById('permissionConfirmPassword').value = '';
+            const pass1 = document.getElementById('permissionNewPassword');
+            const pass2 = document.getElementById('permissionConfirmPassword');
+            if (pass1) pass1.value = '';
+            if (pass2) pass2.value = '';
+            populateEmployeePermissionOptions();
             renderEmployeePermissionsTable();
             showToast('تم تغيير كلمة المرور بنجاح. أبلغ صاحب الحساب بكلمة المرور الجديدة بطريقة آمنة.');
         } catch (e) {
@@ -5168,6 +5207,78 @@ function initMenuPermissionCheckboxes() {
             isBusy = false;
             if (btn) btn.disabled = false;
         }
+    }
+
+    async function changeAccountPasswordFromList(empId) {
+        if (isBusy || !canManageUsers()) return;
+        const account = getSecurityAccountsForManagement().find(item => String(item.id) === String(empId));
+        if (!account) { showToast('الحساب غير موجود'); return; }
+        const display = account.id === 'emp_admin' || account.username === ADMIN_USER ? 'المدير العام' : (account.fullName || account.username || account.id);
+        const password = prompt(`أدخل كلمة المرور الجديدة لحساب: ${display} — ${account.username || account.id}`);
+        if (password === null) return;
+        if (password.trim().length < 4) { showToast('كلمة المرور يجب أن تكون 4 أحرف على الأقل'); return; }
+        const confirmPassword = prompt('أعد كتابة كلمة المرور للتأكيد');
+        if (confirmPassword === null) return;
+        if (password !== confirmPassword) { showToast('كلمتا المرور غير متطابقتين'); return; }
+        if (!confirm(`تأكيد تغيير كلمة مرور ${display}؟`)) return;
+        isBusy = true;
+        try {
+            if (!db || isDemoMode) throw new Error('FIRESTORE_UNAVAILABLE');
+            const accountRef = db.collection('employees').doc(empId);
+            const { id: ignoredAccountId, ...accountBaseData } = account;
+            await accountRef.set({ ...accountBaseData, password, passwordUpdatedAt: new Date().toISOString(), passwordUpdatedBy: currentUser?.username || currentUser?.id || 'admin' }, { merge: true });
+            const snap = await accountRef.get();
+            if (!snap.exists || String(snap.data()?.password || '') !== password) throw new Error('PASSWORD_NOT_VERIFIED');
+            const updated = { ...snap.data(), id: snap.id };
+            const idx = state.employees.findIndex(item => item.id === empId);
+            if (idx >= 0) state.employees[idx] = updated; else state.employees.push(updated);
+            if (currentUser?.id === empId) currentUser = updated;
+            renderEmployeePermissionsTable();
+            showToast('تم تعديل كلمة المرور بنجاح');
+        } catch (error) {
+            console.warn('Change account password from list error:', error);
+            showToast('تعذر تعديل كلمة المرور؛ تحقق من اتصال Firebase وصلاحية الكتابة');
+        } finally { isBusy = false; }
+    }
+
+    async function toggleSecurityAccountActive(empId) {
+        if (isBusy || !canManageUsers()) return;
+        const account = getSecurityAccountsForManagement().find(item => String(item.id) === String(empId));
+        if (!account) { showToast('الحساب غير موجود'); return; }
+        const nextActive = account.active === false;
+        const display = account.id === 'emp_admin' || account.username === ADMIN_USER ? 'المدير العام' : (account.fullName || account.username || account.id);
+        if (!nextActive && account.id === currentUser?.id) {
+            showToast('لا يمكن إيقاف الحساب الذي تستخدمه حالياً'); return;
+        }
+        if (!nextActive && hasFullAccess(account)) {
+            const otherActiveAdmins = getSecurityAccountsForManagement().filter(item =>
+                item.id !== account.id && item.active !== false && hasFullAccess(item)
+            );
+            if (!otherActiveAdmins.length) {
+                showToast('لا يمكن إيقاف آخر حساب مدير أو مشرف نشط حتى لا تفقد الوصول للإدارة'); return;
+            }
+        }
+        const action = nextActive ? 'تشغيل' : 'إيقاف';
+        if (!confirm(`هل تريد ${action} حساب ${display} (${account.username || account.id})؟`)) return;
+        isBusy = true;
+        try {
+            if (!db || isDemoMode) throw new Error('FIRESTORE_UNAVAILABLE');
+            const accountRef = db.collection('employees').doc(empId);
+            const { id: ignoredAccountId, ...accountBaseData } = account;
+            await accountRef.set({ ...accountBaseData, active: nextActive, accountStatusUpdatedAt: new Date().toISOString(), accountStatusUpdatedBy: currentUser?.username || currentUser?.id || 'admin' }, { merge: true });
+            const snap = await accountRef.get();
+            if (!snap.exists || (snap.data()?.active !== false) !== nextActive) throw new Error('ACCOUNT_STATUS_NOT_VERIFIED');
+            const updated = { ...snap.data(), id: snap.id };
+            const idx = state.employees.findIndex(item => item.id === empId);
+            if (idx >= 0) state.employees[idx] = updated; else state.employees.push(updated);
+            populateEmployeePermissionOptions();
+            renderEmployeePermissionsTable();
+            renderUserDeletionTable();
+            showToast(nextActive ? 'تم تشغيل الحساب ويمكنه تسجيل الدخول' : 'تم إيقاف الحساب ومنعه من تسجيل الدخول');
+        } catch (error) {
+            console.warn('Toggle security account error:', error);
+            showToast('تعذر تغيير حالة الحساب؛ تحقق من اتصال Firebase وصلاحية الكتابة');
+        } finally { isBusy = false; }
     }
 
     function formatCurrency(amount, code = 'YER') {
@@ -13492,25 +13603,44 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
     function renderEmployeePermissionsTable() {
         const tbody = document.getElementById('employeePermissionsTableBody');
         if (!tbody) return;
-        const employees = state.employees;
+        const employees = getSecurityAccountsForManagement();
+        const canManage = canManageUsers();
         tbody.innerHTML = employees.length ? employees.map(emp => {
             const full = hasFullAccess(emp);
             const allowed = getAllowedMenusForUser(emp);
             const labels = full ? 'كل الأقسام' : (allowed.length
                 ? allowed.map(key => MAIN_MENU_ITEMS.find(item => item.key === key)?.label).filter(Boolean).join('، ')
                 : 'لم تُحدد أقسام بعد');
+            const isRoot = emp.id === 'emp_admin' || emp.username === ADMIN_USER || emp.role === 'admin';
+            const displayName = isRoot ? 'المدير العام' : (emp.fullName || getStaffLinkedToAccount(emp)?.fullName || 'اسم غير مسجل');
+            const isActive = emp.active !== false;
+            const isCurrent = emp.id === currentUser?.id;
+            const status = isActive ? '<span class="badge badge-cash">نشط</span>' : '<span class="badge badge-expense">موقوف</span>';
+            const statusButton = !canManage || isCurrent
+                ? (isCurrent ? '<span class="badge badge-unit">الحساب الحالي</span>' : '<span class="badge badge-unit">غير متاح</span>')
+                : `<button type="button" class="btn ${isActive ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleSecurityAccountActive('${escapeUiText(emp.id)}')"><i class="fa-solid ${isActive ? 'fa-user-slash' : 'fa-user-check'}"></i> ${isActive ? 'إيقاف' : 'تشغيل'}</button>`;
+            const passwordButton = canManage
+                ? `<button type="button" class="btn btn-outline btn-sm" onclick="changeAccountPasswordFromList('${escapeUiText(emp.id)}')"><i class="fa-solid fa-key"></i> تعديل كلمة السر</button>`
+                : '<span class="badge badge-unit">غير متاح</span>';
             return `
                 <tr>
-                    <td><strong>${escapeUiText(emp.fullName || getStaffLinkedToAccount(emp)?.fullName || 'اسم غير مسجل')}</strong><br><small>الدخول: ${escapeUiText(emp.username || emp.id)} — ${roleLabel(emp.role)}</small></td>
+                    <td><strong>${escapeUiText(displayName)}</strong><br><small>الدخول: ${escapeUiText(emp.username || emp.id)} — ${roleLabel(emp.role)}</small></td>
                     <td style="max-width:260px; font-size:12px;">${labels}</td>
                     <td>${full || emp.canEdit ? '<span class="badge badge-cash">مسموح</span>' : '<span class="badge badge-unit">غير مسموح</span>'}</td>
                     <td>${full || emp.canDelete ? '<span class="badge badge-cash">مسموح</span>' : '<span class="badge badge-unit">غير مسموح</span>'}</td>
                     <td style="font-size:12px;">${full ? 'كل المؤشرات' : (Object.entries(emp.dashboardWidgets || {}).filter(([, enabled]) => enabled).map(([key]) => ({ sales: 'المبيعات', cash: 'الصندوق', receivables: 'الديون', stock: 'المخزون' }[key])).filter(Boolean).join('، ') || 'لا تظهر')}</td>
                     <td style="font-size:11px;">${full ? 'كل المخازن' : `عام: ${getAssignedBranchIds(emp).length} | كميات: ${Array.isArray(emp.quantityBranchIds) ? emp.quantityBranchIds.length : getAssignedBranchIds(emp).length} | نقل: ${Array.isArray(emp.transferBranchIds) ? emp.transferBranchIds.length : getAssignedBranchIds(emp).length}`}</td>
-                    <td>${full ? '<span class="badge badge-sup">كامل</span>' : `<button class="btn btn-outline btn-sm" onclick="editEmployeeMenus('${emp.id}')">إدارة الصلاحيات</button>`}</td>
+                    <td>${status}</td>
+                    <td>${passwordButton}</td>
+                    <td>${statusButton}</td>
                 </tr>
             `;
-        }).join('') : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا توجد حسابات دخول</td></tr>';
+        }).join('') : '<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">لا توجد حسابات دخول</td></tr>';
+        const toggleButton = document.getElementById('toggleAllUserAccountsBtn');
+        const panel = document.getElementById('allUserAccountsPanel');
+        if (toggleButton && panel?.classList.contains('hidden')) {
+            toggleButton.innerHTML = `<i class="fa-solid fa-users"></i> عرض جميع المستخدمين (${employees.length})`;
+        }
     }
 
     // قائمة العمال الذين يستطيع المستخدم تسجيل الصرف اليومي لهم.
