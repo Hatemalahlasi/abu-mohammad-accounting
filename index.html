@@ -2097,11 +2097,7 @@
                 </div>
                 <div class="mini-stat" data-dashboard-widget="stock">
                     <div class="mini-stat-label">المخزون (إجمالي الكميات)</div>
-                    <div class="mini-stat-val mono stock-dashboard-breakdown" id="kpiWarehouseStock" style="color:var(--accent);">
-                        <div class="stock-dashboard-total-main">0</div>
-                        <div class="stock-dashboard-branches"></div>
-                        <div class="stock-dashboard-total-footer">الإجمالي: 0</div>
-                    </div>
+                    <div class="mini-stat-val mono" id="kpiWarehouseStock" style="color:var(--accent);">0.00</div>
                 </div>
             </div>
 
@@ -8444,23 +8440,6 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const visibleWarehouse = getScopedWarehouseItems();
         const totalStockQty = visibleWarehouse.reduce((s, w) => s + Number(w.qty || 0), 0);
         const totalStockVal = visibleWarehouse.reduce((s, w) => s + (Number(w.qty || 0) * Number(w.costPrice ?? w.price ?? 0)), 0);
-        // تفصيل إجمالي الكميات حسب كل فرع/مخزن، مع احترام نطاق الفروع المسموح للحساب الحالي.
-        const stockBranchTotals = new Map();
-        getAccessibleBranches().forEach(branch => {
-            const id = String(branch.id || 'main_branch');
-            stockBranchTotals.set(id, { name: branch.name || 'الفرع الرئيسي', qty: 0 });
-        });
-        visibleWarehouse.forEach(item => {
-            const id = String(item.branchId || 'main_branch');
-            if (!stockBranchTotals.has(id)) {
-                const branch = getAllBranches().find(entry => String(entry.id) === id);
-                stockBranchTotals.set(id, { name: item.branchName || branch?.name || 'الفرع الرئيسي', qty: 0 });
-            }
-            stockBranchTotals.get(id).qty += Number(item.qty || 0);
-        });
-        const stockBranchLinesHtml = [...stockBranchTotals.entries()].map(([id, branch]) =>
-            `<div class="stock-dashboard-branch-line"><span>${escapeUiText(branch.name)}</span><strong>${formatQty(branch.qty)}</strong></div>`
-        ).join('') || '<div class="stock-dashboard-empty">لا توجد مخازن مسموحة لهذا الحساب</div>';
 
         document.getElementById('kpiTotalSales').textContent = formatCurrencyBreakdown(visibleInvoices, 'netTotal');
         const cashEl = document.getElementById('kpiTotalCash');
@@ -8492,13 +8471,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
                 `<div class="customer-debt-currency-line" style="display:block!important;width:100%;text-align:right;line-height:1.45;font-size:12px;font-weight:900;white-space:nowrap">${formatMoney(debtTotals[code])} ${code}</div>`
             ).join('');
         }
-        const stockEl = document.getElementById('kpiWarehouseStock');
-        if (stockEl) {
-            stockEl.innerHTML = `
-                <div class="stock-dashboard-total-main">${formatQty(totalStockQty)}</div>
-                <div class="stock-dashboard-branches">${stockBranchLinesHtml}</div>
-                <div class="stock-dashboard-total-footer">الإجمالي الكلي: ${formatQty(totalStockQty)}</div>`;
-        }
+        document.getElementById('kpiWarehouseStock').textContent = formatQty(totalStockQty);
         document.getElementById('purchasesTabTotal').textContent = formatCurrencyBreakdown(visiblePurchases.filter(record => record.kind === 'expense'), 'amount');
         document.getElementById('warehouseTotalValueBadge').textContent = `قيمة المخزون: ${formatMoney(totalStockVal)}`;
     }
@@ -16127,136 +16100,6 @@ thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avo
             font-weight: 900 !important;
         }
 
-
-        /* تفصيل كميات المخزون في بطاقة القائمة الرئيسية */
-        #summaryStatsStrip #kpiWarehouseStock.stock-dashboard-breakdown {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 5px !important;
-            width: 100%;
-            min-width: 0;
-            white-space: normal !important;
-            line-height: 1.35 !important;
-            font-size: 12px !important;
-        }
-        #kpiWarehouseStock .stock-dashboard-total-main {
-            font-size: 19px;
-            font-weight: 900;
-            line-height: 1.2;
-            text-align: right;
-            direction: ltr;
-            font-variant-numeric: tabular-nums;
-        }
-        #kpiWarehouseStock .stock-dashboard-branches {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            padding: 5px 0;
-            border-top: 1px solid rgba(255,255,255,.28);
-            border-bottom: 1px solid rgba(255,255,255,.28);
-        }
-        #kpiWarehouseStock .stock-dashboard-branch-line {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: 6px;
-            width: 100%;
-            font-size: 11px;
-            font-weight: 700;
-        }
-        #kpiWarehouseStock .stock-dashboard-branch-line span {
-            min-width: 0;
-            text-align: right;
-            overflow-wrap: anywhere;
-        }
-        #kpiWarehouseStock .stock-dashboard-branch-line strong {
-            flex: 0 0 auto;
-            direction: ltr;
-            font-size: 11px;
-            font-weight: 900;
-            font-variant-numeric: tabular-nums;
-        }
-        #kpiWarehouseStock .stock-dashboard-total-footer {
-            font-size: 11px;
-            font-weight: 900;
-            text-align: right;
-        }
-        #kpiWarehouseStock .stock-dashboard-empty {
-            font-size: 10px;
-            font-weight: 700;
-            opacity: .9;
-        }
-
-        /* بطاقة المخزون تمتد بعرض مؤشرات الرئيسية لتظهر كميات الفروع بوضوح */
-        #summaryStatsStrip > .mini-stat[data-dashboard-widget="stock"] {
-            grid-column: 1 / -1 !important;
-            width: 100%;
-            min-width: 0;
-            padding: 13px 16px !important;
-        }
-        #summaryStatsStrip > .mini-stat[data-dashboard-widget="stock"] > .mini-stat-label {
-            text-align: center;
-            font-size: 13px !important;
-            margin-bottom: 6px;
-        }
-        #summaryStatsStrip #kpiWarehouseStock.stock-dashboard-breakdown {
-            display: grid !important;
-            grid-template-columns: minmax(0,1fr);
-            justify-items: stretch;
-            gap: 8px !important;
-        }
-        #kpiWarehouseStock .stock-dashboard-total-main {
-            text-align: center !important;
-            font-size: clamp(23px, 4vw, 30px) !important;
-            line-height: 1.15 !important;
-            padding: 2px 0 7px;
-        }
-        #kpiWarehouseStock .stock-dashboard-branches {
-            display: grid !important;
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
-            gap: 8px !important;
-            width: 100%;
-            padding: 8px 0 !important;
-        }
-        #kpiWarehouseStock .stock-dashboard-branch-line {
-            display: flex !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            min-height: 42px;
-            padding: 9px 13px;
-            border: 1px solid rgba(255,255,255,.28);
-            border-radius: 9px;
-            background: rgba(255,255,255,.10);
-            font-size: 13px !important;
-        }
-        #kpiWarehouseStock .stock-dashboard-branch-line span,
-        #kpiWarehouseStock .stock-dashboard-branch-line strong {
-            font-size: 13px !important;
-        }
-        #kpiWarehouseStock .stock-dashboard-total-footer {
-            text-align: center !important;
-            font-size: 13px !important;
-            padding-top: 3px;
-        }
-        @media (max-width: 420px) {
-            #summaryStatsStrip > .mini-stat[data-dashboard-widget="stock"] {
-                padding: 11px 10px !important;
-            }
-            #kpiWarehouseStock .stock-dashboard-branches {
-                grid-template-columns: repeat(2, minmax(0,1fr));
-                gap: 6px !important;
-            }
-            #kpiWarehouseStock .stock-dashboard-branch-line {
-                padding: 8px 7px;
-                gap: 4px;
-                font-size: 11px !important;
-            }
-            #kpiWarehouseStock .stock-dashboard-branch-line span,
-            #kpiWarehouseStock .stock-dashboard-branch-line strong {
-                font-size: 11px !important;
-            }
-        }
 </style>
 
 
