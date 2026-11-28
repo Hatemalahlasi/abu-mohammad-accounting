@@ -3724,7 +3724,7 @@
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
             </div>
             <div class="employee-permission-note" id="payrollSettlementPeriodLabel">
-                الراتب الشهري للموظف الذي تختار له «تجميع الراتب حتى الصرف» يتراكم من شهر البداية حتى تسديده، أما بقية الموظفين فيحسب راتبهم لكل شهر بصورة مستقلة. جميع عمليات الصرف تبقى محفوظة في سجل قابل للمراجعة والتعديل والحذف بصلاحية الإدارة.
+                الراتب الشهري يتراكم تلقائياً حتى الصرف: إذا بقي راتب الموظف دون تسوية، تُضاف دورة راتب جديدة في يوم 25 من كل شهر إلى الرصيد السابق. لا تحتاج إلى تفعيل التجميع يدوياً. جميع عمليات الصرف محفوظة في سجل قابل للمراجعة والتعديل والحذف بصلاحية الإدارة.
             </div>
             <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-calendar-check"></i> اختر شهر الصرف والموظف</span></div>
@@ -3742,7 +3742,7 @@
                     <button type="button" class="btn btn-outline" onclick="renderPayrollSettlementPage(true)"><i class="fa-solid fa-rotate"></i> تحديث الكشوف</button>
                     <button type="button" class="btn btn-accent" onclick="printPayrollSettlementStatement()"><i class="fa-solid fa-file-pdf"></i> طباعة كشف الموظف مع التوقيع</button>
                 </div>
-                <div class="employee-permission-note" style="margin-top:10px;">كل عملة مستقلة عن الأخرى. الصرف المسجل هنا يظهر في كشف الموظف ويؤثر في رصيد الصندوق عند اختيار صندوق مطابق للعملة.</div>
+                <div class="employee-permission-note" style="margin-top:10px;">كل عملة مستقلة عن الأخرى. الراتب الشهري يتراكم تلقائياً، وتُضاف دورة جديدة يوم 25 من كل شهر إذا لم يُصفَّد الرصيد. الصرف المسجل يظهر في كشف الموظف ويؤثر في رصيد الصندوق عند اختيار صندوق مطابق للعملة.</div>
             </div>
             <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-users"></i> ملخص مستحقات جميع الموظفين</span></div>
@@ -4732,8 +4732,8 @@
         if (isPieceworkStaff(staff)) parts.push('بالقطعة');
         else if (Number(staff?.salary || 0) > 0.009) {
             const start = String(staff?.salaryAccrualStartPeriod || '');
-            const accrualActive = staff.salaryAccrualEnabled === true && (!period || !/^\d{4}-\d{2}$/.test(start) || period >= start);
-            parts.push(accrualActive ? 'راتب متراكم حتى الصرف' : 'راتب شهري');
+            const accrualActive = !/^\d{4}-\d{2}$/.test(start) || !period || period >= start;
+            parts.push(accrualActive ? 'راتب متراكم تلقائياً حتى الصرف' : 'راتب شهري');
         }
         const collectionRate = getStaffCollectionRate(staff);
         const salesRate = getExplicitStaffSalesCommissionRate(staff);
@@ -13558,6 +13558,9 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
                 warehouseBranchName: warehouseBranchNames.join('، '),
                 warehouseBranchNames,
                 active: true,
+                salaryAccrualEnabled: payType !== 'piecework' && salary > 0.009,
+                salaryAccrualStartPeriod: payType !== 'piecework' && salary > 0.009 ? getCurrentPayrollPeriod() : '',
+                salaryAccrualMode: 'automatic_day_25',
                 createdAt: new Date().toISOString(),
                 createdBy: currentUser?.fullName || 'المدير'
             };
@@ -14860,12 +14863,24 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
 
     function getEmployeeDuesData(staff, period) {
         const currency = getStaffSalaryCurrency(staff);
-        const salaryAccrualEnabled = !isPieceworkStaff(staff) && staff?.salaryAccrualEnabled === true;
+        // التجميع تلقائي لكل موظف براتب شهري؛ لا يوجد زر تفعيل يدوي.
+        const salaryAccrualEnabled = !isPieceworkStaff(staff) && Number(staff?.salary || 0) > 0.009;
         const savedAccrualStart = String(staff?.salaryAccrualStartPeriod || '');
-        const salaryAccrualStartPeriod = salaryAccrualEnabled && /^\d{4}-\d{2}$/.test(savedAccrualStart) ? savedAccrualStart : period;
+        const defaultAccrualStart = getCurrentPayrollPeriod();
+        const salaryAccrualStartPeriod = salaryAccrualEnabled
+            ? (/^\d{4}-\d{2}$/.test(savedAccrualStart) ? savedAccrualStart : defaultAccrualStart)
+            : period;
         const accrualMonthDistance = salaryAccrualEnabled ? payrollMonthDistance(salaryAccrualStartPeriod, period) : 0;
         const salaryAccrualActiveForPeriod = !salaryAccrualEnabled || accrualMonthDistance >= 0;
-        const salaryMonthsCount = salaryAccrualEnabled && salaryAccrualActiveForPeriod ? accrualMonthDistance + 1 : 1;
+        const currentPeriod = getCurrentPayrollPeriod();
+        const accrualPeriod = period > currentPeriod ? currentPeriod : period;
+        const accrualMonthIndex = salaryAccrualEnabled && salaryAccrualActiveForPeriod
+            ? Math.max(0, payrollMonthDistance(salaryAccrualStartPeriod, accrualPeriod)) : 0;
+        const accrualDay = accrualPeriod < currentPeriod ? 31 : (new Date().getDate());
+        // تبدأ الدورة الأولى من شهر البداية، ثم تضاف دورة راتب جديدة فقط عند حلول يوم 25.
+        const salaryMonthsCount = salaryAccrualEnabled && salaryAccrualActiveForPeriod
+            ? Math.max(1, accrualMonthIndex + (accrualDay >= 25 ? 1 : 0))
+            : 1;
         const production = (state.employeeProduction || []).filter(item =>
             item.staffId === staff.id && (item.period || String(item.date || '').slice(0, 7)) === period
         ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
@@ -14988,10 +15003,59 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
             CURRENCY_CODES.some(code => Math.abs(Number(data.remainingByCurrency?.[code] || 0)) > 0.009);
     }
 
+    let payrollAutoAccrualInitPromise = null;
+
+    async function ensureAutomaticPayrollAccrualSettings() {
+        if (payrollAutoAccrualInitPromise) return payrollAutoAccrualInitPromise;
+        if (!canManageUsers() || isDemoMode) return false;
+        const startPeriod = getCurrentPayrollPeriod();
+        const eligible = getAllStaff().filter(staff =>
+            staff && staff.active !== false && !isPieceworkStaff(staff) && Number(staff.salary || 0) > 0.009
+        );
+        const pending = eligible.filter(staff =>
+            staff.salaryAccrualEnabled !== true || !/^\d{4}-\d{2}$/.test(String(staff.salaryAccrualStartPeriod || ''))
+        );
+        if (!pending.length) return false;
+        payrollAutoAccrualInitPromise = (async () => {
+            let updatedAny = false;
+            for (const staff of pending) {
+                const savedStart = String(staff.salaryAccrualStartPeriod || '');
+                const normalizedStart = /^\d{4}-\d{2}$/.test(savedStart) ? savedStart : startPeriod;
+                const patch = {
+                    salaryAccrualEnabled: true,
+                    salaryAccrualStartPeriod: normalizedStart,
+                    salaryAccrualMode: 'automatic_day_25',
+                    salaryAccrualUpdatedAt: new Date().toISOString(),
+                    salaryAccrualUpdatedBy: getAccountDisplayName(currentUser) || currentUser?.username || 'النظام'
+                };
+                const isLegacy = staff.legacy === true || String(staff.id).startsWith('legacy_');
+                const collectionName = isLegacy ? 'employees' : 'staff';
+                const docId = isLegacy ? (staff.legacyUserId || String(staff.id).replace(/^legacy_/, '')) : staff.id;
+                if (!docId) continue;
+                try {
+                    await db.collection(collectionName).doc(docId).update(patch);
+                    Object.assign(staff, patch);
+                    const localRecord = isLegacy
+                        ? (state.employees || []).find(item => String(item.id) === String(docId))
+                        : (state.staff || []).find(item => String(item.id) === String(staff.id));
+                    if (localRecord) Object.assign(localRecord, patch);
+                    updatedAny = true;
+                } catch (error) {
+                    console.warn('Initialize automatic salary accrual error:', staff.fullName, error);
+                }
+            }
+            return updatedAny;
+        })().finally(() => { payrollAutoAccrualInitPromise = null; });
+        return payrollAutoAccrualInitPromise;
+    }
+
     function renderPayrollSettlementPage(preserveInputs = true) {
         const periodInput = document.getElementById('payrollSettlementPeriod');
         if (periodInput && !periodInput.value) periodInput.value = getCurrentPayrollPeriod();
         const period = getPayrollSettlementPeriod();
+        ensureAutomaticPayrollAccrualSettings().then(didUpdate => {
+            if (didUpdate) renderPayrollSettlementPage(preserveInputs);
+        }).catch(error => console.warn('Automatic salary accrual setup:', error));
         const select = document.getElementById('payrollSettlementStaffSelect');
         if (!select) return;
         const previousStaffId = select.value;
@@ -15012,7 +15076,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         select.value = staff.some(item => item.id === previousStaffId) ? previousStaffId : (staff[0]?.id || '');
 
         const label = document.getElementById('payrollSettlementPeriodLabel');
-        if (label) label.textContent = `كشف وصرف مستحقات شهر ${period}. يظهر الموظفون الذين لديهم راتب أو إنتاج أو عمولات أو مبالغ مستلمة خلال الشهر. يمكن إخفاء أي موظف من كشف هذا الشهر دون حذف ملفه أو حركاته.`;
+        if (label) label.textContent = `كشف وصرف مستحقات شهر ${period}. الرواتب الشهرية تتراكم تلقائياً حتى الصرف، وتُضاف دورة جديدة يوم 25 من كل شهر عند بقاء الرصيد. يمكن إخفاء أي موظف من كشف هذا الشهر دون حذف ملفه أو حركاته.`;
 
         const body = document.getElementById('payrollSettlementSummaryBody');
         if (body) body.innerHTML = staff.length ? staff.map(item => {
@@ -15077,38 +15141,6 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         } finally { isBusy = false; }
     }
 
-
-    async function setPayrollSalaryAccumulation() {
-        if (isBusy || !canManageUsers()) { showToast('تعديل طريقة تجميع الراتب متاح للمدير والمشرف العام فقط'); return; }
-        const period = getPayrollSettlementPeriod();
-        const staffId = document.getElementById('payrollSettlementStaffSelect')?.value || '';
-        const staff = getPayrollSettlementAllStaff().find(item => String(item.id) === String(staffId));
-        if (!staff || isPieceworkStaff(staff) || Number(staff.salary || 0) <= 0) { showToast('اختر موظفاً لديه راتب شهري أولاً'); return; }
-        const currentStart = staff.salaryAccrualStartPeriod || period;
-        const startPeriod = prompt(`أدخل شهر بداية تجميع راتب ${staff.fullName || 'الموظف'} بصيغة YYYY-MM. يبدأ الحساب من هذا الشهر ويستمر حتى الصرف.`, currentStart);
-        if (startPeriod === null) return;
-        const normalized = String(startPeriod).trim();
-        if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(normalized)) { showToast('اكتب الشهر بصيغة صحيحة مثل 2026-11'); return; }
-        if (normalized > period) { showToast('شهر بداية التجميع لا يمكن أن يكون بعد شهر الكشف المحدد'); return; }
-        const isLegacy = staff.legacy === true || String(staff.id).startsWith('legacy_');
-        const collectionName = isLegacy ? 'employees' : 'staff';
-        const docId = isLegacy ? (staff.legacyUserId || String(staff.id).replace(/^legacy_/, '')) : staff.id;
-        if (!docId) { showToast('تعذر تحديد ملف الموظف للحفظ'); return; }
-        isBusy = true;
-        try {
-            const patch = { salaryAccrualEnabled: true, salaryAccrualStartPeriod: normalized, salaryAccrualUpdatedAt: new Date().toISOString(), salaryAccrualUpdatedBy: getAccountDisplayName(currentUser) || currentUser?.username || 'الإدارة' };
-            await db.collection(collectionName).doc(docId).update(patch);
-            Object.assign(staff, patch);
-            const localRecord = isLegacy ? state.employees.find(item => item.id === docId) : state.staff.find(item => item.id === staff.id);
-            if (localRecord) Object.assign(localRecord, patch);
-            renderPayrollSettlementPage(false);
-            renderEmployeeDues();
-            showToast(`تم تفعيل تجميع راتب ${staff.fullName} من ${normalized}`);
-        } catch (error) {
-            console.warn('Set payroll salary accumulation error:', error);
-            showToast('تعذر حفظ إعداد تجميع الراتب؛ تحقق من الاتصال');
-        } finally { isBusy = false; }
-    }
 
     function renderPayrollSettlementHistory() {
         const body = document.getElementById('payrollSettlementHistoryBody');
@@ -15237,7 +15269,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         }).join('');
         const allSettled = CURRENCY_CODES.every(code => data.remainingByCurrency[code] <= 0.009);
         const salaryNote = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009
-            ? `<div class="employee-permission-note payroll-salary-note">${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `إجمالي الرواتب المتراكمة من ${data.salaryAccrualStartPeriod} حتى ${period} (${data.salaryMonthsCount} شهر)` : 'الراتب الشهري المحتسب'}: <strong>${formatMoney(data.baseEntitlement)} ${data.currency}</strong></div>` : '';
+            ? `<div class="employee-permission-note payroll-salary-note">${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `إجمالي الراتب المتراكم (${data.salaryMonthsCount} دورة راتب، تُضاف دورة جديدة يوم 25)` : 'الراتب الشهري المحتسب'}: <strong>${formatMoney(data.baseEntitlement)} ${data.currency}</strong></div>` : '';
         const workSection = data.production.length ? `
             <section class="payroll-detail-section payroll-work-section"><h3>الأعمال والإنتاج المسجل</h3>
             <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th></tr></thead><tbody>${workRows}</tbody></table></div></section>` : '';
@@ -15256,7 +15288,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
                 <div><strong style="font-size:17px;color:var(--primary);">${title}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${isPieceworkStaff(staff) ? 'نظام الأجر بالقطعة' : 'راتب شهري'} — شهر ${period}</div></div>
                 <span class="badge ${allSettled ? 'badge-cash' : 'badge-expense'}">${allSettled ? 'لا يوجد متبقٍ' : 'مستحق للصرف'}</span>
             </div>
-            ${!isPieceworkStaff(staff) && Number(staff.salary || 0) > 0.009 ? `<div class="payroll-accrual-control"><div><strong>تجميع الراتب حتى الصرف</strong><small>${data.salaryAccrualEnabled ? (data.salaryAccrualActiveForPeriod ? `مفعل من ${data.salaryAccrualStartPeriod} · عدد الأشهر المحتسبة: ${data.salaryMonthsCount}` : `يبدأ التجميع من ${data.salaryAccrualStartPeriod}؛ هذا الشهر يحسب كراتب شهري مستقل`) : 'غير مفعل؛ الراتب يحسب لهذا الشهر فقط'}</small></div>${canManageUsers() ? `<button type="button" class="btn btn-outline btn-sm" onclick="setPayrollSalaryAccumulation()">${data.salaryAccrualEnabled ? 'تغيير شهر بداية التجميع' : 'تفعيل تجميع الراتب'}</button>` : ''}</div>` : ''}
+            ${!isPieceworkStaff(staff) && Number(staff.salary || 0) > 0.009 ? `<div class="payroll-accrual-control"><div><strong>تجميع الراتب تلقائياً حتى الصرف</strong><small>يبدأ الاحتساب من ${data.salaryAccrualStartPeriod} · الرواتب تتراكم، وتُضاف دورة جديدة في يوم 25 من كل شهر حتى يتم السداد</small></div><span class="badge badge-cash">تلقائي</span></div>` : ''}
             <div class="employee-dues-overview-grid payroll-balance-grid">${balanceCards}</div>
             ${salaryNote}
             ${workSection}${collectionSection}${salesSection}${paymentsSection}
@@ -15270,7 +15302,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
                     <button type="button" class="btn btn-accent" onclick="printPayrollSettlementStatement()"><i class="fa-solid fa-print"></i> طباعة الكشف والتوقيع</button>
                 </div>
             </div>
-            <div class="employee-permission-note">الموظف الذي فُعّل له تجميع الراتب يُضاف راتبه كل شهر إلى المتبقي السابق، وتُخصم منه الدفعات حتى يصل الرصيد إلى صفر؛ وبعدها يبدأ الشهر التالي براتب جديد. أما الموظفون الآخرون فيظل راتبهم محسوباً لكل شهر بصورة مستقلة.</div>
+            <div class="employee-permission-note">لكل موظف راتب شهري: إذا بقي الراتب دون صرف، يُضاف راتب جديد تلقائياً في يوم 25 من كل شهر فوق الرصيد السابق. أي مبلغ تصرفه يُخصم من الإجمالي، وبعد اكتمال السداد يبدأ الرصيد بالدورة الجديدة. لا يوجد زر تفعيل أو إيقاف للتجميع.</div>
         `;
     }
 
@@ -15372,7 +15404,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         const paymentRows = data.expenses.map(item => `<tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.source === 'payrollSettlement' ? 'صرف مستحقات' : (item.source === 'dailyDisbursementAdvance' ? 'سلفة / دفعة' : 'استلام'))}</td><td>${escapeEmployeeDuesHtml(item.note || '-')}</td><td>${formatMoney(item.amount || 0)} ${CURRENCY_CODES.includes(item.currency) ? item.currency : data.currency}</td></tr>`).join('');
         const totals = currencies.map(code => `<tr class="currency-row currency-${code.toLowerCase()}"><th>${CURRENCY_NAMES[code]} (${code})</th><td>${formatMoney(data.earnedByCurrency[code])}</td><td>${formatMoney(data.paidByCurrency[code])}</td><td class="remaining-cell"><strong>${formatMoney(data.remainingByCurrency[code])}</strong></td></tr>`).join('');
         const logo = new URL('logo.png', window.location.href).href;
-        const salarySection = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009 ? `<section class="section salary"><h3>${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `الراتب المتراكم من ${data.salaryAccrualStartPeriod} حتى ${period}` : 'الراتب الشهري'}</h3><table><tbody><tr><th>${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `عدد الأشهر المحتسبة (${data.salaryMonthsCount})` : 'الراتب المستحق'}</th><td>${formatMoney(data.baseEntitlement)} ${data.currency}</td></tr></tbody></table></section>` : '';
+        const salarySection = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009 ? `<section class="section salary"><h3>${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `الراتب المتراكم تلقائياً حتى ${period}` : 'الراتب الشهري'}</h3><table><tbody><tr><th>${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `عدد دورات الراتب المحتسبة (${data.salaryMonthsCount})` : 'الراتب المستحق'}</th><td>${formatMoney(data.baseEntitlement)} ${data.currency}</td></tr></tbody></table></section>` : '';
         const productionSection = data.production.length ? `<section class="section production"><h3>الأعمال والإنتاج</h3><table><thead><tr><th>التاريخ</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>قيمة العمل</th></tr></thead><tbody>${productionRows}</tbody></table></section>` : '';
         const collectionSection = data.commissions.length ? `<section class="section collection"><h3>عمولات التحصيل</h3><table><thead><tr><th>التاريخ</th><th>السند</th><th>العميل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${collectionRows}</tbody></table></section>` : '';
         const salesSection = data.salesCommissions.length ? `<section class="section sales"><h3>عمولات المبيعات</h3><table><thead><tr><th>التاريخ</th><th>الفاتورة</th><th>العميل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${salesRows}</tbody></table></section>` : '';
@@ -15514,7 +15546,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
             <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td><span class="mono">${formatMoney(item.amount || 0)} ${item.commissionCurrency}</span></td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td><strong class="mono">${formatMoney(item.commissionAmount)} ${item.commissionCurrency}</strong></td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد سندات قبض مسجلة باسم هذا الموظف خلال هذه الفترة</td></tr>';
         const ledgerRows = [];
-        if (!isPieceworkStaff(staff) && data.baseEntitlement > 0.009) ledgerRows.push({ date: `${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? data.salaryAccrualStartPeriod : data.period}-01`, order: '0', type: 'استحقاق راتب', details: data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `راتب متراكم من ${data.salaryAccrualStartPeriod} حتى ${data.period} (${data.salaryMonthsCount} شهر)` : 'الراتب الشهري', quantity: '-', rate: '-', earned: data.baseEntitlement, paid: 0, currency: data.currency, actor: 'النظام' });
+        if (!isPieceworkStaff(staff) && data.baseEntitlement > 0.009) ledgerRows.push({ date: `${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? data.salaryAccrualStartPeriod : data.period}-01`, order: '0', type: 'استحقاق راتب', details: data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `راتب متراكم تلقائياً حتى ${data.period} (${data.salaryMonthsCount} دورة راتب)` : 'الراتب الشهري', quantity: '-', rate: '-', earned: data.baseEntitlement, paid: 0, currency: data.currency, actor: 'النظام' });
         data.production.forEach(item => ledgerRows.push({
             date: item.date || '-', order: item.createdAt || '', type: 'إنتاج',
             details: `${item.workName || 'عمل'} (${item.unit || '-'})${item.note ? ` — ${item.note}` : ''}`,
