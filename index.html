@@ -2097,7 +2097,11 @@
                 </div>
                 <div class="mini-stat" data-dashboard-widget="stock">
                     <div class="mini-stat-label">المخزون (إجمالي الكميات)</div>
-                    <div class="mini-stat-val mono" id="kpiWarehouseStock" style="color:var(--accent);">0.00</div>
+                    <div class="mini-stat-val mono stock-dashboard-breakdown" id="kpiWarehouseStock" style="color:var(--accent);">
+                        <div class="stock-dashboard-total-main">0</div>
+                        <div class="stock-dashboard-branches"></div>
+                        <div class="stock-dashboard-total-footer">الإجمالي: 0</div>
+                    </div>
                 </div>
             </div>
 
@@ -2133,6 +2137,10 @@
                 <button class="nav-tab" data-menu-key="cashboxTab" onclick="openFullPage('cashboxTab')">
                     <i class="fa-solid fa-vault"></i>
                     <span>الصندوق</span>
+                </button>
+                <button class="nav-tab" data-menu-key="cashboxDepositTab" onclick="openFullPage('cashboxDepositTab')">
+                    <i class="fa-solid fa-building-columns"></i>
+                    <span>توريد إلى البنوك والصناديق</span>
                 </button>
                 <button class="nav-tab accent-tab" data-inventory-hub="true" onclick="openInventoryHub()">
                     <i class="fa-solid fa-boxes-stacked"></i>
@@ -2828,6 +2836,45 @@
                     <table><thead><tr><th>التاريخ</th><th>الحركة</th><th>البيان</th><th>داخل</th><th>خارج</th><th>الرصيد بعد الحركة</th></tr></thead><tbody id="cashboxStatementBody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted);">اختر الصندوق والشهر لعرض الكشف</td></tr></tbody></table>
                 </div>
                 <button type="button" class="btn btn-outline btn-full" style="margin-top:10px;" onclick="printCashboxStatement()"><i class="fa-solid fa-print"></i> طباعة / حفظ PDF</button>
+            </div>
+        </section>
+
+        <!-- صفحة توريد نقدي إلى البنوك والصناديق -->
+        <section id="cashboxDepositTab" class="tab-content hidden">
+            <div class="fullpage-topbar">
+                <div class="fullpage-title" style="color:var(--success);"><i class="fa-solid fa-building-columns"></i> توريد إلى البنوك والصناديق</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+            </div>
+            <div class="employee-permission-note" style="margin-bottom:12px;">سجّل أي مبلغ تورّده نقداً إلى صندوق أو بنك. يزيد المبلغ رصيد الجهة المختارة ويظهر في كشف حسابها، ولا يُسجل كمبيعات أو مصروف أو ربح.</div>
+            <div class="card-box">
+                <div class="card-title"><span id="cashboxDepositFormTitle"><i class="fa-solid fa-circle-plus"></i> تسجيل توريد جديد</span></div>
+                <div id="cashboxDepositEditBanner" class="employee-permission-note hidden" style="display:none;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                    <strong>أنت تعدّل عملية توريد محفوظة.</strong>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="cancelCashboxDepositEdit()">إلغاء التعديل</button>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group"><label for="cashboxDepositTarget">البنك / الصندوق الذي تم التوريد إليه</label><select id="cashboxDepositTarget" class="form-control"></select></div>
+                    <div class="form-group"><label for="cashboxDepositCurrency">العملة</label><select id="cashboxDepositCurrency" class="form-control" onchange="updateCashboxDepositTargets()"><option value="YER">ريال يمني (YER)</option><option value="SAR">ريال سعودي (SAR)</option><option value="USD">دولار أمريكي (USD)</option></select></div>
+                    <div class="form-group"><label for="cashboxDepositAmount">المبلغ المورّد</label><input id="cashboxDepositAmount" class="form-control num-input" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group"><label for="cashboxDepositParty">لمن تم التوريد؟ / اسم الشخص أو الجهة</label><input id="cashboxDepositParty" class="form-control" type="text" maxlength="160" placeholder="اسم الشخص أو الجهة المستفيدة"></div>
+                    <div class="form-group"><label for="cashboxDepositDate">تاريخ التوريد</label><input id="cashboxDepositDate" class="form-control" type="date"></div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group"><label for="cashboxDepositSource">مصدر المبلغ (اختياري)</label><input id="cashboxDepositSource" class="form-control" maxlength="160" placeholder="مثلاً: نقداً من الإدارة / تحصيل خارجي"></div>
+                    <div class="form-group"><label for="cashboxDepositNote">البيان / الملاحظات</label><input id="cashboxDepositNote" class="form-control" maxlength="240" placeholder="تفاصيل التوريد أو رقم الإيصال البنكي"></div>
+                </div>
+                <div class="form-group" style="max-width:280px;"><label for="cashboxDepositRef">رقم الإيصال / المرجع (اختياري)</label><input id="cashboxDepositRef" class="form-control" maxlength="60" placeholder="رقم الإيصال"></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button id="saveCashboxDepositBtn" type="button" class="btn btn-success" onclick="saveCashboxDeposit()"><i class="fa-solid fa-check"></i> حفظ التوريد وإضافة الرصيد</button>
+                    <button id="cancelCashboxDepositEditBtn" type="button" class="btn btn-outline hidden" onclick="cancelCashboxDepositEdit()">إلغاء التعديل</button>
+                </div>
+            </div>
+            <div class="card-box">
+                <div class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل توريدات البنوك والصناديق</span><button type="button" class="btn btn-outline btn-sm" onclick="renderCashboxDepositsHistory()"><i class="fa-solid fa-rotate"></i> تحديث السجل</button></div>
+                <div class="form-group"><input id="cashboxDepositSearch" class="form-control" type="search" placeholder="بحث برقم الإيصال أو الجهة أو البنك أو البيان..." oninput="renderCashboxDepositsHistory()"></div>
+                <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>البنك / الصندوق</th><th>لمن تم التوريد</th><th>مصدر المبلغ / البيان</th><th>العملة</th><th>المبلغ</th><th>سجل بواسطة</th><th>إجراءات</th></tr></thead><tbody id="cashboxDepositsHistoryBody"></tbody></table></div>
             </div>
         </section>
 
@@ -4318,6 +4365,7 @@
         { key: 'vouchersTab', label: 'الأسناد' },
         { key: 'managerWithdrawalsTab', label: 'مسحوبات المدراء' },
         { key: 'cashboxTab', label: 'الصندوق' },
+        { key: 'cashboxDepositTab', label: 'توريد إلى البنوك والصناديق' },
         { key: 'warehouseTab', label: 'جرد المخازن والفروع' },
         { key: 'itemListTab', label: 'قائمة الأصناف' },
         { key: 'customersTab', label: 'العملاء' },
@@ -6267,6 +6315,7 @@ function initMenuPermissionCheckboxes() {
             toggleVoucherCustomerField();
             updateVoucherStatementPreview();
         }
+        if (tabId === 'cashboxDepositTab') { prepareCashboxDepositPage(); }
         if (tabId === 'warehouseTab' || tabId === 'transferTab') {
             populateTransferItems();
         }
@@ -6788,25 +6837,37 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         return 0;
     }
 
+    function getCashboxDepositTotal(cb, currencyOverride = null) {
+        if (!cb) return 0;
+        const legacyCurrency = CURRENCY_CODES.includes(cb.currency) ? cb.currency : 'YER';
+        const cashCurrency = CURRENCY_CODES.includes(currencyOverride) ? currencyOverride : legacyCurrency;
+        return (state.vouchers || [])
+            .filter(v => v.type === 'cashboxDeposit' && String(v.cashboxId || '') === String(cb.id || '') && (CURRENCY_CODES.includes(v.currency) ? v.currency : legacyCurrency) === cashCurrency)
+            .reduce((sum, v) => sum + Number(v.amount || 0), 0);
+    }
+
     function computeSystemCashboxBalance(cb, currencyOverride = null) {
         if (!cb) return 0;
         const legacyCurrency = CURRENCY_CODES.includes(cb.currency) ? cb.currency : 'YER';
         const cashCurrency = CURRENCY_CODES.includes(currencyOverride) ? currencyOverride : legacyCurrency;
+        const sameCashbox = record => String(record.cashboxId || '') === String(cb.id || '');
         const opening = getCashboxOpening(cb, cashCurrency);
-        const cashSales = state.invoices
-            .filter(i => i.paymentType === 'cash' && i.cashboxId === cb.id && (i.currency || 'YER') === cashCurrency)
+        const cashSales = (state.invoices || [])
+            .filter(i => i.paymentType === 'cash' && sameCashbox(i) && (i.currency || 'YER') === cashCurrency)
             .reduce((s, i) => s + Number(i.netTotal || 0), 0);
 
-        const receipts = state.vouchers
-            .filter(v => v.type === 'receipt' && v.cashboxId === cb.id && (v.currency || legacyCurrency) === cashCurrency)
+        const receipts = (state.vouchers || [])
+            .filter(v => v.type === 'receipt' && sameCashbox(v) && (CURRENCY_CODES.includes(v.currency) ? v.currency : legacyCurrency) === cashCurrency)
+            .reduce((s, v) => s + Number(v.amount || 0), 0);
+        // توريدات البنك / الصندوق تُضاف مباشرة إلى الرصيد الحالي، وتُعرض مستقلة في بطاقة الصندوق.
+        const deposits = getCashboxDepositTotal(cb, cashCurrency);
+
+        const payments = (state.vouchers || [])
+            .filter(v => v.type === 'payment' && sameCashbox(v) && (CURRENCY_CODES.includes(v.currency) ? v.currency : legacyCurrency) === cashCurrency)
             .reduce((s, v) => s + Number(v.amount || 0), 0);
 
-        const payments = state.vouchers
-            .filter(v => v.type === 'payment' && v.cashboxId === cb.id && (v.currency || legacyCurrency) === cashCurrency)
-            .reduce((s, v) => s + Number(v.amount || 0), 0);
-
-        const purchasesOut = state.purchases
-            .filter(p => p.cashboxId === cb.id && p.affectsCashbox !== false && (p.currency || 'YER') === cashCurrency)
+        const purchasesOut = (state.purchases || [])
+            .filter(p => sameCashbox(p) && p.affectsCashbox !== false && (p.currency || 'YER') === cashCurrency)
             .reduce((sum, p) => {
                 // فاتورة التوريد تخصم المدفوع الفعلي فقط؛ والدفعة السابقة المسجلة في كشف المورد لا تخصم مرتين.
                 const cashOut = p.kind === 'supplierPurchase'
@@ -6815,16 +6876,16 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
                 return sum + cashOut;
             }, 0);
         const staffPaymentsOut = (state.employeeExpenses || [])
-            .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
+            .filter(p => sameCashbox(p) && (p.currency || 'YER') === cashCurrency)
             .reduce((s, p) => s + Number(p.amount || 0), 0);
         const dailyEmployeeDisbursementsOut = (state.employeeDailyDisbursements || [])
-            .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
+            .filter(p => sameCashbox(p) && (p.currency || 'YER') === cashCurrency)
             .reduce((s, p) => s + Number(p.amount || 0), 0);
         const managerWithdrawalsOut = (state.managerWithdrawals || [])
-            .filter(p => p.cashboxId === cb.id && (p.currency || 'YER') === cashCurrency)
+            .filter(p => sameCashbox(p) && (p.currency || 'YER') === cashCurrency)
             .reduce((s, p) => s + Number(p.amount || 0), 0);
 
-        return opening + cashSales + receipts - payments - purchasesOut - staffPaymentsOut - dailyEmployeeDisbursementsOut - managerWithdrawalsOut;
+        return opening + cashSales + receipts + deposits - payments - purchasesOut - staffPaymentsOut - dailyEmployeeDisbursementsOut - managerWithdrawalsOut;
     }
 
     function getVoucherCurrency(voucher) {
@@ -7044,6 +7105,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         renderSupplierBalances();
         if (!document.getElementById('expenseEntryTab')?.classList.contains('hidden')) { filterPurchaseCashboxes(); renderPurchasesTable(); }
         renderVouchersTable();
+        if (!document.getElementById('cashboxDepositTab')?.classList.contains('hidden')) renderCashboxDepositsHistory();
         renderManagerWithdrawals();
         renderCashboxesList();
         renderBranchesChips();
@@ -8440,6 +8502,23 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const visibleWarehouse = getScopedWarehouseItems();
         const totalStockQty = visibleWarehouse.reduce((s, w) => s + Number(w.qty || 0), 0);
         const totalStockVal = visibleWarehouse.reduce((s, w) => s + (Number(w.qty || 0) * Number(w.costPrice ?? w.price ?? 0)), 0);
+        // تفصيل إجمالي الكميات حسب كل فرع/مخزن، مع احترام نطاق الفروع المسموح للحساب الحالي.
+        const stockBranchTotals = new Map();
+        getAccessibleBranches().forEach(branch => {
+            const id = String(branch.id || 'main_branch');
+            stockBranchTotals.set(id, { name: branch.name || 'الفرع الرئيسي', qty: 0 });
+        });
+        visibleWarehouse.forEach(item => {
+            const id = String(item.branchId || 'main_branch');
+            if (!stockBranchTotals.has(id)) {
+                const branch = getAllBranches().find(entry => String(entry.id) === id);
+                stockBranchTotals.set(id, { name: item.branchName || branch?.name || 'الفرع الرئيسي', qty: 0 });
+            }
+            stockBranchTotals.get(id).qty += Number(item.qty || 0);
+        });
+        const stockBranchLinesHtml = [...stockBranchTotals.entries()].map(([id, branch]) =>
+            `<div class="stock-dashboard-branch-line"><span>${escapeUiText(branch.name)}</span><strong>${formatQty(branch.qty)}</strong></div>`
+        ).join('') || '<div class="stock-dashboard-empty">لا توجد مخازن مسموحة لهذا الحساب</div>';
 
         document.getElementById('kpiTotalSales').textContent = formatCurrencyBreakdown(visibleInvoices, 'netTotal');
         const cashEl = document.getElementById('kpiTotalCash');
@@ -8471,7 +8550,13 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
                 `<div class="customer-debt-currency-line" style="display:block!important;width:100%;text-align:right;line-height:1.45;font-size:12px;font-weight:900;white-space:nowrap">${formatMoney(debtTotals[code])} ${code}</div>`
             ).join('');
         }
-        document.getElementById('kpiWarehouseStock').textContent = formatQty(totalStockQty);
+        const stockEl = document.getElementById('kpiWarehouseStock');
+        if (stockEl) {
+            stockEl.innerHTML = `
+                <div class="stock-dashboard-total-main">${formatQty(totalStockQty)}</div>
+                <div class="stock-dashboard-branches">${stockBranchLinesHtml}</div>
+                <div class="stock-dashboard-total-footer">الإجمالي الكلي: ${formatQty(totalStockQty)}</div>`;
+        }
         document.getElementById('purchasesTabTotal').textContent = formatCurrencyBreakdown(visiblePurchases.filter(record => record.kind === 'expense'), 'amount');
         document.getElementById('warehouseTotalValueBadge').textContent = `قيمة المخزون: ${formatMoney(totalStockVal)}`;
     }
@@ -10876,6 +10961,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (!canAccessMenu('vouchersTab', currentUser)) { showToast('ليس لديك صلاحية فتح شاشة الأسناد'); return; }
         const voucher = (state.vouchers || []).find(item => String(item.id) === String(vchId));
         if (!voucher) { showToast('لم يتم العثور على السند'); return; }
+        if (voucher.type === 'cashboxDeposit') { editCashboxDeposit(vchId); return; }
         if (editingVoucherId && String(editingVoucherId) !== String(vchId)) {
             if (!confirm('هناك سند آخر قيد التعديل. إلغاء التغييرات الحالية وفتح السند المحدد؟')) return;
         }
@@ -11148,16 +11234,17 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (!voucher) { showToast('لم يتم العثور على السند المطلوب طباعته'); return; }
         const isReceipt = voucher.type === 'receipt';
         const isDiscount = voucher.type === 'customerDiscount';
+        const isCashboxDeposit = voucher.type === 'cashboxDeposit';
         const currency = getVoucherCurrency(voucher);
         const amount = Number(voucher.amount || 0);
         const reference = escapeUiText(voucher.refNumber || voucher.id || '—');
         const date = escapeUiText(voucher.date || '-');
         const cashboxName = escapeUiText(isDiscount ? 'لا ينطبق — قيد غير نقدي' : (voucher.cashboxName || state.cashboxes.find(item => String(item.id) === String(voucher.cashboxId))?.name || '-'));
-        const partyName = escapeUiText(voucher.customerName && voucher.customerName !== 'عام' ? voucher.customerName : (voucher.partyName || '—'));
+        const partyName = escapeUiText(isCashboxDeposit ? (voucher.partyName || '—') : (voucher.customerName && voucher.customerName !== 'عام' ? voucher.customerName : (voucher.partyName || '—')));
         const staffName = escapeUiText(voucher.collectionStaffName || voucher.employee || '—');
         const issuerName = escapeUiText(voucher.employee || currentUser?.fullName || '—');
-        const note = escapeUiText(voucher.note || (isDiscount ? 'خصم من حساب العميل' : isReceipt ? `لكم سند قبض برقم ${voucher.refNumber || '—'}` : `عليكم سند صرف برقم ${voucher.refNumber || '—'}`));
-        const title = isDiscount ? 'إشعار خصم من حساب العميل' : isReceipt ? 'سند قبض' : 'سند صرف';
+        const note = escapeUiText(voucher.note || (isCashboxDeposit ? 'توريد نقدي إلى البنك / الصندوق' : isDiscount ? 'خصم من حساب العميل' : isReceipt ? `لكم سند قبض برقم ${voucher.refNumber || '—'}` : `عليكم سند صرف برقم ${voucher.refNumber || '—'}`));
+        const title = isCashboxDeposit ? 'سند توريد إلى البنك / الصندوق' : isDiscount ? 'إشعار خصم من حساب العميل' : isReceipt ? 'سند قبض' : 'سند صرف';
         const logoUrl = 'https://abu-mohammad-accounting.vercel.app/logo.png';
         const win = window.open('', '_blank', 'width=900,height=900');
         if (!win) { showToast('اسمح بفتح النوافذ المنبثقة حتى تتمكن من طباعة السند'); return; }
@@ -11172,37 +11259,189 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         <main class="voucher-paper">${bilingualContactHeaderHtml()}
         <div class="voucher-title"><h2>${title}</h2><div class="voucher-ref">رقم السند: ${reference}</div></div>
         <section class="voucher-meta"><div><span>التاريخ</span><strong>${date}</strong></div><div><span>نوع السند</span><strong>${title}</strong></div><div><span>الصندوق</span><strong>${cashboxName}</strong></div><div><span>العملة</span><strong>${escapeUiText(CURRENCY_NAMES[currency] || currency)} (${currency})</strong></div><div><span>الموظف المسؤول</span><strong>${staffName}</strong></div><div><span>سجل بواسطة</span><strong>${issuerName}</strong></div></section>
-        <div class="party-line"><b>${isDiscount ? 'العميل صاحب الخصم:' : isReceipt ? 'استلمنا من العميل / الجهة:' : 'اسم المستلم / الجهة:'}</b> ${partyName}</div>
-        <div class="amount-panel"><span>${isDiscount ? 'قيمة الخصم من حساب العميل' : isReceipt ? 'المبلغ المستلم' : 'المبلغ المصروف'}</span><strong>${formatMoney(amount)} ${currency}</strong><small>${escapeUiText(CURRENCY_NAMES[currency] || currency)}</small></div>
+        <div class="party-line"><b>${isCashboxDeposit ? 'لمن تم التوريد؟:' : isDiscount ? 'العميل صاحب الخصم:' : isReceipt ? 'استلمنا من العميل / الجهة:' : 'اسم المستلم / الجهة:'}</b> ${partyName}</div>
+        <div class="amount-panel"><span>${isCashboxDeposit ? 'المبلغ المورّد إلى الصندوق / البنك' : isDiscount ? 'قيمة الخصم من حساب العميل' : isReceipt ? 'المبلغ المستلم' : 'المبلغ المصروف'}</span><strong>${formatMoney(amount)} ${currency}</strong><small>${escapeUiText(CURRENCY_NAMES[currency] || currency)}</small></div>
         <div class="statement-note"><b>البيان في كشف الحساب:</b> ${note}</div>
-        <div class="signatures"><div>${isDiscount ? 'اعتماد الخصم' : isReceipt ? 'توقيع المستلم' : 'توقيع مستلم المبلغ'}</div><div>توقيع المحاسب / المسؤول</div></div>
+        <div class="signatures"><div>${isCashboxDeposit ? 'توقيع المستلم / البنك' : isDiscount ? 'اعتماد الخصم' : isReceipt ? 'توقيع المستلم' : 'توقيع مستلم المبلغ'}</div><div>توقيع المحاسب / المسؤول</div></div>
         <div class="voucher-footer">معمل أبو محمد — يرجى الاحتفاظ بنسخة من السند للرجوع إليها</div></main><script>window.onload=()=>setTimeout(()=>{window.focus();window.print()},350)<\/script></body></html>`);
         win.document.close();
+    }
+
+    let editingCashboxDepositId = null;
+
+    function updateCashboxDepositTargets() {
+        const select = document.getElementById('cashboxDepositTarget');
+        if (!select) return;
+        const previous = select.value;
+        const currency = document.getElementById('cashboxDepositCurrency')?.value || 'YER';
+        select.innerHTML = (state.cashboxes || []).map(box =>
+            `<option value="${escapeUiText(box.id)}">${escapeUiText(box.name)} — الرصيد الحالي ${formatMoney(computeSystemCashboxBalance(box, currency))} ${currency}</option>`
+        ).join('') || '<option value="">لا يوجد بنك أو صندوق مسجل</option>';
+        if (previous && (state.cashboxes || []).some(box => String(box.id) === String(previous))) select.value = previous;
+    }
+
+    function prepareCashboxDepositPage() {
+        updateCashboxDepositTargets();
+        const date = document.getElementById('cashboxDepositDate');
+        if (date && !date.value) date.value = getLocalDateKey();
+        renderCashboxDepositsHistory();
+    }
+
+    function resetCashboxDepositForm() {
+        ['cashboxDepositAmount','cashboxDepositParty','cashboxDepositSource','cashboxDepositNote','cashboxDepositRef'].forEach(id => {
+            const element = document.getElementById(id); if (element) element.value = '';
+        });
+        const date = document.getElementById('cashboxDepositDate'); if (date) date.value = getLocalDateKey();
+        const currency = document.getElementById('cashboxDepositCurrency'); if (currency) currency.value = 'YER';
+        updateCashboxDepositTargets();
+    }
+
+    function setCashboxDepositEditUi(enabled) {
+        const banner = document.getElementById('cashboxDepositEditBanner');
+        const cancel = document.getElementById('cancelCashboxDepositEditBtn');
+        const title = document.getElementById('cashboxDepositFormTitle');
+        const button = document.getElementById('saveCashboxDepositBtn');
+        if (banner) { banner.classList.toggle('hidden', !enabled); banner.style.display = enabled ? 'flex' : 'none'; }
+        if (cancel) cancel.classList.toggle('hidden', !enabled);
+        if (title) title.innerHTML = enabled ? '<i class="fa-solid fa-pen-to-square"></i> تعديل عملية توريد' : '<i class="fa-solid fa-circle-plus"></i> تسجيل توريد جديد';
+        if (button) button.innerHTML = enabled ? '<i class="fa-solid fa-floppy-disk"></i> حفظ تعديلات التوريد' : '<i class="fa-solid fa-check"></i> حفظ التوريد وإضافة الرصيد';
+    }
+
+    function cancelCashboxDepositEdit() {
+        editingCashboxDepositId = null;
+        resetCashboxDepositForm();
+        setCashboxDepositEditUi(false);
+    }
+
+    async function saveCashboxDeposit() {
+        if (isBusy) return;
+        const button = document.getElementById('saveCashboxDepositBtn');
+        const cashboxId = document.getElementById('cashboxDepositTarget')?.value || '';
+        const cashbox = (state.cashboxes || []).find(item => String(item.id) === String(cashboxId));
+        const currency = document.getElementById('cashboxDepositCurrency')?.value || 'YER';
+        const amount = Number(document.getElementById('cashboxDepositAmount')?.value || 0);
+        const partyName = (document.getElementById('cashboxDepositParty')?.value || '').trim();
+        const date = document.getElementById('cashboxDepositDate')?.value || getLocalDateKey();
+        const depositSource = (document.getElementById('cashboxDepositSource')?.value || '').trim();
+        const detail = (document.getElementById('cashboxDepositNote')?.value || '').trim();
+        let refNumber = (document.getElementById('cashboxDepositRef')?.value || '').trim();
+        if (!cashbox) { showToast('اختر البنك أو الصندوق الذي تم التوريد إليه'); return; }
+        if (!CURRENCY_CODES.includes(currency)) { showToast('اختر عملة صحيحة'); return; }
+        if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
+        if (!partyName) { showToast('اكتب لمن تم التوريد أو اسم الجهة المستفيدة'); return; }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { showToast('اختر تاريخ توريد صحيحاً'); return; }
+        if (!refNumber) refNumber = `TRD-${date.replace(/-/g, '')}-${String(Date.now()).slice(-6)}`;
+        const note = [`توريد نقدي إلى ${cashbox.name}`, depositSource ? `مصدر المبلغ: ${depositSource}` : '', detail].filter(Boolean).join(' — ');
+        const record = {
+            type: 'cashboxDeposit', date, cashboxId: cashbox.id, cashboxName: cashbox.name,
+            currency, amount, partyName, depositSource, note, refNumber,
+            customerId: '', customerName: partyName, employee: getAccountDisplayName(currentUser) || '',
+            profitTreatment: 'notApplicable', createdAt: new Date().toISOString()
+        };
+        isBusy = true; if (button) button.disabled = true;
+        try {
+            if (editingCashboxDepositId) {
+                if (!canEditRecord()) { showToast('ليس لديك صلاحية تعديل عمليات التوريد'); return; }
+                const id = editingCashboxDepositId;
+                const ref = db.collection('vouchers').doc(String(id));
+                await db.runTransaction(async transaction => {
+                    const snap = await transaction.get(ref);
+                    if (!snap.exists || snap.data()?.type !== 'cashboxDeposit') throw new Error('DEPOSIT_NOT_FOUND');
+                    const current = snap.data() || {};
+                    transaction.update(ref, { ...record, createdAt: current.createdAt || record.createdAt, editedBy: getAccountDisplayName(currentUser) || '', editedAt: new Date().toISOString() });
+                });
+                const index = (state.vouchers || []).findIndex(item => String(item.id) === String(id));
+                if (index >= 0) state.vouchers[index] = { ...record, createdAt: state.vouchers[index].createdAt || record.createdAt, id };
+                editingCashboxDepositId = null; setCashboxDepositEditUi(false); resetCashboxDepositForm();
+                renderAllViews(); showToast('تم تعديل التوريد وتحديث رصيد البنك / الصندوق');
+            } else {
+                const signature = { cashboxId: cashbox.id, currency, amount, partyName, depositSource, detail, date, refNumber, actor: dedupeActorId() };
+                const result = await createRecordOnce('vouchers', 'dep', signature, record, `deposit_${dedupeHash(refNumber)}`);
+                if (!result.created) { showToast('رقم الإيصال أو المرجع مسجل مسبقاً؛ لم تتم إضافة التوريد مرة ثانية'); return; }
+                resetCashboxDepositForm();
+                await reloadAllData(false);
+                renderCashboxesList();
+                renderStats();
+                showToast(`تم تسجيل التوريد وإضافة ${formatMoney(amount)} ${currency} إلى ${cashbox.name}`);
+            }
+        } catch (error) {
+            console.warn('Save cashbox deposit error:', error);
+            showToast(error?.message === 'DEPOSIT_NOT_FOUND' ? 'عملية التوريد غير موجودة؛ حدّث السجل' : 'تعذر حفظ عملية التوريد. تحقق من الاتصال والصلاحيات');
+        } finally { isBusy = false; if (button) button.disabled = false; }
+    }
+
+    function editCashboxDeposit(id) {
+        if (!canEditRecord()) { showToast('ليس لديك صلاحية تعديل عمليات التوريد'); return; }
+        const item = (state.vouchers || []).find(row => String(row.id) === String(id) && row.type === 'cashboxDeposit');
+        if (!item) { showToast('لم يتم العثور على عملية التوريد'); return; }
+        editingCashboxDepositId = String(id);
+        openFullPage('cashboxDepositTab');
+        updateCashboxDepositTargets();
+        const values = {
+            cashboxDepositTarget: item.cashboxId || '', cashboxDepositCurrency: getVoucherCurrency(item),
+            cashboxDepositAmount: Number(item.amount || 0), cashboxDepositParty: item.partyName || '',
+            cashboxDepositDate: item.date || getLocalDateKey(), cashboxDepositSource: item.depositSource || '',
+            cashboxDepositNote: String(item.note || '').replace(/^توريد نقدي إلى [^—]+(?: — مصدر المبلغ: [^—]+)?(?: — )?/, ''),
+            cashboxDepositRef: item.refNumber || ''
+        };
+        Object.entries(values).forEach(([key,value]) => { const el=document.getElementById(key); if(el) el.value=String(value); });
+        setCashboxDepositEditUi(true);
+        window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    function renderCashboxDepositsHistory() {
+        const body = document.getElementById('cashboxDepositsHistoryBody');
+        if (!body) return;
+        const query = String(document.getElementById('cashboxDepositSearch')?.value || '').trim().toLocaleLowerCase('ar');
+        const list = (state.vouchers || []).filter(item => item.type === 'cashboxDeposit').filter(item => {
+            const cashboxName = item.cashboxName || state.cashboxes.find(box => String(box.id) === String(item.cashboxId))?.name || '';
+            return !query || [item.refNumber,item.partyName,item.depositSource,item.note,cashboxName,item.date].some(value => String(value || '').toLocaleLowerCase('ar').includes(query));
+        }).sort((a,b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.refNumber || '').localeCompare(String(a.refNumber || '')));
+        body.innerHTML = list.length ? list.map(item => {
+            const cashboxName = item.cashboxName || state.cashboxes.find(box => String(box.id) === String(item.cashboxId))?.name || '-';
+            return `<tr>
+                <td>${escapeUiText(item.date || '-')}</td>
+                <td><strong>${escapeUiText(cashboxName)}</strong></td>
+                <td>${escapeUiText(item.partyName || '-')}</td>
+                <td>${escapeUiText([item.depositSource ? `المصدر: ${item.depositSource}` : '', item.note || ''].filter(Boolean).join(' — ') || '-')}</td>
+                <td>${escapeUiText(getVoucherCurrency(item))}</td>
+                <td class="mono" style="color:var(--success);font-weight:900">${formatMoney(item.amount || 0)} ${escapeUiText(getVoucherCurrency(item))}</td>
+                <td>${escapeUiText(item.employee || '-')}</td>
+                <td style="white-space:nowrap;">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="printVoucherById('${String(item.id).replace(/'/g, '&#39;')}')"><i class="fa-solid fa-print"></i> طباعة</button>
+                    ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editCashboxDeposit('${String(item.id).replace(/'/g, '&#39;')}')"><i class="fa-solid fa-pen"></i> تعديل</button>` : ''}
+                    ${canDeleteRecord() ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteVoucherRecord('${String(item.id).replace(/'/g, '&#39;')}')"><i class="fa-solid fa-trash"></i> حذف</button>` : ''}
+                </td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">لا توجد عمليات توريد مسجلة</td></tr>';
     }
 
     function renderVouchersTable() {
         const list = state.vouchers.slice().reverse();
         document.getElementById('vouchersTableBody').innerHTML = list.length
             ? list.map(v => {
-                const defaultNote = v.type === 'receipt'
-                    ? `لكم سند قبض برقم ${v.refNumber || v.id || '—'}`
+                const isCashboxDeposit = v.type === 'cashboxDeposit';
+                const defaultNote = isCashboxDeposit
+                    ? `توريد نقدي إلى ${v.cashboxName || 'الصندوق'} — ${v.partyName || '—'}`
+                    : v.type === 'receipt' ? `لكم سند قبض برقم ${v.refNumber || v.id || '—'}`
                     : v.type === 'customerDiscount' ? `خصم من حساب العميل — ${v.discountReason || '—'}`
                     : `عليكم سند صرف برقم ${v.refNumber || v.id || '—'}`;
-                const voucherTypeLabel = v.type === 'receipt'
-                    ? '<span class="badge badge-cash">قبض</span>'
+                const voucherTypeLabel = isCashboxDeposit
+                    ? '<span class="badge badge-sup">توريد نقدي</span>'
+                    : v.type === 'receipt' ? '<span class="badge badge-cash">قبض</span>'
                     : v.type === 'customerDiscount' ? '<span class="badge badge-unit">خصم عميل</span>'
                     : '<span class="badge badge-expense">صرف</span>';
                 return `
                     <tr>
                         <td>${voucherTypeLabel}</td>
                         <td>${v.cashboxName || '-'}</td>
-                        <td>${v.customerName || '-'}</td>
-                        <td style="font-weight:700;">${v.note || defaultNote}</td>
+                        <td>${isCashboxDeposit ? escapeUiText(v.partyName || '-') : (v.customerName || '-')}</td>
+                        <td style="font-weight:700;">${escapeUiText(v.note || defaultNote)}</td>
                         <td><span class="mono">${formatMoney(v.amount)} ${getVoucherCurrency(v)}</span></td>
                         <td>${v.employee || '-'}</td>
                         <td style="white-space:nowrap;">
                             <button class="btn btn-outline btn-sm" title="طباعة السند مع الترويسة والشعار" onclick="printVoucherById('${v.id}')"><i class="fa-solid fa-print"></i> طباعة</button>
-                            ${canEditRecord() ? `<button class="btn btn-outline btn-sm" title="تعديل السند كاملاً" onclick="editVoucherRecord('${v.id}')"><i class="fa-solid fa-pen-to-square"></i> تعديل</button>` : ''}
+                            ${canEditRecord() ? `<button class="btn btn-outline btn-sm" title="تعديل السند كاملاً" onclick="${isCashboxDeposit ? `editCashboxDeposit('${v.id}')` : `editVoucherRecord('${v.id}')`}"><i class="fa-solid fa-pen-to-square"></i> تعديل</button>` : ''}
                             ${canDeleteRecord() ? `<button class="btn btn-danger btn-sm" onclick="deleteVoucherRecord('${v.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
                             ${(!canEditRecord() && !canDeleteRecord()) ? '<span style="color:var(--text-muted); font-size:11px;">عرض فقط</span>' : ''}
                         </td>
@@ -11287,7 +11526,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                     <div style="border:1px solid var(--border);border-radius:9px;padding:9px;min-width:0;">
                         <div style="font-size:11px;color:var(--text-muted);">${CURRENCY_NAMES[code]} (${code})</div>
                         <div class="mono" style="font-size:15px;font-weight:800;color:var(--success);margin:3px 0;">${formatMoney(computeSystemCashboxBalance(c, code))} ${code}</div>
-                        <div style="font-size:11px;color:var(--text-muted);">افتتاحي: ${formatMoney(getCashboxOpening(c, code))}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">افتتاحي: ${formatMoney(getCashboxOpening(c, code))} ${code}</div>
+                        <div style="font-size:11px;color:var(--success);font-weight:800;margin-top:3px;">إجمالي التوريدات: ${formatMoney(getCashboxDepositTotal(c, code))} ${code}</div>
                         ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;width:100%;" onclick="editCashboxOpening('${c.id}','${code}')"><i class="fa-solid fa-pen"></i> تعديل الافتتاحي</button>` : ''}
                     </div>`).join('');
                 return `
@@ -11311,8 +11551,18 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 const outgoing = item.kind === 'supplierPurchase' ? Number(item.paidAmount || 0) : Number(item.amount || 0);
                 if (outgoing > 0) movements.push({ date: item.date, type: item.kind === 'supplierPurchase' ? 'سداد نقدي لفاتورة مورد' : item.kind === 'supplierPayment' ? 'دفعة سداد مورد' : item.kind === 'purchase' ? 'مشتريات نقدية' : 'مصروف', note: `${item.title || ''} ${item.supplierName ? ' — المورد: ' + item.supplierName : ''}`, incoming: 0, outgoing, actor: item.employee || '' });
             });
-        state.vouchers.filter(item => item.cashboxId === cashbox.id && (item.currency || legacyCurrency) === currency)
-            .forEach(item => movements.push({ date: item.date || '', type: item.type === 'receipt' ? 'سند قبض' : 'سند صرف', note: item.note || `سند ${item.refNumber || item.id}`, incoming: item.type === 'receipt' ? Number(item.amount || 0) : 0, outgoing: item.type === 'payment' ? Number(item.amount || 0) : 0, actor: item.employee || '' }));
+        (state.vouchers || []).filter(item => String(item.cashboxId || '') === String(cashbox.id || '') && (CURRENCY_CODES.includes(item.currency) ? item.currency : legacyCurrency) === currency && ['receipt', 'payment', 'cashboxDeposit'].includes(item.type))
+            .forEach(item => {
+                const isDeposit = item.type === 'cashboxDeposit';
+                movements.push({
+                    date: item.date || '',
+                    type: isDeposit ? 'توريد نقدي إلى البنك / الصندوق' : item.type === 'receipt' ? 'سند قبض' : 'سند صرف',
+                    note: isDeposit ? `${item.partyName || 'توريد نقدي'}${item.depositSource ? ' — المصدر: ' + item.depositSource : ''}${item.note ? ' — ' + item.note : ''}${item.refNumber ? ' — مرجع: ' + item.refNumber : ''}` : (item.note || `سند ${item.refNumber || item.id}`),
+                    incoming: ['receipt', 'cashboxDeposit'].includes(item.type) ? Number(item.amount || 0) : 0,
+                    outgoing: item.type === 'payment' ? Number(item.amount || 0) : 0,
+                    actor: item.employee || ''
+                });
+            });
         (state.employeeExpenses || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
             .forEach(item => movements.push({ date: item.date || '', type: item.source === 'dailyDisbursementAdvance' ? 'سلفة مخصومة من مستحق موظف' : 'دفعة من مستحق موظف', note: `${item.staffName || ''} — ${item.note || ''}`, incoming: 0, outgoing: Number(item.amount || 0), actor: item.createdBy || '' }));
         (state.employeeDailyDisbursements || []).filter(item => item.cashboxId === cashbox.id && (item.currency || 'YER') === currency)
@@ -16100,6 +16350,66 @@ thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avo
             font-weight: 900 !important;
         }
 
+
+        /* تفصيل كميات المخزون في بطاقة القائمة الرئيسية */
+        #summaryStatsStrip #kpiWarehouseStock.stock-dashboard-breakdown {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 5px !important;
+            width: 100%;
+            min-width: 0;
+            white-space: normal !important;
+            line-height: 1.35 !important;
+            font-size: 12px !important;
+        }
+        #kpiWarehouseStock .stock-dashboard-total-main {
+            font-size: 19px;
+            font-weight: 900;
+            line-height: 1.2;
+            text-align: right;
+            direction: ltr;
+            font-variant-numeric: tabular-nums;
+        }
+        #kpiWarehouseStock .stock-dashboard-branches {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding: 5px 0;
+            border-top: 1px solid rgba(255,255,255,.28);
+            border-bottom: 1px solid rgba(255,255,255,.28);
+        }
+        #kpiWarehouseStock .stock-dashboard-branch-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 6px;
+            width: 100%;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        #kpiWarehouseStock .stock-dashboard-branch-line span {
+            min-width: 0;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+        #kpiWarehouseStock .stock-dashboard-branch-line strong {
+            flex: 0 0 auto;
+            direction: ltr;
+            font-size: 11px;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+        }
+        #kpiWarehouseStock .stock-dashboard-total-footer {
+            font-size: 11px;
+            font-weight: 900;
+            text-align: right;
+        }
+        #kpiWarehouseStock .stock-dashboard-empty {
+            font-size: 10px;
+            font-weight: 700;
+            opacity: .9;
+        }
 </style>
 
 
