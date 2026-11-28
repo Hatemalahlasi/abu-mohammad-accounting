@@ -3017,7 +3017,12 @@
                     <label>اسم الصنف</label>
                     <input type="text" id="newItemName" class="form-control" placeholder="اسم المادة أو المنتج">
                 </div>
-                <div class="form-group"><label>مجموعة الصنف</label><select id="newItemGroup" class="form-control"></select></div>
+                <div class="form-group">
+                    <label for="newItemGroup">مجموعة الصنف</label>
+                    <input type="text" id="newItemGroup" class="form-control" list="warehouseItemGroupOptions" placeholder="اكتب اسم مجموعتك أو اختر مجموعة سابقة" onfocus="populateWarehouseGroupOptions()" autocomplete="off">
+                    <small style="display:block;color:var(--text-muted);margin-top:4px;">تظهر هنا مجموعاتك المحفوظة سابقاً. يمكنك اختيار مجموعة موجودة أو كتابة مجموعة جديدة.</small>
+                    <datalist id="warehouseItemGroupOptions"></datalist>
+                </div>
                 <div class="grid-4">
                     <div class="form-group">
                         <label>الوحدة</label>
@@ -5776,11 +5781,10 @@ function initMenuPermissionCheckboxes() {
         if (!grid) return;
         const branchId = document.getElementById('quoteBranch')?.value || 'ALL';
         const query = String(document.getElementById('quoteProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
-        const items = getScopedWarehouseItems().filter(item => {
-            const branchMatch = branchId === 'ALL' || String(item.branchId || 'main_branch') === branchId;
-            const nameMatch = !query || String(item.name || '').toLocaleLowerCase('ar').includes(query);
-            return branchMatch && nameMatch;
-        });
+        const branchItems = getScopedWarehouseItems().filter(item => branchId === 'ALL' || String(item.branchId || 'main_branch') === branchId);
+        renderItemGroupFilters('quoteProductGroupFilters','quotation',branchItems);
+        const selectedGroup = itemGroupState.quotation || 'ALL';
+        const items = branchItems.filter(item => (selectedGroup === 'ALL' || getItemGroup(item) === selectedGroup) && (!query || String(item.name || '').toLocaleLowerCase('ar').includes(query)));
         const count = document.getElementById('quoteProductsCount');
         if (count) count.textContent = `${items.length} صنف`;
         if (!items.length) {
@@ -7312,7 +7316,6 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         if (!grid) return;
         const branchId = document.getElementById('invBranchSelect')?.value || '';
         const query = String(document.getElementById('invoiceProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
-        const selectedGroup = itemGroupState.invoice || 'ALL';
         if (!branchId || !isBranchAllowed(branchId)) {
             grid.innerHTML = '<div class="empty-products">لم يتم تحديد مخزن مسموح لهذا الحساب.</div>';
             const resultCount = document.getElementById('invoicePickerResultCount'); if (resultCount) resultCount.textContent = '0 صنف';
@@ -7324,6 +7327,8 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const branchItems = (state.warehouse || []).filter(item =>
             String(item.branchId || 'main_branch') === String(branchId) && isBranchAllowed(item.branchId || 'main_branch')
         );
+        renderItemGroupFilters('invoiceProductGroupFilters','invoice',branchItems);
+        const selectedGroup = itemGroupState.invoice || 'ALL';
         const items = branchItems.filter(item => String(item.name || '').toLocaleLowerCase('ar').includes(query) && (selectedGroup === 'ALL' || getItemGroup(item) === selectedGroup));
         const resultCount = document.getElementById('invoicePickerResultCount');
         if (resultCount) resultCount.textContent = `${items.length} صنف`;
@@ -7794,16 +7799,17 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         if (!grid) return;
         const branchId = document.getElementById('transferFromBranch')?.value || '';
         const query = String(document.getElementById('transferProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
+        const branchItems = (state.warehouse || []).filter(w => String(w.branchId || 'main_branch') === String(branchId));
+        renderItemGroupFilters('transferProductGroupFilters','transfer',branchItems);
         const selectedGroup=itemGroupState.transfer||'ALL';
-        const items = (state.warehouse || []).filter(w =>
-            String(w.branchId || 'main_branch') === String(branchId) && Number(w.qty || 0) > 0 &&
+        const items = branchItems.filter(w => Number(w.qty || 0) > 0 &&
             String(w.name || '').toLocaleLowerCase('ar').includes(query) && (selectedGroup === 'ALL' || getItemGroup(w) === selectedGroup)
         );
         const count = document.getElementById('transferPickerResultCount');
         if (count) count.textContent = `${items.length} صنف`;
         if (!items.length) { grid.innerHTML = '<div class="empty-products"><i class="fa-solid fa-box-open"></i><br>لا توجد أصناف مطابقة في هذا المخزن.</div>'; return; }
         grid.innerHTML = items.map(item => `<div class="quote-picker-row">
-            <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(item.unit || 'حبة')} · المتاح للنقل: ${formatQty(item.qty || 0)}</small></div>
+            <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(getItemGroup(item))} · ${escapeUiText(item.unit || 'حبة')} · المتاح للنقل: ${formatQty(item.qty || 0)}</small></div>
             <div><label style="display:block;font-size:10px;font-weight:800;color:#52665a;margin-bottom:3px">الكمية</label><input class="quote-picker-qty num-input" type="number" min="0.01" max="${Number(item.qty || 0)}" step="0.01" value="1" inputmode="decimal"></div>
             <button type="button" class="btn btn-primary btn-sm" onclick="addTransferProductFromModal('${encodeURIComponent(String(item.id))}',this)"><i class="fa-solid fa-plus"></i> إضافة</button>
         </div>`).join('');
@@ -7845,9 +7851,10 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         if (!grid) return;
         const branchId = document.getElementById('qtyBranchSelect')?.value || '';
         const query = String(document.getElementById('quantityProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
+        const branchItems = (state.warehouse || []).filter(w => String(w.branchId || 'main_branch') === String(branchId));
+        renderItemGroupFilters('quantityProductGroupFilters','quantity',branchItems);
         const selectedGroup=itemGroupState.quantity||'ALL';
-        const items = (state.warehouse || []).filter(w =>
-            String(w.branchId || 'main_branch') === String(branchId) &&
+        const items = branchItems.filter(w =>
             String(w.name || '').toLocaleLowerCase('ar').includes(query) &&
             (selectedGroup === 'ALL' || getItemGroup(w) === selectedGroup)
         );
@@ -7855,7 +7862,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         if (count) count.textContent = `${items.length} صنف`;
         if (!items.length) { grid.innerHTML = '<div class="empty-products"><i class="fa-solid fa-box-open"></i><br>لا توجد أصناف مطابقة في هذا المخزن.</div>'; return; }
         grid.innerHTML = items.map(item => `<div class="quote-picker-row">
-            <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(item.unit || 'حبة')} · الرصيد الحالي: ${formatQty(item.qty || 0)}</small></div>
+            <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(getItemGroup(item))} · ${escapeUiText(item.unit || 'حبة')} · الرصيد الحالي: ${formatQty(item.qty || 0)}</small></div>
             <div><label style="display:block;font-size:10px;font-weight:800;color:#52665a;margin-bottom:3px">الكمية</label><input class="quote-picker-qty num-input" type="number" min="0.01" step="0.01" value="1" inputmode="decimal"></div>
             <button type="button" class="btn btn-primary btn-sm" onclick="addQuantityProductFromModal('${encodeURIComponent(String(item.id))}',this)"><i class="fa-solid fa-plus"></i> إضافة</button>
         </div>`).join('');
@@ -11391,7 +11398,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const costPrice = Number(document.getElementById('newItemCostPrice')?.value || 0);
         const price = Number(document.getElementById('newItemPrice').value || 0);
         const itemCurrency = CURRENCY_CODES.includes(document.getElementById('newItemPriceCurrency')?.value) ? document.getElementById('newItemPriceCurrency').value : 'YER';
-        const itemGroup = String(document.getElementById('newItemGroup')?.value || 'غير مصنف').trim() || 'غير مصنف';
+        const itemGroup = String(document.getElementById('newItemGroup')?.value || '').trim().replace(/\s+/g, ' ');
         if (!name) { showToast('أدخل اسم الصنف'); return; }
         if (![qty, costPrice, price].every(Number.isFinite) || qty < 0 || costPrice < 0 || price < 0) { showToast('تحقق من الكمية وسعر التكلفة وسعر البيع'); return; }
         isBusy = true;
@@ -11402,7 +11409,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 String(w.name || '').trim().toLowerCase() === name.toLowerCase() &&
                 (w.unit || 'حبة') === unit
             );
-            const itemPatch = { qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, unit, branchId, branchName, name, itemGroup, sourceType: existing?.sourceType || 'manual', sourceName: existing?.sourceName || getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() };
+            const finalItemGroup = itemGroup || (existing && getItemGroup(existing) !== 'غير مصنف' ? getItemGroup(existing) : '');
+            const itemPatch = { qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, unit, branchId, branchName, name, groupName: finalItemGroup, itemGroup: finalItemGroup, sourceType: existing?.sourceType || 'manual', sourceName: existing?.sourceName || getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() };
             if (existing) {
                 if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل على المخزون'); return; }
                 let savedHistory = Array.isArray(existing.quantityAdjustmentHistory) ? existing.quantityAdjustmentHistory.slice() : [];
@@ -11483,7 +11491,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                     <div class="form-group" style="margin:0;"><label for="warehouseStockEditQty">الكمية الموجودة (${escapeUiText(unit)})</label><input id="warehouseStockEditQty" class="form-control" type="number" min="0" step="0.001" inputmode="decimal" value="${qty}" /></div>
                     <div class="form-group" style="margin:0;"><label for="warehouseStockEditCost">سعر التكلفة (${escapeUiText(currency)})</label><input id="warehouseStockEditCost" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" value="${cost}" /></div>
                     <div class="form-group" style="margin:0;grid-column:1/-1;"><label for="warehouseStockEditPrice">سعر البيع (${escapeUiText(currency)})</label><input id="warehouseStockEditPrice" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" value="${sale}" /></div>
-                    <div class="form-group" style="margin:0;grid-column:1/-1;"><label for="warehouseStockEditGroup">مجموعة الصنف</label><select id="warehouseStockEditGroup" class="form-control">${getItemGroups().map(g=>`<option value="${escapeUiText(g)}" ${getItemGroup(item)===g?'selected':''}>${escapeUiText(g)}</option>`).join('')}</select></div>
+                    <div class="form-group" style="margin:0;grid-column:1/-1;"><label for="warehouseStockEditGroup">مجموعة الصنف</label><input id="warehouseStockEditGroup" class="form-control" list="warehouseItemGroupOptions" value="${escapeUiText(getItemGroup(item) === 'غير مصنف' ? '' : getItemGroup(item))}" placeholder="اكتب اسم مجموعتك أو اختر مجموعة سابقة" onfocus="populateWarehouseGroupOptions()" autocomplete="off"></div>
                 </div>
                 <div style="font-size:12px;color:#64776d;background:#fbfdfb;border-right:3px solid #238451;padding:9px 11px;margin-top:13px;border-radius:7px;line-height:1.7;">سيُسجَّل فرق الكمية في حركة المخزون باسم المستخدم الذي أجرى التعديل، وسيتم تحديث قيمة المخزون بالتكلفة تلقائياً. لا تتغير فواتير الشراء أو البيع السابقة.</div>
                 <div style="display:flex;gap:9px;justify-content:flex-start;margin-top:17px;flex-wrap:wrap;">
@@ -11505,7 +11513,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const qtyText = document.getElementById('warehouseStockEditQty')?.value ?? '';
         const costText = document.getElementById('warehouseStockEditCost')?.value ?? '';
         const saleText = document.getElementById('warehouseStockEditPrice')?.value ?? '';
-        const nextGroup = String(document.getElementById('warehouseStockEditGroup')?.value || getItemGroup(item));
+        const nextGroup = String(document.getElementById('warehouseStockEditGroup')?.value ?? getItemGroup(item)).trim().replace(/\s+/g, ' ');
         const nextQty = Number(qtyText), nextCost = Number(costText), nextPrice = Number(saleText);
         if ([qtyText, costText, saleText].some(value => String(value).trim() === '') || ![nextQty, nextCost, nextPrice].every(Number.isFinite) || nextQty < 0 || nextCost < 0 || nextPrice < 0) {
             showToast('أدخل كمية وسعر تكلفة وسعر بيع صحيحة؛ لا تقبل القيم السالبة'); return;
@@ -11561,14 +11569,14 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                     priceBefore:currentPrice, priceAfter:nextPrice, branchId:currentBranchId, branchName:current.branchName || item.branchName || ''
                 });
                 transaction.update(ref, {
-                    qty:nextQty, costPrice:nextCost, price:nextPrice, itemGroup:nextGroup,
+                    qty:nextQty, costPrice:nextCost, price:nextPrice, groupName:nextGroup, itemGroup:nextGroup,
                     quantityAdjustmentHistory:quantityHistory.slice(-200), stocktakeEditHistory:auditHistory.slice(-200),
                     __recentOperationMarkers:[...recent,{key:markerKey,at:Date.now()}].slice(-30)
                 });
                 return { duplicate:false, qtyHistory:quantityHistory.slice(-200), auditHistory:auditHistory.slice(-200) };
             });
             if (result?.duplicate) { showToast('تم منع تكرار نفس التعديل خلال لحظات'); return; }
-            Object.assign(item, { qty:nextQty, costPrice:nextCost, price:nextPrice, itemGroup:nextGroup, quantityAdjustmentHistory:result.qtyHistory || item.quantityAdjustmentHistory, stocktakeEditHistory:result.auditHistory || item.stocktakeEditHistory });
+            Object.assign(item, { qty:nextQty, costPrice:nextCost, price:nextPrice, groupName:nextGroup, itemGroup:nextGroup, quantityAdjustmentHistory:result.qtyHistory || item.quantityAdjustmentHistory, stocktakeEditHistory:result.auditHistory || item.stocktakeEditHistory });
             closeWarehouseStockEdit();
             renderWarehouseTable();
             renderItemList();
@@ -11750,14 +11758,48 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         }
     }
 
-    const ITEM_GROUPS=['البالطوهات','بدلات العمليات','الملابس الطبية','الزي الطبي','الكمامات','القفازات','الأحذية','مستلزمات المختبر','المستلزمات الطبية','أخرى','غير مصنف'];
     const itemGroupState={itemList:'ALL',quotation:'ALL',invoice:'ALL',transfer:'ALL',quantity:'ALL'};
-    function getItemGroup(item){return String(item?.itemGroup||item?.group||'غير مصنف').trim()||'غير مصنف';}
-    function getItemGroups(){return [...new Set([...ITEM_GROUPS,...(state.warehouse||[]).map(getItemGroup)])];}
-    function renderItemGroupSelect(id){const el=document.getElementById(id);if(!el)return;el.innerHTML=getItemGroups().map(g=>`<option value="${escapeUiText(g)}">${escapeUiText(g)}</option>`).join('');}
-    function renderItemGroupFilters(id,key,fn){const el=document.getElementById(id);if(!el)return;const gs=getItemGroups();el.innerHTML=`<span class="item-group-filter-title">مجموعات الأصناف:</span><button type="button" class="item-group-chip ${itemGroupState[key]==='ALL'?'active':''}" onclick="setItemGroupFilter('${key}','ALL')">الكل</button>`+gs.map(g=>`<button type="button" class="item-group-chip ${itemGroupState[key]===g?'active':''}" onclick='setItemGroupFilter(${JSON.stringify(key)},${JSON.stringify(g)})'>${escapeUiText(g)}</button>`).join('');}
-    function setItemGroupFilter(key,value){itemGroupState[key]=value;renderItemGroupFilters('itemListGroupFilters','itemList');renderItemGroupFilters('quoteProductGroupFilters','quotation');renderItemGroupFilters('invoiceProductGroupFilters','invoice');renderItemGroupFilters('transferProductGroupFilters','transfer');renderItemGroupFilters('quantityProductGroupFilters','quantity');if(key==='itemList')renderItemList();if(key==='quotation')renderQuotationCatalog();if(key==='invoice')renderInvoiceProductPicker();if(key==='transfer')renderTransferProductPicker();if(key==='quantity')renderQuantityProductPicker();}
-    function initItemGroupControls(){renderItemGroupSelect('newItemGroup');renderItemGroupFilters('itemListGroupFilters','itemList');renderItemGroupFilters('quoteProductGroupFilters','quotation');renderItemGroupFilters('invoiceProductGroupFilters','invoice');renderItemGroupFilters('transferProductGroupFilters','transfer');renderItemGroupFilters('quantityProductGroupFilters','quantity');}
+    function normalizeItemGroupName(value){return String(value||'').trim().replace(/\s+/g,' ');}
+    // Keep the original user-defined group fields first. itemGroup is only a compatibility fallback.
+    function getItemGroup(item){const saved=[item?.groupName,item?.category,item?.group,item?.itemGroup].map(normalizeItemGroupName).find(Boolean);return saved||'غير مصنف';}
+    function getItemGroups(items=state.warehouse||[]){return [...new Set((items||[]).map(getItemGroup).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));}
+    function populateWarehouseGroupOptions(){const list=document.getElementById('warehouseItemGroupOptions');if(!list)return;list.innerHTML=getItemGroups(state.warehouse||[]).map(g=>`<option value="${escapeUiText(g)}"></option>`).join('');}
+    function getItemsForGroupFilter(key){
+        let items=getScopedWarehouseItems();
+        let branchId='ALL';
+        if(key==='itemList')branchId=document.getElementById('itemListBranch')?.value||'ALL';
+        else if(key==='quotation')branchId=document.getElementById('quoteBranch')?.value||'ALL';
+        else if(key==='invoice')branchId=document.getElementById('invBranchSelect')?.value||'ALL';
+        else if(key==='transfer')branchId=document.getElementById('transferFromBranch')?.value||'ALL';
+        else if(key==='quantity')branchId=document.getElementById('qtyBranchSelect')?.value||'ALL';
+        return items.filter(item=>branchId==='ALL'||String(item.branchId||'main_branch')===String(branchId));
+    }
+    function renderItemGroupFilters(id,key,items=getItemsForGroupFilter(key)){
+        const el=document.getElementById(id);if(!el)return;
+        const groups=getItemGroups(items);
+        let selected=itemGroupState[key]||'ALL';
+        if(selected!=='ALL'&&!groups.includes(selected)){selected='ALL';itemGroupState[key]='ALL';}
+        const buttons=[`<button type="button" class="item-group-chip ${selected==='ALL'?'active':''}" onclick="setItemGroupFilter('${key}','ALL')">الكل</button>`];
+        groups.forEach(group=>{const encoded=encodeURIComponent(group);buttons.push(`<button type="button" class="item-group-chip ${selected===group?'active':''}" onclick="setItemGroupFilter('${key}','${encoded}')">${escapeUiText(group)}</button>`);});
+        el.innerHTML=buttons.join('');
+    }
+    function setItemGroupFilter(key,encodedValue){
+        const value=encodedValue==='ALL'?'ALL':normalizeItemGroupName(decodeURIComponent(encodedValue));
+        if(!Object.prototype.hasOwnProperty.call(itemGroupState,key))return;
+        itemGroupState[key]=value;
+        if(key==='itemList')renderItemList();
+        else if(key==='quotation')renderQuotationCatalog();
+        else if(key==='invoice')renderInvoiceProductPicker();
+        else if(key==='transfer')renderTransferProductPicker();
+        else if(key==='quantity')renderQuantityProductPicker();
+    }
+    function initItemGroupControls(){populateWarehouseGroupOptions();
+        renderItemGroupFilters('itemListGroupFilters','itemList');
+        renderItemGroupFilters('quoteProductGroupFilters','quotation');
+        renderItemGroupFilters('invoiceProductGroupFilters','invoice');
+        renderItemGroupFilters('transferProductGroupFilters','transfer');
+        renderItemGroupFilters('quantityProductGroupFilters','quantity');
+    }
 
     function renderItemList() {
         const host = document.getElementById('itemListCards');
@@ -11766,10 +11808,12 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (!host) return;
         const query = (document.getElementById('itemListSearch')?.value || '').trim().toLowerCase();
         const branchId = document.getElementById('itemListBranch')?.value || 'ALL';
-        const selectedGroup = itemGroupState.itemList || 'ALL';
         const allWarehouse = Array.isArray(state.warehouse) ? state.warehouse : [];
         const accessible = getScopedWarehouseItems();
-        let items = accessible.filter(item => (branchId === 'ALL' || (item.branchId || 'main_branch') === branchId) && (selectedGroup === 'ALL' || getItemGroup(item) === selectedGroup));
+        const branchItems = accessible.filter(item => branchId === 'ALL' || (item.branchId || 'main_branch') === branchId);
+        renderItemGroupFilters('itemListGroupFilters','itemList',branchItems);
+        const selectedGroup = itemGroupState.itemList || 'ALL';
+        let items = branchItems.filter(item => selectedGroup === 'ALL' || getItemGroup(item) === selectedGroup);
         const sourceOf = item => getWarehouseItemSource(item);
         const isSourceKnown = item => !sourceOf(item).includes('مصدر غير مسجل');
         items = items.filter(item => {
