@@ -7328,6 +7328,9 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
     function renderInvoiceProductPicker() {
         const grid = document.getElementById('invoiceProductCatalog');
         if (!grid) return;
+        // حدّث أزرار مجموعات الفواتير من نفس بيانات الأصناف التي تستخدمها نافذة إدخال الكميات.
+        // يجب تنفيذ ذلك عند كل فتح/تحديث للنافذة لأن بيانات المخزون تُحمّل بعد بدء الصفحة.
+        renderItemGroupFilters('invoiceProductGroupFilters', 'invoice');
         const branchId = document.getElementById('invBranchSelect')?.value || '';
         const query = String(document.getElementById('invoiceProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
         const selectedGroup = itemGroupState.invoice || 'ALL';
@@ -7812,9 +7815,10 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         if (!grid) return;
         const branchId = document.getElementById('transferFromBranch')?.value || '';
         const query = String(document.getElementById('transferProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
+        const branchItems = (state.warehouse || []).filter(w => String(w.branchId || 'main_branch') === String(branchId));
+        renderItemGroupFilters('transferProductGroupFilters','transfer');
         const selectedGroup=itemGroupState.transfer||'ALL';
-        const items = (state.warehouse || []).filter(w =>
-            String(w.branchId || 'main_branch') === String(branchId) && Number(w.qty || 0) > 0 &&
+        const items = branchItems.filter(w => Number(w.qty || 0) > 0 &&
             String(w.name || '').toLocaleLowerCase('ar').includes(query) && (selectedGroup === 'ALL' || getItemGroup(w) === selectedGroup)
         );
         const count = document.getElementById('transferPickerResultCount');
@@ -7863,9 +7867,10 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         if (!grid) return;
         const branchId = document.getElementById('qtyBranchSelect')?.value || '';
         const query = String(document.getElementById('quantityProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
+        const branchItems = (state.warehouse || []).filter(w => String(w.branchId || 'main_branch') === String(branchId));
+        renderItemGroupFilters('quantityProductGroupFilters','quantity');
         const selectedGroup=itemGroupState.quantity||'ALL';
-        const items = (state.warehouse || []).filter(w =>
-            String(w.branchId || 'main_branch') === String(branchId) &&
+        const items = branchItems.filter(w =>
             String(w.name || '').toLocaleLowerCase('ar').includes(query) &&
             (selectedGroup === 'ALL' || getItemGroup(w) === selectedGroup)
         );
@@ -11847,12 +11852,29 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         }
     }
 
-    const ITEM_GROUPS=['البالطوهات','بدلات العمليات','الملابس الطبية','الزي الطبي','الكمامات','القفازات','الأحذية','مستلزمات المختبر','المستلزمات الطبية','أخرى','غير مصنف'];
+    // مجموعات الأصناف تُقرأ من بيانات الأصناف نفسها فقط؛ لا توجد قائمة أسماء مفروضة.
     const itemGroupState={itemList:'ALL',quotation:'ALL',invoice:'ALL',transfer:'ALL',quantity:'ALL'};
-    function getItemGroup(item){return String(item?.itemGroup||item?.group||'غير مصنف').trim()||'غير مصنف';}
-    function getItemGroups(){return [...new Set([...ITEM_GROUPS,...(state.warehouse||[]).map(getItemGroup)])];}
+    function normalizeItemGroupName(value){return String(value ?? '').trim().replace(/\s+/g,' ');}
+    function getItemGroup(item){
+        if(!item || typeof item !== 'object') return 'غير مصنف';
+        const current = normalizeItemGroupName(item.itemGroup);
+        if(current && current !== 'غير مصنف') return current;
+        const legacy = [item.groupName, item.category, item.group, item.itemCategory]
+            .map(normalizeItemGroupName).find(value => value && value !== 'غير مصنف');
+        return legacy || current || 'غير مصنف';
+    }
+    function getItemGroups(items=state.warehouse||[]){
+        return [...new Set((Array.isArray(items)?items:[]).map(getItemGroup).filter(Boolean))]
+            .sort((a,b)=>a.localeCompare(b,'ar'));
+    }
     function renderItemGroupSelect(id){const el=document.getElementById(id);if(!el)return;el.innerHTML=getItemGroups().map(g=>`<option value="${escapeUiText(g)}">${escapeUiText(g)}</option>`).join('');}
-    function renderItemGroupFilters(id,key,fn){const el=document.getElementById(id);if(!el)return;const gs=getItemGroups();el.innerHTML=`<span class="item-group-filter-title">مجموعات الأصناف:</span><button type="button" class="item-group-chip ${itemGroupState[key]==='ALL'?'active':''}" onclick="setItemGroupFilter('${key}','ALL')">الكل</button>`+gs.map(g=>`<button type="button" class="item-group-chip ${itemGroupState[key]===g?'active':''}" onclick='setItemGroupFilter(${JSON.stringify(key)},${JSON.stringify(g)})'>${escapeUiText(g)}</button>`).join('');}
+    function renderItemGroupFilters(id,key){
+        const el=document.getElementById(id); if(!el)return;
+        const groups=getItemGroups();
+        if(itemGroupState[key]!=='ALL' && !groups.includes(itemGroupState[key])) itemGroupState[key]='ALL';
+        el.innerHTML=`<span class="item-group-filter-title">مجموعات الأصناف:</span><button type="button" class="item-group-chip ${itemGroupState[key]==='ALL'?'active':''}" onclick="setItemGroupFilter('${key}','ALL')">الكل</button>`+
+            groups.map(g=>`<button type="button" class="item-group-chip ${itemGroupState[key]===g?'active':''}" onclick='setItemGroupFilter(${JSON.stringify(key)},${JSON.stringify(g)})'>${escapeUiText(g)}</button>`).join('');
+    }
     function setItemGroupFilter(key,value){itemGroupState[key]=value;renderItemGroupFilters('itemListGroupFilters','itemList');renderItemGroupFilters('quoteProductGroupFilters','quotation');renderItemGroupFilters('invoiceProductGroupFilters','invoice');renderItemGroupFilters('transferProductGroupFilters','transfer');renderItemGroupFilters('quantityProductGroupFilters','quantity');if(key==='itemList')renderItemList();if(key==='quotation')renderQuotationCatalog();if(key==='invoice')renderInvoiceProductPicker();if(key==='transfer')renderTransferProductPicker();if(key==='quantity')renderQuantityProductPicker();}
     function initItemGroupControls(){renderItemGroupSelect('newItemGroup');renderItemGroupFilters('itemListGroupFilters','itemList');renderItemGroupFilters('quoteProductGroupFilters','quotation');renderItemGroupFilters('invoiceProductGroupFilters','invoice');renderItemGroupFilters('transferProductGroupFilters','transfer');renderItemGroupFilters('quantityProductGroupFilters','quantity');}
 
