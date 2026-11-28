@@ -1404,6 +1404,11 @@
         #payrollSettlementTab #payrollSettlementSummaryBody tr:nth-child(even){background:#f8faf8;}
         #payrollSettlementTab #payrollSettlementSummaryBody tr:hover{background:#eef5f0;}
         #payrollSettlementTab .payroll-currency-value{margin:2px 0;}
+        #payrollSettlementTab .payroll-accrual-control{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0;padding:10px 11px;border:1px solid #d6e3da;border-radius:9px;background:#f6faf7;}
+        #payrollSettlementTab .payroll-accrual-control strong{display:block;color:#345d47;font-size:13px;}
+        #payrollSettlementTab .payroll-accrual-control small{display:block;color:#68796e;font-size:11px;margin-top:3px;}
+        #payrollSettlementTab #payrollSettlementHistoryBody tr:nth-child(even){background:#f8faf8;}
+        @media(max-width:600px){#payrollSettlementTab .payroll-accrual-control{align-items:flex-start;}#payrollSettlementTab .payroll-accrual-control .btn{width:100%;}}
         #payrollSettlementTab .payroll-currency-sar{color:#806a3f;}
         #payrollSettlementTab .payroll-currency-usd{color:#59688b;}
 
@@ -1931,6 +1936,7 @@
             }
         }
 
+<style id="item-groups-enhancement-css">.item-group-filter-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0 10px;padding:8px;background:#f7fbf8;border:1px solid var(--border);border-radius:12px}.item-group-filter-title{font-size:11px;font-weight:900;color:#245b3b}.item-group-chip{border:1px solid #cfe2d6;background:#fff;color:#245b3b;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800;cursor:pointer}.item-group-chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}.item-group-badge{display:inline-flex;padding:3px 8px;border-radius:999px;background:#eaf4ed;color:#176b43;font-size:10px;font-weight:900;margin-top:4px}.product-picker-groupbar{margin:4px 0 8px}</style>
 </style>
 <!-- Supplier payment ledger repair 2026-11-23-D -->
 
@@ -1961,11 +1967,6 @@
 .quote-picker-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e1ebe3}
 .quote-picker-head h3{margin:0;color:#145a36;font-size:17px;font-weight:900}.quote-picker-head small{display:block;color:#65776b;font-size:11px;margin-top:3px}
 .quote-picker-list{overflow:auto;min-height:130px;max-height:calc(88vh - 155px);display:flex;flex-direction:column;gap:7px;padding:2px}
-.item-group-filters{display:flex;flex-wrap:wrap;gap:7px;margin:7px 0 10px;direction:rtl}
-.item-group-chip{border:1px solid #cbdccf;background:#f6faf7;color:#24583a;border-radius:999px;padding:7px 12px;font:800 12px Tahoma,Arial,sans-serif;cursor:pointer;min-height:34px}
-.item-group-chip.active{background:#176b43;border-color:#176b43;color:#fff;box-shadow:0 2px 7px rgba(23,107,67,.16)}
-.item-group-label{display:inline-flex;align-items:center;gap:4px;border:1px solid #d5e7d9;background:#f0f8f2;color:#176b43;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:800;width:max-content;max-width:100%}
-@media(max-width:520px){.item-group-chip{padding:6px 10px;font-size:11px;min-height:32px}}
 .quote-picker-row{display:grid;grid-template-columns:minmax(0,1fr) 105px 100px;align-items:center;gap:10px;padding:9px 10px;border:1px solid #dce8de;border-radius:10px;background:#fbfefb}
 .quote-picker-row strong{display:block;color:#244833;font-size:12px;line-height:1.5}.quote-picker-row small{display:block;color:#718075;font-size:10px;line-height:1.5}.quote-picker-row .quote-picker-price{color:#176b43;font-weight:900;direction:ltr;text-align:right}
 .quote-picker-qty{width:100%;min-height:38px;border:1px solid #cbd9ce;border-radius:8px;padding:5px 7px;text-align:center;font-weight:800}
@@ -2276,8 +2277,7 @@
             <div id="quoteProductPickerModal" class="quote-picker-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="quoteProductPickerTitle" onclick="if(event.target===this)closeQuotationProductPicker()">
                 <div class="quote-picker-dialog">
                     <div class="quote-picker-head"><div><h3 id="quoteProductPickerTitle">اختيار أصناف عرض السعر</h3><small>ابحث عن الصنف، حدّد الكمية، ثم اضغط إضافة</small></div><button type="button" class="btn btn-outline btn-sm" onclick="closeQuotationProductPicker()"><i class="fa-solid fa-xmark"></i> إغلاق</button></div>
-                    <div class="form-group"><input id="quoteProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderQuotationCatalog()" autocomplete="off"></div>
-                    <div><strong style="display:block;font-size:12px;color:#60766a;margin:2px 0;">مجموعات الأصناف</strong><div id="quoteProductGroupFilters" class="item-group-filters"></div></div>
+                    <div class="form-group"><input id="quoteProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderQuotationCatalog()" autocomplete="off"><div id="quoteProductGroupFilters" class="item-group-filter-bar product-picker-groupbar"></div></div>
                     <div id="quoteProductCatalog" class="quote-picker-list"><div class="empty-products">جاري تحميل الأصناف...</div></div>
                 </div>
             </div>
@@ -2290,8 +2290,7 @@
                     <div><h3 id="invoiceProductPickerTitle">بحث واختيار أصناف الفاتورة</h3><small>ابحث عن أي صنف في المخزن، راجع سعره والمتاح، وحدد الكمية ثم اضغط إضافة</small></div>
                     <button type="button" class="btn btn-outline btn-sm" onclick="closeInvoiceProductPicker()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
                 </div>
-                <div class="form-group"><input id="invoiceProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderInvoiceProductPicker()" autocomplete="off"></div>
-                <div><strong style="display:block;font-size:12px;color:#60766a;margin:2px 0;">مجموعات الأصناف</strong><div id="invoiceProductGroupFilters" class="item-group-filters"></div></div>
+                <div class="form-group"><input id="invoiceProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderInvoiceProductPicker()" autocomplete="off"><div id="invoiceProductGroupFilters" class="item-group-filter-bar product-picker-groupbar"></div></div>
                 <div class="employee-permission-note" style="margin:0 0 8px">يظهر هنا مخزون الفرع المختار فقط. عند تعديل فاتورة، تُضاف كميتها الأصلية إلى المتاح أثناء التعديل حتى لا تمنعك من إعادة اختيارها.</div>
                 <div id="invoicePickerResultCount" class="badge" style="align-self:flex-start;margin-bottom:6px">0 صنف</div>
                 <div id="invoiceProductCatalog" class="quote-picker-list"><div class="empty-products">جاري تحميل الأصناف...</div></div>
@@ -2993,7 +2992,7 @@
                     <div class="form-group"><label for="itemListSearch">بحث باسم الصنف أو المورد أو المصدر</label><input id="itemListSearch" class="form-control" type="search" placeholder="اكتب اسم الصنف أو المورد..." oninput="renderItemList()"></div>
                     <div class="form-group"><label for="itemListBranch">المخزن</label><select id="itemListBranch" class="form-control" onchange="renderItemList()"><option value="ALL">كل المخازن المسموحة</option></select></div>
                 </div>
-                <div><strong style="display:block;font-size:12px;color:var(--text-muted);margin:4px 0;">تصفية حسب مجموعة الصنف</strong><div id="itemListGroupFilters" class="item-group-filters"></div></div>
+                <div id="itemListGroupFilters" class="item-group-filter-bar"></div>
                 <div id="itemListCards" class="item-list-grid"></div>
             </div>
             <div class="employee-permission-note">يعرض مصدر الصنف حسب بيانات التوريد أو الإضافة المسجلة. الأصناف القديمة التي لم يكن لها مصدر محفوظ ستظهر بعبارة «مصدر غير مسجل».</div>
@@ -3018,12 +3017,7 @@
                     <label>اسم الصنف</label>
                     <input type="text" id="newItemName" class="form-control" placeholder="اسم المادة أو المنتج">
                 </div>
-                <div class="form-group">
-                    <label for="newItemGroup">مجموعة الصنف</label>
-                    <input type="text" id="newItemGroup" class="form-control" list="warehouseItemGroupOptions" placeholder="مثلاً: البالطوهات أو بدلات العمليات" onfocus="populateWarehouseGroupOptions()" autocomplete="off">
-                    <small style="display:block;color:var(--text-muted);margin-top:4px;">اختر مجموعة موجودة أو اكتب اسماً جديداً لإنشاء مجموعة تلقائياً.</small>
-                    <datalist id="warehouseItemGroupOptions"></datalist>
-                </div>
+                <div class="form-group"><label>مجموعة الصنف</label><select id="newItemGroup" class="form-control"></select></div>
                 <div class="grid-4">
                     <div class="form-group">
                         <label>الوحدة</label>
@@ -3087,11 +3081,11 @@
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0;">
                     <strong>أصناف الكميات</strong>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="addStockQuantityRow()"><i class="fa-solid fa-plus"></i> إضافة صنف</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="openQuantityProductPicker()"><i class="fa-solid fa-magnifying-glass"></i> بحث الأصناف</button>
                 </div>
                 <div class="table-responsive qty-entry-table-wrap">
                     <table class="qty-entry-simple-table"><thead><tr><th>الصنف</th><th>الكمية المراد إضافتها</th><th></th></tr></thead><tbody id="qtyAdjustmentRows"></tbody></table>
-                    <div id="qtyEntryEmptyState" class="qty-entry-empty">اضغط «إضافة صنف» لإضافة صف جديد. بعد الحفظ تختفي صفوف الإدخال الفارغة وتظهر عملياتك المسجلة أسفل الصفحة.</div>
+                    <div id="qtyEntryEmptyState" class="qty-entry-empty">اضغط «بحث الأصناف» لاختيار الأصناف وإدخال كمياتها. بعد الحفظ تختفي صفوف الإدخال الفارغة وتظهر عملياتك المسجلة أسفل الصفحة.</div>
                 </div>
                 <button id="saveQtyBtn" class="btn btn-accent btn-full" style="margin-top:12px;" onclick="saveStockQuantity()">
                     <i class="fa-solid fa-floppy-disk"></i> حفظ الكميات المدخلة
@@ -3128,6 +3122,32 @@
             </div>
         </section>
 
+        <!-- نافذة بحث أصناف النقل -->
+        <div id="transferProductPickerModal" class="quote-picker-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="transferProductPickerTitle" onclick="if(event.target===this)closeTransferProductPicker()">
+            <div class="quote-picker-dialog">
+                <div class="quote-picker-head">
+                    <div><h3 id="transferProductPickerTitle">بحث واختيار أصناف النقل</h3><small>ابحث عن الصنف، راجع المتاح، ثم أضفه إلى عملية النقل</small></div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="closeTransferProductPicker()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
+                </div>
+                <div class="form-group"><input id="transferProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderTransferProductPicker()" autocomplete="off"><div id="transferProductGroupFilters" class="item-group-filter-bar product-picker-groupbar"></div></div>
+                <div id="transferPickerResultCount" class="badge" style="align-self:flex-start;margin-bottom:6px">0 صنف</div>
+                <div id="transferProductCatalog" class="quote-picker-list"><div class="empty-products">جاري تحميل الأصناف...</div></div>
+            </div>
+        </div>
+
+        <!-- نافذة بحث أصناف إدخال الكميات -->
+        <div id="quantityProductPickerModal" class="quote-picker-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="quantityProductPickerTitle" onclick="if(event.target===this)closeQuantityProductPicker()">
+            <div class="quote-picker-dialog">
+                <div class="quote-picker-head">
+                    <div><h3 id="quantityProductPickerTitle">بحث واختيار صنف لإدخال الكمية</h3><small>ابحث عن الصنف، أدخل الكمية، ثم اضغط إضافة</small></div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="closeQuantityProductPicker()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
+                </div>
+                <div class="form-group"><input id="quantityProductSearch" class="form-control" placeholder="ابحث باسم الصنف..." oninput="renderQuantityProductPicker()" autocomplete="off"><div id="quantityProductGroupFilters" class="item-group-filter-bar product-picker-groupbar"></div></div>
+                <div id="quantityPickerResultCount" class="badge" style="align-self:flex-start;margin-bottom:6px">0 صنف</div>
+                <div id="quantityProductCatalog" class="quote-picker-list"><div class="empty-products">جاري تحميل الأصناف...</div></div>
+            </div>
+        </div>
+
         <!-- صفحة نقل مخازن -->
         <section id="transferTab" class="tab-content hidden">
             <div class="fullpage-topbar">
@@ -3152,7 +3172,7 @@
                 <div class="form-group" style="margin-top:12px;">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
                         <label style="margin:0;">الأصناف والكميات المراد نقلها</label>
-                        <button type="button" class="btn btn-outline btn-sm" onclick="addTransferRow()"><i class="fa-solid fa-plus"></i> إضافة صنف</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="openTransferProductPicker()"><i class="fa-solid fa-magnifying-glass"></i> بحث الأصناف</button>
                     </div>
                     <div id="transferRows" style="display:flex;flex-direction:column;gap:10px;margin-top:10px;"></div>
                 </div>
@@ -3704,7 +3724,7 @@
                 <button type="button" class="btn btn-outline btn-sm" onclick="goBackHome()"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
             </div>
             <div class="employee-permission-note" id="payrollSettlementPeriodLabel">
-                كشف كل موظف يشمل الراتب أو الإنتاج وعمولات التحصيل والمبيعات والسلف والدفعات. عند تسجيل الصرف ينخفض المتبقي، وتبدأ الفترة الجديدة بحساب مستقل دون حذف كشوف الشهور السابقة.
+                الراتب الشهري للموظف الذي تختار له «تجميع الراتب حتى الصرف» يتراكم من شهر البداية حتى تسديده، أما بقية الموظفين فيحسب راتبهم لكل شهر بصورة مستقلة. جميع عمليات الصرف تبقى محفوظة في سجل قابل للمراجعة والتعديل والحذف بصلاحية الإدارة.
             </div>
             <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-calendar-check"></i> اختر شهر الصرف والموظف</span></div>
@@ -3740,6 +3760,12 @@
             <div class="card-box" id="payrollSettlementDetailCard">
                 <div class="card-title"><span><i class="fa-solid fa-file-invoice-dollar"></i> كشف الموظف وتسجيل الصرف</span></div>
                 <div id="payrollSettlementDetail"><div class="employee-permission-note">اختر الموظف لعرض ما عمله ومستحقاته وما استلمه والمتبقي له.</div></div>
+            </div>
+            <div class="card-box" id="payrollSettlementHistoryCard">
+                <div class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل عمليات صرف مستحقات الموظفين</span><button type="button" class="btn btn-outline btn-sm" onclick="renderPayrollSettlementHistory()"><i class="fa-solid fa-rotate"></i> تحديث السجل</button></div>
+                <div class="form-group"><input id="payrollSettlementHistorySearch" class="form-control" placeholder="بحث باسم الموظف أو البيان أو رقم الفترة..." oninput="renderPayrollSettlementHistory()"></div>
+                <div class="table-responsive"><table><thead><tr><th>تاريخ الصرف</th><th>الموظف</th><th>عن شهر</th><th>المبلغ</th><th>الصندوق</th><th>سجل بواسطة</th><th>إجراءات</th></tr></thead><tbody id="payrollSettlementHistoryBody"><tr><td colspan="7" style="text-align:center;">لا توجد عمليات صرف مسجلة</td></tr></tbody></table></div>
+                <div class="employee-permission-note">التعديل والحذف متاحان للمدير والمشرف العام فقط. حذف عملية الصرف يعيد احتساب مستحق الموظف ويعيد المبلغ إلى رصيد الصندوق المرتبط بها.</div>
             </div>
         </section>
 
@@ -4325,10 +4351,6 @@
     let currentUser = null;
     let recycleBinItems = [];
     let trashPurgeInterval = null;
-    let itemListGroupFilter = 'ALL';
-    let invoicePickerGroupFilter = 'ALL';
-    let quotationPickerGroupFilter = 'ALL';
-
     let state = {
         branches: [],
         cashboxes: [],
@@ -4441,6 +4463,8 @@
             warehouseBranchName: account.warehouseBranchName || '',
             active: account.active !== false,
             payrollHiddenPeriods: Array.isArray(account.payrollHiddenPeriods) ? account.payrollHiddenPeriods : [],
+            salaryAccrualEnabled: account.salaryAccrualEnabled === true,
+            salaryAccrualStartPeriod: account.salaryAccrualStartPeriod || '',
             username: account.username || '',
             userAccountId: account.id,
             legacy: true
@@ -4703,10 +4727,14 @@
         return 0;
     }
 
-    function getEmployeeDuesCompensationLabel(staff) {
+    function getEmployeeDuesCompensationLabel(staff, period = '') {
         const parts = [];
         if (isPieceworkStaff(staff)) parts.push('بالقطعة');
-        else if (Number(staff?.salary || 0) > 0.009) parts.push('راتب شهري');
+        else if (Number(staff?.salary || 0) > 0.009) {
+            const start = String(staff?.salaryAccrualStartPeriod || '');
+            const accrualActive = staff.salaryAccrualEnabled === true && (!period || !/^\d{4}-\d{2}$/.test(start) || period >= start);
+            parts.push(accrualActive ? 'راتب متراكم حتى الصرف' : 'راتب شهري');
+        }
         const collectionRate = getStaffCollectionRate(staff);
         const salesRate = getExplicitStaffSalesCommissionRate(staff);
         if (collectionRate > 0) parts.push(`نسبة تحصيل ${collectionRate.toFixed(2)}%`);
@@ -5734,7 +5762,6 @@ function initMenuPermissionCheckboxes() {
         const modal = document.getElementById('quoteProductPickerModal');
         if (!modal) return;
         modal.classList.remove('hidden');
-        quotationPickerGroupFilter = 'ALL';
         renderQuotationCatalog();
         const search = document.getElementById('quoteProductSearch');
         setTimeout(() => search?.focus(), 50);
@@ -5749,12 +5776,10 @@ function initMenuPermissionCheckboxes() {
         if (!grid) return;
         const branchId = document.getElementById('quoteBranch')?.value || 'ALL';
         const query = String(document.getElementById('quoteProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
-        const branchItems = getScopedWarehouseItems().filter(item => branchId === 'ALL' || String(item.branchId || 'main_branch') === branchId);
-        renderItemGroupFilterButtons('quoteProductGroupFilters', branchItems, quotationPickerGroupFilter, 'setQuotationPickerGroup');
-        const items = branchItems.filter(item => {
-            const groupMatch = quotationPickerGroupFilter === 'ALL' || getWarehouseItemGroup(item) === quotationPickerGroupFilter;
+        const items = getScopedWarehouseItems().filter(item => {
+            const branchMatch = branchId === 'ALL' || String(item.branchId || 'main_branch') === branchId;
             const nameMatch = !query || String(item.name || '').toLocaleLowerCase('ar').includes(query);
-            return groupMatch && nameMatch;
+            return branchMatch && nameMatch;
         });
         const count = document.getElementById('quoteProductsCount');
         if (count) count.textContent = `${items.length} صنف`;
@@ -5770,7 +5795,7 @@ function initMenuPermissionCheckboxes() {
             const label = price === null ? 'سعر الصرف غير محدد' : `${formatMoney(price || 0)} ${currency}`;
             const branchName = item.branchName || getAllBranches().find(b => b.id === (item.branchId || 'main_branch'))?.name || '';
             return `<div class="quote-picker-row">
-                <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small><span class="item-group-label">${escapeUiText(getWarehouseItemGroup(item))}</span> · ${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(branchName)}</small><small class="quote-picker-price">${escapeUiText(label)}</small></div>
+                <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(branchName)}</small><small class="quote-picker-price">${escapeUiText(label)}</small></div>
                 <div><label style="display:block;font-size:10px;font-weight:800;color:#52665a;margin-bottom:3px">الكمية</label><input class="quote-picker-qty num-input" type="number" min="0.01" step="0.01" inputmode="decimal" value="1" aria-label="كمية ${escapeUiText(item.name || 'الصنف')}"></div>
                 <button type="button" class="btn btn-primary btn-sm" onclick="addQuotationProductFromModal('${encodeURIComponent(String(item.id))}',this)"><i class="fa-solid fa-plus"></i> إضافة</button>
             </div>`;
@@ -7269,7 +7294,6 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         modal.classList.remove('hidden');
         const search = document.getElementById('invoiceProductSearch');
         if (search) search.value = '';
-        invoicePickerGroupFilter = 'ALL';
         renderInvoiceProductPicker();
         setTimeout(() => search?.focus(), 50);
     }
@@ -7288,6 +7312,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         if (!grid) return;
         const branchId = document.getElementById('invBranchSelect')?.value || '';
         const query = String(document.getElementById('invoiceProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
+        const selectedGroup = itemGroupState.invoice || 'ALL';
         if (!branchId || !isBranchAllowed(branchId)) {
             grid.innerHTML = '<div class="empty-products">لم يتم تحديد مخزن مسموح لهذا الحساب.</div>';
             const resultCount = document.getElementById('invoicePickerResultCount'); if (resultCount) resultCount.textContent = '0 صنف';
@@ -7299,11 +7324,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const branchItems = (state.warehouse || []).filter(item =>
             String(item.branchId || 'main_branch') === String(branchId) && isBranchAllowed(item.branchId || 'main_branch')
         );
-        renderItemGroupFilterButtons('invoiceProductGroupFilters', branchItems, invoicePickerGroupFilter, 'setInvoicePickerGroup');
-        const items = branchItems.filter(item =>
-            (invoicePickerGroupFilter === 'ALL' || getWarehouseItemGroup(item) === invoicePickerGroupFilter) &&
-            String(item.name || '').toLocaleLowerCase('ar').includes(query)
-        );
+        const items = branchItems.filter(item => String(item.name || '').toLocaleLowerCase('ar').includes(query) && (selectedGroup === 'ALL' || getItemGroup(item) === selectedGroup));
         const resultCount = document.getElementById('invoicePickerResultCount');
         if (resultCount) resultCount.textContent = `${items.length} صنف`;
         const count = document.getElementById('invoiceProductsCount');
@@ -7332,7 +7353,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
                 ? `السعر الأصلي: ${formatMoney(storedPrice)} ${priceCurrency}` : '';
             const branchName = item.branchName || getAllBranches().find(branch => String(branch.id) === String(branchId))?.name || '';
             return `<div class="quote-picker-row">
-                <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small><span class="item-group-label">${escapeUiText(getWarehouseItemGroup(item))}</span> · ${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(branchName)} · المتاح للإضافة: ${formatQty(remaining)}</small><small class="quote-picker-price">${escapeUiText(priceLabel)}</small>${priceHint ? `<small>${escapeUiText(priceHint)}</small>` : ''}</div>
+                <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(item.unit || 'حبة')} · ${escapeUiText(branchName)} · المتاح للإضافة: ${formatQty(remaining)}</small><small class="quote-picker-price">${escapeUiText(priceLabel)}</small>${priceHint ? `<small>${escapeUiText(priceHint)}</small>` : ''}</div>
                 <div><label style="display:block;font-size:10px;font-weight:800;color:#52665a;margin-bottom:3px">الكمية</label><input class="quote-picker-qty num-input" type="number" min="0.01" max="${remaining}" step="0.01" inputmode="decimal" value="${remaining > 0 ? 1 : 0}" ${remaining <= 0 ? 'disabled' : ''} aria-label="كمية ${escapeUiText(item.name || 'الصنف')}"></div>
                 <button type="button" class="btn btn-primary btn-sm" ${remaining <= 0 ? 'disabled' : ''} onclick="addInvoiceProductFromModal('${encodeURIComponent(String(item.id))}',this)"><i class="fa-solid fa-plus"></i> إضافة</button>
             </div>`;
@@ -7470,7 +7491,7 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         renderMyQuantityHistory();
     }
 
-    function addStockQuantityRow() {
+    function addStockQuantityRow(selectedId = '', initialQty = '') {
         const container = document.getElementById('qtyAdjustmentRows');
         if (!container) return;
         const row = document.createElement('tr');
@@ -7489,6 +7510,12 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         const emptyState = document.getElementById('qtyEntryEmptyState');
         if (emptyState) emptyState.classList.add('hidden');
         populateQuantityItems();
+        if (selectedId) {
+            const select = row.querySelector('.batch-qty-item');
+            if (select) { select.value = selectedId; updateStockQuantityRowInfo(select); }
+            const qtyInput = row.querySelector('.batch-qty-value');
+            if (qtyInput && initialQty !== '') qtyInput.value = initialQty;
+        }
     }
 
     function removeStockQuantityRow(button) {
@@ -7748,6 +7775,109 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
             : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد أصناف مسجلة في المخزن المحدد</td></tr>';
     }
 
+    function openTransferProductPicker() {
+        const branchId = document.getElementById('transferFromBranch')?.value || '';
+        if (!branchId || !isBranchAllowedForOperation(branchId, 'transferTab')) { showToast('اختر مخزن المصدر المسموح أولاً'); return; }
+        const modal = document.getElementById('transferProductPickerModal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        const search = document.getElementById('transferProductSearch');
+        if (search) search.value = '';
+        renderTransferProductPicker();
+        setTimeout(() => search?.focus(), 50);
+    }
+
+    function closeTransferProductPicker() { document.getElementById('transferProductPickerModal')?.classList.add('hidden'); }
+
+    function renderTransferProductPicker() {
+        const grid = document.getElementById('transferProductCatalog');
+        if (!grid) return;
+        const branchId = document.getElementById('transferFromBranch')?.value || '';
+        const query = String(document.getElementById('transferProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
+        const selectedGroup=itemGroupState.transfer||'ALL';
+        const items = (state.warehouse || []).filter(w =>
+            String(w.branchId || 'main_branch') === String(branchId) && Number(w.qty || 0) > 0 &&
+            String(w.name || '').toLocaleLowerCase('ar').includes(query) && (selectedGroup === 'ALL' || getItemGroup(w) === selectedGroup)
+        );
+        const count = document.getElementById('transferPickerResultCount');
+        if (count) count.textContent = `${items.length} صنف`;
+        if (!items.length) { grid.innerHTML = '<div class="empty-products"><i class="fa-solid fa-box-open"></i><br>لا توجد أصناف مطابقة في هذا المخزن.</div>'; return; }
+        grid.innerHTML = items.map(item => `<div class="quote-picker-row">
+            <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(item.unit || 'حبة')} · المتاح للنقل: ${formatQty(item.qty || 0)}</small></div>
+            <div><label style="display:block;font-size:10px;font-weight:800;color:#52665a;margin-bottom:3px">الكمية</label><input class="quote-picker-qty num-input" type="number" min="0.01" max="${Number(item.qty || 0)}" step="0.01" value="1" inputmode="decimal"></div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="addTransferProductFromModal('${encodeURIComponent(String(item.id))}',this)"><i class="fa-solid fa-plus"></i> إضافة</button>
+        </div>`).join('');
+    }
+
+    function addTransferProductFromModal(encodedId, button) {
+        const row = button?.closest('.quote-picker-row');
+        const qty = Number(row?.querySelector('.quote-picker-qty')?.value || 0);
+        if (!Number.isFinite(qty) || qty <= 0) { showToast('أدخل كمية صحيحة للصنف'); return; }
+        const id = decodeURIComponent(String(encodedId || ''));
+        const item = state.warehouse.find(w => String(w.id) === id);
+        if (!item) { showToast('الصنف غير موجود'); return; }
+        const existing = [...document.querySelectorAll('#transferRows .transfer-item-row')].find(r => r.querySelector('.transfer-row-item')?.value === id);
+        if (existing) {
+            const q = existing.querySelector('.transfer-row-qty');
+            q.value = (Number(q.value || 0) + qty).toString();
+        } else {
+            addTransferRow(id, qty);
+        }
+        closeTransferProductPicker();
+    }
+
+    function openQuantityProductPicker() {
+        const branchId = document.getElementById('qtyBranchSelect')?.value || '';
+        if (!branchId || !isBranchAllowedForOperation(branchId, 'quantitiesTab')) { showToast('اختر المخزن المسموح أولاً'); return; }
+        const modal = document.getElementById('quantityProductPickerModal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        const search = document.getElementById('quantityProductSearch');
+        if (search) search.value = '';
+        renderQuantityProductPicker();
+        setTimeout(() => search?.focus(), 50);
+    }
+
+    function closeQuantityProductPicker() { document.getElementById('quantityProductPickerModal')?.classList.add('hidden'); }
+
+    function renderQuantityProductPicker() {
+        const grid = document.getElementById('quantityProductCatalog');
+        if (!grid) return;
+        const branchId = document.getElementById('qtyBranchSelect')?.value || '';
+        const query = String(document.getElementById('quantityProductSearch')?.value || '').trim().toLocaleLowerCase('ar');
+        const selectedGroup=itemGroupState.quantity||'ALL';
+        const items = (state.warehouse || []).filter(w =>
+            String(w.branchId || 'main_branch') === String(branchId) &&
+            String(w.name || '').toLocaleLowerCase('ar').includes(query) &&
+            (selectedGroup === 'ALL' || getItemGroup(w) === selectedGroup)
+        );
+        const count = document.getElementById('quantityPickerResultCount');
+        if (count) count.textContent = `${items.length} صنف`;
+        if (!items.length) { grid.innerHTML = '<div class="empty-products"><i class="fa-solid fa-box-open"></i><br>لا توجد أصناف مطابقة في هذا المخزن.</div>'; return; }
+        grid.innerHTML = items.map(item => `<div class="quote-picker-row">
+            <div><strong>${escapeUiText(item.name || 'صنف')}</strong><small>${escapeUiText(item.unit || 'حبة')} · الرصيد الحالي: ${formatQty(item.qty || 0)}</small></div>
+            <div><label style="display:block;font-size:10px;font-weight:800;color:#52665a;margin-bottom:3px">الكمية</label><input class="quote-picker-qty num-input" type="number" min="0.01" step="0.01" value="1" inputmode="decimal"></div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="addQuantityProductFromModal('${encodeURIComponent(String(item.id))}',this)"><i class="fa-solid fa-plus"></i> إضافة</button>
+        </div>`).join('');
+    }
+
+    function addQuantityProductFromModal(encodedId, button) {
+        const row = button?.closest('.quote-picker-row');
+        const qty = Number(row?.querySelector('.quote-picker-qty')?.value || 0);
+        if (!Number.isFinite(qty) || qty <= 0) { showToast('أدخل كمية صحيحة للصنف'); return; }
+        const id = decodeURIComponent(String(encodedId || ''));
+        const item = state.warehouse.find(w => String(w.id) === id);
+        if (!item) { showToast('الصنف غير موجود'); return; }
+        const existing = [...document.querySelectorAll('#qtyAdjustmentRows .batch-qty-row')].find(r => r.querySelector('.batch-qty-item')?.value === id);
+        if (existing) {
+            const q = existing.querySelector('.batch-qty-value');
+            q.value = (Number(q.value || 0) + qty).toString();
+        } else {
+            addStockQuantityRow(id, qty);
+        }
+        closeQuantityProductPicker();
+    }
+
     function populateTransferItems() {
         const fromBranchId = document.getElementById('transferFromBranch').value || '';
         const sel = document.getElementById('transferItemSelect');
@@ -7769,7 +7899,6 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
             sel.value = prevVal;
         }
         refreshTransferRows();
-        if (document.getElementById('transferRows') && !document.querySelector('#transferRows .transfer-item-row')) addTransferRow();
         renderTransferHistory();
     }
 
@@ -7785,14 +7914,14 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
         ).join('');
     }
 
-    function addTransferRow() {
+    function addTransferRow(selectedId = '', initialQty = 1) {
         const host = document.getElementById('transferRows');
         if (!host) return;
         const id = ++transferRowCounter;
         const row = document.createElement('div');
         row.className = 'card-box transfer-item-row';
         row.style.cssText = 'padding:10px;display:grid;grid-template-columns:minmax(0,2fr) minmax(90px,1fr) auto;gap:8px;align-items:end;';
-        row.innerHTML = `<div class="form-group" style="margin:0;min-width:0;"><label>الصنف</label><select class="form-control transfer-row-item">${getTransferItemOptions()}</select></div><div class="form-group" style="margin:0;"><label>الكمية</label><input class="form-control num-input transfer-row-qty" type="number" min="0.01" step="0.01" inputmode="decimal" value="1"></div><button type="button" class="btn btn-outline btn-sm" title="حذف الصف" onclick="this.closest('.transfer-item-row').remove()"><i class="fa-solid fa-trash"></i></button>`;
+        row.innerHTML = `<div class="form-group" style="margin:0;min-width:0;"><label>الصنف</label><select class="form-control transfer-row-item">${getTransferItemOptions(selectedId)}</select></div><div class="form-group" style="margin:0;"><label>الكمية</label><input class="form-control num-input transfer-row-qty" type="number" min="0.01" step="0.01" inputmode="decimal" value="${Number(initialQty) || 1}"></div><button type="button" class="btn btn-outline btn-sm" title="حذف الصف" onclick="this.closest('.transfer-item-row').remove()"><i class="fa-solid fa-trash"></i></button>`;
         host.appendChild(row);
     }
 
@@ -9530,16 +9659,23 @@ ${[...invoiceLines, ...paymentLines].join('\n') || 'توجد حركة مرتبط
                 : escapeUiText(item.notes || item.title || 'سداد للمورد');
             const runningColor = running[code] >= 0 ? 'debt' : 'credit';
             const label = opening ? 'رصيد افتتاحي' : purchase ? 'فاتورة توريد' : 'سداد للمورد';
-            return `<tr>
-                <td class="date-cell">${opening ? 'افتتاحي' : escapeUiText(item.date || '-')}</td>
-                <td><span class="move-badge ${purchase || opening ? 'purchase' : 'payment'}">${label}</span></td>
-                <td class="detail-cell">${detail}</td>
-                <td class="amount">${(purchase || opening) ? `${formatMoney(total)} ${code}` : '—'}</td>
-                <td class="amount paid">${paid ? `${formatMoney(paid)} ${code}` : '—'}</td>
-                <td class="amount ${(purchase || opening) && remaining > 0 ? 'debt' : ''}">${(purchase || opening) ? `${formatMoney(remaining)} ${code}` : `${formatMoney(paid)} ${code}`}</td>
-                <td class="amount balance ${runningColor}">${formatMoney(running[code])} ${code}</td>
-            </tr>`;
-        }).join('') : '<tr><td colspan="7" class="empty-row">لا توجد فواتير توريد أو دفعات أو رصيد افتتاحي لهذا المورد حتى الآن.</td></tr>';
+            const totalText = (purchase || opening) ? `${formatMoney(total)} ${code}` : '—';
+            const paidText = paid ? `${formatMoney(paid)} ${code}` : '—';
+            const remainingText = (purchase || opening) ? `${formatMoney(remaining)} ${code}` : `${formatMoney(paid)} ${code}`;
+            return `<article class="movement-card">
+                <div class="movement-top">
+                    <strong class="movement-date">${opening ? 'رصيد افتتاحي' : escapeUiText(item.date || '-')}</strong>
+                    <span class="move-badge ${purchase || opening ? 'purchase' : 'payment'}">${label}</span>
+                </div>
+                <div class="movement-detail">${detail}</div>
+                <div class="movement-values">
+                    <div><span>إجمالي الحركة</span><strong class="amount">${totalText}</strong></div>
+                    <div><span>المدفوع</span><strong class="amount paid">${paidText}</strong></div>
+                    <div><span>المتبقي للحركة</span><strong class="amount ${(purchase || opening) && remaining > 0 ? 'debt' : ''}">${remainingText}</strong></div>
+                    <div class="movement-running"><span>الرصيد بعد الحركة</span><strong class="amount balance ${runningColor}">${formatMoney(running[code])} ${code}</strong></div>
+                </div>
+            </article>`;
+        }).join('') : '<div class="empty-row">لا توجد فواتير توريد أو دفعات أو رصيد افتتاحي لهذا المورد حتى الآن.</div>';
 
         const win = window.open('', '_blank');
         if (!win) { showToast('اسمح بفتح النوافذ المنبثقة لهذا الموقع حتى تتمكن من حفظ الكشف PDF'); return; }
@@ -9572,25 +9708,30 @@ body{padding:18px}
 .meta-item strong{display:block;color:#1f2937;font-size:11px;font-weight:900;overflow-wrap:anywhere}
 .section-title{display:flex;align-items:center;gap:7px;color:#174d32;font-size:12px;font-weight:900;margin:10px 0 6px}
 .section-title:before{content:"";width:4px;height:14px;border-radius:5px;background:#d6a33c;display:inline-block}
-.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:9px}
-.kpi-card{border:1px solid #dce8df;border-radius:9px;background:#fff;overflow:hidden;break-inside:avoid}
-.kpi-head{background:#edf6ef;color:#174d32;padding:6px 8px;font-weight:900;font-size:10px;border-bottom:1px solid #dce8df}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;margin-bottom:9px}
+.currency-card{border:1px solid #dce8df;border-radius:9px;background:#fff;overflow:hidden;break-inside:avoid;padding:7px 8px}
+.currency-head{background:#edf6ef;color:#174d32;padding:6px 8px;margin:-7px -8px 6px;font-weight:900;font-size:10px;border-bottom:1px solid #dce8df}
+.currency-line{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #eef2ef;font-size:8.5px}
+.currency-line:last-child{border-bottom:0;background:#fff8ed;margin:0 -8px -7px;padding:7px 8px}
+.currency-line span{color:#64748b;font-weight:700}.currency-line strong{color:#263445;font-size:9px;direction:ltr;white-space:nowrap;font-variant-numeric:tabular-nums}
+.currency-line .debit{color:#a45b0a}.currency-line .credit{color:#176b43}
 .kpi-compact-values{display:grid;grid-template-columns:1fr;gap:0}
 .kpi-compact-values>div{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 8px;border-bottom:1px solid #eef2ef;font-size:9px}
 .kpi-compact-values>div:last-child{border-bottom:0;background:#fff8ed}
 .kpi-compact-values span{color:#64748b;font-weight:700}.kpi-compact-values b{color:#263445;font-size:9px;direction:ltr;white-space:nowrap}.kpi-compact-values .paid-value{color:#176b43}.kpi-compact-values .due-value{color:#9a5410;font-weight:900}
-.table-wrap{border:1px solid #dce5df;border-radius:9px;overflow:hidden}
-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px}
-thead{display:table-header-group}
-th{background:#174d32;color:#fff;font-size:9px;font-weight:900;padding:7px 5px;text-align:right;border:1px solid #174d32}
-td{padding:5px 5px;text-align:right;vertical-align:top;border:1px solid #e2e9e4;overflow-wrap:anywhere;line-height:1.35}
-tbody tr:nth-child(even){background:#f8fbf9}
-.date-cell{white-space:nowrap;font-weight:800;color:#425466}
-.move-badge{display:inline-block;padding:3px 6px;border-radius:999px;font-size:8px;font-weight:900;white-space:nowrap}
+.movement-list{display:grid;grid-template-columns:1fr;gap:8px}
+.movement-card{border:1px solid #dce5df;border-right:4px solid #7b9c87;border-radius:9px;background:#fff;padding:8px 9px;break-inside:avoid;page-break-inside:avoid}
+.movement-card:nth-child(even){background:#f8fbf9}
+.movement-top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-bottom:6px;border-bottom:1px solid #e7eee9}
+.movement-date{font-size:10px;color:#425466}.move-badge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:8px;font-weight:900;white-space:nowrap}
 .move-badge.purchase{background:#e6f2eb;color:#176b43}.move-badge.payment{background:#e7f1fb;color:#1e5c91}
-.detail-cell{line-height:1.35}.item-detail{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 5px;padding:1px 0;margin:0;border:0}.item-detail b{display:inline;color:#263445;font-size:9px}.item-detail span{display:inline;color:#64748b;font-size:8px}
+.movement-detail{padding:7px 1px;line-height:1.45;font-size:9px;color:#263445}.item-detail{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 5px;padding:2px 0;margin:0;border:0}.item-detail b{display:inline;color:#263445;font-size:9px}.item-detail span{display:inline;color:#64748b;font-size:8px}
+.movement-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 8px}
+.movement-values>div{display:flex;justify-content:space-between;align-items:center;gap:5px;padding:5px 6px;background:#f7faf8;border:1px solid #e7eee9;border-radius:6px;font-size:8px}
+.movement-values>div>span{color:#64748b;font-weight:700}.movement-values strong{font-size:9px}
+.movement-values .movement-running{background:#fff8ed;border-color:#f0e1c8}
 .amount{direction:ltr;text-align:left;white-space:nowrap;font-weight:800;font-variant-numeric:tabular-nums}.paid{color:#176b43}.debt{color:#a45b0a}.balance{font-size:9px}.balance.debt{color:#a45b0a}.balance.credit{color:#176b43}
-.empty-row{text-align:center;padding:12px;color:#64748b;font-weight:700}
+.empty-row{text-align:center;padding:12px;color:#64748b;font-weight:700;border:1px dashed #cbd8cf;border-radius:8px}
 .footer{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;padding-top:6px;border-top:1px solid #dfe7e1;color:#64748b;font-size:8px}
 .actions{display:flex;justify-content:center;gap:9px;margin:0 auto 12px;max-width:1120px}
 .action-btn{border:0;border-radius:10px;padding:10px 18px;background:#176b43;color:#fff;font-weight:800;font-family:Tahoma,Arial,sans-serif;cursor:pointer}
@@ -9620,7 +9761,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
  .compact-one-page td{padding:3px 4px;font-size:8px;line-height:1.2}
  .compact-one-page .footer{margin-top:5px;padding-top:4px;font-size:7px}
 }
-@media(max-width:720px){body{padding:10px}.report-header{align-items:flex-start}.brand-logo{width:52px;height:52px}.brand h1{font-size:18px}.report-tag{font-size:9px}.meta{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr}.table-wrap{overflow-x:auto}table{min-width:850px}}
+@media(max-width:720px){body{padding:10px}.report-header{align-items:flex-start}.brand-logo{width:52px;height:52px}.brand h1{font-size:18px}.report-tag{font-size:9px}.meta{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr}.movement-values{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -9636,10 +9777,7 @@ tbody tr:nth-child(even){background:#f8fbf9}
     <div style="font-size:8px;color:#64748b;margin:-2px 0 6px">يظهر الريال اليمني دائماً، وتظهر العملة السعودية أو الدولار عند وجود حركة مسجلة بها.</div>
     <section class="kpis">${summaryCards}</section>
     <div class="section-title">كشف الحركات التفصيلي</div>
-    <div class="table-wrap"><table><colgroup><col style="width:10%"><col style="width:12%"><col style="width:28%"><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:14%"></colgroup>
-        <thead><tr><th>التاريخ</th><th>الحركة</th><th>الأصناف / البيان</th><th>إجمالي الفاتورة</th><th>المدفوع</th><th>المتبقي للحركة</th><th>الرصيد بعد الحركة</th></tr></thead>
-        <tbody>${rows}</tbody>
-    </table></div>
+    <div class="movement-list">${rows}</div>
     <footer class="footer"><span>تم استخراج هذا الكشف من نظام معمل أبو محمد المحاسبي.</span><span>جميع المبالغ موضحة بعملتها الأصلية دون تحويل أو خلط.</span></footer>
 </main>
 <script>
@@ -11248,12 +11386,12 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const branchObj = state.branches.find(b => b.id === branchId);
         const branchName = branchObj ? branchObj.name : 'الفرع الرئيسي';
         const name = document.getElementById('newItemName').value.trim();
-        const groupName = normalizeItemGroupName(document.getElementById('newItemGroup')?.value || '');
         const unit = document.getElementById('newItemUnit').value || 'حبة';
         const qty = Number(document.getElementById('newItemQty').value || 0);
         const costPrice = Number(document.getElementById('newItemCostPrice')?.value || 0);
         const price = Number(document.getElementById('newItemPrice').value || 0);
         const itemCurrency = CURRENCY_CODES.includes(document.getElementById('newItemPriceCurrency')?.value) ? document.getElementById('newItemPriceCurrency').value : 'YER';
+        const itemGroup = String(document.getElementById('newItemGroup')?.value || 'غير مصنف').trim() || 'غير مصنف';
         if (!name) { showToast('أدخل اسم الصنف'); return; }
         if (![qty, costPrice, price].every(Number.isFinite) || qty < 0 || costPrice < 0 || price < 0) { showToast('تحقق من الكمية وسعر التكلفة وسعر البيع'); return; }
         isBusy = true;
@@ -11264,12 +11402,12 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 String(w.name || '').trim().toLowerCase() === name.toLowerCase() &&
                 (w.unit || 'حبة') === unit
             );
-            const itemPatch = { qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, unit, branchId, branchName, name, groupName, sourceType: existing?.sourceType || 'manual', sourceName: existing?.sourceName || getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() };
+            const itemPatch = { qty, costPrice, price, costCurrency: itemCurrency, priceCurrency: itemCurrency, unit, branchId, branchName, name, itemGroup, sourceType: existing?.sourceType || 'manual', sourceName: existing?.sourceName || getAccountDisplayName(currentUser), sourceDate: getLocalDateKey() };
             if (existing) {
                 if (!canEditRecord()) { showToast('ليس لديك صلاحية التعديل على المخزون'); return; }
                 let savedHistory = Array.isArray(existing.quantityAdjustmentHistory) ? existing.quantityAdjustmentHistory.slice() : [];
                 const updated = await updateDocumentOnce('warehouse', existing.id, {
-                    action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, groupName, actor: dedupeActorId()
+                    action: 'save-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
                 }, current => {
                     const previousQty = Number(current.qty || 0);
                     const delta = qty - previousQty;
@@ -11288,7 +11426,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 const initialHistory = qty > 0 ? [{ id: `manual_add_${Date.now()}`, itemName: name, unit, branchId, branchName, qty, previousQty: 0, quantityAfter: qty, mode: 'manual', date: getLocalDateKey(), createdAt: new Date().toISOString(), actorId: String(currentUser?.id || ''), actorName: getAccountDisplayName(currentUser) }] : [];
                 itemPatch.quantityAdjustmentHistory = initialHistory;
                 const result = await createRecordOnce('warehouse', 'wh', {
-                    action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, groupName, actor: dedupeActorId()
+                    action: 'create-warehouse-item', branchId, name: name.toLowerCase(), unit, qty, costPrice, price, itemCurrency, actor: dedupeActorId()
                 }, itemPatch, `wh_item_${dedupeHash({ branchId, name: name.toLowerCase(), unit })}`);
                 if (!result.created) { showToast('هذا الصنف موجود أو تمت إضافته للتو؛ لن يتكرر في المخزن.'); return; }
                 state.warehouse = Array.isArray(state.warehouse) ? state.warehouse : [];
@@ -11296,12 +11434,8 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             }
             refreshSupplierInvoiceCatalogOptions();
             renderWarehouseTable();
-            renderItemList();
             renderStats();
-            if (typeof renderInvoiceProductPicker === 'function') renderInvoiceProductPicker();
-            if (typeof renderQuotationCatalog === 'function') renderQuotationCatalog();
             document.getElementById('newItemName').value = '';
-            if (document.getElementById('newItemGroup')) document.getElementById('newItemGroup').value = '';
             document.getElementById('newItemQty').value = '1';
             document.getElementById('newItemPrice').value = '0.00';
             if (document.getElementById('newItemCostPrice')) document.getElementById('newItemCostPrice').value = '0.00';
@@ -11333,7 +11467,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         overlay.dataset.originalQty = String(qty);
         overlay.dataset.originalCost = String(cost);
         overlay.dataset.originalPrice = String(sale);
-        overlay.dataset.originalGroup = normalizeItemGroupName(item.groupName || item.category || item.group || '');
+        overlay.dataset.originalGroup = getItemGroup(item);
         overlay.style.cssText = 'position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;padding:14px;direction:rtl;';
         overlay.innerHTML = `
             <div role="dialog" aria-modal="true" aria-labelledby="warehouseStockEditTitle" style="width:min(100%,520px);max-height:92vh;overflow:auto;background:#fff;border:1px solid #d9e5dd;border-radius:18px;box-shadow:0 22px 70px rgba(0,0,0,.24);padding:18px;color:#19352a;">
@@ -11345,11 +11479,11 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                     <div style="font-weight:800;font-size:15px;">${escapeUiText(item.name || 'صنف')}</div>
                     <div style="font-size:12px;color:#52685d;margin-top:4px;">${escapeUiText(branchName)} · ${escapeUiText(unit)} · العملة: ${escapeUiText(currency)}</div>
                 </div>
-                <div class="form-group" style="margin:0 0 12px;"><label for="warehouseStockEditGroup">مجموعة الصنف</label><input id="warehouseStockEditGroup" class="form-control" list="warehouseItemGroupOptions" value="${escapeUiText(getWarehouseItemGroup(item) === 'غير مصنف' ? '' : getWarehouseItemGroup(item))}" placeholder="مثلاً: البالطوهات أو بدلات العمليات" onfocus="populateWarehouseGroupOptions()" autocomplete="off"><small style="display:block;color:#64776d;margin-top:4px;">اكتب مجموعة جديدة أو اختر مجموعة سابقة لتصنيف الصنف.</small></div>
                 <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
                     <div class="form-group" style="margin:0;"><label for="warehouseStockEditQty">الكمية الموجودة (${escapeUiText(unit)})</label><input id="warehouseStockEditQty" class="form-control" type="number" min="0" step="0.001" inputmode="decimal" value="${qty}" /></div>
                     <div class="form-group" style="margin:0;"><label for="warehouseStockEditCost">سعر التكلفة (${escapeUiText(currency)})</label><input id="warehouseStockEditCost" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" value="${cost}" /></div>
                     <div class="form-group" style="margin:0;grid-column:1/-1;"><label for="warehouseStockEditPrice">سعر البيع (${escapeUiText(currency)})</label><input id="warehouseStockEditPrice" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" value="${sale}" /></div>
+                    <div class="form-group" style="margin:0;grid-column:1/-1;"><label for="warehouseStockEditGroup">مجموعة الصنف</label><select id="warehouseStockEditGroup" class="form-control">${getItemGroups().map(g=>`<option value="${escapeUiText(g)}" ${getItemGroup(item)===g?'selected':''}>${escapeUiText(g)}</option>`).join('')}</select></div>
                 </div>
                 <div style="font-size:12px;color:#64776d;background:#fbfdfb;border-right:3px solid #238451;padding:9px 11px;margin-top:13px;border-radius:7px;line-height:1.7;">سيُسجَّل فرق الكمية في حركة المخزون باسم المستخدم الذي أجرى التعديل، وسيتم تحديث قيمة المخزون بالتكلفة تلقائياً. لا تتغير فواتير الشراء أو البيع السابقة.</div>
                 <div style="display:flex;gap:9px;justify-content:flex-start;margin-top:17px;flex-wrap:wrap;">
@@ -11371,8 +11505,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const qtyText = document.getElementById('warehouseStockEditQty')?.value ?? '';
         const costText = document.getElementById('warehouseStockEditCost')?.value ?? '';
         const saleText = document.getElementById('warehouseStockEditPrice')?.value ?? '';
-        const nextGroupName = normalizeItemGroupName(document.getElementById('warehouseStockEditGroup')?.value || '');
-        const originalGroupName = normalizeItemGroupName(overlay.dataset.originalGroup || '');
+        const nextGroup = String(document.getElementById('warehouseStockEditGroup')?.value || getItemGroup(item));
         const nextQty = Number(qtyText), nextCost = Number(costText), nextPrice = Number(saleText);
         if ([qtyText, costText, saleText].some(value => String(value).trim() === '') || ![nextQty, nextCost, nextPrice].every(Number.isFinite) || nextQty < 0 || nextCost < 0 || nextPrice < 0) {
             showToast('أدخل كمية وسعر تكلفة وسعر بيع صحيحة؛ لا تقبل القيم السالبة'); return;
@@ -11382,16 +11515,17 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         const original = {
             qty: Number(overlay.dataset.originalQty || 0),
             cost: Number(overlay.dataset.originalCost || 0),
-            price: Number(overlay.dataset.originalPrice || 0)
+            price: Number(overlay.dataset.originalPrice || 0),
+            group: String(overlay.dataset.originalGroup || getItemGroup(item))
         };
-        if (Math.abs(nextQty-original.qty)<0.000001 && Math.abs(nextCost-original.cost)<0.000001 && Math.abs(nextPrice-original.price)<0.000001 && nextGroupName === originalGroupName) {
+        if (Math.abs(nextQty-original.qty)<0.000001 && Math.abs(nextCost-original.cost)<0.000001 && Math.abs(nextPrice-original.price)<0.000001 && nextGroup===original.group) {
             closeWarehouseStockEdit(); showToast('لم يتم تغيير أي بيانات'); return;
         }
         const actorId = String(currentUser?.id || '');
         const actorName = getAccountDisplayName(currentUser);
         const today = getLocalDateKey();
         const nowIso = new Date().toISOString();
-        const signature = { action:'edit-branch-stocktake', itemId:String(itemId), qty:nextQty, costPrice:nextCost, price:nextPrice, groupName:nextGroupName, actor:dedupeActorId() };
+        const signature = { action:'edit-branch-stocktake', itemId:String(itemId), qty:nextQty, costPrice:nextCost, price:nextPrice, group:nextGroup, actor:dedupeActorId() };
         const markerKey = `${dedupeHash(signature)}:${Math.floor(Date.now()/CREATE_DEDUPE_WINDOW_MS)}`;
         const btn = document.getElementById('saveWarehouseStockEditBtn');
         isBusy = true;
@@ -11407,7 +11541,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 const currentQty = Number(current.qty || 0);
                 const currentCost = Number(current.costPrice ?? current.price ?? 0);
                 const currentPrice = Number(current.price || 0);
-                if (Math.abs(currentQty-original.qty)>=0.000001 || Math.abs(currentCost-original.cost)>=0.000001 || Math.abs(currentPrice-original.price)>=0.000001 || normalizeItemGroupName(current.groupName || current.category || current.group || '') !== originalGroupName) throw new Error('STOCK_EDIT_CONFLICT');
+                if (Math.abs(currentQty-original.qty)>=0.000001 || Math.abs(currentCost-original.cost)>=0.000001 || Math.abs(currentPrice-original.price)>=0.000001) throw new Error('STOCK_EDIT_CONFLICT');
                 const recent = Array.isArray(current.__recentOperationMarkers) ? current.__recentOperationMarkers : [];
                 if (recent.some(marker => marker?.key === markerKey)) return { duplicate:true };
                 const quantityHistory = Array.isArray(current.quantityAdjustmentHistory) ? current.quantityAdjustmentHistory.slice() : [];
@@ -11424,17 +11558,17 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 auditHistory.push({
                     id:`stocktake_audit_${Date.now()}_${itemId}`, date:today, createdAt:nowIso, actorId, actorName,
                     qtyBefore:currentQty, qtyAfter:nextQty, costBefore:currentCost, costAfter:nextCost,
-                    priceBefore:currentPrice, priceAfter:nextPrice, groupBefore:normalizeItemGroupName(current.groupName || current.category || current.group || ''), groupAfter:nextGroupName, branchId:currentBranchId, branchName:current.branchName || item.branchName || ''
+                    priceBefore:currentPrice, priceAfter:nextPrice, branchId:currentBranchId, branchName:current.branchName || item.branchName || ''
                 });
                 transaction.update(ref, {
-                    qty:nextQty, costPrice:nextCost, price:nextPrice, groupName:nextGroupName,
+                    qty:nextQty, costPrice:nextCost, price:nextPrice, itemGroup:nextGroup,
                     quantityAdjustmentHistory:quantityHistory.slice(-200), stocktakeEditHistory:auditHistory.slice(-200),
                     __recentOperationMarkers:[...recent,{key:markerKey,at:Date.now()}].slice(-30)
                 });
                 return { duplicate:false, qtyHistory:quantityHistory.slice(-200), auditHistory:auditHistory.slice(-200) };
             });
             if (result?.duplicate) { showToast('تم منع تكرار نفس التعديل خلال لحظات'); return; }
-            Object.assign(item, { qty:nextQty, costPrice:nextCost, price:nextPrice, groupName:nextGroupName, quantityAdjustmentHistory:result.qtyHistory || item.quantityAdjustmentHistory, stocktakeEditHistory:result.auditHistory || item.stocktakeEditHistory });
+            Object.assign(item, { qty:nextQty, costPrice:nextCost, price:nextPrice, itemGroup:nextGroup, quantityAdjustmentHistory:result.qtyHistory || item.quantityAdjustmentHistory, stocktakeEditHistory:result.auditHistory || item.stocktakeEditHistory });
             closeWarehouseStockEdit();
             renderWarehouseTable();
             renderItemList();
@@ -11442,9 +11576,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             if (typeof renderInventoryItemMovementReport === 'function') renderInventoryItemMovementReport();
             if (typeof renderInventoryMovementReport === 'function') renderInventoryMovementReport();
             if (typeof refreshSupplierInvoiceCatalogOptions === 'function') refreshSupplierInvoiceCatalogOptions();
-            if (typeof renderInvoiceProductPicker === 'function') renderInvoiceProductPicker();
-            if (typeof renderQuotationCatalog === 'function') renderQuotationCatalog();
-            showToast('تم تحديث بيانات الصنف ومجموعته والأسعار والكمية بنجاح');
+            showToast('تم تحديث بيانات الجرد وسعر التكلفة وسعر البيع بنجاح');
         } catch (error) {
             console.warn('Save warehouse stocktake edit error:', error);
             const messages = {
@@ -11618,59 +11750,14 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         }
     }
 
-    function normalizeItemGroupName(value) {
-        return String(value || '').trim().replace(/\s+/g, ' ');
-    }
-
-    function getWarehouseItemGroup(item) {
-        const value = normalizeItemGroupName(item?.groupName || item?.category || item?.group || '');
-        return value || 'غير مصنف';
-    }
-
-    function getWarehouseItemGroups(items = state.warehouse || []) {
-        const groups = [...new Set((items || []).map(getWarehouseItemGroup).filter(Boolean))];
-        return groups.sort((a, b) => a.localeCompare(b, 'ar'));
-    }
-
-    function populateWarehouseGroupOptions() {
-        const list = document.getElementById('warehouseItemGroupOptions');
-        if (!list) return;
-        list.innerHTML = getWarehouseItemGroups(state.warehouse || []).map(group => `<option value="${escapeUiText(group)}"></option>`).join('');
-    }
-
-    function renderItemGroupFilterButtons(hostId, items, selected, handlerName) {
-        const host = document.getElementById(hostId);
-        if (!host) return;
-        const groups = getWarehouseItemGroups(items);
-        const normalizedSelected = selected === 'ALL' ? 'ALL' : normalizeItemGroupName(selected);
-        if (normalizedSelected !== 'ALL' && !groups.includes(normalizedSelected)) {
-            if (handlerName === 'setItemListGroupFilter') itemListGroupFilter = 'ALL';
-            if (handlerName === 'setInvoicePickerGroup') invoicePickerGroupFilter = 'ALL';
-            if (handlerName === 'setQuotationPickerGroup') quotationPickerGroupFilter = 'ALL';
-        }
-        const active = normalizedSelected !== 'ALL' && groups.includes(normalizedSelected) ? normalizedSelected : 'ALL';
-        const buttons = [`<button type="button" class="item-group-chip ${active === 'ALL' ? 'active' : ''}" onclick="${handlerName}('ALL')">الكل</button>`];
-        groups.forEach(group => {
-            const encoded = encodeURIComponent(group);
-            buttons.push(`<button type="button" class="item-group-chip ${active === group ? 'active' : ''}" onclick="${handlerName}('${encoded}')">${escapeUiText(group)}</button>`);
-        });
-        host.innerHTML = buttons.join('');
-    }
-
-    function setItemListGroupFilter(encodedGroup) {
-        itemListGroupFilter = encodedGroup === 'ALL' ? 'ALL' : normalizeItemGroupName(decodeURIComponent(encodedGroup));
-        renderItemList();
-    }
-
-    function setInvoicePickerGroup(encodedGroup) {
-        invoicePickerGroupFilter = encodedGroup === 'ALL' ? 'ALL' : normalizeItemGroupName(decodeURIComponent(encodedGroup));
-        renderInvoiceProductPicker();
-    }
-
-    function setQuotationPickerGroup(encodedGroup) {
-        quotationPickerGroupFilter = encodedGroup === 'ALL' ? 'ALL' : normalizeItemGroupName(decodeURIComponent(encodedGroup));
-        renderQuotationCatalog();
-    }
+    const ITEM_GROUPS=['البالطوهات','بدلات العمليات','الملابس الطبية','الزي الطبي','الكمامات','القفازات','الأحذية','مستلزمات المختبر','المستلزمات الطبية','أخرى','غير مصنف'];
+    const itemGroupState={itemList:'ALL',quotation:'ALL',invoice:'ALL',transfer:'ALL',quantity:'ALL'};
+    function getItemGroup(item){return String(item?.itemGroup||item?.group||'غير مصنف').trim()||'غير مصنف';}
+    function getItemGroups(){return [...new Set([...ITEM_GROUPS,...(state.warehouse||[]).map(getItemGroup)])];}
+    function renderItemGroupSelect(id){const el=document.getElementById(id);if(!el)return;el.innerHTML=getItemGroups().map(g=>`<option value="${escapeUiText(g)}">${escapeUiText(g)}</option>`).join('');}
+    function renderItemGroupFilters(id,key,fn){const el=document.getElementById(id);if(!el)return;const gs=getItemGroups();el.innerHTML=`<span class="item-group-filter-title">مجموعات الأصناف:</span><button type="button" class="item-group-chip ${itemGroupState[key]==='ALL'?'active':''}" onclick="setItemGroupFilter('${key}','ALL')">الكل</button>`+gs.map(g=>`<button type="button" class="item-group-chip ${itemGroupState[key]===g?'active':''}" onclick='setItemGroupFilter(${JSON.stringify(key)},${JSON.stringify(g)})'>${escapeUiText(g)}</button>`).join('');}
+    function setItemGroupFilter(key,value){itemGroupState[key]=value;renderItemGroupFilters('itemListGroupFilters','itemList');renderItemGroupFilters('quoteProductGroupFilters','quotation');renderItemGroupFilters('invoiceProductGroupFilters','invoice');renderItemGroupFilters('transferProductGroupFilters','transfer');renderItemGroupFilters('quantityProductGroupFilters','quantity');if(key==='itemList')renderItemList();if(key==='quotation')renderQuotationCatalog();if(key==='invoice')renderInvoiceProductPicker();if(key==='transfer')renderTransferProductPicker();if(key==='quantity')renderQuantityProductPicker();}
+    function initItemGroupControls(){renderItemGroupSelect('newItemGroup');renderItemGroupFilters('itemListGroupFilters','itemList');renderItemGroupFilters('quoteProductGroupFilters','quotation');renderItemGroupFilters('invoiceProductGroupFilters','invoice');renderItemGroupFilters('transferProductGroupFilters','transfer');renderItemGroupFilters('quantityProductGroupFilters','quantity');}
 
     function renderItemList() {
         const host = document.getElementById('itemListCards');
@@ -11679,17 +11766,16 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
         if (!host) return;
         const query = (document.getElementById('itemListSearch')?.value || '').trim().toLowerCase();
         const branchId = document.getElementById('itemListBranch')?.value || 'ALL';
+        const selectedGroup = itemGroupState.itemList || 'ALL';
         const allWarehouse = Array.isArray(state.warehouse) ? state.warehouse : [];
         const accessible = getScopedWarehouseItems();
-        const branchItems = accessible.filter(item => branchId === 'ALL' || (item.branchId || 'main_branch') === branchId);
-        renderItemGroupFilterButtons('itemListGroupFilters', branchItems, itemListGroupFilter, 'setItemListGroupFilter');
-        let items = branchItems.filter(item => itemListGroupFilter === 'ALL' || getWarehouseItemGroup(item) === itemListGroupFilter);
+        let items = accessible.filter(item => (branchId === 'ALL' || (item.branchId || 'main_branch') === branchId) && (selectedGroup === 'ALL' || getItemGroup(item) === selectedGroup));
         const sourceOf = item => getWarehouseItemSource(item);
         const isSourceKnown = item => !sourceOf(item).includes('مصدر غير مسجل');
         items = items.filter(item => {
             const source = sourceOf(item).toLowerCase();
             const branchName = item.branchName || getAllBranches().find(b => b.id === item.branchId)?.name || 'المخزن الرئيسي';
-            return !query || String(item.name || '').toLowerCase().includes(query) || source.includes(query) || String(branchName).toLowerCase().includes(query) || getWarehouseItemGroup(item).toLowerCase().includes(query);
+            return !query || String(item.name || '').toLowerCase().includes(query) || source.includes(query) || String(branchName).toLowerCase().includes(query);
         }).sort((a, b) => {
             const branchA = a.branchName || getAllBranches().find(x => x.id === a.branchId)?.name || '';
             const branchB = b.branchName || getAllBranches().find(x => x.id === b.branchId)?.name || '';
@@ -11701,7 +11787,6 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
             const unknown = items.length - known;
             summary.innerHTML = `
                 <div class="item-list-stat"><span>الأصناف المعروضة</span><strong>${items.length}</strong></div>
-                <div class="item-list-stat"><span>المجموعات</span><strong>${getWarehouseItemGroups(items).filter(group => group !== 'غير مصنف').length}</strong></div>
                 <div class="item-list-stat"><span>مصدر معروف</span><strong class="known">${known}</strong></div>
                 <div class="item-list-stat"><span>مصدر غير مسجل</span><strong class="unknown">${unknown}</strong></div>`;
         }
@@ -11726,7 +11811,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                     <div class="item-row-product">
                         <span class="item-row-label">اسم الصنف</span>
                         <strong>${escapeUiText(item.name || 'صنف بدون اسم')}</strong>
-                        <small>الوحدة: ${escapeUiText(unit)}</small>
+                        <small>الوحدة: ${escapeUiText(unit)}</small><span class="item-group-badge">${escapeUiText(getItemGroup(item))}</span>
                     </div>
                     <div class="item-row-quantity">
                         <span class="item-row-label">الكمية الحالية</span>
@@ -11734,7 +11819,6 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                         <small>${escapeUiText(unit)}</small>
                     </div>
                 </div>
-                <div class="item-row-detail"><span>المجموعة</span><b><span class="item-group-label">${escapeUiText(getWarehouseItemGroup(item))}</span></b></div>
                 <div class="item-row-detail"><span>المخزن</span><b>${escapeUiText(branch)}</b></div>
                 <div class="item-row-source ${sourceKnown ? 'source-known' : 'source-unknown'}">
                     <span>المصدر</span><b>${escapeUiText(source.replace(/^مصدر الصنف:\s*/, '').replace(/^مصدر غير مسجل \(صنف قديم\)$/, 'لا توجد بيانات توريد أو إضافة محفوظة لهذا الصنف'))}</b>
@@ -11743,8 +11827,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{try{window.focus();window.pr
                 <div class="item-row-detail"><span>سعر البيع</span><b>${formatMoney(item.price || 0)} ${escapeUiText(saleCurrency)}</b></div>
                 <div class="item-row-detail item-row-total"><span>قيمة الكمية بالتكلفة</span><b>${formatMoney(inventoryCost)} ${escapeUiText(costCurrency)}</b></div>
                 <div class="item-row-actions">
-                    ${canEditRecord() && isBranchAllowedForOperation(item.branchId || 'main_branch', 'warehouseTab') ? `<button type="button" class="btn btn-primary btn-sm" onclick="editWarehouseItem('${item.id}')"><i class="fa-solid fa-pen-to-square"></i> تعديل بيانات الصنف والمجموعة</button>` : ''}
-                    ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editWarehouseItemQuantity('${item.id}')"><i class="fa-solid fa-cubes-stacked"></i> تعديل الكمية فقط</button>` : ''}
+                    ${canEditRecord() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editWarehouseItemQuantity('${item.id}')"><i class="fa-solid fa-pen"></i> تعديل الكمية</button>` : ''}
                     ${canDeleteRecord() && sourceKnown ? `<button type="button" class="btn btn-warning btn-sm" onclick="removeWarehouseItemSource('${item.id}')"><i class="fa-solid fa-link-slash"></i> إزالة مصدر التوريد</button>` : ''}
                     ${(!canEditRecord() && !canDeleteRecord()) ? '<span class="item-list-readonly">عرض فقط</span>' : ''}
                 </div>
@@ -14766,18 +14849,36 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         return /^\d{4}-\d{2}$/.test(value) ? value : getCurrentPayrollPeriod();
     }
 
+    function payrollMonthDistance(startPeriod, endPeriod) {
+        if (!/^\d{4}-\d{2}$/.test(String(startPeriod || '')) || !/^\d{4}-\d{2}$/.test(String(endPeriod || ''))) return -1;
+        const [startYear, startMonth] = startPeriod.split('-').map(Number);
+        const [endYear, endMonth] = endPeriod.split('-').map(Number);
+        return (endYear - startYear) * 12 + (endMonth - startMonth);
+    }
+
     function getEmployeeDuesData(staff, period) {
+        const currency = getStaffSalaryCurrency(staff);
+        const salaryAccrualEnabled = !isPieceworkStaff(staff) && staff?.salaryAccrualEnabled === true;
+        const savedAccrualStart = String(staff?.salaryAccrualStartPeriod || '');
+        const salaryAccrualStartPeriod = salaryAccrualEnabled && /^\d{4}-\d{2}$/.test(savedAccrualStart) ? savedAccrualStart : period;
+        const accrualMonthDistance = salaryAccrualEnabled ? payrollMonthDistance(salaryAccrualStartPeriod, period) : 0;
+        const salaryAccrualActiveForPeriod = !salaryAccrualEnabled || accrualMonthDistance >= 0;
+        const salaryMonthsCount = salaryAccrualEnabled && salaryAccrualActiveForPeriod ? accrualMonthDistance + 1 : 1;
         const production = (state.employeeProduction || []).filter(item =>
             item.staffId === staff.id && (item.period || String(item.date || '').slice(0, 7)) === period
         ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
-        const currency = getStaffSalaryCurrency(staff);
-        const expenses = (state.employeeExpenses || []).filter(item =>
-            item.staffId === staff.id && (item.period || String(item.date || '').slice(0, 7)) === period
-        ).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+        const expenses = (state.employeeExpenses || []).filter(item => {
+            if (item.staffId !== staff.id) return false;
+            const itemPeriod = item.period || String(item.date || '').slice(0, 7);
+            if (salaryAccrualEnabled && salaryAccrualActiveForPeriod) return itemPeriod >= salaryAccrualStartPeriod && itemPeriod <= period;
+            return itemPeriod === period;
+        }).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
         const productionTotal = isPieceworkStaff(staff)
             ? production.reduce((sum, item) => sum + Number(item.amount || 0), 0)
             : 0;
-        const baseEntitlement = isPieceworkStaff(staff) ? productionTotal : Number(staff.salary || 0);
+        const baseEntitlement = isPieceworkStaff(staff)
+            ? productionTotal
+            : Number(staff.salary || 0) * salaryMonthsCount;
         const commissions = (state.vouchers || []).filter(v =>
             v.type === 'receipt' &&
             (v.collectionStaffId === staff.id || v.commissionStaffId === staff.id || v.employeeStaffId === staff.id) &&
@@ -14824,7 +14925,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
             group.amount += Number(item.amount || 0);
             group.records++;
         });
-        return { staff, period, currency, production, expenses, commissions, salesCommissions, baseEntitlement, productionTotal, entitlement, paid, remaining, earnedByCurrency, paidByCurrency, remainingByCurrency, byWork: [...byWork.values()] };
+        return { staff, period, currency, production, expenses, commissions, salesCommissions, baseEntitlement, productionTotal, entitlement, paid, remaining, earnedByCurrency, paidByCurrency, remainingByCurrency, byWork: [...byWork.values()], salaryAccrualEnabled, salaryAccrualStartPeriod, salaryAccrualActiveForPeriod, salaryMonthsCount };
     }
 
     function getPayrollSettlementPeriod() {
@@ -14914,7 +15015,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         const body = document.getElementById('payrollSettlementSummaryBody');
         if (body) body.innerHTML = staff.length ? staff.map(item => {
             const data = getEmployeeDuesData(item, period);
-            const system = getEmployeeDuesCompensationLabel(item);
+            const system = getEmployeeDuesCompensationLabel(item, period);
             const remainingText = formatPayrollCurrencyMapHtml(data.remainingByCurrency);
             const earnedText = formatPayrollCurrencyMapHtml(data.earnedByCurrency);
             const paidText = formatPayrollCurrencyMapHtml(data.paidByCurrency);
@@ -14935,6 +15036,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         if (hiddenDetails) hiddenDetails.querySelector('summary').textContent = `الموظفون المخفيون عن كشف ${period} (${hiddenStaff.length})`;
 
         renderPayrollSettlementDetail(preserveInputs ? savedInputs : null);
+        renderPayrollSettlementHistory();
     }
 
     async function setPayrollStaffHidden(staffId, hidden) {
@@ -14973,6 +15075,122 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         } finally { isBusy = false; }
     }
 
+
+    async function setPayrollSalaryAccumulation() {
+        if (isBusy || !canManageUsers()) { showToast('تعديل طريقة تجميع الراتب متاح للمدير والمشرف العام فقط'); return; }
+        const period = getPayrollSettlementPeriod();
+        const staffId = document.getElementById('payrollSettlementStaffSelect')?.value || '';
+        const staff = getPayrollSettlementAllStaff().find(item => String(item.id) === String(staffId));
+        if (!staff || isPieceworkStaff(staff) || Number(staff.salary || 0) <= 0) { showToast('اختر موظفاً لديه راتب شهري أولاً'); return; }
+        const currentStart = staff.salaryAccrualStartPeriod || period;
+        const startPeriod = prompt(`أدخل شهر بداية تجميع راتب ${staff.fullName || 'الموظف'} بصيغة YYYY-MM. يبدأ الحساب من هذا الشهر ويستمر حتى الصرف.`, currentStart);
+        if (startPeriod === null) return;
+        const normalized = String(startPeriod).trim();
+        if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(normalized)) { showToast('اكتب الشهر بصيغة صحيحة مثل 2026-11'); return; }
+        if (normalized > period) { showToast('شهر بداية التجميع لا يمكن أن يكون بعد شهر الكشف المحدد'); return; }
+        const isLegacy = staff.legacy === true || String(staff.id).startsWith('legacy_');
+        const collectionName = isLegacy ? 'employees' : 'staff';
+        const docId = isLegacy ? (staff.legacyUserId || String(staff.id).replace(/^legacy_/, '')) : staff.id;
+        if (!docId) { showToast('تعذر تحديد ملف الموظف للحفظ'); return; }
+        isBusy = true;
+        try {
+            const patch = { salaryAccrualEnabled: true, salaryAccrualStartPeriod: normalized, salaryAccrualUpdatedAt: new Date().toISOString(), salaryAccrualUpdatedBy: getAccountDisplayName(currentUser) || currentUser?.username || 'الإدارة' };
+            await db.collection(collectionName).doc(docId).update(patch);
+            Object.assign(staff, patch);
+            const localRecord = isLegacy ? state.employees.find(item => item.id === docId) : state.staff.find(item => item.id === staff.id);
+            if (localRecord) Object.assign(localRecord, patch);
+            renderPayrollSettlementPage(false);
+            renderEmployeeDues();
+            showToast(`تم تفعيل تجميع راتب ${staff.fullName} من ${normalized}`);
+        } catch (error) {
+            console.warn('Set payroll salary accumulation error:', error);
+            showToast('تعذر حفظ إعداد تجميع الراتب؛ تحقق من الاتصال');
+        } finally { isBusy = false; }
+    }
+
+    function renderPayrollSettlementHistory() {
+        const body = document.getElementById('payrollSettlementHistoryBody');
+        if (!body) return;
+        const query = String(document.getElementById('payrollSettlementHistorySearch')?.value || '').trim().toLocaleLowerCase('ar');
+        const records = (state.employeeExpenses || []).filter(item => item.source === 'payrollSettlement').slice().sort((a, b) =>
+            String(b.date || b.createdAt || '').localeCompare(String(a.date || a.createdAt || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || ''))
+        ).filter(item => !query || [item.staffName, item.note, item.period, item.date, item.cashboxName, item.createdBy].join(' ').toLocaleLowerCase('ar').includes(query));
+        body.innerHTML = records.length ? records.map(item => `<tr>
+            <td class="mono">${escapeEmployeeDuesHtml(item.date || '-')}</td>
+            <td><strong>${escapeEmployeeDuesHtml(item.staffName || getStaffById(item.staffId)?.fullName || 'موظف')}</strong></td>
+            <td class="mono">${escapeEmployeeDuesHtml(item.period || String(item.date || '').slice(0,7) || '-')}</td>
+            <td class="mono"><strong>${formatMoney(item.amount || 0)} ${CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER'}</strong></td>
+            <td>${escapeEmployeeDuesHtml(item.cashboxName || 'بدون صندوق')}</td>
+            <td>${escapeEmployeeDuesHtml(item.createdBy || '-')}</td>
+            <td style="white-space:nowrap;">${canManageUsers() ? `<button type="button" class="btn btn-outline btn-sm" onclick="editPayrollSettlementRecord('${escapeEmployeeDuesHtml(item.id)}')">تعديل</button> <button type="button" class="btn btn-danger btn-sm" onclick="deletePayrollSettlementRecord('${escapeEmployeeDuesHtml(item.id)}')">حذف</button>` : '—'}</td>
+        </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">لا توجد عمليات صرف مطابقة</td></tr>';
+    }
+
+    async function editPayrollSettlementRecord(recordId) {
+        if (isBusy || !canManageUsers()) { showToast('تعديل سجل الصرف متاح للمدير والمشرف العام فقط'); return; }
+        const item = (state.employeeExpenses || []).find(record => String(record.id) === String(recordId) && record.source === 'payrollSettlement');
+        if (!item) { showToast('عملية الصرف غير موجودة'); return; }
+        const amountText = prompt(`المبلغ الجديد لصرف ${item.staffName || 'الموظف'} (${item.currency || 'YER'}):`, String(item.amount || ''));
+        if (amountText === null) return;
+        const amount = Number(String(amountText).replace(/,/g, '').trim());
+        if (!Number.isFinite(amount) || amount <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر'); return; }
+        const date = prompt('تاريخ الصرف بصيغة YYYY-MM-DD:', String(item.date || getLocalDateKey()));
+        if (date === null) return;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date).trim())) { showToast('أدخل التاريخ بصيغة YYYY-MM-DD'); return; }
+        const note = prompt('بيان عملية الصرف:', item.note || `صرف مستحقات شهر ${item.period || ''}`);
+        if (note === null) return;
+        const staffRecord = getStaffById(item.staffId) || getPayrollSettlementAllStaff().find(person => String(person.id) === String(item.staffId));
+        if (staffRecord) {
+            const payrollPeriod = item.period || String(item.date || '').slice(0, 7) || getCurrentPayrollPeriod();
+            const currentDues = getEmployeeDuesData(staffRecord, payrollPeriod);
+            const code = CURRENCY_CODES.includes(item.currency) ? item.currency : 'YER';
+            const maximum = Math.max(0, Number(currentDues.remainingByCurrency[code] || 0) + Number(item.amount || 0));
+            if (amount > maximum + 0.009) { showToast(`المبلغ الجديد أكبر من المستحق المتاح للموظف. الحد الأعلى ${formatMoney(maximum)} ${code}`); return; }
+        }
+        if (item.cashboxId) {
+            const box = (state.cashboxes || []).find(cashbox => cashbox.id === item.cashboxId);
+            if (box && amount > computeSystemCashboxBalance(box, item.currency || 'YER') + Number(item.amount || 0) + 0.000001) { showToast('رصيد الصندوق لا يكفي للمبلغ الجديد'); return; }
+        }
+        if (!confirm('تأكيد تعديل عملية الصرف؟ سيتم تحديث رصيد الصندوق ومستحق الموظف تلقائياً.')) return;
+        isBusy = true;
+        try {
+            const patch = { amount, date: String(date).trim(), note: String(note).trim() || 'صرف مستحقات الموظف', updatedAt: new Date().toISOString(), updatedBy: getAccountDisplayName(currentUser) || currentUser?.username || 'الإدارة' };
+            await db.collection('employeeExpenses').doc(recordId).update(patch);
+            state.employeeExpenses = (state.employeeExpenses || []).map(record => String(record.id) === String(recordId) ? { ...record, ...patch } : record);
+            renderPayrollSettlementPage(true);
+            renderPayrollSettlementHistory();
+            renderEmployeeDues();
+            renderEmployeeExpenses();
+            renderCashboxesList();
+            if (document.getElementById('cashboxStatementBody')) renderCashboxStatement();
+            showToast('تم تعديل سجل الصرف وإعادة احتساب المستحقات والصندوق');
+        } catch (error) {
+            console.warn('Edit payroll settlement record error:', error);
+            showToast('تعذر تعديل عملية الصرف');
+        } finally { isBusy = false; }
+    }
+
+    async function deletePayrollSettlementRecord(recordId) {
+        if (isBusy || !canManageUsers()) { showToast('حذف سجل الصرف متاح للمدير والمشرف العام فقط'); return; }
+        const item = (state.employeeExpenses || []).find(record => String(record.id) === String(recordId) && record.source === 'payrollSettlement');
+        if (!item) { showToast('عملية الصرف غير موجودة'); return; }
+        if (!confirm(`تأكيد حذف صرف ${item.staffName || 'الموظف'} بمبلغ ${formatMoney(item.amount || 0)} ${item.currency || 'YER'}؟ سيُعاد المبلغ للصندوق المرتبط وتعود القيمة إلى مستحق الموظف.`)) return;
+        isBusy = true;
+        try {
+            await moveRecordToTrash('employeeExpenses', recordId);
+            state.employeeExpenses = (state.employeeExpenses || []).filter(record => String(record.id) !== String(recordId));
+            renderPayrollSettlementPage(true);
+            renderPayrollSettlementHistory();
+            renderEmployeeDues();
+            renderEmployeeExpenses();
+            renderCashboxesList();
+            if (document.getElementById('cashboxStatementBody')) renderCashboxStatement();
+            showToast('تم حذف عملية الصرف وإعادة احتساب المستحقات والصندوق');
+        } catch (error) {
+            console.warn('Delete payroll settlement record error:', error);
+            showToast('تعذر حذف عملية الصرف');
+        } finally { isBusy = false; }
+    }
 
     function selectPayrollSettlementStaff(staffId) {
         const select = document.getElementById('payrollSettlementStaffSelect');
@@ -15017,7 +15235,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         }).join('');
         const allSettled = CURRENCY_CODES.every(code => data.remainingByCurrency[code] <= 0.009);
         const salaryNote = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009
-            ? `<div class="employee-permission-note payroll-salary-note">الراتب الشهري المحتسب: <strong>${formatMoney(data.baseEntitlement)} ${data.currency}</strong></div>` : '';
+            ? `<div class="employee-permission-note payroll-salary-note">${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `إجمالي الرواتب المتراكمة من ${data.salaryAccrualStartPeriod} حتى ${period} (${data.salaryMonthsCount} شهر)` : 'الراتب الشهري المحتسب'}: <strong>${formatMoney(data.baseEntitlement)} ${data.currency}</strong></div>` : '';
         const workSection = data.production.length ? `
             <section class="payroll-detail-section payroll-work-section"><h3>الأعمال والإنتاج المسجل</h3>
             <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th></tr></thead><tbody>${workRows}</tbody></table></div></section>` : '';
@@ -15036,6 +15254,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
                 <div><strong style="font-size:17px;color:var(--primary);">${title}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${isPieceworkStaff(staff) ? 'نظام الأجر بالقطعة' : 'راتب شهري'} — شهر ${period}</div></div>
                 <span class="badge ${allSettled ? 'badge-cash' : 'badge-expense'}">${allSettled ? 'لا يوجد متبقٍ' : 'مستحق للصرف'}</span>
             </div>
+            ${!isPieceworkStaff(staff) && Number(staff.salary || 0) > 0.009 ? `<div class="payroll-accrual-control"><div><strong>تجميع الراتب حتى الصرف</strong><small>${data.salaryAccrualEnabled ? (data.salaryAccrualActiveForPeriod ? `مفعل من ${data.salaryAccrualStartPeriod} · عدد الأشهر المحتسبة: ${data.salaryMonthsCount}` : `يبدأ التجميع من ${data.salaryAccrualStartPeriod}؛ هذا الشهر يحسب كراتب شهري مستقل`) : 'غير مفعل؛ الراتب يحسب لهذا الشهر فقط'}</small></div>${canManageUsers() ? `<button type="button" class="btn btn-outline btn-sm" onclick="setPayrollSalaryAccumulation()">${data.salaryAccrualEnabled ? 'تغيير شهر بداية التجميع' : 'تفعيل تجميع الراتب'}</button>` : ''}</div>` : ''}
             <div class="employee-dues-overview-grid payroll-balance-grid">${balanceCards}</div>
             ${salaryNote}
             ${workSection}${collectionSection}${salesSection}${paymentsSection}
@@ -15049,7 +15268,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
                     <button type="button" class="btn btn-accent" onclick="printPayrollSettlementStatement()"><i class="fa-solid fa-print"></i> طباعة الكشف والتوقيع</button>
                 </div>
             </div>
-            <div class="employee-permission-note">إقفال الشهر يتم بتسجيل المبلغ المصروف فعلياً حتى يصبح المتبقي صفراً. لا نحذف حركات الشهر السابق؛ عند اختيار الشهر الجديد تُحسب مستحقاته من جديد بصورة مستقلة.</div>
+            <div class="employee-permission-note">الموظف الذي فُعّل له تجميع الراتب يُضاف راتبه كل شهر إلى المتبقي السابق، وتُخصم منه الدفعات حتى يصل الرصيد إلى صفر؛ وبعدها يبدأ الشهر التالي براتب جديد. أما الموظفون الآخرون فيظل راتبهم محسوباً لكل شهر بصورة مستقلة.</div>
         `;
     }
 
@@ -15151,7 +15370,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         const paymentRows = data.expenses.map(item => `<tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.source === 'payrollSettlement' ? 'صرف مستحقات' : (item.source === 'dailyDisbursementAdvance' ? 'سلفة / دفعة' : 'استلام'))}</td><td>${escapeEmployeeDuesHtml(item.note || '-')}</td><td>${formatMoney(item.amount || 0)} ${CURRENCY_CODES.includes(item.currency) ? item.currency : data.currency}</td></tr>`).join('');
         const totals = currencies.map(code => `<tr class="currency-row currency-${code.toLowerCase()}"><th>${CURRENCY_NAMES[code]} (${code})</th><td>${formatMoney(data.earnedByCurrency[code])}</td><td>${formatMoney(data.paidByCurrency[code])}</td><td class="remaining-cell"><strong>${formatMoney(data.remainingByCurrency[code])}</strong></td></tr>`).join('');
         const logo = new URL('logo.png', window.location.href).href;
-        const salarySection = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009 ? `<section class="section salary"><h3>الراتب الشهري</h3><table><tbody><tr><th>الراتب المستحق</th><td>${formatMoney(data.baseEntitlement)} ${data.currency}</td></tr></tbody></table></section>` : '';
+        const salarySection = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009 ? `<section class="section salary"><h3>${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `الراتب المتراكم من ${data.salaryAccrualStartPeriod} حتى ${period}` : 'الراتب الشهري'}</h3><table><tbody><tr><th>${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `عدد الأشهر المحتسبة (${data.salaryMonthsCount})` : 'الراتب المستحق'}</th><td>${formatMoney(data.baseEntitlement)} ${data.currency}</td></tr></tbody></table></section>` : '';
         const productionSection = data.production.length ? `<section class="section production"><h3>الأعمال والإنتاج</h3><table><thead><tr><th>التاريخ</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>قيمة العمل</th></tr></thead><tbody>${productionRows}</tbody></table></section>` : '';
         const collectionSection = data.commissions.length ? `<section class="section collection"><h3>عمولات التحصيل</h3><table><thead><tr><th>التاريخ</th><th>السند</th><th>العميل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${collectionRows}</tbody></table></section>` : '';
         const salesSection = data.salesCommissions.length ? `<section class="section sales"><h3>عمولات المبيعات</h3><table><thead><tr><th>التاريخ</th><th>الفاتورة</th><th>العميل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${salesRows}</tbody></table></section>` : '';
@@ -15239,7 +15458,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         if (tbody) {
             tbody.innerHTML = staff.length ? staff.map(item => {
                 const data = getEmployeeDuesData(item, period);
-                const system = getEmployeeDuesCompensationLabel(item);
+                const system = getEmployeeDuesCompensationLabel(item, period);
                 const detailParts = [];
                 if (!isPieceworkStaff(item) && data.baseEntitlement > 0.009) detailParts.push('راتب شهري');
                 if (data.production.length) detailParts.push(`${data.production.length} سجل إنتاج`);
@@ -15280,7 +15499,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         const title = escapeEmployeeDuesHtml(staff.fullName || 'الموظف');
         const hasSalary = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009;
         const earnedParts = [];
-        if (hasSalary) earnedParts.push('الراتب');
+        if (hasSalary) earnedParts.push(data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? 'الراتب المتراكم' : 'الراتب');
         if (data.production.length) earnedParts.push('الإنتاج');
         if (data.commissions.length) earnedParts.push('عمولات التحصيل');
         if (data.salesCommissions.length) earnedParts.push('عمولات المبيعات');
@@ -15293,7 +15512,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
             <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td><span class="mono">${formatMoney(item.amount || 0)} ${item.commissionCurrency}</span></td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td><strong class="mono">${formatMoney(item.commissionAmount)} ${item.commissionCurrency}</strong></td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">لا توجد سندات قبض مسجلة باسم هذا الموظف خلال هذه الفترة</td></tr>';
         const ledgerRows = [];
-        if (!isPieceworkStaff(staff) && data.baseEntitlement > 0.009) ledgerRows.push({ date: `${data.period}-01`, order: '0', type: 'استحقاق راتب', details: 'الراتب الشهري', quantity: '-', rate: '-', earned: data.baseEntitlement, paid: 0, currency: data.currency, actor: 'النظام' });
+        if (!isPieceworkStaff(staff) && data.baseEntitlement > 0.009) ledgerRows.push({ date: `${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? data.salaryAccrualStartPeriod : data.period}-01`, order: '0', type: 'استحقاق راتب', details: data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `راتب متراكم من ${data.salaryAccrualStartPeriod} حتى ${data.period} (${data.salaryMonthsCount} شهر)` : 'الراتب الشهري', quantity: '-', rate: '-', earned: data.baseEntitlement, paid: 0, currency: data.currency, actor: 'النظام' });
         data.production.forEach(item => ledgerRows.push({
             date: item.date || '-', order: item.createdAt || '', type: 'إنتاج',
             details: `${item.workName || 'عمل'} (${item.unit || '-'})${item.note ? ` — ${item.note}` : ''}`,
@@ -15326,7 +15545,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         const hasNegative = CURRENCY_CODES.some(code => data.remainingByCurrency[code] < 0);
         target.innerHTML = `
             <div class="employee-dues-detail-head">
-                <div><strong style="font-size:16px;color:var(--primary);">${title}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${escapeEmployeeDuesHtml(getEmployeeDuesCompensationLabel(staff))} — الفترة ${data.period}</div></div>
+                <div><strong style="font-size:16px;color:var(--primary);">${title}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${escapeEmployeeDuesHtml(getEmployeeDuesCompensationLabel(staff, data.period))} — الفترة ${data.period}</div></div>
                 <span class="badge ${hasNegative ? 'badge-expense' : 'badge-cash'}">${hasNegative ? 'يوجد رصيد سالب بعملة' : 'مستحق للموظف'}</span>
             </div>
             <div class="employee-dues-kpis">
@@ -15344,7 +15563,7 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
     function buildEmployeeDuesPdfSheet(staff, period, isLast = false) {
         const data = getEmployeeDuesData(staff, period);
         const name = escapeEmployeeDuesHtml(staff.fullName || 'الموظف');
-        const type = isPieceworkStaff(staff) ? 'أجر بالقطعة' : (getStaffCollectionRate(staff) > 0 ? `راتب + نسبة تحصيل ${getStaffCollectionRate(staff)}%` : 'راتب شهري');
+        const type = isPieceworkStaff(staff) ? 'أجر بالقطعة' : (data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `راتب متراكم حتى الصرف · من ${data.salaryAccrualStartPeriod}` : (getStaffCollectionRate(staff) > 0 ? `راتب + نسبة تحصيل ${getStaffCollectionRate(staff)}%` : 'راتب شهري'));
         const productionRows = data.production.length ? data.production.map(item => `
             <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.workName || 'عمل')} (${escapeEmployeeDuesHtml(item.unit || '-')})</td><td>${formatQty(item.quantity || 0)}</td><td>${formatMoney(item.unitRate || 0)} ${data.currency}</td><td>${formatMoney(item.amount || 0)} ${data.currency}</td><td>${escapeEmployeeDuesHtml(item.createdBy || '-')}</td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;">لا يوجد إنتاج مسجل لهذه الفترة</td></tr>';
@@ -15357,8 +15576,8 @@ ${bilingualContactHeaderHtml('كشف حساب العميل', 'تقرير مال�
         const commissionRows = data.commissions.length ? data.commissions.map(item => `
             <tr><td>${escapeEmployeeDuesHtml(item.date || '-')}</td><td>${escapeEmployeeDuesHtml(item.refNumber || item.id || '-')}</td><td>${escapeEmployeeDuesHtml(item.customerName || 'عام')}</td><td>${formatMoney(item.amount || 0)} ${item.commissionCurrency}</td><td>${Number(item.commissionRate || 0).toFixed(2)}%</td><td>${formatMoney(item.commissionAmount || 0)} ${item.commissionCurrency}</td></tr>
         `).join('') : '<tr><td colspan="6" style="text-align:center;">لا توجد عمولات تحصيل لهذه الفترة</td></tr>';
-        const salaryRow = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009 ? `<tr><td>${period}-01</td><td>الراتب الشهري المستحق</td><td>${formatMoney(data.baseEntitlement)} ${data.currency}</td><td>النظام</td></tr>` : '';
-        const salarySection = salaryRow ? `<h3>استحقاق الراتب الشهري</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>المصدر</th></tr></thead><tbody>${salaryRow}</tbody></table>` : '';
+        const salaryRow = !isPieceworkStaff(staff) && data.baseEntitlement > 0.009 ? `<tr><td>${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `${data.salaryAccrualStartPeriod}-01` : `${period}-01`}</td><td>${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? `راتب متراكم من ${data.salaryAccrualStartPeriod} حتى ${period} (${data.salaryMonthsCount} شهر)` : 'الراتب الشهري المستحق'}</td><td>${formatMoney(data.baseEntitlement)} ${data.currency}</td><td>النظام</td></tr>` : '';
+        const salarySection = salaryRow ? `<h3>${data.salaryAccrualEnabled && data.salaryAccrualActiveForPeriod ? 'استحقاق الراتب المتراكم' : 'استحقاق الراتب الشهري'}</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>المصدر</th></tr></thead><tbody>${salaryRow}</tbody></table>` : '';
         const productionSection = data.production.length ? `<h3>الأعمال والإنتاج</h3><table><thead><tr><th>التاريخ</th><th>نوع العمل</th><th>الكمية</th><th>سعر الوحدة</th><th>المستحق</th><th>سجل بواسطة</th></tr></thead><tbody>${productionRows}</tbody></table>` : '';
         const collectionSection = data.commissions.length ? `<h3>عمولات سندات القبض</h3><table><thead><tr><th>التاريخ</th><th>رقم السند</th><th>العميل</th><th>المبلغ المحصل</th><th>النسبة</th><th>العمولة</th></tr></thead><tbody>${commissionRows}</tbody></table>` : '';
         const paymentSection = data.expenses.length ? `<h3>سجل المبالغ المصروفة / المستلمة</h3><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th>سجل بواسطة</th></tr></thead><tbody>${expenseRows}</tbody></table>` : '';
@@ -15444,7 +15663,7 @@ thead{display:table-header-group}tr,img{break-inside:avoid;page-break-inside:avo
 @media print{html,body{width:100%;height:auto}.employee-dues-pdf-sheet{width:100%;padding:3mm}.employee-dues-pdf-sheet:not(:last-child){break-after:page;page-break-after:always}.report-toolbar{display:none!important}}
 .report-toolbar{position:sticky;top:0;z-index:10;display:flex;justify-content:center;gap:8px;padding:10px;background:#174d32;margin:0 0 10px}.report-toolbar button{border:0;border-radius:8px;padding:9px 16px;background:#fff;color:#174d32;font:800 12px Tahoma;cursor:pointer}.report-toolbar .close{background:#e8edf0;color:#334155}
 
-        .item-list-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:4px 0 14px}
+        .item-list-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:4px 0 14px}
         .item-list-stat{background:#f7fafc;border:1px solid var(--border);border-radius:13px;padding:11px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
         .item-list-stat span{font-size:11px;color:var(--text-muted);font-weight:700}
         .item-list-stat strong{font-size:21px;color:var(--primary);font-weight:900;font-variant-numeric:tabular-nums}
@@ -15956,6 +16175,8 @@ window.addEventListener('load',function(){
     if (document.getElementById('cashboxStatementPeriod')) document.getElementById('cashboxStatementPeriod').value = getCurrentPayrollPeriod();
     toggleInvoicePaymentFields();
     togglePurchasePaymentFields();
+
+    initItemGroupControls();
 </script>
 </body>
 </html>
