@@ -2233,7 +2233,7 @@
             <div class="card-box">
                 <div class="card-title"><span><i class="fa-solid fa-clipboard-list"></i> بيانات عرض السعر</span></div>
                 <div class="grid-3 quote-meta-grid">
-                    <div class="form-group"><label for="quoteCustomerName">اسم العميل</label><input id="quoteCustomerName" class="form-control" list="quoteCustomersList" placeholder="اكتب اسم العميل" autocomplete="off" onchange="fillQuotationCustomerPhone()"><datalist id="quoteCustomersList"></datalist></div>
+                    <div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><label for="quoteCustomerName" style="margin:0;">اسم العميل</label><button type="button" class="btn btn-outline btn-sm" onclick="openCustomerSearch('quoteCustomerName')"><i class="fa-solid fa-magnifying-glass"></i> بحث العميل</button></div><input id="quoteCustomerName" class="form-control" list="quoteCustomersList" placeholder="اكتب اسم العميل" autocomplete="off" onchange="fillQuotationCustomerPhone()"><datalist id="quoteCustomersList"></datalist></div>
                     <div class="form-group"><label for="quoteCustomerPhone">رقم الهاتف</label><input id="quoteCustomerPhone" class="form-control" inputmode="tel" placeholder="رقم التواصل (اختياري)"></div>
                     <div class="form-group"><label for="quoteNumber">رقم عرض السعر</label><input id="quoteNumber" class="form-control mono" readonly></div>
                     <div class="form-group"><label for="quoteDate">تاريخ العرض</label><input type="date" id="quoteDate" class="form-control"></div>
@@ -2338,12 +2338,18 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>العميل</label>
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                            <label for="invCustomerSelect" style="margin:0;">العميل</label>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="openCustomerSearch('invCustomerSelect')"><i class="fa-solid fa-magnifying-glass"></i> بحث العميل</button>
+                        </div>
                         <select id="invCustomerSelect" class="form-control"></select>
                     </div>
                 </div>
                 <div class="form-group" id="invCashCustomerNameGroup" style="margin-top:8px;">
-                    <label>اسم العميل النقدي (يمكن كتابة اسم جديد)</label>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                        <label for="invCashCustomerName" style="margin:0;">اسم العميل النقدي (يمكن كتابة اسم جديد)</label>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="openCustomerSearch('invCashCustomerName')"><i class="fa-solid fa-magnifying-glass"></i> بحث العميل</button>
+                    </div>
                     <input type="text" id="invCashCustomerName" class="form-control" placeholder="اسم العميل الذي اشترى نقداً">
                 </div>
 
@@ -2717,7 +2723,10 @@
                 </div>
                 <div class="grid-2">
                     <div class="form-group" id="voucherCustomerGroup">
-                        <label id="voucherCustomerLabel">العميل (اختياري)</label>
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                            <label id="voucherCustomerLabel" for="voucherCustomerSelect" style="margin:0;">العميل (اختياري)</label>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="openCustomerSearch('voucherCustomerSelect')"><i class="fa-solid fa-magnifying-glass"></i> بحث العميل</button>
+                        </div>
                         <select id="voucherCustomerSelect" class="form-control"></select>
                     </div>
                     <div class="form-group">
@@ -16293,6 +16302,126 @@ window.addEventListener('load',function(){
             isBusy = false;
             if (button) button.disabled = false;
         }
+    }
+
+    // نافذة بحث موحدة لاختيار العميل من كل نماذج الفواتير والسندات وعروض الأسعار.
+    let activeCustomerSearchTargetId = '';
+
+    function ensureCustomerSearchModal() {
+        let modal = document.getElementById('customerSearchModal');
+        if (modal) return modal;
+        modal = document.createElement('div');
+        modal.id = 'customerSearchModal';
+        modal.style.cssText = 'position:fixed;inset:0;z-index:12000;background:rgba(10,25,18,.62);display:none;align-items:center;justify-content:center;padding:14px;direction:rtl;';
+        modal.innerHTML = `
+            <div role="dialog" aria-modal="true" aria-labelledby="customerSearchTitle" style="width:min(100%,560px);max-height:88vh;display:flex;flex-direction:column;background:#fff;border:1px solid #d7e5dc;border-radius:16px;box-shadow:0 22px 70px rgba(0,0,0,.25);overflow:hidden;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:#f2f8f4;border-bottom:1px solid #dce9e0;">
+                    <div><div id="customerSearchTitle" style="font-size:17px;font-weight:800;color:#176b43;">بحث واختيار العميل</div><div style="font-size:12px;color:#607469;margin-top:3px;">اكتب اسم العميل أو رقم الهاتف</div></div>
+                    <button type="button" class="btn btn-outline btn-sm" id="closeCustomerSearchBtn">إغلاق</button>
+                </div>
+                <div style="padding:12px 14px 8px;">
+                    <input id="customerSearchInput" type="search" class="form-control" placeholder="ابحث باسم العميل أو رقم الهاتف..." autocomplete="off" style="width:100%;">
+                    <div id="customerSearchCount" style="font-size:11px;color:#65786d;margin-top:6px;">0 عميل</div>
+                </div>
+                <div id="customerSearchResults" style="padding:4px 12px 14px;overflow:auto;min-height:90px;"></div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', event => { if (event.target === modal) closeCustomerSearch(); });
+        modal.querySelector('#closeCustomerSearchBtn')?.addEventListener('click', closeCustomerSearch);
+        modal.querySelector('#customerSearchInput')?.addEventListener('input', renderCustomerSearchResults);
+        modal.querySelector('#customerSearchResults')?.addEventListener('click', event => {
+            const button = event.target.closest('[data-customer-id]');
+            if (button) selectCustomerFromSearch(button.dataset.customerId || '');
+        });
+        return modal;
+    }
+
+    function openCustomerSearch(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) { showToast('تعذر العثور على حقل العميل المطلوب'); return; }
+        activeCustomerSearchTargetId = targetId;
+        const modal = ensureCustomerSearchModal();
+        const input = modal.querySelector('#customerSearchInput');
+        if (input) input.value = target.tagName === 'SELECT'
+            ? (state.customers || []).find(customer => String(customer.id) === String(target.value))?.name || ''
+            : String(target.value || '');
+        modal.style.display = 'flex';
+        renderCustomerSearchResults();
+        setTimeout(() => { input?.focus(); input?.select(); }, 30);
+    }
+
+    function closeCustomerSearch() {
+        const modal = document.getElementById('customerSearchModal');
+        if (modal) modal.style.display = 'none';
+        activeCustomerSearchTargetId = '';
+    }
+
+    function renderCustomerSearchResults() {
+        const modal = document.getElementById('customerSearchModal');
+        const host = modal?.querySelector('#customerSearchResults');
+        const count = modal?.querySelector('#customerSearchCount');
+        if (!host) return;
+        const query = String(modal.querySelector('#customerSearchInput')?.value || '').trim().toLocaleLowerCase('ar');
+        const customers = (state.customers || []).filter(customer => {
+            const name = String(customer.name || '').toLocaleLowerCase('ar');
+            const phone = String(customer.phone || customer.mobile || customer.phoneNumber || '').toLocaleLowerCase('ar');
+            return !query || name.includes(query) || phone.includes(query);
+        }).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
+        if (count) count.textContent = `${customers.length} من ${(state.customers || []).length} عميل`;
+        host.replaceChildren();
+        if (!customers.length) {
+            const empty = document.createElement('div');
+            empty.textContent = (state.customers || []).length ? 'لا توجد نتائج مطابقة لبحثك.' : 'لا توجد بيانات عملاء محملة حالياً.';
+            empty.style.cssText = 'padding:22px 12px;text-align:center;color:#6b7c72;background:#f7faf8;border:1px dashed #d6e4db;border-radius:10px;';
+            host.appendChild(empty);
+            return;
+        }
+        customers.forEach(customer => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.dataset.customerId = String(customer.id);
+            button.style.cssText = 'display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;text-align:right;padding:11px 12px;margin:0 0 7px;border:1px solid #e0e9e3;border-radius:10px;background:#fff;color:#203a2b;cursor:pointer;';
+            const main = document.createElement('span');
+            main.style.cssText = 'display:flex;flex-direction:column;gap:3px;min-width:0;';
+            const name = document.createElement('strong');
+            name.textContent = customer.name || 'عميل بدون اسم';
+            name.style.cssText = 'font-size:14px;';
+            const phone = document.createElement('small');
+            phone.textContent = String(customer.phone || customer.mobile || customer.phoneNumber || 'بدون رقم هاتف');
+            phone.style.cssText = 'font-size:11px;color:#718076;';
+            main.append(name, phone);
+            const balance = document.createElement('span');
+            balance.textContent = typeof computeSystemCustomerBalances === 'function'
+                ? formatCurrencyTotals(computeSystemCustomerBalances(customer)) : '';
+            balance.style.cssText = 'font-size:11px;font-weight:700;color:#176b43;text-align:left;max-width:48%;';
+            button.append(main, balance);
+            host.appendChild(button);
+        });
+    }
+
+    function selectCustomerFromSearch(customerId) {
+        const customer = (state.customers || []).find(item => String(item.id) === String(customerId));
+        const target = document.getElementById(activeCustomerSearchTargetId);
+        if (!customer || !target) { closeCustomerSearch(); return; }
+        if (target.tagName === 'SELECT') {
+            if (!Array.from(target.options).some(option => String(option.value) === String(customer.id))) {
+                const option = document.createElement('option');
+                option.value = String(customer.id);
+                option.textContent = customer.name || 'عميل';
+                target.appendChild(option);
+            }
+            target.value = String(customer.id);
+            target.dispatchEvent(new Event('change', { bubbles: true }));
+            if (target.id === 'voucherCustomerSelect') updateVoucherStatementPreview();
+        } else {
+            target.value = customer.name || '';
+            target.dispatchEvent(new Event('input', { bubbles: true }));
+            target.dispatchEvent(new Event('change', { bubbles: true }));
+            if (target.id === 'quoteCustomerName') fillQuotationCustomerPhone();
+        }
+        closeCustomerSearch();
+        target.focus();
+        showToast(`تم اختيار العميل: ${customer.name || ''}`);
     }
 
     document.getElementById('employeePieceRatesModal')?.addEventListener('click', function (event) {
